@@ -3,9 +3,30 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@anuprerna/ui", "@anuprerna/types"],
   images: {
-    // Product/artisan photos are served from the S3 bucket (see docs/adr/0003).
-    remotePatterns: [{ protocol: "https", hostname: "anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com" }],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "loom-v2.anuprerna.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "blog.anuprerna.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+    ],
   },
-  experimental: { typedRoutes: true },
+  typedRoutes: false,
 };
+
 export default nextConfig;
