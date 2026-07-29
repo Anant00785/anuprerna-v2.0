@@ -5,6 +5,7 @@ Long-lived container. Replaces the vendor-locked Java Loom via strangler-fig.
 ## Module map
 | module | owns |
 |---|---|
+| `database/` | Drizzle ORM client (`DATABASE_CONNECTION` provider, global). Schema in `database/schema/` is introspected from the running Postgres via `pnpm db:introspect` — don't hand-edit, re-run introspect after schema changes. |
 | `identity/` | auth, sessions, **dual-accept tokens** (accept legacy Loom JWT AND new native token during migration), delegated resolver |
 | `commerce/` | catalog, cart, checkout, orders (4 types), customers, payments |
 | `workflow/` | ArtisanFlow — `/af/*` routes, `af_` tables. Clean extraction seam. |

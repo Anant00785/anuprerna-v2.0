@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { DatabaseModule } from "./database/database.module.js";
 import { IdentityModule } from "./identity/identity.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
 import { WorkflowModule } from "./workflow/workflow.module.js";
@@ -10,6 +11,7 @@ import { HealthModule } from "./common/health/health.module.js";
 // reads to legacy Loom and blocks writes. It shrinks to nothing as modules are built.
 @Module({
   imports: [
+    DatabaseModule,
     HealthModule,
     IdentityModule,
     CommerceModule,
