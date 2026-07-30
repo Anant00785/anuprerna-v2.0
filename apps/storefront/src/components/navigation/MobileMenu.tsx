@@ -9,6 +9,16 @@ import {
   NavigationPatternOption,
   NavigationColorOption,
   NavigationStory,
+  INITIAL_NAVIGATION_CRAFT,
+  INITIAL_NAVIGATION_MATERIALS,
+  INITIAL_NAVIGATION_PATTERNS,
+  INITIAL_NAVIGATION_COLORS,
+  INITIAL_NAVIGATION_ACCESSORIES,
+  INITIAL_NAVIGATION_HOME,
+  INITIAL_NAVIGATION_APPAREL,
+  INITIAL_NAVIGATION_STORY_CRAFTS,
+  INITIAL_NAVIGATION_STORY_CLUSTERS,
+  INITIAL_NAVIGATION_STORY_COLLABORATIONS,
   generateCategoryRedirectionLink,
   generateSegmentRedirectionLink,
   generateRedirectionLink,
@@ -20,16 +30,16 @@ interface MobileMenuProps {
   onClose: () => void;
   isLoggedIn?: boolean;
   tenantName?: string;
-  navigationCraft: NavigationCraft[];
-  navigationMaterial: NavigationMaterialOption[];
-  navigationPattern: NavigationPatternOption[];
-  navigationColor: NavigationColorOption[];
-  navigationAccessories: NavigationCraft[];
-  navigationHome: NavigationCraft[];
-  navigationApparel: NavigationCraft[];
-  navigationStoryCrafts: NavigationStory[];
-  navigationStoryClusters: NavigationStory[];
-  navigationStoryCollaborations: NavigationStory[];
+  navigationCraft?: NavigationCraft[];
+  navigationMaterial?: NavigationMaterialOption[];
+  navigationPattern?: NavigationPatternOption[];
+  navigationColor?: NavigationColorOption[];
+  navigationAccessories?: NavigationCraft[];
+  navigationHome?: NavigationCraft[];
+  navigationApparel?: NavigationCraft[];
+  navigationStoryCrafts?: NavigationStory[];
+  navigationStoryClusters?: NavigationStory[];
+  navigationStoryCollaborations?: NavigationStory[];
 }
 
 export function MobileMenu({
@@ -37,16 +47,16 @@ export function MobileMenu({
   onClose,
   isLoggedIn = false,
   tenantName = "Guest",
-  navigationCraft,
-  navigationMaterial,
-  navigationPattern,
-  navigationColor,
-  navigationAccessories,
-  navigationHome,
-  navigationApparel,
-  navigationStoryCrafts,
-  navigationStoryClusters,
-  navigationStoryCollaborations,
+  navigationCraft = INITIAL_NAVIGATION_CRAFT,
+  navigationMaterial = INITIAL_NAVIGATION_MATERIALS,
+  navigationPattern = INITIAL_NAVIGATION_PATTERNS,
+  navigationColor = INITIAL_NAVIGATION_COLORS,
+  navigationAccessories = INITIAL_NAVIGATION_ACCESSORIES,
+  navigationHome = INITIAL_NAVIGATION_HOME,
+  navigationApparel = INITIAL_NAVIGATION_APPAREL,
+  navigationStoryCrafts = INITIAL_NAVIGATION_STORY_CRAFTS,
+  navigationStoryClusters = INITIAL_NAVIGATION_STORY_CLUSTERS,
+  navigationStoryCollaborations = INITIAL_NAVIGATION_STORY_COLLABORATIONS,
 }: MobileMenuProps) {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [openSubSection, setOpenSubSection] = useState<string | null>(null);
