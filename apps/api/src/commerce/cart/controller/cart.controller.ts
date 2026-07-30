@@ -1,0 +1,164 @@
+/**
+ * apps/api/src/commerce/cart/controller/cart.controller.ts
+ *
+ * Direct port of com.bloomscorp.loom.cart.controller.CartController.
+ * Route paths, HTTP methods, and CODE_SU/CODE_CU restrictions are preserved
+ * exactly. Response envelopes follow the RainTree protocol (see
+ * common/response/rain-response.ts) so existing clients keep working
+ * unchanged.
+ *
+ * Route map (verbatim from com.bloomscorp.loom.support.RequestMapper):
+ *   GET    /get/table-explorer/data/cart-item              CODE_SU
+ *   GET    /get/table-explorer/data/cart-item/:id           CODE_SU
+ *   GET    /get/cart-item/list                              CODE_CU
+ *   GET    /get/tenant/cart-item/list/:uid                  CODE_SU
+ *   GET    /get/tenant/cart-item/list                       CODE_SU
+ *   POST   /add/cart-item                                   CODE_CU
+ *   PATCH  /update/cart-item                                CODE_CU
+ *   DELETE /delete/cart-item/:cartItemId                    CODE_CU
+ *   DELETE /delete/all-cart-item                             CODE_CU
+ */
+import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { CartService } from "../service/cart.service.js";
+import { OptimisticLockError } from "../repository/cart.repository.js";
+import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard";
+import { CurrentTenant } from "../../../common/auth/current-tenant.decorator";
+import { keyedResponse, simpleResponse } from "../../../common/response/rain-response";
+import { ActionCode } from "../../../common/errors/action-code";
+import { validateCartItem } from "../validators/cart-item.validator.js";
+import { sanitizeCartItem } from "../validators/cart-item.sanitizer.js";
+import {
+  parseAddCartItemRequest,
+  parseCartItemIdParam,
+  parseIdParam,
+  parseTableExplorerPageQuery,
+  parseUidParam,
+  parseUpdateCartItemRequest,
+} from "../dto/cart.dto.js";
+import { CartMessages } from "../types/cart.types.js";
+
+@Controller()
+@UseGuards(RolesGuard)
+export class CartController {
+  constructor(private readonly cartService: CartService) {}
+
+  /** getCartItemData(request, page, size) */
+  @Get("/get/table-explorer/data/cart-item")
+  @RequireGate(GateCode.CODE_SU)
+  async getCartItemData(@Query() query: unknown) {
+    const { page, size } = parseTableExplorerPageQuery(query);
+    const items = await this.cartService.retrieveCartItemData(page, size);
+    return keyedResponse("cartItemList", items);
+  }
+
+  /** getCartItemById(request, id) */
+  @Get("/get/table-explorer/data/cart-item/:id")
+  @RequireGate(GateCode.CODE_SU)
+  async getCartItemById(@Param("id") id: string) {
+    const parsedId = parseIdParam(id);
+    const item = await this.cartService.retrieveCartItemDataById(BigInt(parsedId));
+    return keyedResponse("cartItem", item);
+  }
+
+  /** getCartItemList(request) */
+  @Get("/get/cart-item/list")
+  @RequireGate(GateCode.CODE_CU)
+  async getCartItemList(@CurrentTenant() tenant: AuthenticatedTenant) {
+    const items = await this.cartService.retrieveCartItems(tenant.id);
+    return keyedResponse("cartItemList", items);
+  }
+
+  /** getCartItemListUsingUid(request, uid) */
+  @Get("/get/tenant/cart-item/list/:uid")
+  @RequireGate(GateCode.CODE_SU)
+  async getCartItemListUsingUid(@Param("uid") uid: string) {
+    const parsedUid = parseUidParam(uid);
+    const items = await this.cartService.retrieveCartItemsByUid(parsedUid);
+    return keyedResponse("cartItemList", items);
+  }
+
+  /** getCartItemListForTenants(request) */
+  @Get("/get/tenant/cart-item/list")
+  @RequireGate(GateCode.CODE_SU)
+  async getCartItemListForTenants() {
+    const overview = await this.cartService.retrieveTenantWiseCartOverview();
+    return keyedResponse("cartOverview", overview);
+  }
+
+  /** addCartItem(request, cartItem) */
+  @Post("/add/cart-item")
+  @RequireGate(GateCode.CODE_CU)
+  async addCartItem(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
+    const parsed = parseAddCartItemRequest(body);
+    const sanitized = sanitizeCartItem(parsed);
+
+    if (!validateCartItem(sanitized)) {
+      return simpleResponse(false, CartMessages.UNAUTH_CART_ITEM_CREATE_REQUEST);
+    }
+
+    const result = await this.cartService.addCartItem(tenant.id, sanitized);
+    return simpleResponse(
+      result === ActionCode.INSERT_SUCCESS,
+      result === ActionCode.INSERT_SUCCESS ? CartMessages.NEW_CART_ITEM_CREATED : CartMessages.CART_ITEM_CREATE_FAILED,
+    );
+  }
+
+  /** updateCartItem(request, updateCartItem) */
+  @Patch("/update/cart-item")
+  @RequireGate(GateCode.CODE_CU)
+  async updateCartItem(@Body() body: unknown) {
+    const parsed = parseUpdateCartItemRequest(body);
+    const sanitized = sanitizeCartItem(parsed);
+
+    if (!validateCartItem(sanitized)) {
+      return simpleResponse(false, CartMessages.UNAUTH_CART_ITEM_UPDATE_REQUEST);
+    }
+
+    let result: number;
+    try {
+      result = await this.cartService.updateCartItem(sanitized);
+    } catch (err) {
+      if (err instanceof OptimisticLockError) {
+        throw new ConflictException("This cart item was modified by another request. Please retry.");
+      }
+      throw err;
+    }
+    return simpleResponse(
+      result === ActionCode.UPDATE_SUCCESS,
+      result === ActionCode.UPDATE_SUCCESS ? CartMessages.CART_ITEM_UPDATED : CartMessages.CART_ITEM_UPDATE_FAILED,
+    );
+  }
+
+  /** deleteCartItem(request, cartItemId) */
+  @Delete("/delete/cart-item/:cartItemId")
+  @RequireGate(GateCode.CODE_CU)
+  async deleteCartItem(@Param("cartItemId") cartItemId: string) {
+    const parsedId = parseCartItemIdParam(cartItemId);
+    let deleted: boolean;
+    try {
+      deleted = await this.cartService.deleteCartItem(BigInt(parsedId));
+    } catch (err) {
+      if (err instanceof OptimisticLockError) {
+        throw new ConflictException("This cart item was modified by another request. Please retry.");
+      }
+      throw err;
+    }
+    return simpleResponse(deleted, deleted ? CartMessages.CART_ITEM_DELETED : CartMessages.CART_ITEM_DELETE_FAILED);
+  }
+
+  /** deleteAllCartItem(request) */
+  @Delete("/delete/all-cart-item")
+  @RequireGate(GateCode.CODE_CU)
+  async deleteAllCartItem(@CurrentTenant() tenant: AuthenticatedTenant) {
+    let deleted: boolean;
+    try {
+      deleted = await this.cartService.deleteAllCartItem(tenant.id);
+    } catch (err) {
+      if (err instanceof OptimisticLockError) {
+        throw new ConflictException("Cart was modified by another request. Please retry.");
+      }
+      throw err;
+    }
+    return simpleResponse(deleted, CartMessages.ALL_CART_ITEM_DELETED);
+  }
+}

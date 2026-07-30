@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
+import { CartModule } from "./cart/cart.module.js";
 
-// Catalog, cart, checkout, orders (4 types), customers, payments.
-@Module({})
+@Module({
+  imports: [CartModule],
+})
 export class CommerceModule {}
