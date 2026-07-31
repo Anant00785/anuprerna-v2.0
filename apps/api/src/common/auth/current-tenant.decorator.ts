@@ -1,7 +1,13 @@
-// Minimal dummy — satisfies imports for commerce/cart. No business logic:
-// pulls whatever is already on the request as `tenant`.
+/**
+ * apps/api/src/common/auth/current-tenant.decorator.ts
+ *
+ * Pulls the AuthenticatedTenant RolesGuard attaches to the request.
+ * Lives alongside roles.guard.ts under common/ for the same reason: other
+ * feature modules (e.g. commerce/cart) import it directly via
+ * `import { CurrentTenant } from "../../../common/auth/current-tenant.decorator"`.
+ */
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
-import { AuthenticatedTenant } from "./roles.guard.js";
+import { AuthenticatedTenant } from "../../auth/types/auth.types.js";
 
 export const CurrentTenant = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): AuthenticatedTenant => {

@@ -17,14 +17,20 @@
  *   PATCH  /update/cart-item                                CODE_CU
  *   DELETE /delete/cart-item/:cartItemId                    CODE_CU
  *   DELETE /delete/all-cart-item                             CODE_CU
+ *
+ * Swagger: @ApiTags("Cart") groups this controller. @ApiBearerAuth() is
+ * applied at the class level — every route here carries @RequireGate
+ * (CODE_SU or CODE_CU), so every route is protected; there is no public
+ * Cart endpoint to exclude it from.
  */
 import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CartService } from "../service/cart.service.js";
 import { OptimisticLockError } from "../repository/cart.repository.js";
-import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard";
-import { CurrentTenant } from "../../../common/auth/current-tenant.decorator";
-import { keyedResponse, simpleResponse } from "../../../common/response/rain-response";
-import { ActionCode } from "../../../common/errors/action-code";
+import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
+import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
+import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
+import { ActionCode } from "../../../common/errors/action-code.js";
 import { validateCartItem } from "../validators/cart-item.validator.js";
 import { sanitizeCartItem } from "../validators/cart-item.sanitizer.js";
 import {
@@ -37,6 +43,8 @@ import {
 } from "../dto/cart.dto.js";
 import { CartMessages } from "../types/cart.types.js";
 
+@ApiTags("Cart")
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class CartController {
@@ -45,6 +53,10 @@ export class CartController {
   /** getCartItemData(request, page, size) */
   @Get("/get/table-explorer/data/cart-item")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Table-explorer: paginated list of all cart items (admin)." })
+  @ApiResponse({ status: 200, description: "Paginated cart item list." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
   async getCartItemData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);
     const items = await this.cartService.retrieveCartItemData(page, size);
@@ -54,6 +66,10 @@ export class CartController {
   /** getCartItemById(request, id) */
   @Get("/get/table-explorer/data/cart-item/:id")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Table-explorer: fetch a single cart item by id (admin)." })
+  @ApiResponse({ status: 200, description: "The cart item, or null if not found." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
   async getCartItemById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const item = await this.cartService.retrieveCartItemDataById(BigInt(parsedId));
@@ -63,6 +79,10 @@ export class CartController {
   /** getCartItemList(request) */
   @Get("/get/cart-item/list")
   @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "List the authenticated customer's own cart items." })
+  @ApiResponse({ status: 200, description: "The caller's cart item list." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
   async getCartItemList(@CurrentTenant() tenant: AuthenticatedTenant) {
     const items = await this.cartService.retrieveCartItems(tenant.id);
     return keyedResponse("cartItemList", items);
@@ -71,6 +91,10 @@ export class CartController {
   /** getCartItemListUsingUid(request, uid) */
   @Get("/get/tenant/cart-item/list/:uid")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "List a specific tenant's cart items by uid (admin)." })
+  @ApiResponse({ status: 200, description: "The tenant's cart item list." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
   async getCartItemListUsingUid(@Param("uid") uid: string) {
     const parsedUid = parseUidParam(uid);
     const items = await this.cartService.retrieveCartItemsByUid(parsedUid);
@@ -80,6 +104,10 @@ export class CartController {
   /** getCartItemListForTenants(request) */
   @Get("/get/tenant/cart-item/list")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Tenant-wise cart overview across all tenants (admin)." })
+  @ApiResponse({ status: 200, description: "Per-tenant cart overview." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
   async getCartItemListForTenants() {
     const overview = await this.cartService.retrieveTenantWiseCartOverview();
     return keyedResponse("cartOverview", overview);
@@ -88,6 +116,11 @@ export class CartController {
   /** addCartItem(request, cartItem) */
   @Post("/add/cart-item")
   @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Add an item to the authenticated customer's cart." })
+  @ApiResponse({ status: 201, description: "Cart item created." })
+  @ApiResponse({ status: 200, description: "Request rejected by validation (see response body's success flag)." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
   async addCartItem(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const parsed = parseAddCartItemRequest(body);
     const sanitized = sanitizeCartItem(parsed);
@@ -106,6 +139,11 @@ export class CartController {
   /** updateCartItem(request, updateCartItem) */
   @Patch("/update/cart-item")
   @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Update an existing cart item." })
+  @ApiResponse({ status: 200, description: "Update result (see response body's success flag)." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
+  @ApiResponse({ status: 409, description: "Optimistic lock conflict — item was modified concurrently." })
   async updateCartItem(@Body() body: unknown) {
     const parsed = parseUpdateCartItemRequest(body);
     const sanitized = sanitizeCartItem(parsed);
@@ -132,6 +170,11 @@ export class CartController {
   /** deleteCartItem(request, cartItemId) */
   @Delete("/delete/cart-item/:cartItemId")
   @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Delete a single cart item by id." })
+  @ApiResponse({ status: 200, description: "Delete result (see response body's success flag)." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
+  @ApiResponse({ status: 409, description: "Optimistic lock conflict — item was modified concurrently." })
   async deleteCartItem(@Param("cartItemId") cartItemId: string) {
     const parsedId = parseCartItemIdParam(cartItemId);
     let deleted: boolean;
@@ -149,6 +192,11 @@ export class CartController {
   /** deleteAllCartItem(request) */
   @Delete("/delete/all-cart-item")
   @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Delete every cart item belonging to the authenticated customer." })
+  @ApiResponse({ status: 200, description: "All cart items deleted." })
+  @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
+  @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
+  @ApiResponse({ status: 409, description: "Optimistic lock conflict — a cart item was modified concurrently." })
   async deleteAllCartItem(@CurrentTenant() tenant: AuthenticatedTenant) {
     let deleted: boolean;
     try {

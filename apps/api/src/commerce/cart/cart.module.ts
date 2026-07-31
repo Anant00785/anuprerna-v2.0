@@ -25,6 +25,7 @@
  * Replace each `useValue` below with a real provider as Product, Profile,
  * and Identity get migrated.
  */
+import { AuthModule } from "../../auth/auth.module.js";
 import { Module } from "@nestjs/common";
 import { CartController } from "./controller/cart.controller.js";
 import { CartService } from "./service/cart.service.js";
@@ -72,6 +73,7 @@ const emailEncoderDummy: EmailEncoderPort = {
 };
 
 @Module({
+  imports: [AuthModule],
   controllers: [CartController],
   providers: [
     CartService,
