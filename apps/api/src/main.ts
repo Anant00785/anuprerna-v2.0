@@ -13,6 +13,7 @@
  * three groups (Health, Authentication, Cart) appear in a stable order
  * even before/regardless of which controllers are scanned.
  */
+import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module.js";
@@ -30,14 +31,21 @@ async function bootstrap() {
     .addTag("Cart")
     .build();
 
-const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup("docs", app, document);
+  // Enable Swagger by default in non-production environments.
+  // In production set `SWAGGER=true` to explicitly enable it.
+  const enableSwagger = process.env.NODE_ENV !== "production" || process.env.SWAGGER === "true";
 
-await app.listen(process.env.PORT ?? 3000);
+  if (enableSwagger) {
+    const document = SwaggerModule.createDocument(app, config);
+    // Serve Swagger UI under /api/docs to match API prefixing.
+    SwaggerModule.setup("api/docs", app, document, { jsonDocumentUrl: "api-json" });
+  }
 
-const url = await app.getUrl();
-console.log("🚀 Server running at:", url);
-console.log("📖 Swagger UI:", `${url}/docs`);
+  await app.listen(process.env.PORT ?? 3000);
+
+  const url = await app.getUrl();
+  console.log("🚀 Server running at:", url);
+  if (enableSwagger) console.log("📖 Swagger UI:", `${url}/api/docs`);
 }
 
 bootstrap();

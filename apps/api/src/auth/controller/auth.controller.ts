@@ -27,8 +27,8 @@
  * token check) — the two login endpoints are genuinely public
  * (NON_AUTHENTICATED_URLS) and do not require a bearer token.
  */
-import { Body, Controller, Get, Inject, Post, UnauthorizedException, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, HttpCode, Inject, Post, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GatekeeperService } from "../service/gatekeeper.service.js";
 import { TenantLookupRepository } from "../repository/tenant-lookup.repository.js";
 import {
@@ -39,7 +39,7 @@ import {
   Authority,
   GateCode,
 } from "../types/auth.types.js";
-import { parseEmailLoginRequest, parseSocialLoginRequest, parseValidateProviderRequest } from "../dto/auth.dto.js";
+import { EmailLoginRequestDto, parseEmailLoginRequest, parseSocialLoginRequest, parseValidateProviderRequest } from "../dto/auth.dto.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
 import { keyedResponse } from "../../common/response/rain-response.js";
@@ -57,6 +57,8 @@ export class AuthController {
 
   /** createAuthenticationTokenUsingEmailID(NVerseRequest) — public, no @RequireGate. */
   @Post("/authenticate/email")
+  @HttpCode(200)
+  @ApiBody({ type: EmailLoginRequestDto })
   @ApiOperation({ summary: "Authenticate with email and password, issuing a JWT." })
   @ApiResponse({ status: 200, description: "Authentication succeeded; JWT token returned." })
   @ApiResponse({ status: 400, description: "Malformed username/password." })
@@ -163,6 +165,7 @@ export class AuthController {
 
   /** validateProvider(NVerseAuthProviderValidationRequest) — CODE_SUCU (authenticated route, not in NON_AUTHENTICATED_URLS). */
   @Post("/validate/provider")
+  @HttpCode(200)
   @RequireGate(GateCode.CODE_SUCU)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Check whether a tenant's stored auth provider matches the one supplied." })
@@ -186,3 +189,4 @@ export class AuthController {
     });
   }
 }
+

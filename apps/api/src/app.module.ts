@@ -10,11 +10,11 @@
 import { Module } from "@nestjs/common";
 import { DatabaseModule } from "./database/database.module.js";
 import { AuthModule } from "./auth/auth.module.js";
-import { CartModule } from "./commerce/cart/cart.module.js";
+import { CommerceModule } from "./commerce/commerce.module.js";
 import { HealthController } from "./health/health.controller.js";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CartModule],
+  imports: [DatabaseModule, AuthModule, CommerceModule],
   controllers: [HealthController],
 })
 export class AppModule {}

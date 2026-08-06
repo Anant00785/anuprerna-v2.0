@@ -18,6 +18,7 @@
  * hand-written.
  */
 import { BadRequestException } from "@nestjs/common";
+import { ApiProperty } from "@nestjs/swagger";
 import { AUTH_PROVIDERS, AuthProvider } from "../types/auth.types.js";
 
 const EMAIL_PATTERN = /^.{3,60}$/s;
@@ -53,6 +54,14 @@ function requireProvider(value: unknown): AuthProvider {
   return value as AuthProvider;
 }
 
+/** Swagger schema for the existing email-login request body. */
+export class EmailLoginRequestDto {
+  @ApiProperty({ example: "user@example.com", description: "Account username/email." })
+  username!: string;
+
+  @ApiProperty({ example: "password123", minLength: 8, maxLength: 38, description: "Account password." })
+  password!: string;
+}
 /** NVerseRequest(username, password) — email/password login body. */
 export interface EmailLoginRequest {
   username: string;

@@ -30,7 +30,13 @@ import { AuthenticatedTenant, GateCode, JwtPayload, UserRole } from "../types/au
 
 const scrypt = promisify(scryptCb);
 
-const JWT_SECRET = process.env.AUTH_JWT_SECRET!;
+const JWT_SECRET = (() => {
+  const s = process.env.AUTH_JWT_SECRET;
+  if (!s) {
+    throw new Error("AUTH_JWT_SECRET environment variable is required.");
+  }
+  return s;
+})();
 const TOKEN_TTL_SECONDS = Number(process.env.AUTH_JWT_TTL_SECONDS ?? 24 * 60 * 60);
 
 function base64url(input: Buffer | string): string {
@@ -50,6 +56,7 @@ export class GatekeeperService {
   }
 
   async verifyPassword(plainText: string, stored: string): Promise<boolean> {
+    if (!stored) return false;
     const [saltHex, hashHex] = stored.split(":");
     if (!saltHex || !hashHex) return false;
 

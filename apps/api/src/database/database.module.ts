@@ -6,7 +6,11 @@ import * as schema from "./schema/index.js";
 export const DATABASE_CONNECTION = Symbol("DATABASE_CONNECTION");
 export type Database = PostgresJsDatabase<typeof schema>;
 
-const client = postgres(process.env.DATABASE_URL!, { max: 10 });
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL environment variable is required.");
+}
+const client = postgres(databaseUrl, { max: 10 });
 
 // Global: every module injects DATABASE_CONNECTION without re-importing this module.
 @Global()
