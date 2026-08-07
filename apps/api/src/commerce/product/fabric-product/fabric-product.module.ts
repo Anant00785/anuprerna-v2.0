@@ -35,6 +35,8 @@
  * DATABASE_CONNECTION directly without this module re-importing it.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
+import { FabricProductController } from "../controller/fabric-product.controller.js";
 import { ProductCoreModule } from "../product/product.module.js";
 import { FabricProductService } from "./service/fabric-product.service.js";
 import { FabricProductRepository } from "./repository/fabric-product.repository.js";
@@ -104,8 +106,9 @@ const zohoAdapterDummy: ZohoAdapterPort = {
   reTriggerFabricProductToZohoWorkflow: async () => undefined,
 };
 
-@Module({
-  imports: [ProductCoreModule],
+@Module({
+  imports: [AuthModule, ProductCoreModule],
+  controllers: [FabricProductController],
   providers: [
     FabricProductService,
     FabricProductRepository,

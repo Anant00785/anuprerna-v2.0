@@ -30,6 +30,8 @@
  * service/repository types can be shared into this conversation).
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
+import { FinishedProductController } from "../controller/finished-product.controller.js";
 import { FinishedProductService } from "./service/finished-product.service.js";
 import { FinishedProductRepository } from "./repository/finished-product.repository.js";
 import {
@@ -91,7 +93,9 @@ const productSizeProfileDummy: ProductSizeProfilePort = {
   findBySizeProfileOptionSku: async () => null,
 };
 
-@Module({
+@Module({
+  imports: [AuthModule],
+  controllers: [FinishedProductController],
   providers: [
     FinishedProductService,
     FinishedProductRepository,
