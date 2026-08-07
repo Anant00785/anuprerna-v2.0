@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev -p 4200",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start -p 4200",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -13,6 +13,7 @@
   "dependencies": {
     "@anuprerna/types": "workspace:*",
     "@anuprerna/ui": "workspace:*",
+    "@react-oauth/google": "^0.13.5",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
