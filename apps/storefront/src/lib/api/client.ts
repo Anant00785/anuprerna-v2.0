@@ -6,6 +6,13 @@ export interface FetchOptions extends RequestInit {
 
 export function getBaseUrl(mode?: "legacy" | "nest"): string {
   const currentMode = mode ?? env.NEXT_PUBLIC_API_MODE;
+  
+  // When running client-side in the browser, route calls through Next.js proxy (/api/backend)
+  // to avoid CORS errors and to automatically inject required backend headers.
+  if (typeof window !== "undefined") {
+    return "/api/backend";
+  }
+
   return currentMode === "nest"
     ? env.NEXT_PUBLIC_NEST_API_URL
     : env.NEXT_PUBLIC_SPRINGBOOT_API_URL;
