@@ -1,15 +1,26 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
+import { AuthProvider } from '@/context/AuthContext';
+import { AppShell } from '@/components/navigation/AppShell';
 
 export const metadata: Metadata = {
-  title: "Anuprerna CMS",
-  description: "Admin & content management (weave)",
+  title: 'Weave Admin Dashboard',
+  description: 'Anuprerna Weave Platform Admin & Operations Center',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
+

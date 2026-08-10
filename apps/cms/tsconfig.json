@@ -1,38 +1,30 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "jsx": "preserve",
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
     "baseUrl": ".",
-    "noEmit": true,
-    "allowJs": true,
     "incremental": true,
-    "composite": false,
-    "declaration": false,
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@anuprerna/types": [
-        "../../packages/types/src"
-      ],
-      "@anuprerna/ui": [
-        "../../packages/ui/src"
-      ]
-    },
-    "resolveJsonModule": true,
-    "isolatedModules": true
+      "@/*": ["./src/*"],
+      "@anuprerna/types": ["../../packages/types/src"],
+      "@anuprerna/ui": ["../../packages/ui/src"]
+    }
   },
   "include": [
     "next-env.d.ts",
@@ -40,7 +32,6 @@
     "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
+
