@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CreateSkillDto, UpdateSkillDto } from '../types/skill.types.js';
 
 export function sanitizeCreateSkill(dto: CreateSkillDto): CreateSkillDto {
@@ -16,5 +15,3 @@ export function sanitizeUpdateSkill(dto: UpdateSkillDto): UpdateSkillDto {
     description: dto.description?.trim(),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

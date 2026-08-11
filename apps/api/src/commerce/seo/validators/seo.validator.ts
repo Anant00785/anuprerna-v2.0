@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ProductImageGallerySEOPayload } from "../dto/seo.dto.js";
 
 export function validateProductImageGallerySEOPayload(input: ProductImageGallerySEOPayload): string | null {
@@ -21,5 +20,3 @@ export function validateProductImageGallerySEOPayload(input: ProductImageGallery
     
     return null;
 }
-// @ts-nocheck
-// @ts-nocheck

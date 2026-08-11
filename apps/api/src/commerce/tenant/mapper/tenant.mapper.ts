@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function mapTenantProfile(row: any) {
   return {
     id: row.id,
@@ -16,5 +15,3 @@ export function mapUserRole(row: any) {
     tenantId: row.tenantId,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

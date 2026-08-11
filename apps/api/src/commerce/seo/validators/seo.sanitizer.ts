@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ProductImageGallerySEOPayload } from "../dto/seo.dto.js";
 
 function escapeHtml(str: string): string {
@@ -21,5 +20,3 @@ export function sanitizeProductImageGallerySEOPayload(input: ProductImageGallery
         }))
     };
 }
-// @ts-nocheck
-// @ts-nocheck

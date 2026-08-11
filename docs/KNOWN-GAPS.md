@@ -18,6 +18,67 @@ Related docs, not duplicated here: `docs/ARCHITECTURE.md`, `docs/DATA-FLOW.md`,
 | Status | Open. This is the headline framing for the whole document |
 | Redo when | `apps/api` is cut over for even one route in production — re-audit which of the items below actually matter under load |
 
+## Payment: the port dropped signature verification the legacy system performs
+
+Found on 2026-08-12 by the unit-test programme, before `apps/api` ever carried traffic. This is a
+**migration regression**, not a pre-existing flaw: the live Java backend does this correctly and the
+TypeScript port silently lost it. Both items below must be fixed before `apps/api` handles a single
+real payment.
+
+### 1. Razorpay success is accepted on the client's word
+
+| | |
+|---|---|
+| Legacy (correct) | `RazorpayTransactionDAOController.java:273-282` calls `paymentService.isValidSignature(razorpayOrderId, transactionId, transactionSignature)`, implemented at `RazorpayPaymentService.java:61-73` as `Utils.verifyPaymentSignature(options, PAYMENT_KEY_SECRET)`. Failure routes to `processInvalidTransactionSignature` / `processSignatureValidationFailure`, and `TransactionFailureCode` carries dedicated codes 1 and 2 for exactly this. |
+| Port (broken) | `apps/api/src/commerce/payment/service/razorpay-payment.service.ts:59` contains the comment `// Verify signature here` and **no verification of any kind**. Execution continues straight to `transaction.status = TransactionStatus.PAID`. |
+| Impact | A client can POST a fabricated payment success for a real order. The server marks the transaction PAID, moves the order to processing, and fires the confirmation email and WhatsApp notification. **Free goods.** |
+| Status | Open. Pinned by a test that names checklist row E2 so the gap cannot silently persist; the test asserts current behaviour and will fail loudly when verification is added — which is the point. |
+
+### 2. The Stripe webhook does not verify its signature
+
+| | |
+|---|---|
+| Legacy (correct) | `StripeWebhookController.java:125-132` calls `Webhook.constructEvent(payload, signatureHeader, webhookSecret)` and returns 400 on `SignatureVerificationException`. |
+| Port (broken) | `apps/api/src/commerce/payment/controller/payment.controller.ts:174-179` checks only that the `Stripe-Signature` **header is present**, then `const event = payload; // In a real scenario, this would be constructed using the Stripe SDK to verify the signature.` |
+| Impact | Any unauthenticated caller who knows the URL can forge a webhook and drive order state. |
+| Status | Open. |
+
+### 3. No idempotency on either provider
+
+| | |
+|---|---|
+| Evidence | Neither service checks transaction status before overwriting, nor dedupes by provider event id (`razorpay-payment.service.ts`, `stripe-payment.service.ts`). |
+| Impact | Providers retry webhooks by design. A duplicate `checkout.session.completed` re-runs the whole success path — re-sending the confirmation email and WhatsApp message, and re-clearing the cart. |
+| Status | Open. Documented as absent rather than covered by an invented test. |
+
+### 4. Three documented Stripe events have no handler
+
+| | |
+|---|---|
+| Evidence | Only `handlePaymentSuccess` and `handlePaymentFailure` exist. `PAYMENT_INTENT_CREATED`, `PAYMENT_FAILED` and `CANCELED` are documented in `docs/backend/commerce/02-api-documentation.md` §E but land in the default branch. |
+| Impact | Those events are silently discarded. |
+| Status | Open. |
+
+### 5. Stripe input validation is weaker than the documented contract
+
+Found independently while testing `payment/validators/`. Each is pinned by an `it.fails` test in
+`apps/api/src/commerce/payment/validators/payment.validator.spec.ts`.
+
+| Rule per `backend/commerce/02-api-documentation.md` §E8 | What the port actually does |
+|---|---|
+| `paymentType` must be one of `advance` \| `remaining` | Only checks the string is non-blank — `"bogus"` passes |
+| `customerEmail` must be 5-255 characters | **Never inspected at all** |
+| `currency` must be a valid `CURRENCY_ENUM` | Only checks non-blank |
+
+Note the inverse also occurs: `validateRazorpayPaymentInput` **rejects** a non-positive `orderId`,
+where the documented Java source (`RazorpayPaymentOrderValidator`) is a stub that always returns
+`true`. So the port is stricter in one place and looser in three — it was not a faithful
+transliteration in either direction, which is the general lesson for the rest of the migration.
+
+> **Redo when:** any of the above is fixed — the pinning tests in
+> `apps/api/src/commerce/payment/**/*.spec.ts` are written to fail at that moment, on purpose.
+> Update this section rather than deleting the tests.
+
 ## apps/api
 
 | Item | Evidence | Impact | Status |

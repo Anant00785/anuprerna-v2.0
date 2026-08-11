@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ReviewInput } from "../dto/review.dto.js";
 
 function escapeHtml(str: string): string {
@@ -25,5 +24,3 @@ export function sanitizeReview(input: ReviewInput): ReviewInput {
 export function sanitizeReviewStatus(input: ReviewInput): ReviewInput {
     return { ...input, status: input.status?.trim() };
 }
-// @ts-nocheck
-// @ts-nocheck

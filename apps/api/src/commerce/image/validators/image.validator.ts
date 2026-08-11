@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * migrated/image/validators/image.validator.ts
  *
@@ -23,5 +22,3 @@ export function validateImageUrl(url: string | undefined): string | null {
   if (!url || url.trim().length === 0) return "Image URL is required";
   return null;
 }
-// @ts-nocheck
-// @ts-nocheck

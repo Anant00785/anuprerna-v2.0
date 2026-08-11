@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { LoginRequest, OtpSendRequest, OtpVerifyRequest, EmailVerifyRequest } from '../types/nverse.types.js';
 
 export function validateLoginRequest(data: LoginRequest) {
@@ -31,5 +30,3 @@ export function validateEmailVerifyRequest(data: EmailVerifyRequest) {
   }
   return null;
 }
-// @ts-nocheck
-// @ts-nocheck

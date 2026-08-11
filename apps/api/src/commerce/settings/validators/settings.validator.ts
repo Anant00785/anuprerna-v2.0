@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { UpdateSettingsRequest } from '../types/settings.types.js';
 
 export function validateUpdateSettingsRequest(request: UpdateSettingsRequest): string | null {
@@ -6,5 +5,3 @@ export function validateUpdateSettingsRequest(request: UpdateSettingsRequest): s
   if (!request.attributeValue) return 'Attribute Value is required';
   return null;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function sanitizeString(val?: string): string | undefined {
   if (val === undefined || val === null) return undefined;
   return val.trim();
@@ -57,5 +56,3 @@ export function sanitizeUpdateCustomerProfileInput(input: any): any {
     phone: sanitizeString(input.phone),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

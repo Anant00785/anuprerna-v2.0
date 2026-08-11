@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function mapVerificationToken(row: any) {
   if (!row) return null;
   return {
@@ -9,5 +8,3 @@ export function mapVerificationToken(row: any) {
     timeOfCreation: row.timeOfCreation,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

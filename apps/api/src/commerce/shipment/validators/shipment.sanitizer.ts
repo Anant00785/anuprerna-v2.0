@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ShipmentInput } from "../dto/shipment.dto.js";
 
 function escapeHtml(str: string): string {
@@ -16,5 +15,3 @@ export function sanitizeShipment(input: ShipmentInput): ShipmentInput {
     name: input.name ? escapeHtml(input.name.trim()) : input.name,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

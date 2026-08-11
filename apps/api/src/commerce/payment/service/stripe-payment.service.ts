@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { Injectable, Inject } from "@nestjs/common";
-import { ActionCode } from "../../common/errors/action-code.js";
+import { ActionCode } from "../../../common/errors/action-code.js";
 import { StripeTransactionRepository } from "../repository/payment.repository.js";
 import { StripePaymentOrderInput } from "../dto/payment.dto.js";
 import { TransactionStatus, TransactionFailureCode } from "../types/payment.types.js";
@@ -120,4 +119,3 @@ export class StripePaymentService {
         return this.repository.findById(id);
     }
 }
-// @ts-nocheck

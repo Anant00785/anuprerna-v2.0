@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { Injectable, Inject } from "@nestjs/common";
-import { ActionCode } from "../../common/errors/action-code.js";
+import { ActionCode, type ActionCodeValue } from "../../../common/errors/action-code.js";
 import { RazorpayTransactionRepository } from "../repository/payment.repository.js";
 import { RazorpayPaymentInput, RazorpayPaymentSuccessInput, RazorpayPaymentFailureInput, RazorpayPaymentUpdateInput } from "../dto/payment.dto.js";
 import { TransactionStatus, TransactionFailureCode } from "../types/payment.types.js";
@@ -99,7 +98,7 @@ export class RazorpayPaymentService {
         transaction.failedErrorMessage = "Payment Failure";
 
         const transactionOpCode = await this.repository.update(transaction.id, transaction);
-        let orderOpCode = ActionCode.UPDATE_SUCCESS;
+        let orderOpCode: ActionCodeValue = ActionCode.UPDATE_SUCCESS;
 
         if (transaction.paymentType === "advance") {
             orderOpCode = await this.orderService.updateOrderStatusToFailed(request.loomOrderId, 3) ? ActionCode.UPDATE_SUCCESS : ActionCode.UPDATE_FAILURE;
@@ -156,4 +155,3 @@ export class RazorpayPaymentService {
         return this.repository.findById(id);
     }
 }
-// @ts-nocheck

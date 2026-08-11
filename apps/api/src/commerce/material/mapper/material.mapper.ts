@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { MaterialOutput } from '../types/material.types.js';
 
 export function mapMaterialEntityToOutput(entity: any): MaterialOutput {
@@ -8,5 +7,3 @@ export function mapMaterialEntityToOutput(entity: any): MaterialOutput {
     timeOfCreation: entity.timeOfCreation,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

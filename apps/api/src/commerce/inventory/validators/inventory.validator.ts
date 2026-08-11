@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { WarehouseInput, InventoryAdjustmentReasonInput, InventoryAdjustmentInput, InventoryRestockRequestInput, UpdateRestockRequestQuantityInput, UpdateRestockRequestStatusInput } from '../dto/inventory.dto.js';
 
 export function validateWarehouse(input: WarehouseInput): string | null {
@@ -37,5 +36,3 @@ export function validateUpdateRestockRequestStatus(input: UpdateRestockRequestSt
   if (!input.status) return 'Status is required.';
   return null;
 }
-// @ts-nocheck
-// @ts-nocheck

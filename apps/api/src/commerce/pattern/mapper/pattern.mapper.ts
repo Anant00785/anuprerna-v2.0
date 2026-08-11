@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { PatternOutput } from '../types/pattern.types.js';
 
 export function mapPatternEntityToOutput(entity: any): PatternOutput {
@@ -8,5 +7,3 @@ export function mapPatternEntityToOutput(entity: any): PatternOutput {
     timeOfCreation: entity.timeOfCreation,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

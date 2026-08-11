@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CreateSkillDto, UpdateSkillDto } from '../types/skill.types.js';
 
 export function validateCreateSkill(dto: CreateSkillDto): string[] {
@@ -12,5 +11,3 @@ export function validateUpdateSkill(dto: UpdateSkillDto): string[] {
   if (!dto.id || typeof dto.id !== 'string') errors.push('Id is required and must be a string');
   return errors;
 }
-// @ts-nocheck
-// @ts-nocheck

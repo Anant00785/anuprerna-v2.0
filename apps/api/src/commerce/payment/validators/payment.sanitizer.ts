@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
     RazorpayPaymentInput,
     RazorpayPaymentSuccessInput,
@@ -61,5 +60,3 @@ export function sanitizeStripePaymentOrderInput(input: StripePaymentOrderInput):
         customerShippingCountryCode: escapeHtml(input.customerShippingCountryCode.trim()),
     };
 }
-// @ts-nocheck
-// @ts-nocheck

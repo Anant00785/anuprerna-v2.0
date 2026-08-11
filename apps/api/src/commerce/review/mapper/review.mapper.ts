@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * migrated/review/mapper/review.mapper.ts
  */
@@ -16,5 +15,3 @@ export function mapReviewRowToData(row: any): ReviewData {
     createdAt: row.createdAt ? new Date(row.createdAt).getTime() : Date.now(),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

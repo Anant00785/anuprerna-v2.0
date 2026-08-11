@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { FaqInput, FaqQuestionInput } from "../dto/faq.dto.js";
 
 function escapeHtml(str: string): string {
@@ -28,5 +27,3 @@ export function sanitizeFaq(input: FaqInput): FaqInput {
             : []
     };
 }
-// @ts-nocheck
-// @ts-nocheck

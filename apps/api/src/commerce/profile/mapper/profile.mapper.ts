@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function mapSizeProfile(row: any): any {
   if (!row) return null;
   return {
@@ -77,5 +76,3 @@ export function mapTenantProfile(row: any): any {
     phone: row.phone,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

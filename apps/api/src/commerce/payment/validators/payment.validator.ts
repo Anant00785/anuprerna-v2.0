@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
     RazorpayPaymentInput,
     RazorpayPaymentSuccessInput,
@@ -43,5 +42,3 @@ export function validateStripePaymentOrderInput(input: StripePaymentOrderInput):
     if (!input.totalAmount || input.totalAmount <= 0n) return "Total amount is required and must be positive.";
     return null;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ShipmentInput } from "../dto/shipment.dto.js";
 
 /**
@@ -37,5 +36,3 @@ export function validateShipment(input: ShipmentInput): string | null {
 
   return null;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const ORDER_SERVICE = Symbol("ORDER_SERVICE");
 
 export interface OrderServicePort {
@@ -30,5 +29,3 @@ export const CART_SERVICE = Symbol("CART_SERVICE");
 export interface CartServicePort {
     deleteAllCartItem(tenant: any): Promise<void>;
 }
-// @ts-nocheck
-// @ts-nocheck

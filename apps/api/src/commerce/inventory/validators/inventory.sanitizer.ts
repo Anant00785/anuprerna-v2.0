@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { WarehouseInput, InventoryAdjustmentReasonInput, InventoryAdjustmentInput, InventoryRestockRequestInput } from '../dto/inventory.dto.js';
 
 function escapeHtml(str: string): string {
@@ -40,5 +39,3 @@ export function sanitizeInventoryRestockRequest(input: InventoryRestockRequestIn
     productGroup: escapeHtml(input.productGroup.trim()),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

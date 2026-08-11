@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   AddSizeProfileInput,
   UpdateSizeProfileInput,
@@ -45,5 +44,3 @@ export function validateUpdateMadeToOrderProfile(input: UpdateMadeToOrderProfile
 export function validateUpdateCustomerProfile(input: UpdateCustomerProfileInput): string | null {
   return null;
 }
-// @ts-nocheck
-// @ts-nocheck
