@@ -16,13 +16,11 @@ export class CatalogItemController {
   constructor(private readonly catalogItemService: CatalogItemService) {}
 
   @Get("/get/catalog-item/:catalogItemId")
-  @RequireGate(GateCode.CODE_SU)
   async getCatalogItem(@Param('catalogItemId') id: string) {
     return keyedResponse("catalogItem", await this.catalogItemService.findById(BigInt(id)));
   }
 
   @Get("/get/catalog-item-list")
-  @RequireGate(GateCode.CODE_SU)
   async getCatalogItemList() {
     return keyedResponse("catalogItemList", await this.catalogItemService.findAll());
   }
