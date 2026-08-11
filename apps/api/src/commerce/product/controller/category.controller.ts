@@ -79,7 +79,6 @@ export class CategoryController {
 
   /** getCategoryList(request) */
   @Get("/get/category/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every category." })
   @ApiResponse({ status: 200, description: "Full category list." })
   async getCategoryList() {
@@ -89,7 +88,6 @@ export class CategoryController {
 
   /** getCategory(request, categoryId) */
   @Get("/get/category/:categoryId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single category by id." })
   @ApiResponse({ status: 200, description: "Category found." })
   async getCategory(@Param("categoryId") categoryId: string) {

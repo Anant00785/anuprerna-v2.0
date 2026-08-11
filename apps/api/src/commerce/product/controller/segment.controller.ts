@@ -55,7 +55,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveSegmentList() */
   @Get("/get/segment/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every segment." })
   @ApiResponse({ status: 200, description: "Full segment list." })
   async getSegmentList() {
@@ -65,7 +64,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveSegment(Long id) — throws if not found. */
   @Get("/get/segment/:segmentId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single segment by id." })
   @ApiResponse({ status: 200, description: "Segment found." })
   @ApiResponse({ status: 404, description: "Segment not found." })
@@ -77,7 +75,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveSegmentById(Long id) — plain lookup, no throw. */
   @Get("/get/segment/by-id/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single segment by id (returns null if not found)." })
   @ApiResponse({ status: 200, description: "Segment or null." })
   async getSegmentById(@Param("id") id: string) {
