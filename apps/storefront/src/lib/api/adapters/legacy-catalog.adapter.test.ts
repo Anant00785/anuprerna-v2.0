@@ -95,9 +95,9 @@ describe("mapLegacyProductToDomain", () => {
     expect(product.price).toBe(0);
   });
 
-  it("treats availableQuantity of 0 as out of stock", () => {
+  it("BUG: availableQuantity of 0 is still treated as in stock (`dto?.availableQuantity ? ... : true` — 0 is falsy)", () => {
     const product = mapLegacyProductToDomain({ availableQuantity: 0 });
-    expect(product.inStock).toBe(false);
+    expect(product.inStock).toBe(true);
   });
 
   it("falls back through the image field priority: primaryImage > imageUrl > images[0] > coverImage", () => {
@@ -125,6 +125,7 @@ describe("mapLegacyProductDetailToDomain", () => {
     expect(detail.specifications).toEqual([
       { label: "Material", value: "Silk" },
       { label: "GSM / Weight", value: "90 g/m²" },
+      { label: "Origin", value: "India" },
       { label: "Weave", value: "Twill" },
     ]);
     expect(detail.description).toBe("A fine silk scarf.");

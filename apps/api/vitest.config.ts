@@ -16,8 +16,9 @@ export default defineConfig({
       // ~470 files are a ported Java transliteration; a whole-app threshold
       // would be uselessly low.
       include: ["src/commerce/**/validators/**", "src/commerce/**/mapper/**", "src/common/**"],
-      // Raised to (actual - 2%) once the suites land.
-      thresholds: { lines: 0, functions: 0, branches: 0, statements: 0 },
+      // Ratchet: set to (actual - 2%) on 2026-08-12. Raise when you improve
+      // coverage; never lower one to make a build pass.
+      thresholds: { lines: 33, functions: 91, branches: 89, statements: 33 },
     },
   },
 });

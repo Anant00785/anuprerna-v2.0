@@ -18,6 +18,84 @@ Related docs, not duplicated here: `docs/ARCHITECTURE.md`, `docs/DATA-FLOW.md`,
 | Status | Open. This is the headline framing for the whole document |
 | Redo when | `apps/api` is cut over for even one route in production — re-audit which of the items below actually matter under load |
 
+## Bugs the test programme found in code serving live customers
+
+Unlike everything under `apps/api`, these are in the storefront and CMS, which **do** serve real
+traffic today. Each is pinned by a test asserting current behaviour; none was fixed, because changing
+customer-visible behaviour is a deliberate decision, not a side effect of writing tests.
+
+| # | Bug | Evidence | Impact |
+|---|---|---|---|
+| 1 | **Customers are overcharged for delivery.** `dto.deliveryCharge \|\| (subtotal > 2000 ? 0 : 150)` treats an explicit `deliveryCharge: 0` from the backend as falsy and replaces it with the flat ₹150 fallback. | `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.ts:40` | When the backend grants free shipping, the customer is billed ₹150 anyway. Money, and directly customer-facing. |
+| 2 | **Out-of-stock products show as in stock.** `dto?.availableQuantity ? dto.availableQuantity > 0 : true` — `availableQuantity: 0` is falsy, so it takes the `true` branch. | `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.ts:62` | Zero-stock items are purchasable. Oversells. |
+| 3 | **Profile repository returns the envelope, not the array.** `getAddressList`/`getOrderList` are typed `Address[]`/`Order[]` but never unwrap the `{success, message, addressList: [...]}` envelope the way the cart and catalog repositories do. | `apps/storefront/src/lib/api/repositories/profile.repository.ts` | Any caller doing `.map()` on the result throws. Masked today only because most profile routes are served by `dummy-data.ts` rather than this code. |
+| 4 | **CMS reports a failed save as successful.** `SettingsService.updateSettingsItem()` always resolves `true`, regardless of whether the POST succeeded. | `apps/cms/src/services/settings-service.ts` | An admin changes a setting, sees success, and it silently did not save. Data loss with a false confirmation. |
+| 5 | **CMS fabricates data on backend failure.** `SettingsService.getSettings()` swallows any error and returns hardcoded defaults (e.g. `DEFAULT_CURRENCY: 'INR'`). `logistic-service.ts` does the same across most methods, including `createShipment` returning a fake `{ success: true }` on a network failure. | `apps/cms/src/services/settings-service.ts`, `logistic-service.ts` | This is the exact "never fabricate data to fill a UI" rule from `apps/cms/CLAUDE.md`, violated inside the service layer. An operator cannot distinguish real state from a fallback. |
+| 6 | **Review image upload is likely broken.** `uploadReviewImage` sets `Content-Type: multipart/form-data` manually on a `FormData` body, so no `boundary` parameter is generated. | `apps/cms/src/services/review-service.ts` | Multipart parsing fails server-side. Reproduced in-test: the call hangs past 8s with the header override and completes in under 100ms without it. |
+| 7 | **`unwrapResponseData` picks arbitrarily when a response has multiple array keys** — first in `Object.keys()` order wins, with no name-based tie-break. | `apps/cms/src/lib/api-helper.ts` | Every one of the 96 CMS routes passes through this function. If the backend adds a second array field to any response, the wrong data starts flowing silently. |
+| 8 | **`hasValidJWT()` ignores expiry** — it only checks the string is non-empty. `isTokenExpired()` exists and is correct but has zero callers. | `apps/cms/src/lib/auth-service.ts` | An expired token reads as valid client-side. The backend is still the real authority, so this is a UX and trust-boundary issue rather than an access-control hole. |
+
+Cleared on inspection, worth recording as checked: logout **does** correctly clear all persisted auth
+state in both apps — all nine keys in the CMS (including the five obfuscated chunks) and both the
+`localStorage` entry and `jwt_token` cookie in the storefront. Tests now pin this.
+
+## The "116 controllers" number is real but badly misleading
+
+Found on 2026-08-12 while writing tests. Anyone quoting the controller count as a measure of migration
+progress — including earlier revisions of these docs — is overstating it. The honest breakdown:
+
+| | Count | What it is |
+|---|---|---|
+| Controller **files** carrying `@Controller` | 116 | Real, hand-ported from the Java source |
+| …of those, referenced by any `*.module.ts` | 100 | Actually reachable |
+| …orphaned, wired into nothing | **16** | Dead on arrival — see below |
+| **Additionally**: auto-generated generic CRUD controllers | **50** | Machine-produced from a name list, not ported logic |
+
+### The 50 generic controllers serve empty tables, not your data
+
+`apps/api/src/commerce/rest-api.module.ts:66-77` holds a flat list of 50 resource names
+(`"address", "artisan", "order", "payment", …`) and maps each through a `commerceController(resource)`
+factory that emits identical `GET / GET :id / POST / PATCH / DELETE` handlers.
+
+Each one delegates to `CommerceDataService`, which resolves its table as
+`commerce_<resource>` and, on first use, runs `CREATE TABLE IF NOT EXISTS` for a generic
+`(id, name, payload jsonb)` shape (`commerce-data.service.ts:20, 94`).
+
+**Only two resources are mapped to real domain tables** — `commerce-data.service.ts:117-121`
+special-cases `commerce_product` → `product` and `commerce_cart` → `cart_item`. Everything else falls
+through to the generic blob table.
+
+**There are zero `commerce_*` tables in the introspected production schema** (`grep -c 'pgTable("commerce_'`
+→ 0). So on deployment, 48 of these endpoints would create brand-new empty side tables and serve
+nothing from the real 116-table database. A caller hitting `GET /order` gets rows from
+`commerce_order`, not from `orders`.
+
+| Impact | These are placeholder scaffolding, not a migrated API. They should not be counted as migrated surface, and they must not be exposed publicly — they would silently accept and return arbitrary JSON alongside the real schema. |
+|---|---|
+| Status | Open. No production traffic reaches any of it today. |
+| Redo when | Each domain gets a real controller — delete its name from the `resources` list in the same change, or the generic route will shadow the real work. |
+
+### Orphaned rich controllers, with thin generic ones wired in their place
+
+The starkest case is `order/`. `order.module.ts` wires a 24-line generic
+`order/order.controller.ts` and an 11-line `order/order.service.ts` that extends `CommerceDataService`.
+Meanwhile the substantial port — `order/controller/order.controller.ts` plus its
+`service/`, `repository/`, `dto/` and `types/` siblings, and the `custom-order`,
+`order-fulfillment` and `order-feedback` controllers — is imported by nothing.
+
+`custom-order.controller.ts` additionally calls `OrderService` methods (`createCustomOrder`,
+`getCustomOrderById`) that exist on neither `OrderService` class, so it would fail at runtime if it
+were ever wired up.
+
+Consequences for the commerce migration checklist, all confirmed by grep rather than assumed:
+- **Order attribution (row C3)** — `promoteAdAttribution` does not exist anywhere in `apps/api`.
+  `clickId`/`utm*` appear only under `cart/`. The feature is unbuilt, not broken.
+- **Order-preview search (row C29)** — no `order-preview/` directory, no search endpoint.
+- **Custom-order validation (rows D3/D13)** — no `CustomOrderValidator` exists at all.
+
+> **Redo when:** any orphaned controller is wired up — re-check that its service methods exist first,
+> and remove the corresponding generic resource name so the two do not collide.
+
 ## Payment: the port dropped signature verification the legacy system performs
 
 Found on 2026-08-12 by the unit-test programme, before `apps/api` ever carried traffic. This is a

@@ -15,9 +15,9 @@ export default defineConfig({
       // Scoped to the layers this repo has chosen to protect. A whole-app
       // threshold would either be uselessly low or block unrelated work.
       include: ["src/lib/api-helper.ts", "src/lib/auth-service.ts", "src/services/**"],
-      // Raised to (actual - 2%) once the suites land; 0 until then so the
-      // gate exists from day one rather than being bolted on later.
-      thresholds: { lines: 0, functions: 0, branches: 0, statements: 0 },
+      // Ratchet: set to (actual - 2%) on 2026-08-12. Raise when you improve
+      // coverage; never lower one to make a build pass.
+      thresholds: { lines: 27, functions: 32, branches: 51, statements: 27 },
     },
   },
 });

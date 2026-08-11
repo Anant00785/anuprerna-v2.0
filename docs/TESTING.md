@@ -153,6 +153,39 @@ automatically as more tests land — the ratchet only ever tightens.
 
 ---
 
+# Current baseline (2026-08-12)
+
+| Package | Test files | Tests | Coverage (lines) | Threshold |
+|---|---|---|---|---|
+| `apps/api` | 46 | 279 | 35.5% | 33% |
+| `apps/storefront` | 13 | 126 | 82.0% | 80% |
+| `apps/cms` | 15 | 90 | 29.5% | 27% |
+| `packages/types` | 1 | 2 | — | — |
+| **Total** | **75** | **497** | | |
+
+Up from 5 files / 12 tests at the start of the day. Coverage is scoped in each `vitest.config.ts`
+to the layers listed there, not whole apps — `apps/api`'s 35.5% line coverage sits alongside 91%
+branch and 94% function coverage, because the include glob spans validator/mapper directories where
+some files are tested exhaustively and others are not yet touched.
+
+Thresholds are set at `(actual − 2%)`. They are a floor that ratchets upward, not a target.
+
+## What the suites found
+
+Writing these tests surfaced defects that no amount of reading had. They are catalogued in
+[`KNOWN-GAPS.md`](./KNOWN-GAPS.md), not repeated here, but the shape is worth knowing:
+
+- Payment signature verification present in the live Java backend and **absent from the port**.
+- Two money-affecting bugs in live storefront code (delivery charge, stock availability).
+- Services that fabricate success or data when the backend fails.
+- Roughly 50 auto-generated CRUD controllers serving generic tables that do not exist in the schema.
+
+None were fixed while testing. Every one is pinned by a test asserting current behaviour, written to
+fail the moment someone corrects it. That is deliberate: a test run should tell you when behaviour
+changes, and changing customer-visible behaviour is a decision, not a side effect.
+
+---
+
 # Writing tests here — the rules
 
 Binding on every agent and every contributor writing tests in this repo. The plan behind these rules,
