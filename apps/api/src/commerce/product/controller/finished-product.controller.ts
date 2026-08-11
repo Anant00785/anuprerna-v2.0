@@ -142,9 +142,9 @@ export class FinishedProductController {
   }
 
   /** FinishedProductDAOController#retrieveFinishedProductData(int page, int size) */
-  @Get("/get/table-explorer/data/finished-product")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Paginated table-explorer projection of finished products." })
+  @Get(["/get/table-explorer/data/finished-product", "/get/finished-preview-list"])
+  @RequireGate(GateCode.CODE_SUCU)
+  @ApiOperation({ summary: "Paginated projection of finished products." })
   @ApiResponse({ status: 200, description: "Page of finished product data." })
   async getFinishedProductData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);

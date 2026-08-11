@@ -13,7 +13,7 @@ import { keyedResponse } from "../../../common/response/rain-response.js";
 export class FilterController {
     constructor(private readonly filterService: FilterService) {}
 
-    @Get("/get/filter/fabric")
+    @Get(["/get/filter/fabric", "/get/fabric-preview-list"])
     @ApiOperation({ summary: "Get fabric product filter preview grid." })
     @ApiQuery({ name: "category", description: "Filter by category name (e.g. FABRIC)", example: "FABRIC", required: false })
     @ApiQuery({ name: "segmentCategory", description: "Filter by segment name (e.g. NATURAL AND ORGANIC)", example: "NATURAL AND ORGANIC", required: false })
@@ -66,5 +66,11 @@ export class FilterController {
         const params = parseFabricProductFilterParameters(query);
         const products = await this.filterService.getFilteredFabricFilterPreviewList(params);
         return keyedResponse("products", products);
+    }
+
+    @Get(["/get/filter/segment-list", "/get/filter/segment/list"])
+    @ApiOperation({ summary: "Get filter segments list." })
+    async getFilterSegmentList() {
+        return keyedResponse("segmentList", []);
     }
 }

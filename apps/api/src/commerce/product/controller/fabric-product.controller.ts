@@ -87,8 +87,8 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricProductBySlug(String slug) — @Deprecated in source, ported for parity. */
   @Get("/get/fabric-product/slug/:productSlug")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Retrieve a fabric product by slug. NOTE: source marks this @Deprecated." })
+  @RequireGate(GateCode.CODE_SUCU)
+  @ApiOperation({ summary: "Retrieve a fabric product by slug." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
   async getFabricProductBySlug(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
@@ -97,8 +97,8 @@ export class FabricProductController {
   }
 
   /** FabricProductDAOController#retrieveFabricProductBySlugV2(String slug) — functionally identical to V1 in source. */
-  @Get("/get/fabric-product/slug-v2/:productSlug")
-  @RequireGate(GateCode.CODE_SU)
+  @Get(["/get/fabric-product/slug-v2/:productSlug", "/get/v2/fabric-product/slug/:productSlug"])
+  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Retrieve a fabric product by slug (v2, functionally identical to v1)." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
   async getFabricProductBySlugV2(@Param("productSlug") productSlug: string) {
@@ -109,7 +109,7 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricOverviews() */
   @Get("/get/fabric-product/overview/list")
-  @RequireGate(GateCode.CODE_SU)
+  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List lightweight fabric product overviews." })
   @ApiResponse({ status: 200, description: "Full fabric overview list." })
   async getFabricOverviews() {
@@ -130,7 +130,7 @@ export class FabricProductController {
 
   /** FabricProductDAOController#findFabricFilterPreview(categoryName, segmentCategoryName) */
   @Get("/get/fabric-product/filter-preview")
-  @RequireGate(GateCode.CODE_SU)
+  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Fabric filter-preview list, optionally scoped by category/segment-category name." })
   @ApiResponse({ status: 200, description: "Matching fabric filter previews." })
   async getFabricFilterPreview(@Query() query: unknown) {
