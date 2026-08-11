@@ -117,7 +117,11 @@ export class RegisterRequestDto {
   userName?: string;
 
   @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
+  @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
   contactNumber?: string;
+
+  @ApiProperty({ example: "ROLE_CUSTOMER", required: false, description: "Optional role (e.g. ROLE_CUSTOMER, ROLE_SUPER_USER)." })
+  role?: string;
 }
 
 export interface RegisterRequest {
@@ -125,6 +129,7 @@ export interface RegisterRequest {
   password: string;
   userName?: string;
   contactNumber?: string;
+  role?: string;
 }
 
 export function parseRegisterRequest(body: unknown): RegisterRequest {
@@ -133,7 +138,8 @@ export function parseRegisterRequest(body: unknown): RegisterRequest {
   const password = requirePasswordShape(b.password);
   const userName = typeof b.userName === "string" ? b.userName : (typeof b.name === "string" ? b.name : email.split("@")[0]);
   const contactNumber = typeof b.contactNumber === "string" ? b.contactNumber : (typeof b.phone === "string" ? b.phone : "");
+  const role = typeof b.role === "string" ? b.role : undefined;
 
-  return { email, password, userName, contactNumber };
+  return { email, password, userName, contactNumber, role };
 }
 

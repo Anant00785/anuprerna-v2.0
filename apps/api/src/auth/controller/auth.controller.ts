@@ -110,7 +110,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: "Registration succeeded; JWT token returned." })
   @ApiResponse({ status: 400, description: "Email already registered or invalid inputs." })
   async registerUser(@Body() body: unknown) {
-    const { email, password, userName, contactNumber } = parseRegisterRequest(body);
+    const { email, password, userName, contactNumber, role } = parseRegisterRequest(body);
 
     const existing = await this.tenantLookup.findByEmail(email);
     if (existing) {
@@ -123,6 +123,7 @@ export class AuthController {
       hashedPassword,
       userName: userName || email.split("@")[0],
       contactNumber: contactNumber || "",
+      role,
     });
 
     const authenticatedTenant: AuthenticatedTenant = {

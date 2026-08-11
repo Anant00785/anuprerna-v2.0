@@ -155,6 +155,7 @@ export class TenantLookupRepository {
     hashedPassword: string;
     userName: string;
     contactNumber: string;
+    role?: string;
   }): Promise<TenantWithRoles> {
     const loomId = crypto.randomUUID();
     const now = Date.now();
@@ -181,11 +182,21 @@ export class TenantLookupRepository {
         .returning({ id: loomTenant.id });
 
       const newTenantId = insertedTenants[0].id;
+      const assignedRoles: any[] = ["ROLE_CUSTOMER"];
 
       await tx.insert(userRole).values({
         role: "ROLE_CUSTOMER",
         userId: newTenantId,
       });
+
+      if (data.role && data.role !== "ROLE_CUSTOMER") {
+        const customRole = data.role as any;
+        await tx.insert(userRole).values({
+          role: customRole,
+          userId: newTenantId,
+        });
+        assignedRoles.push(customRole);
+      }
 
       return {
         id: Number(newTenantId),
@@ -199,9 +210,8 @@ export class TenantLookupRepository {
         deleted: false,
         provider: "BASIC",
         lastAccessTime: now,
-        roles: ["ROLE_CUSTOMER" as UserRole],
+        roles: assignedRoles as UserRole[],
       };
     });
   }
 }
-
