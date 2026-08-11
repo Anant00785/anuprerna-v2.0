@@ -67,7 +67,7 @@ export class AuthService {
       const parts = token.split('.');
       if (parts.length !== 3) return false;
 
-      let base64Url = parts[1];
+      const base64Url = parts[1];
       let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       while (base64.length % 4 !== 0) {
         base64 += '=';

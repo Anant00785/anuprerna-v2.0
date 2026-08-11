@@ -131,7 +131,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     setApiError('');
 
     try {
-      let uploadedUrls: string[] = [];
+      const uploadedUrls: string[] = [];
 
       if (imageFiles.length > 0) {
         setUploadingImages(true);

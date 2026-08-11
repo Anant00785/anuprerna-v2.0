@@ -179,7 +179,7 @@ export default function ViewOrderFeedbackPage() {
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
-                    <XCircle className="w-4 h-4" /> No, couldn't find item
+                    <XCircle className="w-4 h-4" /> No, couldn&apos;t find item
                   </span>
                 )}
               </div>
@@ -191,7 +191,7 @@ export default function ViewOrderFeedbackPage() {
                     <span>{feedback.question2Negative || 'What were you looking for?'}</span>
                   </p>
                   <p className="text-xs text-amber-800 italic leading-relaxed pl-5">
-                    "{feedback.question2NegativeAnswer}"
+                    &quot;{feedback.question2NegativeAnswer}&quot;
                   </p>
                 </div>
               )}
@@ -208,7 +208,7 @@ export default function ViewOrderFeedbackPage() {
             </p>
             {feedback.question3Answer ? (
               <blockquote className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 italic leading-relaxed font-medium">
-                "{feedback.question3Answer}"
+                &quot;{feedback.question3Answer}&quot;
               </blockquote>
             ) : (
               <p className="text-xs text-slate-400 italic bg-slate-50 p-4 rounded-2xl border border-slate-100">
