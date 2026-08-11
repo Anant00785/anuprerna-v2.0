@@ -52,12 +52,14 @@
  * either.
  */
 import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiExcludeEndpoint, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiExcludeEndpoint, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProductService } from "../product/service/product.service.js";
 import { OptimisticLockError } from "../product/repository/product.repository.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
 import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
 import {
+  CreateProductDto,
+  UpdateProductDto,
   parseBackwardCompatibleLinkParam,
   parseCategoryNameParam,
   parseCreateProductRequest,
@@ -185,6 +187,7 @@ export class ProductController {
   /** ProductDAOController#retrieveProduct(Long id) */
   @Get("/get/product/:id")
   @ApiOperation({ summary: "Retrieve a single product by id." })
+  @ApiParam({ name: "id", description: "Product ID", example: 156298615, type: Number })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProduct(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
@@ -202,6 +205,7 @@ export class ProductController {
   @Post("/add/product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Create a new product." })
+  @ApiBody({ type: CreateProductDto })
   @ApiResponse({ status: 200, description: "Creation result (success flag reflects validation/insert outcome)." })
   async createProduct(@Body() body: unknown) {
     const input = parseCreateProductRequest(body);
@@ -219,6 +223,7 @@ export class ProductController {
   @Patch("/update/product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update an existing product." })
+  @ApiBody({ type: UpdateProductDto })
   @ApiResponse({ status: 200, description: "Update result (success flag reflects validation/update outcome)." })
   @ApiResponse({ status: 409, description: "Product was modified by another request." })
   async updateProduct(@Body() body: unknown) {
@@ -242,6 +247,7 @@ export class ProductController {
   @Delete("/delete/product/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Delete a product." })
+  @ApiParam({ name: "id", description: "Product ID to delete", example: 156298615, type: Number })
   @ApiResponse({ status: 200, description: "Deletion result." })
   async deleteProduct(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));

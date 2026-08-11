@@ -271,9 +271,36 @@ export class AddCartItemDto {
   unit!: Unit;
 }
 
-export class UpdateCartItemDto extends AddCartItemDto {
-  @ApiProperty({ example: 1, description: "Cart Item ID to update" })
+export class UpdateCartItemDto {
+  @ApiProperty({ example: 157423055, description: "Cart Item ID to update" })
   id!: number;
+
+  @ApiProperty({ example: 156298614, required: false, description: "Fabric product ID" })
+  fabricProductId?: number;
+
+  @ApiProperty({ example: null, required: false, description: "Finished product ID" })
+  finishedProductId?: number;
+
+  @ApiProperty({ example: null, required: false, description: "Selected fabric ID" })
+  selectedFabricId?: number;
+
+  @ApiProperty({ example: null, required: false, description: "Selected size option ID" })
+  selectedSizeOptionId?: number;
+
+  @ApiProperty({ example: "0", description: "Selected finish ID" })
+  selectedFinishId!: string;
+
+  @ApiProperty({ example: "fabric", description: "Product group ('fabric' or 'finished')" })
+  productGroup!: string;
+
+  @ApiProperty({ example: "MADE_TO_ORDER", description: "Order type ('IN_STOCK', 'MADE_TO_ORDER', 'PRE_ORDER')" })
+  orderType!: OrderType;
+
+  @ApiProperty({ example: 15, description: "Updated item quantity" })
+  quantity!: number;
+
+  @ApiProperty({ example: "METER", description: "Item unit ('METER', 'PIECE', 'YARD')" })
+  unit!: Unit;
 }
 
 export function parseUpdateCartItemRequest(body: unknown): UpdateCartItemRequest {

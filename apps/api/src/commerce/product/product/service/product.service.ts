@@ -318,7 +318,7 @@ export class ProductService {
       // ProductImageGallerySEO: filter deleted rows, persist the rest —
       // ProductPreview's own migration step, delegated via port.
       if (sanitized.imageGallerySEOList && sanitized.imageGallerySEOList.length > 0) {
-        const kept = sanitized.imageGallerySEOList.filter((row) => !row.deleted);
+        const kept = sanitized.imageGallerySEOList.filter((row: any) => !row.deleted);
         await this.imageGallerySeo.replaceForProduct(Number(inserted.id), kept);
       }
 

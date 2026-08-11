@@ -246,9 +246,7 @@ export function parseCreateProductRequest(body: unknown): CreateProductRequest {
   return parseProductInput(body);
 }
 
-export interface UpdateProductRequest extends ProductInput {
-  id: number; // required for update, unlike create
-}
+export type UpdateProductRequest = ProductInput & { id: number };
 
 export function parseUpdateProductRequest(body: unknown): UpdateProductRequest {
   const parsed = parseProductInput(body);
@@ -256,6 +254,51 @@ export function parseUpdateProductRequest(body: unknown): UpdateProductRequest {
     throw new BadRequestException("id is required to update a product.");
   }
   return parsed as UpdateProductRequest;
+}
+
+import { ApiProperty } from "@nestjs/swagger";
+
+export class CreateProductDto {
+  @ApiProperty({ example: "SAMPLE-SKU-101", description: "Product SKU" })
+  sku!: string;
+
+  @ApiProperty({ example: "Handloom Cotton Fabric", description: "Product name" })
+  name!: string;
+
+  @ApiProperty({ example: 450, description: "Product price" })
+  price!: number;
+
+  @ApiProperty({ example: "METER", description: "Product unit ('METER', 'PIECE', 'YARD')" })
+  unit!: Unit;
+
+  @ApiProperty({ example: 100, description: "Stock quantity" })
+  quantity!: number;
+
+  @ApiProperty({ example: 1, required: false, description: "Sub-category ID" })
+  subCategoryId?: number;
+
+  @ApiProperty({ example: "High quality handwoven cotton fabric.", description: "Product overview" })
+  productOverview!: string;
+
+  @ApiProperty({ example: "Hand wash gently in cold water.", description: "Product care instructions" })
+  productCare!: string;
+
+  @ApiProperty({ example: "0", description: "Material ID" })
+  materialId!: string;
+
+  @ApiProperty({ example: "0", description: "Color ID" })
+  colorId!: string;
+
+  @ApiProperty({ example: "fabric", description: "Product group ('fabric' or 'finished')" })
+  productGroup!: ProductGroup;
+
+  @ApiProperty({ example: "", description: "Product video URL" })
+  productVideo!: string;
+}
+
+export class UpdateProductDto extends CreateProductDto {
+  @ApiProperty({ example: 156298615, description: "Product ID to update" })
+  id!: number;
 }
 // @ts-nocheck
 // @ts-nocheck
