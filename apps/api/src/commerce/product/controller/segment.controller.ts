@@ -32,7 +32,7 @@
  */
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SegmentService } from "../segment/service/segment.service.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
 import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
@@ -86,6 +86,18 @@ export class SegmentController {
   @Post("/add/segment")
   @RequireGate(GateCode.CODE_SU)
   @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["name", "categoryId"],
+      properties: {
+        name: { type: "string", example: "NATURAL AND ORGANIC", description: "Segment Name" },
+        categoryId: { type: "number", example: 2558, description: "Parent Category ID" },
+        iconFile: { type: "string", format: "binary", description: "Icon image file" },
+        socialImageFile: { type: "string", format: "binary", description: "Social share image file" },
+      },
+    },
+  })
   @UseInterceptors(FileFieldsInterceptor([{ name: "iconFile", maxCount: 1 }, { name: "socialImageFile", maxCount: 1 }]))
   @ApiOperation({ summary: "Create a new segment under a category." })
   @ApiResponse({ status: 200, description: "Segment created." })
@@ -101,6 +113,18 @@ export class SegmentController {
   @Patch("/update/segment/:segmentId")
   @RequireGate(GateCode.CODE_SU)
   @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "NATURAL AND ORGANIC", description: "Segment Name" },
+        categoryId: { type: "number", example: 2558, description: "Parent Category ID" },
+        iconFile: { type: "string", format: "binary", description: "Icon image file" },
+        socialImageFile: { type: "string", format: "binary", description: "Social share image file" },
+      },
+    },
+  })
+  @ApiParam({ name: "segmentId", description: "Segment ID", example: 1, type: Number })
   @UseInterceptors(FileFieldsInterceptor([{ name: "iconFile", maxCount: 1 }, { name: "socialImageFile", maxCount: 1 }]))
   @ApiOperation({ summary: "Update an existing segment." })
   @ApiResponse({ status: 200, description: "Segment updated." })

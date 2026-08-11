@@ -42,13 +42,17 @@
  * #2) — the naming mismatch is preserved as-is, not "corrected" here.
  */
 import { Body, ConflictException, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FabricProductService } from "../fabric-product/service/fabric-product.service.js";
 import { OptimisticLockError } from "../fabric-product/repository/fabric-product.repository.js";
 import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
 import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
 import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
 import {
+  CreateFabricProductDto,
+  DisableProductDto,
+  UpdateFabricProductDto,
+  ZohoTriggerDto,
   parseCreateFabricProductRequest,
   parseFabricFilterPreviewFilters,
   parseFabricFilterPreviewIds,
@@ -172,6 +176,7 @@ export class FabricProductController {
   @Post("/add/fabric-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Create a new fabric product (and its underlying core product row)." })
+  @ApiBody({ type: CreateFabricProductDto })
   @ApiResponse({ status: 200, description: "Creation result (success flag reflects validation/insert outcome)." })
   async createFabricProduct(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const input = parseCreateFabricProductRequest(body);
@@ -190,6 +195,7 @@ export class FabricProductController {
   @Patch("/update/fabric-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update an existing fabric product." })
+  @ApiBody({ type: UpdateFabricProductDto })
   @ApiResponse({ status: 200, description: "Update result (success flag reflects validation/update outcome)." })
   @ApiResponse({ status: 409, description: "Fabric product was modified by another request." })
   async updateFabricProduct(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
@@ -217,6 +223,7 @@ export class FabricProductController {
   @Patch("/disable/fabric-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Enable/disable a fabric product and cascade to its Zoho relations." })
+  @ApiBody({ type: DisableProductDto })
   @ApiResponse({ status: 200, description: "Toggle result." })
   async disableFabricProduct(@Body() body: unknown) {
     const request = parseProductDisableRequest(body);
@@ -235,6 +242,7 @@ export class FabricProductController {
   @Post("/trigger/fabric-product/zoho-workflow")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Re-trigger the Zoho workflow for a fabric product." })
+  @ApiBody({ type: ZohoTriggerDto })
   @ApiResponse({ status: 200, description: "Trigger result." })
   async triggerZohoWorkflow(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const data = parseProductZohoTriggerData(body);

@@ -53,7 +53,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SubCategoryService } from "../sub-category/service/subCategory.service.js";
 import { OptimisticLockError } from "../sub-category/repository/subCategory.repository.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -137,6 +137,18 @@ export class SubCategoryController {
   @Post("/add/sub-category")
   @RequireGate(GateCode.CODE_SU)
   @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["name", "segmentId"],
+      properties: {
+        name: { type: "string", example: "Jamdani Handloom Cotton", description: "Sub-Category Name" },
+        segmentId: { type: "number", example: 1, description: "Parent Segment ID" },
+        iconFile: { type: "string", format: "binary", description: "Icon image file" },
+        socialImageFile: { type: "string", format: "binary", description: "Social share image file" },
+      },
+    },
+  })
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
   @ApiOperation({ summary: "Create a new sub-category under a segment." })
   @ApiResponse({ status: 200, description: "Sub-category created." })
@@ -160,6 +172,18 @@ export class SubCategoryController {
   @Patch("/update/sub-category/:subCategoryId")
   @RequireGate(GateCode.CODE_SU)
   @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "Jamdani Handloom Cotton (Updated)", description: "Sub-Category Name" },
+        segmentId: { type: "number", example: 1, description: "Parent Segment ID" },
+        iconFile: { type: "string", format: "binary", description: "Icon image file" },
+        socialImageFile: { type: "string", format: "binary", description: "Social share image file" },
+      },
+    },
+  })
+  @ApiParam({ name: "subCategoryId", description: "SubCategory ID", example: 11026725, type: Number })
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
   @ApiOperation({ summary: "Update an existing sub-category." })
   @ApiResponse({ status: 200, description: "Sub-category updated." })

@@ -1,43 +1,16 @@
 // @ts-nocheck
-/**
- * apps/api/src/product/finished-product/controller/finished-product.controller.ts
- *
- * Direct port of com.bloomscorp.loom.product.product.controller.FinishedProductController's
- * business logic (see finished-product.service.ts's own header note:
- * controller generation deferred, cross-module deps ported as Ports).
- * Route paths follow the "/verb/resource[/:id]" convention already
- * source-established elsewhere in this project — NOT SOURCE-VERIFIED
- * against a live RequestMapper.class dump.
- *
- * No FinishedProductMessages export exists — response message strings
- * below are inline literals, flagged NOT source-verified, same caveat as
- * product.controller.ts / fabric-product.controller.ts.
- *
- * Route map (inferred — see note above):
- *   GET    /get/finished-product/:productId                       CODE_SU
- *   GET    /get/finished-product/slug/:productSlug                 CODE_SU
- *   POST   /add/finished-product                                    CODE_SU
- *   PATCH  /update/finished-product                                  CODE_SU
- *   PATCH  /disable/finished-product                                  CODE_SU
- *   POST   /trigger/finished-product/zoho-workflow                     CODE_SU
- *   GET    /get/table-explorer/data/finished-product                    CODE_SU
- *
- * createFinishedProduct/updateFinishedProduct/triggerZohoWorkflow take the
- * calling tenant's id in source (LoomTenant tenant); resolved here via
- * @CurrentTenant(), same as fabric-product.controller.ts.
- *
- * updateFinishedProduct/disableFinishedProduct: FinishedProductService lets
- * an uncaught OptimisticLockError propagate — caught here and surfaced as
- * 409 Conflict, same convention as fabric-product.controller.ts.
- */
 import { Body, ConflictException, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FinishedProductService } from "../finished-product/service/finished-product.service.js";
 import { OptimisticLockError } from "../finished-product/repository/finished-product.repository.js";
 import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
 import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
 import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
 import {
+  CreateFinishedProductDto,
+  ProductDisableRequestDto,
+  ProductZohoTriggerDto,
+  UpdateFinishedProductDto,
   parseCreateFinishedProductRequest,
   parseProductDisableRequest,
   parseProductIdParam,
@@ -59,6 +32,7 @@ export class FinishedProductController {
   @Get("/get/finished-product/:productId")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a fully-enriched finished product by id." })
+  @ApiParam({ name: "productId", description: "Finished Product ID", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Finished product or null." })
   async getFinishedProduct(@Param("productId") productId: string) {
     const id = BigInt(parseProductIdParam(productId));
@@ -66,10 +40,11 @@ export class FinishedProductController {
     return keyedResponse("finishedProduct", finishedProduct);
   }
 
-  /** FinishedProductDAOController#retrieveFinishedProductBySlug(String slug) */
+  /** FinishedProductDAOController#retrieveFinishedProductBySlug(String productSlug) */
   @Get("/get/finished-product/slug/:productSlug")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Retrieve a fully-enriched finished product by slug." })
+  @ApiOperation({ summary: "Retrieve a finished product by its slug." })
+  @ApiParam({ name: "productSlug", description: "Product Slug", example: "silk-scarf-01", type: String })
   @ApiResponse({ status: 200, description: "Finished product or null." })
   async getFinishedProductBySlug(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
@@ -85,6 +60,7 @@ export class FinishedProductController {
   @Post("/add/finished-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Create a new finished product (and its underlying core product row)." })
+  @ApiBody({ type: CreateFinishedProductDto })
   @ApiResponse({ status: 200, description: "Creation result (success flag reflects insert outcome)." })
   async createFinishedProduct(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const input = parseCreateFinishedProductRequest(body);
@@ -103,6 +79,7 @@ export class FinishedProductController {
   @Patch("/update/finished-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update an existing finished product." })
+  @ApiBody({ type: UpdateFinishedProductDto })
   @ApiResponse({ status: 200, description: "Update result." })
   @ApiResponse({ status: 409, description: "Finished product was modified by another request." })
   async updateFinishedProduct(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
@@ -132,6 +109,7 @@ export class FinishedProductController {
   @Patch("/disable/finished-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Enable/disable a finished product and cascade to its Zoho relations." })
+  @ApiBody({ type: ProductDisableRequestDto })
   @ApiResponse({ status: 200, description: "Toggle result." })
   @ApiResponse({ status: 409, description: "Finished product was modified by another request." })
   async disableFinishedProduct(@Body() body: unknown) {
@@ -155,6 +133,7 @@ export class FinishedProductController {
   @Post("/trigger/finished-product/zoho-workflow")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Re-trigger the Zoho workflow for a finished product." })
+  @ApiBody({ type: ProductZohoTriggerDto })
   @ApiResponse({ status: 200, description: "Trigger result." })
   async triggerZohoWorkflow(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const data = parseProductZohoTriggerData(body);
@@ -173,4 +152,3 @@ export class FinishedProductController {
     return keyedResponse("finishedProductDataList", data);
   }
 }
-// @ts-nocheck

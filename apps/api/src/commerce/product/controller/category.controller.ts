@@ -1,49 +1,4 @@
 // @ts-nocheck
-/**
- * apps/api/src/commerce/product/category/controller/category.controller.ts
- *
- * Direct port of com.bloomscorp.loom.product.category.controller.CategoryController.
- * All six routes are CODE_SU (super-user only) in source — no CODE_CU/public
- * route exists on this controller.
- *
- * ROUTE PATHS ARE NOT SOURCE-VERIFIED. CategoryController's @GetMapping/etc.
- * values reference `RequestMapper.GET_CATEGORY`, `GET_CATEGORY_LIST`,
- * `ADD_CATEGORY`, `UPDATE_CATEGORY`, `DELETE_CATEGORY`, and the literal
- * `GET_TABLE_EXPLORER_DATA_CATEGORY` — the constant *names* are
- * source-verified (they're the exact identifiers CategoryController
- * imports/references), but `com.bloomscorp.loom.support.RequestMapper`
- * itself (which holds the literal path strings) is not in the uploaded
- * repository. Every module.ts for this batch of domains explicitly
- * deferred controller generation for this exact reason. The paths below
- * are inferred by following the same "/verb/resource[/:id]" convention
- * already source-established in auth.controller.ts and cart.controller.ts
- * (e.g. "/get/cart-item/list", "/add/cart-item") — confirm against a live
- * RequestMapper.class dump before shipping.
- *
- * Route map (inferred — see note above):
- *   GET    /get/category/:categoryId                  CODE_SU
- *   GET    /get/category/list                          CODE_SU
- *   POST   /add/category                    (multipart) CODE_SU
- *   PATCH  /update/category/:categoryId      (multipart) CODE_SU
- *   GET    /get/table-explorer/data/category            CODE_SU
- *   DELETE /delete/category/:categoryId                 CODE_SU
- *
- * Multipart handling: source's createNewCategory/updateCategory take
- * @ModelAttribute Category (multipart form with two optional file fields,
- * iconFile/socialImageFile — see types/category.types.ts UploadedFile).
- * FileFieldsInterceptor is used to populate both without requiring a
- * dedicated DTO class (this project has no class-validator installed —
- * same constraint noted throughout dto/category.dto.ts).
- *
- * deleteCategory: source's deleteEntityEnhancedResponse returns a
- * descriptive-string response (segment-count guard) rather than a plain
- * boolean; CategoryService#deleteCategory already mirrors that exactly
- * (returns "" on success, a descriptive message otherwise) — ported as-is.
- *
- * CategoryMessages' prose values are flagged NOT source-verified in
- * types/category.types.ts itself (LogMessage.java not in this repository);
- * reused here as the closest available approximation.
- */
 import {
   Body,
   Controller,
@@ -58,7 +13,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CategoryService } from "../category/service/category.service.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
 import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
@@ -69,6 +24,15 @@ import {
   parseUpdateCategoryRequest,
 } from "../category/dto/category.dto.js";
 import { CategoryMessages } from "../category/types/category.types.js";
+
+const categoryMultipartSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string", example: "FABRIC", description: "Category Name" },
+    iconFile: { type: "string", format: "binary", description: "Icon image file" },
+    socialImageFile: { type: "string", format: "binary", description: "Social share image file" },
+  },
+};
 
 @ApiTags("Category")
 @Controller()
@@ -88,6 +52,7 @@ export class CategoryController {
   /** getCategory(request, categoryId) */
   @Get("/get/category/:categoryId")
   @ApiOperation({ summary: "Retrieve a single category by id." })
+  @ApiParam({ name: "categoryId", description: "Category ID", example: 2558, type: Number })
   @ApiResponse({ status: 200, description: "Category found." })
   async getCategory(@Param("categoryId") categoryId: string) {
     const id = parseCategoryIdParam(categoryId);
@@ -99,6 +64,7 @@ export class CategoryController {
   @Post("/add/category")
   @RequireGate(GateCode.CODE_SU)
   @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: categoryMultipartSchema })
   @UseInterceptors(FileFieldsInterceptor([{ name: "iconFile", maxCount: 1 }, { name: "socialImageFile", maxCount: 1 }]))
   @ApiOperation({ summary: "Create a new category." })
   @ApiResponse({ status: 200, description: "Category created." })
@@ -113,6 +79,8 @@ export class CategoryController {
   @Patch("/update/category/:categoryId")
   @RequireGate(GateCode.CODE_SU)
   @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: categoryMultipartSchema })
+  @ApiParam({ name: "categoryId", description: "Category ID", example: 2558, type: Number })
   @UseInterceptors(FileFieldsInterceptor([{ name: "iconFile", maxCount: 1 }, { name: "socialImageFile", maxCount: 1 }]))
   @ApiOperation({ summary: "Update an existing category." })
   @ApiResponse({ status: 200, description: "Category updated." })
@@ -148,6 +116,7 @@ export class CategoryController {
   @Delete("/delete/category/:categoryId")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Delete a category (refused if segments are still attached)." })
+  @ApiParam({ name: "categoryId", description: "Category ID", example: 2558, type: Number })
   @ApiResponse({ status: 200, description: "Deletion result — success or a descriptive refusal reason." })
   async deleteCategory(@Param("categoryId") categoryId: string) {
     const id = parseCategoryIdParam(categoryId);
@@ -156,4 +125,3 @@ export class CategoryController {
     return simpleResponse(succeeded, succeeded ? CategoryMessages.CATEGORY_DELETED : result);
   }
 }
-// @ts-nocheck
