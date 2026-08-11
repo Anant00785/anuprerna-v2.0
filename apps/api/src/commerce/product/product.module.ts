@@ -1,15 +1,10 @@
-// @ts-nocheck
-/**
- * apps/api/src/commerce/product/product.module.ts
- *
- * Top-level Product module that imports all product domain feature modules.
- */
 import { Module } from "@nestjs/common";
 import { ProductCoreModule } from "./product/product.module.js";
 import { FabricProductModule } from "./fabric-product/fabric-product.module.js";
 import { FinishedProductModule } from "./finished-product/finished-product.module.js";
 import { CategoryModule } from "./category/category.module.js";
 import { SegmentModule } from "./segment/segment.module.js";
+import { SubCategoryModule } from "./sub-category/subcategory.module.js";
 
 @Module({
   imports: [
@@ -18,6 +13,7 @@ import { SegmentModule } from "./segment/segment.module.js";
     FinishedProductModule,
     CategoryModule,
     SegmentModule,
+    SubCategoryModule,
   ],
   exports: [
     ProductCoreModule,
@@ -25,6 +21,7 @@ import { SegmentModule } from "./segment/segment.module.js";
     FinishedProductModule,
     CategoryModule,
     SegmentModule,
+    SubCategoryModule,
   ],
 })
 export class ProductModule {}

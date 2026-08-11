@@ -53,7 +53,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SubCategoryService } from "../sub-category/service/subCategory.service.js";
 import { OptimisticLockError } from "../sub-category/repository/subCategory.repository.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -84,31 +84,10 @@ function mergeFilesIntoBody(body: unknown, files: unknown): unknown {
 }
 
 @ApiTags("SubCategory")
-@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class SubCategoryController {
   constructor(private readonly subCategoryService: SubCategoryService) {}
-
-  /** SubCategoryDAOController#retrieveSubCategory(Long id) */
-  @Get("/get/sub-category/:subCategoryId")
-  @ApiOperation({ summary: "Retrieve a single sub-category by id." })
-  @ApiResponse({ status: 200, description: "Sub-category or null." })
-  async getSubCategory(@Param("subCategoryId") subCategoryId: string) {
-    const id = BigInt(parseSubCategoryIdParam(subCategoryId));
-    const subCategory = await this.subCategoryService.retrieveSubCategory(id);
-    return keyedResponse("subCategory", subCategory);
-  }
-
-  /** SubCategoryDAOController#retrieveSubCategoryWithRelatedEntities(Long id) */
-  @Get("/get/sub-category/related/:subCategoryId")
-  @ApiOperation({ summary: "Retrieve a single sub-category by id, with related entities resolved." })
-  @ApiResponse({ status: 200, description: "Sub-category or null." })
-  async getSubCategoryWithRelatedEntities(@Param("subCategoryId") subCategoryId: string) {
-    const id = BigInt(parseSubCategoryIdParam(subCategoryId));
-    const subCategory = await this.subCategoryService.retrieveSubCategoryWithRelatedEntities(id);
-    return keyedResponse("subCategory", subCategory);
-  }
 
   /** SubCategoryPreviewDAOController#retrieveSubCategoryList() */
   @Get("/get/sub-category/list")
@@ -117,6 +96,28 @@ export class SubCategoryController {
   async getSubCategoryList() {
     const subCategories = await this.subCategoryService.retrieveSubCategoryList();
     return keyedResponse("subCategoryList", subCategories);
+  }
+
+  /** SubCategoryDAOController#retrieveSubCategoryWithRelatedEntities(Long id) */
+  @Get("/get/sub-category/related/:subCategoryId")
+  @ApiOperation({ summary: "Retrieve a single sub-category by id, with related entities resolved." })
+  @ApiParam({ name: "subCategoryId", description: "SubCategory ID", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Sub-category or null." })
+  async getSubCategoryWithRelatedEntities(@Param("subCategoryId") subCategoryId: string) {
+    const id = BigInt(parseSubCategoryIdParam(subCategoryId));
+    const subCategory = await this.subCategoryService.retrieveSubCategoryWithRelatedEntities(id);
+    return keyedResponse("subCategory", subCategory);
+  }
+
+  /** SubCategoryDAOController#retrieveSubCategory(Long id) */
+  @Get("/get/sub-category/:subCategoryId")
+  @ApiOperation({ summary: "Retrieve a single sub-category by id." })
+  @ApiParam({ name: "subCategoryId", description: "SubCategory ID", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Sub-category or null." })
+  async getSubCategory(@Param("subCategoryId") subCategoryId: string) {
+    const id = BigInt(parseSubCategoryIdParam(subCategoryId));
+    const subCategory = await this.subCategoryService.retrieveSubCategory(id);
+    return keyedResponse("subCategory", subCategory);
   }
 
   /** retrieveFuzzySubCategoryPreviewsFromString(String text[, int limit]) */
