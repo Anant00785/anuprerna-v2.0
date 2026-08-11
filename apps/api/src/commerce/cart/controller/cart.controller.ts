@@ -24,8 +24,7 @@
  * (CODE_SU or CODE_CU), so every route is protected; there is no public
  * Cart endpoint to exclude it from.
  */
-import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CartService } from "../service/cart.service.js";
 import { OptimisticLockError } from "../repository/cart.repository.js";
 import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -70,6 +69,7 @@ export class CartController {
   @Get("/get/table-explorer/data/cart-item/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer: fetch a single cart item by id (admin)." })
+  @ApiParam({ name: "id", description: "Cart item ID", example: 157423053, type: Number })
   @ApiResponse({ status: 200, description: "The cart item, or null if not found." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
@@ -95,6 +95,7 @@ export class CartController {
   @Get("/get/tenant/cart-item/list/:uid")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List a specific tenant's cart items by uid (admin)." })
+  @ApiParam({ name: "uid", description: "Tenant User UID", example: "e4d9ea92-78f6-4ce9-9d99-ce843f7e2fe4", type: String })
   @ApiResponse({ status: 200, description: "The tenant's cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
@@ -176,6 +177,7 @@ export class CartController {
   @Delete("/delete/cart-item/:cartItemId")
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Delete a single cart item by id." })
+  @ApiParam({ name: "cartItemId", description: "ID of the cart item to delete", example: 157423053, type: Number })
   @ApiResponse({ status: 200, description: "Delete result (see response body's success flag)." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
