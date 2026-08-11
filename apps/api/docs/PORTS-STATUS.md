@@ -1,5 +1,12 @@
 # TODO — Remaining Integration Blockers
 
+> **Moved from the repo root on 2026-08-12** (was `TODO.md`). Records the cross-domain ports still
+> bound to `null`-returning dummies, and the files the migration upload never delivered. Items here are
+> real, actionable debt — cross-referenced from `docs/MODULE-MAP.md` and `docs/KNOWN-GAPS.md`.
+> Note the state has moved on since it was written: the missing `SubCategory` module has since been
+> added, so verify each item against the code before acting on it.
+
+
 Generated after the safe cart-wiring pass on 2026-08-02. Everything below is a
 **missing file**, not a design decision — nothing here should be regenerated
 from the Java source without your sign-off, per the migration rules.

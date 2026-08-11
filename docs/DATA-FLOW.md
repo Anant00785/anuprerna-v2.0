@@ -59,7 +59,7 @@ states this split. An agent that only reads `client.ts` will miss path B entirel
 - `apps/storefront/src/app/api/backend/[...path]/route.ts` — generic proxy all Path-A traffic
   passes through in the browser. Line 4-5 hardcodes a production bearer-style secret:
   ```
-  const LOOM_TABLE_EXPLORER_TOKEN = "OynUbIy8QLa3OzJOwrzKxYKBrvk468dD8obJVRg1U7eI8RdInEP6X4gbtACXiqIZ..."
+  const LOOM_TABLE_EXPLORER_TOKEN = "<REDACTED - see apps/storefront/.env.example>..."
   ```
   set on outgoing requests at `:23` (`X-Loom-Table-Explorer-Token`). `:18-20` spoof
   `origin`/`referer` to `http://localhost:4200` to satisfy the legacy backend's CORS filter.

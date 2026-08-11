@@ -1,5 +1,10 @@
 # Migration Checkpoint
 
+> **Moved from the repo root on 2026-08-12.** A point-in-time record of one cart-wiring session
+> during the Java-to-TypeScript migration. Historical: keep for the reasoning, do not treat its
+> status claims as current. See `docs/MODULE-MAP.md` for the verified present state.
+
+
 > No root-level `MIGRATION_CHECKPOINT.md` existed in the uploaded workspace
 > (`auth.zip`, `cart.zip`, `common.zip`, `database.zip`, `package.zip`,
 > `product.zip`, `product_zip.zip`) prior to this session. This file is
