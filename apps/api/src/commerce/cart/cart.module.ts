@@ -33,20 +33,20 @@ const emailEncoderDummy: EmailEncoderPort = {
 };
 
 const fabricPreviewDummy: FabricPreviewPort = {
-  retrieveEntity: async () => null,
-  retrieveFabricProductByProductId: async () => null,
+  retrieveEntity: async (id: number) => ({ id } as any),
+  retrieveFabricProductByProductId: async (id: number) => ({ id } as any),
 };
 
 const finishedPreviewDummy: FinishedPreviewPort = {
-  retrieveEntity: async () => null,
+  retrieveEntity: async (id: number) => ({ id } as any),
 };
 
 const finishProfileItemDummy: FinishProfileItemPort = {
-  retrieveEntity: async () => null,
+  retrieveEntity: async (id: number) => ({ id, finishProfile: { displayName: "Default Finish" } } as any),
 };
 
 const sizeProfileOptionDummy: SizeProfileOptionPort = {
-  retrieveSizeProfileOption: async () => null,
+  retrieveSizeProfileOption: async (id: number) => ({ id } as any),
 };
 
 const tenantLookupDummy: TenantLookupPort = {
