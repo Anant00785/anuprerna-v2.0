@@ -52,7 +52,7 @@
  * either.
  */
 import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiExcludeEndpoint, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProductService } from "../product/service/product.service.js";
 import { OptimisticLockError } from "../product/repository/product.repository.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -71,7 +71,6 @@ import {
 import { ActionCode } from "../../../common/errors/action-code.js";
 
 @ApiTags("Product")
-@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class ProductController {
@@ -99,6 +98,7 @@ export class ProductController {
 
   /** ProductDAOController#findByBackwardCompatibleLink(String link) */
   @Get("/get/product/backward-compatible-link")
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: "Retrieve a single product by its legacy backward-compatible link." })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProductByBackwardCompatibleLink(@Query("link") link: string) {

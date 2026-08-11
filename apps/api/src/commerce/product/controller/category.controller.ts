@@ -71,7 +71,6 @@ import {
 import { CategoryMessages } from "../category/types/category.types.js";
 
 @ApiTags("Category")
-@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class CategoryController {

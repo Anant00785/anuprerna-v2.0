@@ -47,7 +47,6 @@ import {
 import { SegmentMessages } from "../segment/types/segment.types.js";
 
 @ApiTags("Segment")
-@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class SegmentController {
