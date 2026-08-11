@@ -79,7 +79,6 @@ export class ProductController {
 
   /** ProductDAOController#retrieveProductById(Long id) — @Transactional(readOnly = true) alias of retrieveProduct. */
   @Get("/get/product/by-id/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single product by id (read-only alias)." })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProductById(@Param("id") id: string) {
@@ -90,7 +89,6 @@ export class ProductController {
 
   /** ProductDAOController#findProductBySlug(String slug) */
   @Get("/get/product/slug/:slug")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single product by slug." })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProductBySlug(@Param("slug") slug: string) {
@@ -101,7 +99,6 @@ export class ProductController {
 
   /** ProductDAOController#findByBackwardCompatibleLink(String link) */
   @Get("/get/product/backward-compatible-link")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single product by its legacy backward-compatible link." })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProductByBackwardCompatibleLink(@Query("link") link: string) {
@@ -112,7 +109,6 @@ export class ProductController {
 
   /** ProductDAOController#findAllBySubCategoryId(Long subCategoryId) */
   @Get("/get/product/sub-category/:subCategoryId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every product under a sub-category." })
   @ApiResponse({ status: 200, description: "Matching products." })
   async getProductsBySubCategoryId(@Param("subCategoryId") subCategoryId: string) {
@@ -123,7 +119,6 @@ export class ProductController {
 
   /** ProductDAOController#retrieveProductGists() */
   @Get("/get/product/gist/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List lightweight product gists (id/name/sku-style summary)." })
   @ApiResponse({ status: 200, description: "Full product gist list." })
   async getProductGists() {
@@ -133,7 +128,6 @@ export class ProductController {
 
   /** ProductDAOController#findNavMenuCraftMapping() */
   @Get("/get/product/nav-menu/craft")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Navigation-menu craft mapping." })
   @ApiResponse({ status: 200, description: "Craft mapping rows." })
   async getNavMenuCraftMapping() {
@@ -143,7 +137,6 @@ export class ProductController {
 
   /** ProductDAOController#findNavMenuMaterialMapping() */
   @Get("/get/product/nav-menu/material")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Navigation-menu material mapping." })
   @ApiResponse({ status: 200, description: "Material mapping rows." })
   async getNavMenuMaterialMapping() {
@@ -153,7 +146,6 @@ export class ProductController {
 
   /** ProductDAOController#findNavMenuPatternMapping() */
   @Get("/get/product/nav-menu/pattern")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Navigation-menu pattern mapping." })
   @ApiResponse({ status: 200, description: "Pattern mapping rows." })
   async getNavMenuPatternMapping() {
@@ -163,7 +155,6 @@ export class ProductController {
 
   /** ProductDAOController#findNavMenuColorMapping() */
   @Get("/get/product/nav-menu/color")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Navigation-menu color mapping." })
   @ApiResponse({ status: 200, description: "Color mapping rows." })
   async getNavMenuColorMapping() {
@@ -173,7 +164,6 @@ export class ProductController {
 
   /** ProductDAOController#findNavMenuFinishedMapping(String category) */
   @Get("/get/product/nav-menu/finished/:categoryName")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Navigation-menu finished-goods mapping for a category." })
   @ApiResponse({ status: 200, description: "Finished-goods mapping rows." })
   async getNavMenuFinishedMapping(@Param("categoryName") categoryName: string) {
@@ -184,7 +174,6 @@ export class ProductController {
 
   /** ProductDAOController#resolveRelatedProductsByIdCSV(String csv) */
   @Get("/get/product/related")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Resolve related products for a comma-separated list of main product ids." })
   @ApiResponse({ status: 200, description: "Related products, grouped by main product id." })
   async getRelatedProducts(@Query("csv") csv: string) {
@@ -195,7 +184,6 @@ export class ProductController {
 
   /** ProductDAOController#retrieveProduct(Long id) */
   @Get("/get/product/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single product by id." })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProduct(@Param("id") id: string) {

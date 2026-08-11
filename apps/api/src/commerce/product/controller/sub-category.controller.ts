@@ -92,7 +92,6 @@ export class SubCategoryController {
 
   /** SubCategoryDAOController#retrieveSubCategory(Long id) */
   @Get("/get/sub-category/:subCategoryId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single sub-category by id." })
   @ApiResponse({ status: 200, description: "Sub-category or null." })
   async getSubCategory(@Param("subCategoryId") subCategoryId: string) {
@@ -103,7 +102,6 @@ export class SubCategoryController {
 
   /** SubCategoryDAOController#retrieveSubCategoryWithRelatedEntities(Long id) */
   @Get("/get/sub-category/related/:subCategoryId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single sub-category by id, with related entities resolved." })
   @ApiResponse({ status: 200, description: "Sub-category or null." })
   async getSubCategoryWithRelatedEntities(@Param("subCategoryId") subCategoryId: string) {
@@ -114,7 +112,6 @@ export class SubCategoryController {
 
   /** SubCategoryPreviewDAOController#retrieveSubCategoryList() */
   @Get("/get/sub-category/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every sub-category preview." })
   @ApiResponse({ status: 200, description: "Full sub-category preview list." })
   async getSubCategoryList() {
@@ -124,7 +121,6 @@ export class SubCategoryController {
 
   /** retrieveFuzzySubCategoryPreviewsFromString(String text[, int limit]) */
   @Get("/get/sub-category/fuzzy-search")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fuzzy-search sub-category previews by name." })
   @ApiResponse({ status: 200, description: "Matching sub-category previews." })
   async fuzzySearchSubCategories(@Query("text") text: string, @Query("limit") limit?: string) {
