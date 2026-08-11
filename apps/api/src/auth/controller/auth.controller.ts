@@ -38,7 +38,7 @@ export class AuthController {
   ) {}
 
   /** createAuthenticationTokenUsingEmailID(NVerseRequest) — public, no @RequireGate. */
-  @Post("authenticate/email")
+  @Post(["authenticate", "authenticate/email"])
   @HttpCode(200)
   @ApiBody({ type: EmailLoginRequestDto })
   @ApiOperation({ summary: "Authenticate with email and password, issuing a JWT." })
@@ -79,7 +79,7 @@ export class AuthController {
   }
 
   /** Register a new user with email and password, issuing a JWT. */
-  @Post("register")
+  @Post(["register", "customer/registration"])
   @HttpCode(200)
   @ApiBody({ type: RegisterRequestDto })
   @ApiOperation({ summary: "Register a new customer user and issue a JWT token." })
@@ -114,7 +114,7 @@ export class AuthController {
   }
 
   /** Register user specifically via Email */
-  @Post("register/email")
+  @Post(["register/email", "customer/registration/email"])
   @HttpCode(200)
   @ApiBody({ type: RegisterEmailRequestDto })
   @ApiOperation({ summary: "Register user via Email and Password." })
@@ -124,7 +124,7 @@ export class AuthController {
   }
 
   /** Register user specifically via Social Provider */
-  @Post("register/social")
+  @Post(["register/social", "customer/registration/social"])
   @HttpCode(200)
   @ApiBody({ type: RegisterSocialRequestDto })
   @ApiOperation({ summary: "Register user via Social Provider (Google, Facebook, Apple)." })
