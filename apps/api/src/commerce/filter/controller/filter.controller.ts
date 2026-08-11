@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { RolesGuard } from "../../../common/auth/roles.guard.js";
 import { FilterService } from "../service/filter.service.js";
 import { parseFabricProductFilterParameters } from "../dto/filter.dto.js";
@@ -14,6 +14,9 @@ export class FilterController {
     constructor(private readonly filterService: FilterService) {}
 
     @Get("/get/filter/fabric")
+    @ApiOperation({ summary: "Get fabric product filter preview grid." })
+    @ApiQuery({ name: "category", description: "Filter by category name (e.g. FABRIC)", example: "FABRIC", required: false })
+    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name (e.g. NATURAL AND ORGANIC)", example: "NATURAL AND ORGANIC", required: false })
     async getFabricFilterPreviewList(
         @Query("category") category?: string,
         @Query("segmentCategory") segmentCategory?: string
@@ -28,6 +31,11 @@ export class FilterController {
     }
 
     @Get("/get/v2/filter/fabric")
+    @ApiOperation({ summary: "Get paginated fabric product filter preview grid (v2)." })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "FABRIC", required: false })
+    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name", example: "NATURAL AND ORGANIC", required: false })
+    @ApiQuery({ name: "pageSize", description: "Number of items per page", example: "20", required: false })
+    @ApiQuery({ name: "pageNumber", description: "Page offset index", example: "0", required: false })
     async getFabricFilterPreviewListPaginated(
         @Query("category") category?: string,
         @Query("segmentCategory") segmentCategory?: string,
@@ -41,6 +49,8 @@ export class FilterController {
     }
 
     @Get("/get/filter/finished")
+    @ApiOperation({ summary: "Get finished product filter preview grid." })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "FINISHED", required: false })
     async getFinishedFilterPreviewList(
         @Query("category") category?: string
     ) {
@@ -49,6 +59,7 @@ export class FilterController {
     }
 
     @Get("/get/filter/fabric/filtered")
+    @ApiOperation({ summary: "Get filtered fabric filter preview list." })
     async getFilteredFabricFilterPreviewList(
         @Query() query: any
     ) {
@@ -57,4 +68,3 @@ export class FilterController {
         return keyedResponse("products", products);
     }
 }
-// @ts-nocheck

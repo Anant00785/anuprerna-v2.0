@@ -1,15 +1,4 @@
 // @ts-nocheck
-/**
- * migrated/image/controller/image.controller.ts
- *
- * Ports Java's ImageController.
- *
- * Endpoints:
- *   POST   /upload/image   - multipart/form-data; field "imageFile"
- *   DELETE /delete/image   - JSON body { imgUrl: string }
- *
- * Java auth: /upload/image is CODE_SU, /delete/image is CODE_SU
- */
 import {
   Controller,
   Post,
@@ -21,13 +10,21 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiProperty, ApiTags } from "@nestjs/swagger";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ImageService } from "../service/image.service.js";
 import { validateImageFile } from "../validators/image.validator.js";
 
+export class DeleteImageDto {
+  @ApiProperty({ example: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/sample.jpg", description: "S3 Image URL to delete" })
+  imgUrl!: string;
+}
+
 @Controller()
+@ApiTags("Image")
+@ApiBearerAuth()
 @UseGuards(RolesGuard)
 export class ImageController {
   constructor(private readonly imageService: ImageService) {}
@@ -39,6 +36,21 @@ export class ImageController {
    */
   @Post("/upload/image")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Upload an image file to S3 storage." })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["imageFile"],
+      properties: {
+        imageFile: {
+          type: "string",
+          format: "binary",
+          description: "Image file to upload (JPEG, PNG, WEBP, etc.)",
+        },
+      },
+    },
+  })
   @UseInterceptors(FileInterceptor("imageFile"))
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
     const error = validateImageFile(file?.mimetype, file?.size);
@@ -59,10 +71,11 @@ export class ImageController {
    */
   @Delete("/delete/image")
   @RequireGate(GateCode.CODE_SU)
-  async deleteImage(@Body() body: { imgUrl?: string }) {
+  @ApiOperation({ summary: "Initiate deletion of an S3 image." })
+  @ApiBody({ type: DeleteImageDto })
+  async deleteImage(@Body() body: DeleteImageDto) {
     const imgUrl = body?.imgUrl ?? "";
     this.imageService.initiateDeleteImageTask(imgUrl);
     return simpleResponse(true, "Delete initiated");
   }
 }
-// @ts-nocheck
