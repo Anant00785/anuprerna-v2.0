@@ -41,8 +41,10 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # --coverage enforces the per-package thresholds in each vitest.config.ts.
+      # Those are scoped to the layers we chose to protect, not whole apps.
       - name: Test
-        run: pnpm test
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build

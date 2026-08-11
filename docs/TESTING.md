@@ -150,3 +150,80 @@ automatically as more tests land — the ratchet only ever tightens.
   Postgres inside the default unit-test task; the `*.int.spec.ts` split (`apps/api/vitest.config.ts`
   vs `apps/api/vitest.int.config.ts`) has already fixed this on the current branch — `pnpm test`
   is green.
+
+---
+
+# Writing tests here — the rules
+
+Binding on every agent and every contributor writing tests in this repo. The plan behind these rules,
+including the per-area budget, is in the programme's test plan; this section is the operative part.
+
+## 1. Never let a test reach the network
+
+Both frontends serve real users from the **live** legacy backend. A test that escapes to the network
+hits production data.
+
+- MSW is configured in both frontends with `onUnhandledRequest: "error"`. An unmocked request is a
+  test failure, by design. **Do not relax this to `"warn"` or `"bypass"`.**
+- Handlers live in `apps/<app>/src/test/msw.ts`. Fixtures must use the **real** response envelope
+  (`{success, message, <listKey>: [...]}`), because that is what `unwrapResponseData()` actually
+  parses. A flat-array fixture silently bypasses the unwrapping every CMS response depends on.
+- No test may contain a production hostname. `loom-v2.anuprerna.com` must never appear in a test file.
+
+## 2. Check for importers before testing anything
+
+`apps/storefront/src/lib/api.ts` had zero importers and was mandated by three separate documents. An
+agent could have spent a session testing dead code. **Before writing a test, confirm the file is
+actually used.** If it is not, say so in your handoff instead of testing it.
+
+## 3. `@ts-nocheck` — remove it as you go, never in bulk
+
+387 of 573 files in `apps/api` carry `@ts-nocheck`. Do not treat that as a project.
+
+1. Before testing file X, delete its `// @ts-nocheck` and run `pnpm --filter @anuprerna/api typecheck`.
+2. If errors stay inside X, fix them — usually replacing an `any` parameter with its DTO type.
+   **Behaviour must not change**; the tests you are about to write are the check on that.
+3. If errors cascade into files you do not own, stop. Either use per-line `// @ts-expect-error`, or
+   restore `@ts-nocheck` and note it in your handoff. **Do not chase the cascade.**
+4. **Never add `@ts-nocheck` to a new file.**
+
+## 4. Testing a port you did not write
+
+`apps/api` is a transliteration of the Java Loom backend. It carries zero production traffic, and no
+one on this team wrote its business rules. So:
+
+- **Validators, sanitizers, auth codes:** test against the documented contract in
+  [`backend/commerce/02-api-documentation.md`](./backend/commerce/02-api-documentation.md), which was
+  read from the Java source and gives per-route rules. If the port diverges from the doc, that is a
+  bug: write the test against the **doc**, mark it `it.fails(...)`, and record it in your handoff.
+- **Everything else:** characterization. Lock in current behaviour so the de-nocheck work in §3 and
+  any future refactor have a safety net.
+
+## 5. Do not "fix" the known-intentional oddities
+
+[`backend/commerce/04-migration-checklist.md`](./backend/commerce/04-migration-checklist.md) flags
+behaviours that look like bugs and are pending a **team** decision — the weak `CustomOrderValidator`,
+the `PATCH`-not-`POST` custom-order-items route, the unfiltered catalog `limit`, the Razorpay
+validator that returns `true`, the webhook returning 200 on a malformed payload.
+
+Pin these as they are, with a comment naming the checklist row. Your instinct will be to strengthen
+them. Do not. Changing them is a product decision, not a test-writing one.
+
+## 6. Test what is worth protecting
+
+Do not pad to hit a number. Around 80 table-explorer and admin-pagination endpoints are mechanically
+identical — **one representative test protects all of them**, and writing 80 is noise that makes the
+suite slower and the signal worse. Prefer: pure functions, validators, mappers, adapters, the
+`unwrapResponseData` choke point, and money paths (payment webhooks, order attribution, cart totals,
+ownership checks).
+
+The 600-line `'use client'` CMS pages get no tests. Their logic lives in the services, which do.
+
+## 7. Coverage is a ratchet, not a target
+
+Thresholds are scoped in each `vitest.config.ts` to the directories we chose to protect, not whole
+apps. They start at 0 and are raised to `(actual − 2%)` once suites land. Raise a threshold when you
+meaningfully improve coverage; never lower one to make a build pass.
+
+`--passWithNoTests` has been removed from `apps/api` so an empty suite fails loudly rather than
+silently. It remains on `apps/cms` only until its first tests land, then goes.

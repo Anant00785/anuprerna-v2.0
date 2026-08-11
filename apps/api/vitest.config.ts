@@ -9,5 +9,15 @@ export default defineConfig({
     exclude: ["src/**/*.int.spec.ts"],
     environment: "node",
     setupFiles: ["dotenv/config"],
+    coverage: {
+      provider: "v8",
+      // Scoped to the layers this repo has chosen to protect: the near-pure
+      // validators, sanitizers and mappers, plus shared middleware. The other
+      // ~470 files are a ported Java transliteration; a whole-app threshold
+      // would be uselessly low.
+      include: ["src/commerce/**/validators/**", "src/commerce/**/mapper/**", "src/common/**"],
+      // Raised to (actual - 2%) once the suites land.
+      thresholds: { lines: 0, functions: 0, branches: 0, statements: 0 },
+    },
   },
 });
