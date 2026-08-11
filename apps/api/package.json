@@ -9,7 +9,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:int": "vitest run --config vitest.int.config.ts",
     "db:introspect": "drizzle-kit introspect",
     "db:studio": "drizzle-kit studio"
   },
