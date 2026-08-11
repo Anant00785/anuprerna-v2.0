@@ -243,7 +243,7 @@ export interface UpdateCartItemRequest extends CartItemInput {
 import { ApiProperty } from "@nestjs/swagger";
 
 export class AddCartItemDto {
-  @ApiProperty({ example: 101, required: false, description: "Fabric product ID" })
+  @ApiProperty({ example: 156298614, required: false, description: "Fabric product ID" })
   fabricProductId?: number;
 
   @ApiProperty({ example: null, required: false, description: "Finished product ID" })
