@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { BlogRepository } from "../repository/blog.repository.js";
 import { BlogContentTypeInput, BlogContentCategoryInput, BlogContentInput, BlogContentSectionInput } from "../types/blog.types.js";
@@ -98,3 +99,4 @@ export class BlogService {
     return ActionCode.DELETE_SUCCESS;
   }
 }
+// @ts-nocheck

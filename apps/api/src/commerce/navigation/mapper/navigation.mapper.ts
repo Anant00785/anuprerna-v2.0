@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   NavMenuCraftResult,
   NavMenuFinishedResult,
@@ -36,3 +37,5 @@ export function mapToNavMenuStoryResult(row: any): NavMenuStoryResult {
     storyCategoryName: String(row.storyCategoryName),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

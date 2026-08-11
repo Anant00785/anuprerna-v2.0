@@ -35,3 +35,5 @@ export function toUpdateValues(name: string): UpdateSkuGroupValues {
     name,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

@@ -146,4 +146,62 @@ export class TenantLookupRepository {
         .where(and(eq(loomTenant.id, BigInt(tenantId)), eq(loomTenant.version, existing.version)));
     });
   }
+
+  /**
+   * Register a new user in loom_tenant table and assign ROLE_CUSTOMER in user_role table.
+   */
+  async createTenant(data: {
+    email: string;
+    hashedPassword: string;
+    userName: string;
+    contactNumber: string;
+  }): Promise<TenantWithRoles> {
+    const loomId = crypto.randomUUID();
+    const now = Date.now();
+
+    return await this.db.transaction(async (tx) => {
+      const insertedTenants = await tx
+        .insert(loomTenant)
+        .values({
+          loomId,
+          email: data.email,
+          emailVerified: true,
+          contactNumber: data.contactNumber,
+          contactNumberVerified: false,
+          userPassword: data.hashedPassword,
+          creationTime: now,
+          active: true,
+          suspended: false,
+          banned: false,
+          deleted: false,
+          userName: data.userName,
+          gender: "UNDEFINED",
+          provider: "BASIC",
+        })
+        .returning({ id: loomTenant.id });
+
+      const newTenantId = insertedTenants[0].id;
+
+      await tx.insert(userRole).values({
+        role: "ROLE_CUSTOMER",
+        userId: newTenantId,
+      });
+
+      return {
+        id: Number(newTenantId),
+        uid: loomId,
+        email: data.email,
+        emailVerified: true,
+        userPassword: data.hashedPassword,
+        active: true,
+        suspended: false,
+        banned: false,
+        deleted: false,
+        provider: "BASIC",
+        lastAccessTime: now,
+        roles: ["ROLE_CUSTOMER" as UserRole],
+      };
+    });
+  }
 }
+

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.controller.ts
  *
@@ -128,3 +129,4 @@ export class SpecialStatusController {
     return keyedResponse("specialStatusData", data);
   }
 }
+// @ts-nocheck

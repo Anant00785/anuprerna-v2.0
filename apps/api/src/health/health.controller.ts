@@ -20,6 +20,6 @@ export class HealthController {
   @ApiOperation({ summary: "Liveness check" })
   @ApiResponse({ status: 200, description: "Service is up and responding." })
   getHealth() {
-    return { status: "ok" };
+    return { status: "ok", data: { uptime: process.uptime() } };
   }
 }

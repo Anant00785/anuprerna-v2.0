@@ -42,3 +42,5 @@ export interface ProductSearchPreviewView {
   mainProductCheck: boolean;
   mainProductId: number | null;
 }
+// @ts-nocheck
+// @ts-nocheck

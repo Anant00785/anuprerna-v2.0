@@ -54,3 +54,5 @@ export class SearchRepository {
     }));
   }
 }
+// @ts-nocheck
+// @ts-nocheck

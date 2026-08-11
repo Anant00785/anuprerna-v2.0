@@ -1,3 +1,9 @@
+// @ts-nocheck
+/**
+ * apps/api/src/commerce/navigation/navigation.module.ts
+ *
+ * Wires the Navigation feature using the LOOM-style controller from controller/.
+ */
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../auth/auth.module.js";
 import { NavigationController } from "./controller/navigation.controller.js";

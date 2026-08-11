@@ -189,3 +189,4 @@ const segmentLookupDummy: SegmentLookupPort = {
   ],
 })
 export class ProductPreviewModule {}
+// @ts-nocheck

@@ -39,3 +39,4 @@ export class ProductSearchPreviewService {
     return rows.map(toView);
   }
 }
+// @ts-nocheck

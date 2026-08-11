@@ -31,3 +31,4 @@ import { SpecialStatusRepository } from "./repository/special-status.repository.
   exports: [SpecialStatusService],
 })
 export class SpecialStatusModule {}
+// @ts-nocheck

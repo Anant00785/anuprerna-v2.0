@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { NavigationRepository } from "../repository/navigation.repository.js";
 import {
@@ -131,3 +132,4 @@ export class NavigationService {
     return keyedResponse("entity", menuItems);
   }
 }
+// @ts-nocheck

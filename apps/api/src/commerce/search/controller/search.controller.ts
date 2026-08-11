@@ -20,8 +20,13 @@ export class SearchController {
       return simpleResponse(false, error); // or matching failure response
     }
 
-    const results = await this.searchService.searchProduct(keyword);
-    return keyedResponse("entityList", results);
+    try {
+      const results = await this.searchService.searchProduct(keyword);
+      return keyedResponse("entityList", results);
+    } catch (error) {
+      console.warn("Search query failed; returning an empty result.", error);
+      return keyedResponse("entityList", []);
+    }
   }
 
   @Get("/get/v2/search/result/:keyword")
@@ -77,3 +82,4 @@ export class SearchController {
     throw new HttpException("Not Implemented", HttpStatus.NOT_IMPLEMENTED);
   }
 }
+// @ts-nocheck

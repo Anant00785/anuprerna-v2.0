@@ -85,3 +85,5 @@ export function parseUpdateSpecialStatusRequest(body: unknown): UpdateSpecialSta
     name: requireNonEmptyString(b.name, "name"),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

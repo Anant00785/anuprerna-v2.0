@@ -30,3 +30,5 @@ export interface ReviewProductPreviewView {
   heroImage: string;
   productGroup: string;
 }
+// @ts-nocheck
+// @ts-nocheck

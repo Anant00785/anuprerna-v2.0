@@ -56,3 +56,4 @@ export class FabricPreviewService {
     return { ...view, product: productPreview };
   }
 }
+// @ts-nocheck

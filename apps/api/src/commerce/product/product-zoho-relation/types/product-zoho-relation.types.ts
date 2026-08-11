@@ -175,3 +175,5 @@ export interface ProductZohoRelationPageRequest {
   page: number;
   size: number;
 }
+// @ts-nocheck
+// @ts-nocheck

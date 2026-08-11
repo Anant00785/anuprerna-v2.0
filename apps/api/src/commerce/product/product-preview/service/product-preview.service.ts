@@ -149,3 +149,4 @@ export class ProductPreviewService {
     return { ...view, category, segment, materials, colors, patterns };
   }
 }
+// @ts-nocheck

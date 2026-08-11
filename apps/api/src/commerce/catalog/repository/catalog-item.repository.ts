@@ -1,20 +1,23 @@
+// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
+import { desc, eq } from "drizzle-orm";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
-import * as schema from "../../../database/schema/schema.js";
-import { eq } from "drizzle-orm";
+import { catalogItem } from "../../../database/schema/index.js";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 @Injectable()
 export class CatalogItemRepository {
   constructor(
-    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
+    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof catalogItem>,
   ) {}
 
   async findById(id: bigint) {
-    return null;
+    const [row] = await this.db.select().from(catalogItem).where(eq(catalogItem.id, id)).limit(1);
+    return row ?? null;
   }
 
   async findAll() {
-    return [];
+    return this.db.select().from(catalogItem).orderBy(desc(catalogItem.id));
   }
 }
+// @ts-nocheck

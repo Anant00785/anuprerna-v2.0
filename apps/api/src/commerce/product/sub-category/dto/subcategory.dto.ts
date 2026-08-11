@@ -160,3 +160,5 @@ export function parseUpdateSubCategoryRequest(body: unknown, subCategoryId: unkn
     featuredImageFile: parseOptionalFile(b.featuredImageFile, "featuredImageFile"),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

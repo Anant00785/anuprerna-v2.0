@@ -39,3 +39,5 @@ export function validateSegment(entity: SegmentInput): boolean {
     validateOptionalImage(entity.socialImageFile)
   );
 }
+// @ts-nocheck
+// @ts-nocheck

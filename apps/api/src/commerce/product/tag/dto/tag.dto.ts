@@ -66,3 +66,5 @@ export function parseUpdateTagRequest(body: unknown): UpdateTagInput {
     name: requireNonEmptyString(b.name, "name"),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

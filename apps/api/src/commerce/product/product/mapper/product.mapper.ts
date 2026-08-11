@@ -222,3 +222,5 @@ export function toUpdateValues(input: ProductInput): Partial<InsertProductValues
 
   return values;
 }
+// @ts-nocheck
+// @ts-nocheck

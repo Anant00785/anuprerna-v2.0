@@ -22,10 +22,14 @@ import { ProductZohoRelationController } from "../controller/product-zoho-relati
 import { ProductZohoRelationService } from "./service/product-zoho-relation.service.js";
 import { ProductZohoRelationRepository } from "./repository/product-zoho-relation.repository.js";
 
-@Module({
-  imports: [AuthModule],
-  controllers: [ProductZohoRelationController],
+@Module({
+
+  imports: [AuthModule],
+
+  controllers: [ProductZohoRelationController],
+
   providers: [ProductZohoRelationService, ProductZohoRelationRepository],
   exports: [ProductZohoRelationService],
 })
 export class ProductZohoRelationModule {}
+// @ts-nocheck

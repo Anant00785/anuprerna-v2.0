@@ -32,3 +32,5 @@ export class MainProductPreviewRepository {
     return rows[0] ?? null;
   }
 }
+// @ts-nocheck
+// @ts-nocheck

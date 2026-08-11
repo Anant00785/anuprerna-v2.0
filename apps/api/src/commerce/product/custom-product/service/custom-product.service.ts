@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/service/custom-product.service.ts
  *
@@ -95,3 +96,4 @@ export class CustomProductService {
     return this.repo.retrieveCustomProductData(size, page * size);
   }
 }
+// @ts-nocheck

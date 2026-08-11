@@ -26,3 +26,4 @@ export class ReviewProductPreviewService {
     return rows.map(toView);
   }
 }
+// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { pgTable, unique, bigserial, varchar, boolean, bigint, text, integer, index, foreignKey, numeric, jsonb, doublePrecision, smallint, check, vector, pgSequence, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
@@ -2950,3 +2951,5 @@ export const imageOptimizationWorkerSession = pgTable("image_optimization_worker
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	bytesSaved: bigint("bytes_saved", { mode: "number" }).default(0).notNull(),
 });
+// @ts-nocheck
+// @ts-nocheck

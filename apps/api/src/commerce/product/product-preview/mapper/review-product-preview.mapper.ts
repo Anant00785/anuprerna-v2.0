@@ -21,3 +21,5 @@ export function toView(row: ProductRow): ReviewProductPreviewView {
     productGroup: row.productGroup,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

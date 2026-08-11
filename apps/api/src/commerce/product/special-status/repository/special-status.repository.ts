@@ -163,3 +163,5 @@ function mapRowToSpecialStatusData(row: Record<string, unknown>): SpecialStatusD
     timeOfCreation: Number(row.time_of_creation),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

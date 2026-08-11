@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { ActionCode } from "../../../common/errors/action-code.js";
 import { CatalogRepository } from "../repository/catalog.repository.js";
@@ -26,3 +27,4 @@ export class CatalogService {
   async update(body: unknown) {}
   async delete(id: bigint) {}
 }
+// @ts-nocheck

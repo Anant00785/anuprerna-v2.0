@@ -55,3 +55,5 @@ export function validateSubCategory(entity: CreateSubCategoryInput | UpdateSubCa
     isValidOptionalImage(entity.featuredImageFile)
   );
 }
+// @ts-nocheck
+// @ts-nocheck

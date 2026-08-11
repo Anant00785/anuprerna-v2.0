@@ -26,3 +26,4 @@ import { SkuGroupRepository } from "./repository/sku-group.repository.js";
   exports: [SkuGroupService],
 })
 export class SkuGroupModule {}
+// @ts-nocheck

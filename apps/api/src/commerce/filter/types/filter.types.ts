@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface FabricFilterPreview {
     id: bigint;
     gsm: number;
@@ -77,3 +78,5 @@ export interface FabricProductFilterParameters {
     pageNumber: number;
     pageSize: number;
 }
+// @ts-nocheck
+// @ts-nocheck

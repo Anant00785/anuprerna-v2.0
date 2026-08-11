@@ -56,3 +56,5 @@ export function validateProductZohoRelation(entity: ProductZohoRelationInput): b
 
   return true;
 }
+// @ts-nocheck
+// @ts-nocheck

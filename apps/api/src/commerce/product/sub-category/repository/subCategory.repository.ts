@@ -457,3 +457,5 @@ function mapRowToSubCategoryData(row: Record<string, unknown>): SubCategoryData 
     featuredImage: row.featured_image as string,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

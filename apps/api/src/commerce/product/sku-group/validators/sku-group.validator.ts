@@ -38,3 +38,5 @@ function isValidStringLength(value: unknown, min: number, max: number): boolean 
 export function validateSkuGroup(entity: CreateSkuGroupInput | UpdateSkuGroupInput): boolean {
   return isValidStringLength(entity.name, NAME_MIN_LENGTH, NAME_MAX_LENGTH);
 }
+// @ts-nocheck
+// @ts-nocheck

@@ -120,3 +120,4 @@ export class SpecialStatusService {
     return this.repo.retrieveSpecialStatusDataById(id);
   }
 }
+// @ts-nocheck

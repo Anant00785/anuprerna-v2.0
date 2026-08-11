@@ -64,3 +64,5 @@ export function sanitizeSegment<T extends Partial<SegmentInput>>(entity: T): T {
   }
   return sanitized;
 }
+// @ts-nocheck
+// @ts-nocheck

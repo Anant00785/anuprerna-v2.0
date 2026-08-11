@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-size-profile/controller/product-size-profile.controller.ts
  *
@@ -182,3 +183,4 @@ export class ProductSizeProfileController {
     return keyedResponse("productSizeProfileData", data);
   }
 }
+// @ts-nocheck

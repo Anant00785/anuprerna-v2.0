@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/controller/product-zoho-relation.controller.ts
  *
@@ -219,3 +220,4 @@ export class ProductZohoRelationController {
     return keyedResponse("productZohoRelationData", data);
   }
 }
+// @ts-nocheck

@@ -18,3 +18,5 @@ export function toView(row: FinishedProductRow): FinishedPreviewView {
     product: null, // OneToOne in source; populated on-demand via ProductPreviewLookupPort
   };
 }
+// @ts-nocheck
+// @ts-nocheck

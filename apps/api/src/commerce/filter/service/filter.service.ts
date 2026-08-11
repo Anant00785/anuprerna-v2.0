@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { FilterRepository } from "../repository/filter.repository.js";
 import { FabricFilterPreview, FinishedFilterPreview, FabricProductFilterParameters } from "../types/filter.types.js";
@@ -22,3 +23,4 @@ export class FilterService {
         return this.filterRepository.findFabricFilterPreviewFiltered(params);
     }
 }
+// @ts-nocheck

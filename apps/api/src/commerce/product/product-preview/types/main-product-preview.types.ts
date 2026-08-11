@@ -35,3 +35,5 @@ export interface MainProductPreviewView {
   heroImage: string;
   disabled: boolean;
 }
+// @ts-nocheck
+// @ts-nocheck

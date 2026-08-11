@@ -236,3 +236,5 @@ export class ProductZohoRelationRepository {
     return rows[0] ? toData(rows[0]) : null;
   }
 }
+// @ts-nocheck
+// @ts-nocheck

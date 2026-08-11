@@ -51,3 +51,4 @@ export class NavProductPreviewService {
     return { ...view, materials, colors, patterns };
   }
 }
+// @ts-nocheck

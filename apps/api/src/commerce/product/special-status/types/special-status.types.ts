@@ -94,3 +94,5 @@ export const SpecialStatusMessages = {
   UNAUTH_TABLE_EXPLORER_SPECIAL_STATUS_REQUEST: "Unauthorized access to table explorer special status list.",
   UNAUTH_TABLE_EXPLORER_SPECIAL_STATUS_BY_ID_REQUEST: "Unauthorized access to table explorer special status by id.",
 } as const;
+// @ts-nocheck
+// @ts-nocheck

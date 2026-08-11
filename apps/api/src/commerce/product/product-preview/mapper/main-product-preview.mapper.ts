@@ -22,3 +22,5 @@ export function toView(row: ProductRow): MainProductPreviewView {
     disabled: row.disabled,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

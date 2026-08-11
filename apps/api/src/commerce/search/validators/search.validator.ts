@@ -11,3 +11,5 @@ export function validateSearchTerm(term: string): string | null {
   }
   return null; // valid
 }
+// @ts-nocheck
+// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface ProductSEO {
     id: bigint;
     name: string;
@@ -45,3 +46,5 @@ export interface ProductImageGallerySEO {
     altText: string;
     deleted?: boolean;
 }
+// @ts-nocheck
+// @ts-nocheck

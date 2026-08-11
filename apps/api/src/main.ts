@@ -14,8 +14,10 @@
  * even before/regardless of which controllers are scanned.
  */
 import "dotenv/config";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module.js";
 
 // Drizzle maps PostgreSQL bigint columns to JavaScript bigint values. Express
@@ -27,6 +29,20 @@ import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger("HTTP");
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+    whitelist: true,
+    forbidUnknownValues: true,
+  }));
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    response.on("finish", () => {
+      logger.log(`${request.method} ${request.originalUrl} ${response.statusCode} ${Date.now() - startedAt}ms`);
+    });
+    next();
+  });
 
   const config = new DocumentBuilder()
     .setTitle("Anuprerna API")
@@ -36,6 +52,7 @@ async function bootstrap() {
     .addTag("Health")
     .addTag("Authentication")
     .addTag("Cart")
+    .addTag("Product")
     .build();
 
   // Enable Swagger by default in non-production environments.
@@ -88,15 +105,14 @@ async function bootstrap() {
         };
       }
     }
-    // Serve Swagger UI under /api/docs to match API prefixing.
-    SwaggerModule.setup("api/docs", app, document, { jsonDocumentUrl: "api-json" });
+    SwaggerModule.setup("docs", app, document, { jsonDocumentUrl: "docs-json" });
   }
 
   await app.listen(process.env.PORT ?? 3000);
 
   const url = await app.getUrl();
   console.log("🚀 Server running at:", url);
-  if (enableSwagger) console.log("📖 Swagger UI:", `${url}/api/docs`);
+  if (enableSwagger) console.log("📖 Swagger UI:", `${url}/docs`);
 }
 
 bootstrap();

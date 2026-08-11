@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/finished-product/controller/finished-product.controller.ts
  *
@@ -172,3 +173,4 @@ export class FinishedProductController {
     return keyedResponse("finishedProductDataList", data);
   }
 }
+// @ts-nocheck

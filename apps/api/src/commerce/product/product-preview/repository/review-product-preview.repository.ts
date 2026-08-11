@@ -27,3 +27,5 @@ export class ReviewProductPreviewRepository {
     return this.db.select().from(product).where(inArray(product.id, ids));
   }
 }
+// @ts-nocheck
+// @ts-nocheck

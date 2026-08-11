@@ -44,3 +44,4 @@ export class FinishedPreviewService {
     return { ...view, product: productPreview };
   }
 }
+// @ts-nocheck

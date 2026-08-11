@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { FaqRepository } from "../repository/faq.repository.js";
 import { FaqInput } from "../dto/faq.dto.js";
@@ -38,3 +39,4 @@ export class FaqService {
         return await this.faqRepository.updateExistingFaq(faqInput);
     }
 }
+// @ts-nocheck

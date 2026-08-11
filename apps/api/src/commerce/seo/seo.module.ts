@@ -1,13 +1,11 @@
 import { Module } from "@nestjs/common";
-import { AuthModule } from "../../auth/auth.module.js";
-import { SeoController } from "./controller/seo.controller.js";
-import { SeoService } from "./service/seo.service.js";
-import { SeoRepository } from "./repository/seo.repository.js";
+import { SeoController } from "./seo.controller.js";
+import { SeoService } from "./seo.service.js";
 
 @Module({
-    imports: [AuthModule],
-    controllers: [SeoController],
-    providers: [SeoService, SeoRepository],
-    exports: [SeoService],
+  controllers: [SeoController],
+  providers: [SeoService],
+  exports: [SeoService],
 })
 export class SeoModule {}
+

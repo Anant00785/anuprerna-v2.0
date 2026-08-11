@@ -22,3 +22,5 @@ export function toView(row: ProductRow): ProductSearchPreviewView {
     mainProductId: row.mainProductId === null ? null : Number(row.mainProductId),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

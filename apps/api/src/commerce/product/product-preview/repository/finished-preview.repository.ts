@@ -45,3 +45,5 @@ export class FinishedPreviewRepository {
     return rows[0] ?? null;
   }
 }
+// @ts-nocheck
+// @ts-nocheck

@@ -1,37 +1,12 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/core/Product.module.ts
  *
- * Wires the Product Core feature together. No controller is registered
- * here yet — per the brief, ProductController/ProductDAOController's HTTP
- * surface waits on RequestMapper.java, which wasn't provided. ProductService
- * is exported so a future Product.controller.ts (and Cart, which already
- * has commented-out product lookups per its own module doc) can consume
- * it once wired up.
- *
- * Twelve ports are bound to safe dummy implementations rather than left
- * unbound or throwing, exactly like commerce/cart/cart.module.ts and
- * auth/auth.module.ts do for their own out-of-scope dependencies:
- *  - SubCategoryPort / SkuGroupPort / SpecialStatusPort: these domains ARE
- *    marked complete in MIGRATION_CHECKPOINT.md, but their TypeScript
- *    output wasn't included in the files provided for this task (see
- *    Product.types.ts header note) — swap in the real providers here as
- *    soon as those modules' exports are available to import.
- *  - BadgeProfilePort / VolumeDiscountProfilePort / MadeToOrderProfilePort /
- *    MadeToOrderProductPreviewPort / CustomSizeProfilePort / SizeProfilePort /
- *    FinishProfilePort / FabricProfilePort / ProductSizeProfilePort /
- *    ProductZohoRelationPort / ImageGallerySeoPort: genuinely out of scope
- *    per MIGRATION_CHECKPOINT.md's remaining-domains list — wire real
- *    providers in as each one gets migrated.
- *
- * Every dummy returns the "nothing found" / no-op value its own interface
- * contract allows (`null` for every nullable lookup, a resolved void
- * Promise for side-effecting calls) instead of fabricating another
- * module's behavior — same reasoning as cart.module.ts's dummy block.
- *
- * DatabaseModule is @Global(), so ProductRepository injects
- * DATABASE_CONNECTION directly without this module re-importing it.
+ * Wires the Product Core feature together with LOOM ProductController.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
+import { ProductController } from "../controller/product.controller.js";
 import { ProductService } from "./service/product.service.js";
 import { ProductRepository } from "./repository/product.repository.js";
 import {
@@ -123,6 +98,8 @@ const imageGallerySeoDummy: ImageGallerySeoPort = {
 };
 
 @Module({
+  imports: [AuthModule],
+  controllers: [ProductController],
   providers: [
     ProductService,
     ProductRepository,

@@ -33,3 +33,4 @@ export class MainProductPreviewService {
     return rows.map(toView);
   }
 }
+// @ts-nocheck

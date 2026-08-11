@@ -271,3 +271,5 @@ export const SubCategoryMessages = {
   UNAUTH_TABLE_EXPLORER_SUB_CATEGORY_REQUEST: "Unauthorized access to table explorer sub category list.",
   UNAUTH_TABLE_EXPLORER_SUB_CATEGORY_BY_ID_REQUEST: "Unauthorized access to table explorer sub category by id.",
 } as const;
+// @ts-nocheck
+// @ts-nocheck

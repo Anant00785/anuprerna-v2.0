@@ -6,7 +6,7 @@
  *
  *   POST /authenticate/email    (public — NON_AUTHENTICATED_URLS)
  *   POST /authenticate/social   (public — NON_AUTHENTICATED_URLS)
- *   GET  /get/authority/token    CODE_SUCU
+ *   GET  /auth/authority         CODE_SUCU
  *   POST /validate/provider      CODE_SUCU
  *
  * NVerseResponse's exact field name isn't in this repository (external
@@ -27,7 +27,7 @@
  * token check) — the two login endpoints are genuinely public
  * (NON_AUTHENTICATED_URLS) and do not require a bearer token.
  */
-import { Body, Controller, Get, HttpCode, Inject, Post, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, HttpCode, Inject, Post, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GatekeeperService } from "../service/gatekeeper.service.js";
 import { TenantLookupRepository } from "../repository/tenant-lookup.repository.js";
@@ -39,14 +39,14 @@ import {
   Authority,
   GateCode,
 } from "../types/auth.types.js";
-import { EmailLoginRequestDto, parseEmailLoginRequest, parseSocialLoginRequest, parseValidateProviderRequest } from "../dto/auth.dto.js";
+import { EmailLoginRequestDto, RegisterRequestDto, parseEmailLoginRequest, parseRegisterRequest, parseSocialLoginRequest, parseValidateProviderRequest } from "../dto/auth.dto.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
 import { keyedResponse } from "../../common/response/rain-response.js";
 import { AuthErrorCode } from "../../common/errors/error-code.js";
 
 @ApiTags("Authentication")
-@Controller()
+@Controller("auth")
 @UseGuards(RolesGuard)
 export class AuthController {
   constructor(
@@ -56,7 +56,7 @@ export class AuthController {
   ) {}
 
   /** createAuthenticationTokenUsingEmailID(NVerseRequest) — public, no @RequireGate. */
-  @Post("/authenticate/email")
+  @Post("authenticate/email")
   @HttpCode(200)
   @ApiBody({ type: EmailLoginRequestDto })
   @ApiOperation({ summary: "Authenticate with email and password, issuing a JWT." })
@@ -102,8 +102,43 @@ export class AuthController {
     return keyedResponse("token", token);
   }
 
+  /** Register a new user with email and password, issuing a JWT. */
+  @Post("register")
+  @HttpCode(200)
+  @ApiBody({ type: RegisterRequestDto })
+  @ApiOperation({ summary: "Register a new customer user and issue a JWT token." })
+  @ApiResponse({ status: 200, description: "Registration succeeded; JWT token returned." })
+  @ApiResponse({ status: 400, description: "Email already registered or invalid inputs." })
+  async registerUser(@Body() body: unknown) {
+    const { email, password, userName, contactNumber } = parseRegisterRequest(body);
+
+    const existing = await this.tenantLookup.findByEmail(email);
+    if (existing) {
+      throw new BadRequestException("Email is already registered.");
+    }
+
+    const hashedPassword = await this.gatekeeper.hashPassword(password);
+    const tenant = await this.tenantLookup.createTenant({
+      email,
+      hashedPassword,
+      userName: userName || email.split("@")[0],
+      contactNumber: contactNumber || "",
+    });
+
+    const authenticatedTenant: AuthenticatedTenant = {
+      id: tenant.id,
+      uid: tenant.uid,
+      email: tenant.email,
+      roles: tenant.roles,
+    };
+
+    const token = this.gatekeeper.generateToken(authenticatedTenant);
+
+    return keyedResponse("token", token);
+  }
+
   /** createAuthenticationTokenUsingSocialID(NVerseSocialRequest) — public, no @RequireGate. */
-  @Post("/authenticate/social")
+  @Post("authenticate/social")
   @ApiOperation({ summary: "Authenticate via a social/Auth0-issued token, issuing a JWT." })
   @ApiResponse({ status: 200, description: "Authentication succeeded; JWT token returned." })
   @ApiResponse({ status: 400, description: "Malformed username/token/provider." })
@@ -148,7 +183,7 @@ export class AuthController {
   }
 
   /** getAuthorityToken(NVerseHttpRequestWrapper) — CODE_SUCU, source-verified 1:1. */
-  @Get("/get/authority/token")
+  @Get("authority")
   @RequireGate(GateCode.CODE_SUCU)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Resolve the caller's role flags (superUser/customer) from a valid bearer token." })
@@ -164,7 +199,7 @@ export class AuthController {
   }
 
   /** validateProvider(NVerseAuthProviderValidationRequest) — CODE_SUCU (authenticated route, not in NON_AUTHENTICATED_URLS). */
-  @Post("/validate/provider")
+  @Post("validate/provider")
   @HttpCode(200)
   @RequireGate(GateCode.CODE_SUCU)
   @ApiBearerAuth()

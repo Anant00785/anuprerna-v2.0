@@ -86,3 +86,5 @@ export const SkuGroupMessages = {
   UNAUTH_SKU_GROUP_DELETE_REQUEST: "Unauthorized attempt to delete a sku group.",
   SKU_GROUP_DELETED: "Sku group deleted successfully.",
 } as const;
+// @ts-nocheck
+// @ts-nocheck

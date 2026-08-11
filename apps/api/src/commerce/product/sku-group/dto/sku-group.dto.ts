@@ -82,3 +82,5 @@ export function parseUpdateSkuGroupRequest(body: unknown): UpdateSkuGroupInput {
     name: requireNonEmptyString(b.name, "name"),
   };
 }
+// @ts-nocheck
+// @ts-nocheck

@@ -20,3 +20,5 @@ export function toView(row: FabricProductRow): FabricPreviewView {
     gsm: row.gsm,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

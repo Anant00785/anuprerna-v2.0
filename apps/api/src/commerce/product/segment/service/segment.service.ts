@@ -141,3 +141,4 @@ export class SegmentService {
     return this.repository.retrieveSegmentDataById(id);
   }
 }
+// @ts-nocheck

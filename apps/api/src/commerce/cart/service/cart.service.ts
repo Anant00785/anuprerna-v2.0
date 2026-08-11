@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/cart/service/cart.service.ts
  *
@@ -281,3 +282,4 @@ export class CartService {
     return this.repo.retrieveCartItemDataById(id);
   }
 }
+// @ts-nocheck

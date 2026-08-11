@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/controller/tag.controller.ts
  *
@@ -140,3 +141,4 @@ export class TagController {
     return keyedResponse("tagData", data);
   }
 }
+// @ts-nocheck

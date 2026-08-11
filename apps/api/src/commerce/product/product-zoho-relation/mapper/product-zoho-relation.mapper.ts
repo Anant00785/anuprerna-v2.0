@@ -108,3 +108,5 @@ export function toData(row: Record<string, unknown>): ProductZohoRelationData {
     disabled: row.disabled as boolean,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

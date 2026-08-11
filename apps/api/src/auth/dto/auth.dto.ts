@@ -105,3 +105,35 @@ export function parseValidateProviderRequest(body: unknown): ValidateProviderReq
     provider: requireProvider(b.provider),
   };
 }
+
+export class RegisterRequestDto {
+  @ApiProperty({ example: "newuser@example.com", description: "Account email address." })
+  email!: string;
+
+  @ApiProperty({ example: "password123", minLength: 8, maxLength: 38, description: "Account password." })
+  password!: string;
+
+  @ApiProperty({ example: "Rahul Sharma", required: false, description: "User full name." })
+  userName?: string;
+
+  @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
+  contactNumber?: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  userName?: string;
+  contactNumber?: string;
+}
+
+export function parseRegisterRequest(body: unknown): RegisterRequest {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const email = requireNonEmptyString(b.email ?? b.username, "email");
+  const password = requirePasswordShape(b.password);
+  const userName = typeof b.userName === "string" ? b.userName : (typeof b.name === "string" ? b.name : email.split("@")[0]);
+  const contactNumber = typeof b.contactNumber === "string" ? b.contactNumber : (typeof b.phone === "string" ? b.phone : "");
+
+  return { email, password, userName, contactNumber };
+}
+

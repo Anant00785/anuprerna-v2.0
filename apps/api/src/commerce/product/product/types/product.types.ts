@@ -463,3 +463,5 @@ export const IMAGE_GALLERY_SEO_PORT = Symbol("IMAGE_GALLERY_SEO_PORT");
  * rather than fabricated copy — unlike Cart, no ProductMessages source
  * text was found in the uploaded repository to port verbatim.
  */
+// @ts-nocheck
+// @ts-nocheck

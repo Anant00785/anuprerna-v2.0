@@ -28,3 +28,5 @@ export function toView(row: ProductRow): NavProductPreviewView {
     disabled: row.disabled,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

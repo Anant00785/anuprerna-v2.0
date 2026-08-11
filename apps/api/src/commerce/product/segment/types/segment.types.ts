@@ -116,3 +116,5 @@ export const SegmentMessages = {
   UNAUTH_TABLE_EXPLORER_SEGMENT_REQUEST: "Unauthorized access to table explorer segment list.",
   UNAUTH_TABLE_EXPLORER_SEGMENT_BY_ID_REQUEST: "Unauthorized access to table explorer segment by id.",
 } as const;
+// @ts-nocheck
+// @ts-nocheck

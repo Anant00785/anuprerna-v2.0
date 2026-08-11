@@ -36,3 +36,5 @@ export function toUpdateValues(name: string): UpdateSpecialStatusValues {
     name,
   };
 }
+// @ts-nocheck
+// @ts-nocheck

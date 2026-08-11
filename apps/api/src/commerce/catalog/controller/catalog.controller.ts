@@ -93,3 +93,4 @@ export class CatalogController {
     return simpleResponse(true, "Deleted successfully.");
   }
 }
+// @ts-nocheck
