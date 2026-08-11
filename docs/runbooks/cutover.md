@@ -16,7 +16,16 @@
 
 ## Steps
 1. Freeze legacy writes. 2. Final data sync (migration pipeline). 3. Flip DNS/route to api.
-4. proxy still serves any unconverted read. 5. Smoke test health + a login + an order read.
+4. Any read not yet migrated needs a real fallback path at cutover time: today that's the
+   frontends' `/api/backend/[...path]` proxy routes calling legacy directly, since
+   `apps/api/src/proxy` itself is currently an empty, unpopulated module (see root `CLAUDE.md` and
+   `docs/adr/0002-strangler-proxy-migration.md` status update) — either populate `proxy/` for real
+   before cutover, or plan to keep routing unconverted reads through the frontend proxies.
+5. Smoke test health + a login + an order read.
 
 ## Verify
-- [ ] `/health` ok, request-id propagates. [ ] One user logs in. [ ] Order + catalog read correct.
+- [ ] `/health` ok.
+  > **Status:** request-id does **not** currently propagate — `request-id.middleware.ts` exists but
+  > is never registered in `apps/api/src/app.module.ts`. Wire it before relying on this check; see
+  > `docs/KNOWN-GAPS.md`.
+- [ ] One user logs in. [ ] Order + catalog read correct.

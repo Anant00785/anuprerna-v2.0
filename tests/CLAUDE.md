@@ -9,4 +9,13 @@
 
 ## Rules
 - Every feature merges with its co-located unit tests. Add a contract/e2e here only when a flow spans apps.
-- CI runs `pnpm test` (unit, per-package) and `pnpm test:e2e` (this folder).
+- CI (`.github/workflows/ci.yml`) genuinely exists now and runs `pnpm lint`, `pnpm typecheck`,
+  `pnpm test`, and `pnpm build` on every push/PR, plus a separate job running
+  `pnpm --filter @anuprerna/api test:int` against a real Postgres service container, plus a
+  gitleaks secret scan.
+  > **Status:** there is no `test:e2e` script anywhere in this repo, and this folder is currently
+  > empty except for this file — Playwright is **not installed**
+  > (`grep -rn playwright package.json apps/*/package.json` finds no matches). The task CI actually
+  > runs for cross-service coverage today is the api's `test:int`, not an e2e suite from this
+  > folder. Until Playwright is added and specs are written here, treat "cross-app e2e" as a target,
+  > not a running check. See `docs/TESTING.md` §1 and `docs/KNOWN-GAPS.md`.

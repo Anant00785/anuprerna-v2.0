@@ -23,6 +23,7 @@ this repository. Both read the same artifacts, and both are held to the same rul
 | **How do AI agents pick up work, and what are they forbidden from doing?** | [`AGENT-FRAMEWORK.md`](./AGENT-FRAMEWORK.md) |
 | How is this tested, and how do I write a test here? | [`TESTING.md`](./TESTING.md) |
 | What is not done, and what is known to be wrong? | [`KNOWN-GAPS.md`](./KNOWN-GAPS.md) |
+| What does a specific legacy commerce endpoint do? | [`backend/commerce/02-api-documentation.md`](./backend/commerce/02-api-documentation.md) |
 | Why was a particular decision made? | [`adr/`](./adr) |
 | How do I run a cutover, rollback, or incident? | [`runbooks/`](./runbooks) |
 | The full team handbook (conventions, standards, rationale) | [`ENGINEERING-GUIDE.md`](./ENGINEERING-GUIDE.md) |

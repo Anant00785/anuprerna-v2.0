@@ -12,6 +12,11 @@ How work moves through this repo with minimal human intervention.
 - [ ] `@anuprerna/types` updated for any new data contract.
 - [ ] `pnpm lint typecheck test` green for the touched packages.
 - [ ] A route was **removed from `proxy/`** if this converted a legacy read (migration invariant).
+      As of `chore/agent-substrate`, `apps/api/src/proxy` is an empty `@Module({})` shell — nothing
+      has been routed through it yet, so today this item has nothing to check off. The real
+      strangler boundary right now is the frontends' `/api/backend/[...path]` route handlers; note
+      any change there in your handoff entry instead. See root `CLAUDE.md` and
+      `docs/adr/0002-strangler-proxy-migration.md` (status update).
 - [ ] Spec's "Done when" checklist all checked.
 
 ## Handing off
@@ -22,4 +27,5 @@ Keep it factual — the next agent trusts it without re-deriving.
 ## Guardrails (never do without a human)
 - Don't break legacy Loom token acceptance before the cutover runbook says so.
 - Don't enable outbound email/SMS/payments against real creds outside a sandbox.
-- Don't widen `proxy/`; every change shrinks it.
+- Don't widen `proxy/`; the strangler boundary only shrinks toward `apps/api` (see the status note
+  above — `proxy/` itself is currently empty, not yet the active boundary).
