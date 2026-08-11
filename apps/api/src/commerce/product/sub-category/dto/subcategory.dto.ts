@@ -84,8 +84,8 @@ export interface TableExplorerPageQuery {
 /** getSubCategoryData(@RequestParam int page, @RequestParam int size) */
 export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQuery {
   const q = (query ?? {}) as Record<string, unknown>;
-  const page = requireInt(q.page, "page");
-  const size = requireInt(q.size, "size");
+  const page = q.page !== undefined && q.page !== "" ? requireInt(q.page, "page") : 1;
+  const size = q.size !== undefined && q.size !== "" ? requireInt(q.size, "size") : 10;
   if (page < 0) throw new BadRequestException("page must be >= 0.");
   if (size < 1) throw new BadRequestException("size must be >= 1.");
   return { page, size };
