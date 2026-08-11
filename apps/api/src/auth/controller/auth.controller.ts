@@ -1,32 +1,3 @@
-/**
- * apps/api/src/auth/controller/auth.controller.ts
- *
- * Direct port of com.bloomscorp.loom.nverse.controller.NverseAuthenticationController.
- * Route paths are verbatim from com.bloomscorp.loom.support.RequestMapper:
- *
- *   POST /authenticate/email    (public — NON_AUTHENTICATED_URLS)
- *   POST /authenticate/social   (public — NON_AUTHENTICATED_URLS)
- *   GET  /auth/authority         CODE_SUCU
- *   POST /validate/provider      CODE_SUCU
- *
- * NVerseResponse's exact field name isn't in this repository (external
- * class); source calls `new NVerseResponse(token)` — a single-value
- * wrapper. Reproduced here as `keyedResponse("token", token)` following
- * this codebase's own RainTree convention (commerce/cart/controller/
- * cart.controller.ts uses the identical keyedResponse/simpleResponse
- * helpers).
- *
- * validateProvider's `new NVerseProviderResponse(isProviderValid,
- * isProviderValid ? -1 : provider.ordinal())` is also an external class;
- * the two-field shape IS source-verified from the controller call site,
- * reproduced as an object under the "provider" key.
- *
- * Swagger: @ApiTags("Authentication") groups this controller under the
- * requested tag. @ApiBearerAuth() is applied per-method, only on the two
- * routes that carry @RequireGate (i.e. actually go through RolesGuard's
- * token check) — the two login endpoints are genuinely public
- * (NON_AUTHENTICATED_URLS) and do not require a bearer token.
- */
 import { BadRequestException, Body, Controller, Get, HttpCode, Inject, Post, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GatekeeperService } from "../service/gatekeeper.service.js";
@@ -39,7 +10,18 @@ import {
   Authority,
   GateCode,
 } from "../types/auth.types.js";
-import { EmailLoginRequestDto, RegisterRequestDto, parseEmailLoginRequest, parseRegisterRequest, parseSocialLoginRequest, parseValidateProviderRequest } from "../dto/auth.dto.js";
+import {
+  EmailLoginRequestDto,
+  RegisterEmailRequestDto,
+  RegisterRequestDto,
+  RegisterSocialRequestDto,
+  SocialLoginRequestDto,
+  ValidateProviderRequestDto,
+  parseEmailLoginRequest,
+  parseRegisterRequest,
+  parseSocialLoginRequest,
+  parseValidateProviderRequest,
+} from "../dto/auth.dto.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
 import { keyedResponse } from "../../common/response/rain-response.js";
@@ -71,10 +53,6 @@ export class AuthController {
       throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
     }
 
-    // DisabledException equivalent — source checks account status via
-    // Spring Security's UserDetails#isEnabled()/isAccountNonLocked(), not
-    // reproduced verbatim here (external), but banned/suspended/deleted
-    // are the LoomTenant flags that would drive it.
     if (tenant.banned || tenant.suspended || tenant.deleted) {
       throw new UnauthorizedException(AuthErrorCode.ACCOUNT_DISABLED);
     }
@@ -92,8 +70,6 @@ export class AuthController {
     };
     const token = this.gatekeeper.generateToken(authenticatedTenant);
 
-    // Source: `new Thread(() -> { ...; daoController.updateTenant(...); }).start()`
-    // — fire-and-forget, not awaited by the response. Mirrored the same way.
     void this.tenantLookup.updateLoginMetadata(tenant.id, {
       lastAccessTime: Date.now(),
       provider: "BASIC",
@@ -123,7 +99,7 @@ export class AuthController {
       hashedPassword,
       userName: userName || email.split("@")[0],
       contactNumber: contactNumber || "",
-      role,
+      role: role || "ROLE_CUSTOMER",
     });
 
     const authenticatedTenant: AuthenticatedTenant = {
@@ -134,12 +110,33 @@ export class AuthController {
     };
 
     const token = this.gatekeeper.generateToken(authenticatedTenant);
-
     return keyedResponse("token", token);
+  }
+
+  /** Register user specifically via Email */
+  @Post("register/email")
+  @HttpCode(200)
+  @ApiBody({ type: RegisterEmailRequestDto })
+  @ApiOperation({ summary: "Register user via Email and Password." })
+  @ApiResponse({ status: 200, description: "Registration succeeded; JWT token returned." })
+  async registerUserEmail(@Body() body: unknown) {
+    return this.registerUser(body);
+  }
+
+  /** Register user specifically via Social Provider */
+  @Post("register/social")
+  @HttpCode(200)
+  @ApiBody({ type: RegisterSocialRequestDto })
+  @ApiOperation({ summary: "Register user via Social Provider (Google, Facebook, Apple)." })
+  @ApiResponse({ status: 200, description: "Registration succeeded; JWT token returned." })
+  async registerUserSocial(@Body() body: unknown) {
+    return this.registerUser(body);
   }
 
   /** createAuthenticationTokenUsingSocialID(NVerseSocialRequest) — public, no @RequireGate. */
   @Post("authenticate/social")
+  @HttpCode(200)
+  @ApiBody({ type: SocialLoginRequestDto })
   @ApiOperation({ summary: "Authenticate via a social/Auth0-issued token, issuing a JWT." })
   @ApiResponse({ status: 200, description: "Authentication succeeded; JWT token returned." })
   @ApiResponse({ status: 400, description: "Malformed username/token/provider." })
@@ -167,9 +164,6 @@ export class AuthController {
     };
     const token = this.gatekeeper.generateToken(authenticatedTenant);
 
-    // Source: sets emailVerified=true, lastAccessTime, provider, and
-    // re-hashes the Auth0-derived password onto the tenant, inside the
-    // same fire-and-forget Thread pattern as the email login handler.
     void (async () => {
       const hashed = await this.gatekeeper.hashPassword(decodedPassword);
       await this.tenantLookup.updateLoginMetadata(tenant.id, {
@@ -204,6 +198,7 @@ export class AuthController {
   @HttpCode(200)
   @RequireGate(GateCode.CODE_SUCU)
   @ApiBearerAuth()
+  @ApiBody({ type: ValidateProviderRequestDto })
   @ApiOperation({ summary: "Check whether a tenant's stored auth provider matches the one supplied." })
   @ApiResponse({ status: 200, description: "Provider validity result." })
   @ApiResponse({ status: 400, description: "Malformed username/provider." })
@@ -225,4 +220,3 @@ export class AuthController {
     });
   }
 }
-

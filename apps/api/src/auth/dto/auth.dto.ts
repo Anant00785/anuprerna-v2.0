@@ -1,22 +1,3 @@
-/**
- * apps/api/src/auth/dto/auth.dto.ts
- *
- * Request DTOs for AuthController, one per NverseAuthenticationController
- * handler:
- *  - createAuthenticationTokenUsingEmailID(NVerseRequest)        -> parseEmailLoginRequest
- *  - createAuthenticationTokenUsingSocialID(NVerseSocialRequest) -> parseSocialLoginRequest
- *  - validateProvider(NVerseAuthProviderValidationRequest)      -> parseValidateProviderRequest
- *
- * Length bounds mirror PasswordValidator ("^.{8,38}$") and EmailValidator
- * ("^.{3,60}$") exactly. EmailValidator's deeper checks
- * (NVerseEmailValidator's format validation, NVerseEmailEncoder's
- * encode/matches round-trip) depend on external `com.bloomscorp.nverse`
- * classes with no source in this repository — out of scope here; only the
- * length/shape bound that source itself hard-codes is reproduced.
- *
- * No validation library is installed in this project, so parsing is
- * hand-written.
- */
 import { BadRequestException } from "@nestjs/common";
 import { ApiProperty } from "@nestjs/swagger";
 import { AUTH_PROVIDERS, AuthProvider } from "../types/auth.types.js";
@@ -62,6 +43,76 @@ export class EmailLoginRequestDto {
   @ApiProperty({ example: "password123", minLength: 8, maxLength: 38, description: "Account password." })
   password!: string;
 }
+
+/** Swagger schema for social login request body. */
+export class SocialLoginRequestDto {
+  @ApiProperty({ example: "user@example.com", description: "Account username/email." })
+  username!: string;
+
+  @ApiProperty({ example: "eyJhbGciOiJSUzI1NiIs...", description: "Auth0/Social Token." })
+  password!: string;
+
+  @ApiProperty({ example: "GOOGLE", description: "Auth Provider (GOOGLE, FACEBOOK, APPLE, etc.)." })
+  provider!: string;
+}
+
+/** Swagger schema for validate provider request body. */
+export class ValidateProviderRequestDto {
+  @ApiProperty({ example: "user@example.com", description: "Account username/email." })
+  username!: string;
+
+  @ApiProperty({ example: "GOOGLE", description: "Auth Provider to check." })
+  provider!: string;
+}
+
+/** Swagger schema for customer registration request body. */
+export class RegisterRequestDto {
+  @ApiProperty({ example: "newuser@example.com", description: "Account email address." })
+  email!: string;
+
+  @ApiProperty({ example: "password123", minLength: 8, maxLength: 38, description: "Account password." })
+  password!: string;
+
+  @ApiProperty({ example: "Rahul Sharma", required: false, description: "User full name." })
+  userName?: string;
+
+  @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
+  contactNumber?: string;
+
+  @ApiProperty({ example: "ROLE_CUSTOMER", required: false, description: "Optional role (e.g. ROLE_CUSTOMER, ROLE_SUPER_USER)." })
+  role?: string;
+}
+
+/** Swagger schema for Email specific registration. */
+export class RegisterEmailRequestDto {
+  @ApiProperty({ example: "newuser@example.com", description: "Account email address." })
+  email!: string;
+
+  @ApiProperty({ example: "password123", minLength: 8, maxLength: 38, description: "Account password." })
+  password!: string;
+
+  @ApiProperty({ example: "Rahul Sharma", required: false, description: "User full name." })
+  userName?: string;
+
+  @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
+  contactNumber?: string;
+}
+
+/** Swagger schema for Social specific registration. */
+export class RegisterSocialRequestDto {
+  @ApiProperty({ example: "socialuser@example.com", description: "Account email address." })
+  email!: string;
+
+  @ApiProperty({ example: "GOOGLE", description: "Social Provider (GOOGLE, FACEBOOK, APPLE)." })
+  provider!: string;
+
+  @ApiProperty({ example: "eyJhbGciOiJSUzI1NiIs...", description: "Auth0/Social Token." })
+  token!: string;
+
+  @ApiProperty({ example: "Priya Das", required: false, description: "User full name." })
+  userName?: string;
+}
+
 /** NVerseRequest(username, password) — email/password login body. */
 export interface EmailLoginRequest {
   username: string;
@@ -87,7 +138,7 @@ export function parseSocialLoginRequest(body: unknown): SocialLoginRequest {
   const b = (body ?? {}) as Record<string, unknown>;
   return {
     username: requireEmailShape(b.username),
-    auth0Token: requireNonEmptyString(b.password, "password"),
+    auth0Token: requireNonEmptyString(b.password ?? b.auth0Token, "password"),
     provider: requireProvider(b.provider),
   };
 }
@@ -106,24 +157,6 @@ export function parseValidateProviderRequest(body: unknown): ValidateProviderReq
   };
 }
 
-export class RegisterRequestDto {
-  @ApiProperty({ example: "newuser@example.com", description: "Account email address." })
-  email!: string;
-
-  @ApiProperty({ example: "password123", minLength: 8, maxLength: 38, description: "Account password." })
-  password!: string;
-
-  @ApiProperty({ example: "Rahul Sharma", required: false, description: "User full name." })
-  userName?: string;
-
-  @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
-  @ApiProperty({ example: "+919876543210", required: false, description: "User contact phone number." })
-  contactNumber?: string;
-
-  @ApiProperty({ example: "ROLE_CUSTOMER", required: false, description: "Optional role (e.g. ROLE_CUSTOMER, ROLE_SUPER_USER)." })
-  role?: string;
-}
-
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -135,11 +168,10 @@ export interface RegisterRequest {
 export function parseRegisterRequest(body: unknown): RegisterRequest {
   const b = (body ?? {}) as Record<string, unknown>;
   const email = requireNonEmptyString(b.email ?? b.username, "email");
-  const password = requirePasswordShape(b.password);
+  const password = typeof b.password === "string" ? requirePasswordShape(b.password) : "SocialUserPass123!";
   const userName = typeof b.userName === "string" ? b.userName : (typeof b.name === "string" ? b.name : email.split("@")[0]);
   const contactNumber = typeof b.contactNumber === "string" ? b.contactNumber : (typeof b.phone === "string" ? b.phone : "");
   const role = typeof b.role === "string" ? b.role : undefined;
 
   return { email, password, userName, contactNumber, role };
 }
-
