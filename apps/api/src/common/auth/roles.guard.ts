@@ -65,10 +65,18 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const header: string | undefined = request.headers?.authorization;
-    const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
+
+    if (!header) {
+      throw new UnauthorizedException("Missing Authorization header.");
+    }
+
+    let token = header.trim();
+    while (token.toLowerCase().startsWith("bearer ")) {
+      token = token.slice(7).trim();
+    }
 
     if (!token) {
-      throw new UnauthorizedException("Missing or malformed Authorization header.");
+      throw new UnauthorizedException("Missing or malformed Authorization token.");
     }
 
     const tenant: AuthenticatedTenant = this.gatekeeper.verifyToken(token);

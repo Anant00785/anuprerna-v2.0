@@ -5,21 +5,6 @@
  * its collaborators use against LoomTenant:
  *  - NVerseUserDetailsService#loadUserByUsername(username) -> findByEmail
  *  - LoomTenantDAOController#updateTenant(user.getTenant())  -> updateLoginMetadata
- *    (source calls this from a `new Thread(...)` after both the email and
- *    social login handlers succeed, to bump lastAccessTime/provider/password
- *    without blocking the response — mirrored here as a fire-and-forget
- *    Promise the controller does not await, not a literal spawned thread).
- *
- * Table/column names are taken directly from the introspected
- * database/schema/schema.ts (loomTenant, userRole) — the actual Postgres
- * truth — not reconstructed from the Java @Column names.
- *
- * OPTIMISTIC LOCKING: loom_tenant.version is a real bigserial NOT NULL
- * column (same BehemothORM `@Version` pattern documented at length in
- * commerce/cart/repository/cart.repository.ts). updateLoginMetadata reads
- * the current version inside a transaction, then writes
- * `WHERE id = ? AND version = ?`, mirroring Hibernate's optimistic-lock
- * UPDATE shape 1:1.
  */
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
@@ -109,27 +94,11 @@ export class TenantLookupRepository {
     return mapRowsToTenant(rows as unknown as TenantRoleRow[]);
   }
 
-  /**
-   * Narrow projection matching Cart's `TenantLookupPort#retrieveUserByUid`
-   * contract (commerce/cart/types/cart.types.ts) exactly, so this
-   * repository can be bound directly in place of Cart's dummy
-   * TENANT_LOOKUP_PORT once Auth is wired into other feature modules — no
-   * adapter needed.
-   */
   async retrieveUserByUid(uid: string): Promise<{ id: number; email: string } | null> {
     const tenant = await this.findByUid(uid);
     return tenant ? { id: tenant.id, email: tenant.email } : null;
   }
 
-  /**
-   * LoomTenantDAOController#updateTenant equivalent, scoped to the fields
-   * the login flow actually mutates post-authentication:
-   *  - email login: lastAccessTime, provider = BASIC
-   *  - social login: emailVerified = true, lastAccessTime, provider, password (re-hashed)
-   * Silently no-ops if the tenant no longer exists (source's updateTenant
-   * has no such guard, but it runs inside a bare Thread with no error
-   * handling either — a missing row here is equally inert).
-   */
   async updateLoginMetadata(tenantId: number, changes: TenantLoginMetadataUpdate): Promise<void> {
     await this.db.transaction(async (tx) => {
       const rows = await tx
@@ -189,7 +158,8 @@ export class TenantLookupRepository {
         userId: newTenantId,
       });
 
-      if (data.role && data.role !== "ROLE_CUSTOMER") {
+      const validRoles = ["ROLE_GOD_MODE", "ROLE_SUPER_USER", "ROLE_CUSTOMER", "ROLE_TENANT", "ROLE_ADMIN", "ROLE_DEVELOPER"];
+      if (data.role && data.role !== "ROLE_CUSTOMER" && validRoles.includes(data.role)) {
         const customRole = data.role as any;
         await tx.insert(userRole).values({
           role: customRole,
