@@ -25,7 +25,7 @@
  * Cart endpoint to exclude it from.
  */
 import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CartService } from "../service/cart.service.js";
 import { OptimisticLockError } from "../repository/cart.repository.js";
 import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -35,6 +35,8 @@ import { ActionCode } from "../../../common/errors/action-code.js";
 import { validateCartItem } from "../validators/cart-item.validator.js";
 import { sanitizeCartItem } from "../validators/cart-item.sanitizer.js";
 import {
+  AddCartItemDto,
+  UpdateCartItemDto,
   parseAddCartItemRequest,
   parseCartItemIdParam,
   parseIdParam,
@@ -118,6 +120,7 @@ export class CartController {
   @Post("/add/cart-item")
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Add an item to the authenticated customer's cart." })
+  @ApiBody({ type: AddCartItemDto })
   @ApiResponse({ status: 201, description: "Cart item created." })
   @ApiResponse({ status: 200, description: "Request rejected by validation (see response body's success flag)." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
@@ -141,6 +144,7 @@ export class CartController {
   @Patch("/update/cart-item")
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Update an existing cart item." })
+  @ApiBody({ type: UpdateCartItemDto })
   @ApiResponse({ status: 200, description: "Update result (see response body's success flag)." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })

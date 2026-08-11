@@ -140,10 +140,140 @@ export function parseAddCartItemRequest(body: unknown): AddCartItemRequest {
  * CartItemDAOController#updateCartItem). Parsing still accepts the full
  * shape to stay contract-compatible with existing clients; the service
  * layer intentionally ignores everything except id/quantity, exactly as the
+}
+
+export function parseIdParam(id: unknown): number {
+  return requireInt(id, "id");
+}
+
+export function parseUidParam(uid: unknown): string {
+  return requireNonEmptyString(uid, "uid");
+}
+
+export function parseCartItemIdParam(cartItemId: unknown): number {
+  return requireInt(cartItemId, "cartItemId");
+}
+
+function parseOrderType(value: unknown): OrderType {
+  if (typeof value !== "string" || !(ORDER_TYPES as readonly string[]).includes(value)) {
+    throw new BadRequestException(`orderType must be one of ${ORDER_TYPES.join(", ")}.`);
+  }
+  return value as OrderType;
+}
+
+function parseUnit(value: unknown): Unit {
+  if (typeof value !== "string" || !(UNITS as readonly string[]).includes(value)) {
+    throw new BadRequestException(`unit must be one of ${UNITS.join(", ")}.`);
+  }
+  return value as Unit;
+}
+
+function parseOptionalInt(value: unknown, field: string): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  return requireInt(value, field);
+}
+
+function parseOptionalString(value: unknown, field: string): string | null | undefined {
+  if (value === undefined || value === null) return value as null | undefined;
+  if (typeof value !== "string") throw new BadRequestException(`${field} must be a string.`);
+  return value;
+}
+
+/** Shared body parsing for both add and update — the request shape is identical (CartItem). */
+function parseCartItemInput(body: unknown): CartItemInput {
+  const b = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    id: b.id === undefined ? undefined : requireInt(b.id, "id"),
+    fabricProductId: parseOptionalInt(b.fabricProductId, "fabricProductId"),
+    finishedProductId: parseOptionalInt(b.finishedProductId, "finishedProductId"),
+    selectedFabricId: parseOptionalInt(b.selectedFabricId, "selectedFabricId"),
+    selectedSizeOptionId: parseOptionalInt(b.selectedSizeOptionId, "selectedSizeOptionId"),
+    selectedFinishId: requireNonEmptyStringOrEmpty(b.selectedFinishId),
+    customSize: b.customSize,
+    productGroup: requireNonEmptyString(b.productGroup, "productGroup"),
+    orderType: parseOrderType(b.orderType),
+    quantity: requireNumber(b.quantity, "quantity"),
+    unit: parseUnit(b.unit),
+    makingCharge: b.makingCharge === undefined ? undefined : requireNumber(b.makingCharge, "makingCharge"),
+    clickId: parseOptionalString(b.clickId, "clickId"),
+    clickIdType: parseOptionalString(b.clickIdType, "clickIdType"),
+    clickCapturedAt: parseOptionalInt(b.clickCapturedAt, "clickCapturedAt"),
+    utmSource: parseOptionalString(b.utmSource, "utmSource"),
+    utmMedium: parseOptionalString(b.utmMedium, "utmMedium"),
+    utmCampaign: parseOptionalString(b.utmCampaign, "utmCampaign"),
+  };
+}
+
+function requireNumber(value: unknown, field: string): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    throw new BadRequestException(`${field} must be a number.`);
+  }
+  return value;
+}
+
+/** selectedFinishId is allowed to be "" (means none) but must be a string, unlike other required fields. */
+function requireNonEmptyStringOrEmpty(value: unknown): string {
+  if (typeof value !== "string") {
+    throw new BadRequestException("selectedFinishId must be a string.");
+  }
+  return value;
+}
+
+export type AddCartItemRequest = CartItemInput;
+
+export function parseAddCartItemRequest(body: unknown): AddCartItemRequest {
+  return parseCartItemInput(body);
+}
+
+/**
+ * Source note: updateCartItem accepts the full CartItem shape as its request
+ * body but the DAO controller only ever reads `id` and `quantity` off it
+ * (every other field-level update is commented out in
+ * CartItemDAOController#updateCartItem). Parsing still accepts the full
+ * shape to stay contract-compatible with existing clients; the service
+ * layer intentionally ignores everything except id/quantity, exactly as the
  * source does.
  */
 export interface UpdateCartItemRequest extends CartItemInput {
   id: number; // required for update, unlike create
+}
+
+import { ApiProperty } from "@nestjs/swagger";
+
+export class AddCartItemDto {
+  @ApiProperty({ example: 101, required: false, description: "Fabric product ID" })
+  fabricProductId?: number;
+
+  @ApiProperty({ example: null, required: false, description: "Finished product ID" })
+  finishedProductId?: number;
+
+  @ApiProperty({ example: null, required: false, description: "Selected fabric ID" })
+  selectedFabricId?: number;
+
+  @ApiProperty({ example: null, required: false, description: "Selected size option ID" })
+  selectedSizeOptionId?: number;
+
+  @ApiProperty({ example: "0", description: "Selected finish ID" })
+  selectedFinishId!: string;
+
+  @ApiProperty({ example: "fabric", description: "Product group ('fabric' or 'finished')" })
+  productGroup!: string;
+
+  @ApiProperty({ example: "MADE_TO_ORDER", description: "Order type ('IN_STOCK', 'MADE_TO_ORDER', 'PRE_ORDER')" })
+  orderType!: OrderType;
+
+  @ApiProperty({ example: 5, description: "Item quantity" })
+  quantity!: number;
+
+  @ApiProperty({ example: "METER", description: "Item unit ('METER', 'PIECE', 'YARD')" })
+  unit!: Unit;
+}
+
+export class UpdateCartItemDto extends AddCartItemDto {
+  @ApiProperty({ example: 1, description: "Cart Item ID to update" })
+  id!: number;
 }
 
 export function parseUpdateCartItemRequest(body: unknown): UpdateCartItemRequest {
