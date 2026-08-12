@@ -37,7 +37,7 @@ CREATE TYPE "public"."log_type" AS ENUM('ALERT', 'CRITICAL', 'DEBUG', 'EMERGENCY
 CREATE TYPE "public"."loyalty_config_audit_log_type" AS ENUM('ONBOARDING', 'RENEWAL_AUTO', 'RENEWAL_MANUAL', 'ADJUSTMENT');--> statement-breakpoint
 CREATE TYPE "public"."nverse_auth_provider" AS ENUM('BASIC', 'FACEBOOK', 'GOOGLE', 'UNKNOWN');--> statement-breakpoint
 CREATE TYPE "public"."order_status" AS ENUM('CANCELLED', 'DELIVERED', 'DISPATCHED', 'FAILED', 'INITIATED', 'IN_TRANSIT', 'PROCESSING');--> statement-breakpoint
-CREATE TYPE "public"."order_status_enum" AS ENUM('INITIATED', 'PROCESSING', 'CANCELLED', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'DISPATCHED');--> statement-breakpoint
+CREATE TYPE "public"."order_status_enum" AS ENUM('INITIATED', 'PROCESSING', 'CANCELLED', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'DISPATCHED', 'PARTIALLY_DISPATCHED');--> statement-breakpoint
 CREATE TYPE "public"."order_type" AS ENUM('IN_STOCK', 'MADE_TO_ORDER', 'PRE_ORDER');--> statement-breakpoint
 CREATE TYPE "public"."order_type_enum" AS ENUM('IN_STOCK', 'MADE_TO_ORDER', 'PRE_ORDER');--> statement-breakpoint
 CREATE TYPE "public"."payment_mode_enum" AS ENUM('RAZORPAY', 'STRIPE', 'BANK', 'COD');--> statement-breakpoint
@@ -49,7 +49,7 @@ CREATE TYPE "public"."review_status_enum" AS ENUM('PENDING', 'APPROVED', 'REMOVE
 CREATE TYPE "public"."scheduled_email_enum" AS ENUM('COMPLETED', 'PENDING');--> statement-breakpoint
 CREATE TYPE "public"."scheduled_email_status" AS ENUM('PENDING', 'COMPLETED');--> statement-breakpoint
 CREATE TYPE "public"."settings_attribute" AS ENUM('CASH_ON_DELIVERY', 'CRAFT_SITE_NOTIFICATION', 'FABRIC_SITE_NOTIFICATION', 'SWATCH_PRICE_PERCENTAGE');--> statement-breakpoint
-CREATE TYPE "public"."settings_attribute_enum" AS ENUM('CASH_ON_DELIVERY', 'SWATCH_PRICE_PERCENTAGE', 'FABRIC_SITE_NOTIFICATION', 'CRAFT_SITE_NOTIFICATION');--> statement-breakpoint
+CREATE TYPE "public"."settings_attribute_enum" AS ENUM('CASH_ON_DELIVERY', 'SWATCH_PRICE_PERCENTAGE', 'FABRIC_SITE_NOTIFICATION', 'CRAFT_SITE_NOTIFICATION', 'IMPACT_ASSUMPTIONS');--> statement-breakpoint
 CREATE TYPE "public"."settings_attribute_type" AS ENUM('BOOLEAN', 'NUMBER', 'TEXT');--> statement-breakpoint
 CREATE TYPE "public"."settings_attribute_type_enum" AS ENUM('NUMBER', 'BOOLEAN', 'TEXT');--> statement-breakpoint
 CREATE TYPE "public"."story_content_type" AS ENUM('ARTISTS', 'CLUSTERS', 'COLLABORATIONS', 'CRAFTS');--> statement-breakpoint
@@ -59,7 +59,7 @@ CREATE TYPE "public"."transaction_status_enum" AS ENUM('CREATED', 'PAID', 'FAILE
 CREATE TYPE "public"."unit_enum" AS ENUM('METER', 'UNIT');--> statement-breakpoint
 CREATE TYPE "public"."usage_type" AS ENUM('MULTIPLE', 'SINGLE');--> statement-breakpoint
 CREATE TYPE "public"."usage_type_enum" AS ENUM('SINGLE', 'MULTIPLE');--> statement-breakpoint
-CREATE TYPE "public"."user_role_enum" AS ENUM('ROLE_GOD_MODE', 'ROLE_SUPER_USER', 'ROLE_ADMIN', 'ROLE_CUSTOMER');--> statement-breakpoint
+CREATE TYPE "public"."user_role_enum" AS ENUM('ROLE_GOD_MODE', 'ROLE_SUPER_USER', 'ROLE_ADMIN', 'ROLE_CUSTOMER', 'ROLE_ARTISAN');--> statement-breakpoint
 CREATE TYPE "public"."whatsapp_notification_entity_type_enum" AS ENUM('ORDER', 'ORDER_FULFILLMENT', 'CUSTOM_ORDER', 'CUSTOM_ORDER_FULFILLMENT');--> statement-breakpoint
 CREATE TYPE "public"."whatsapp_notification_status_enum" AS ENUM('PENDING_SEND', 'POST_SUCCESS', 'POST_FAILED', 'POST_ERROR', 'SENT', 'DELIVERED', 'READ', 'FAILED_DELIVERY');--> statement-breakpoint
 CREATE TYPE "public"."whatsapp_notification_tenant_type_enum" AS ENUM('CUSTOMER', 'ARTISAN');--> statement-breakpoint

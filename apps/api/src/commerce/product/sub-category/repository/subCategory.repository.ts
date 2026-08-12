@@ -430,6 +430,18 @@ function mapExecRowToSelectShape(row: Record<string, unknown>): typeof subCatego
     fabricProfileId:
       row.fabric_profile_id === null || row.fabric_profile_id === undefined ? null : Number(row.fabric_profile_id),
     timeOfCreation: Number(row.time_of_creation),
+    // Added 2026-08-12 when the schema was re-introspected from production: both
+    // columns exist in prod and were absent from the previously-committed schema.
+    // avg_work_hours_per_meter is a nullable numeric (Drizzle maps numeric to string);
+    // impact_config_version is NOT NULL with a database default of 1.
+    avgWorkHoursPerMeter:
+      row.avg_work_hours_per_meter === null || row.avg_work_hours_per_meter === undefined
+        ? null
+        : String(row.avg_work_hours_per_meter),
+    impactConfigVersion:
+      row.impact_config_version === null || row.impact_config_version === undefined
+        ? 1
+        : Number(row.impact_config_version),
     featured: Boolean(row.featured),
     featuredImage: (row.featured_image as string | null) ?? "",
   };
