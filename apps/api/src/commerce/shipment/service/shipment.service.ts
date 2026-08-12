@@ -5,7 +5,7 @@ import { ShipmentInput } from "../dto/shipment.dto.js";
 import { validateShipment } from "../validators/shipment.validator.js";
 import { sanitizeShipment } from "../validators/shipment.sanitizer.js";
 import { ShipmentEntity, ShipmentData } from "../types/shipment.types.js";
-import { ActionCode } from "../../common/errors/action-code.js";
+import { ActionCode } from "../../../common/errors/action-code.js";
 
 @Injectable()
 export class ShipmentService {

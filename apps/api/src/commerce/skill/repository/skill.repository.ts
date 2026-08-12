@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
-import { DATABASE_CONNECTION } from '../../database/database.module.js';
+import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import { eq } from 'drizzle-orm';
-import * as schema from '../../database/schema/schema.js';
+import * as schema from '../../../database/schema/schema.js';
 
 @Injectable()
 export class SkillRepository {

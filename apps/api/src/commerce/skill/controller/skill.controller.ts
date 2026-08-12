@@ -1,9 +1,9 @@
 // @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { SkillService } from '../service/skill.service.js';
-import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
-import { GateCode } from '../../auth/types/auth.types.js';
-import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
+import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { GateCode } from '../../../auth/types/auth.types.js';
+import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 import { parseCreateSkillInput, parseUpdateSkillInput, parseArtisanSkillMappingFilterInput } from '../dto/skill.dto.js';
 import { validateCreateSkill, validateUpdateSkill } from '../validators/skill.validator.js';
 import { sanitizeCreateSkill, sanitizeUpdateSkill } from '../validators/skill.sanitizer.js';

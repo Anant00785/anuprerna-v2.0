@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
-import { DATABASE_CONNECTION } from '../../database/database.module.js';
-import * as schema from '../../database/schema/schema.js';
+import { DATABASE_CONNECTION } from '../../../database/database.module.js';
+import * as schema from '../../../database/schema/schema.js';
 import { eq } from 'drizzle-orm';
 import { SettingsDTO } from '../types/settings.types.js';
 import { mapSettingsRowToDTO, mapSettingsRowListToDTOList } from '../mapper/settings.mapper.js';

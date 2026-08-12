@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { Controller, Get, Patch, UseGuards, Body, Param } from '@nestjs/common';
-import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
-import { GateCode } from '../../auth/types/auth.types.js';
-import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
+import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { GateCode } from '../../../auth/types/auth.types.js';
+import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 import { LoyaltyprogramService } from '../service/loyaltyprogram.service.js';
 
 @Controller('')

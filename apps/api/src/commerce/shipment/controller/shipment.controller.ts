@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
-import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
-import { GateCode } from "../../auth/types/auth.types.js";
-import { simpleResponse, keyedResponse } from "../../common/response/rain-response.js";
+import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
+import { GateCode } from "../../../auth/types/auth.types.js";
+import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ShipmentService } from "../service/shipment.service.js";
 import { parseShipmentInput } from "../dto/shipment.dto.js";
 

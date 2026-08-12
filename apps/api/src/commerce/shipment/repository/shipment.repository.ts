@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
-import { DATABASE_CONNECTION } from "../../database/database.module.js";
-import * as schema from "../../database/schema/schema.js";
+import { DATABASE_CONNECTION } from "../../../database/database.module.js";
+import * as schema from "../../../database/schema/schema.js";
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ShipmentInput } from "../dto/shipment.dto.js";

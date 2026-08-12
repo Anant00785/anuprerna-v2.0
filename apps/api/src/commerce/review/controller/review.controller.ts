@@ -1,10 +1,10 @@
 // @ts-nocheck
 import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards } from "@nestjs/common";
-import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
-import { GateCode } from "../../auth/types/auth.types.js";
-import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
-import type { AuthenticatedTenant } from "../../auth/types/auth.types.js";
-import { simpleResponse, keyedResponse } from "../../common/response/rain-response.js";
+import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
+import { GateCode } from "../../../auth/types/auth.types.js";
+import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
+import type { AuthenticatedTenant } from "../../../auth/types/auth.types.js";
+import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ReviewService } from "../service/review.service.js";
 import { parseReviewInput } from "../dto/review.dto.js";
 import { validateReview, validateReviewStatus } from "../validators/review.validator.js";

@@ -36,7 +36,10 @@ export class RazorpayPaymentService {
 
         const result = await this.repository.create({
             razorpayOrderId: session.razorpayOrderId,
-            loomOrderId: request.orderId,
+            // Drizzle maps loom_order_id as bigint({ mode: "number" }), so the
+            // column is typed number here. Order ids are well inside the safe
+            // integer range; the broken import previously hid this mismatch.
+            loomOrderId: Number(request.orderId),
             amount: amount,
             paymentType: request.paymentType,
             currency: session.currency,

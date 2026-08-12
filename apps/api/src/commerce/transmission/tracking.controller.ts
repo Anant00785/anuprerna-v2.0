@@ -3,7 +3,7 @@ import { ApiOperation, ApiParam, ApiTags, ApiResponse } from "@nestjs/swagger";
 import { TransmissionService } from "./transmission.service.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 
-interface TransmissionPayload {
+export interface TransmissionPayload {
   transmissionBatchNo: string;
   carrierName: string;
   trackingNumber: string;
@@ -12,7 +12,7 @@ interface TransmissionPayload {
   status: string;
 }
 
-interface TrackingRecord {
+export interface TrackingRecord {
   id: string;
   name: string;
   payload: TransmissionPayload;
@@ -20,7 +20,9 @@ interface TrackingRecord {
   updatedAt: string;
 }
 
-function buildTrackingResponse(record: TrackingRecord, searchedBy: string, searchValue: string | number) {
+// Exported so it can be unit-tested directly as a pure function, without
+// standing up TrackingController/TransmissionService.
+export function buildTrackingResponse(record: TrackingRecord, searchedBy: string, searchValue: string | number) {
   const p = record.payload;
   const dispatched = new Date(record.createdAt || Date.now());
   const estimatedDelivery = new Date(dispatched);

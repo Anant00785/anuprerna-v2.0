@@ -2,9 +2,9 @@
 import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { IPLocationService } from '../service/iplocation.service.js';
-import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
-import { GateCode } from '../../auth/types/auth.types.js';
-import { keyedResponse } from '../../common/response/rain-response.js';
+import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { GateCode } from '../../../auth/types/auth.types.js';
+import { keyedResponse } from '../../../common/response/rain-response.js';
 
 @Controller('get/iplocation')
 @UseGuards(RolesGuard)

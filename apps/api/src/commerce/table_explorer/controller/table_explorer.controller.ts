@@ -2,9 +2,9 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { TableExplorerService } from '../service/table_explorer.service.js';
 import { parseTablePaginationInput } from '../dto/table_explorer.dto.js';
-import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
-import { GateCode } from '../../auth/types/auth.types.js';
-import { keyedResponse, simpleResponse } from '../../common/response/rain-response.js';
+import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { GateCode } from '../../../auth/types/auth.types.js';
+import { keyedResponse, simpleResponse } from '../../../common/response/rain-response.js';
 
 import { ApiExcludeController } from '@nestjs/swagger';
 

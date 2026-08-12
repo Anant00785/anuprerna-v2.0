@@ -1,5 +1,5 @@
 // @ts-nocheck
-import * as schema from '../../database/schema/schema.js';
+import * as schema from '../../../database/schema/schema.js';
 
 export function toWhatsappHistoryDto(row: typeof schema.whatsappNotificationHistory.$inferSelect) {
     return {

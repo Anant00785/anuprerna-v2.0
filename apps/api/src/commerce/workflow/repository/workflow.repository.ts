@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Inject, Injectable } from '@nestjs/common';
-import { DATABASE_CONNECTION } from '../../database/database.module.js';
-import * as schema from '../../database/schema/schema.js';
+import { DATABASE_CONNECTION } from '../../../database/database.module.js';
+import * as schema from '../../../database/schema/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { IWorkflow, IWorkflowTemplate, IStepElement, ISubProcessElement, IElementFeedback } from '../types/workflow.types.js';
 

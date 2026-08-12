@@ -2,9 +2,9 @@
 import { Controller, Post, Get, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { WhatsappService } from '../service/whatsapp.service.js';
 import { parseWhatsappOptInInput, parsePaginationInput } from '../dto/whatsapp.dto.js';
-import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
-import { GateCode } from '../../auth/types/auth.types.js';
-import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
+import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { GateCode } from '../../../auth/types/auth.types.js';
+import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 
 @Controller()
 @UseGuards(RolesGuard)

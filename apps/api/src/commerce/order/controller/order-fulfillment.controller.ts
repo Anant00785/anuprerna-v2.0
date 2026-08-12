@@ -3,9 +3,9 @@
  * migrated/order/controller/order-fulfillment.controller.ts
  */
 import { Controller, Get, Post, Patch, Param, Body, UseGuards } from "@nestjs/common";
-import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
-import { GateCode } from "../../auth/types/auth.types.js";
-import { simpleResponse, keyedResponse } from "../../common/response/rain-response.js";
+import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
+import { GateCode } from "../../../auth/types/auth.types.js";
+import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 
 @Controller()
 @UseGuards(RolesGuard)

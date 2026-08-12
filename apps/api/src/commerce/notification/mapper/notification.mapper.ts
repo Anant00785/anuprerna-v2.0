@@ -1,5 +1,5 @@
 // @ts-nocheck
-import * as schema from '../../database/schema/schema.js';
+import * as schema from '../../../database/schema/schema.js';
 
 export function toEmailHistoryDto(row: typeof schema.emailNotificationHistory.$inferSelect) {
     return {

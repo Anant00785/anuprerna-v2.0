@@ -4,9 +4,9 @@ import { SettingsService } from '../service/settings.service.js';
 import { parseUpdateSettingsRequest } from '../dto/settings.dto.js';
 import { validateUpdateSettingsRequest } from '../validators/settings.validator.js';
 import { sanitizeUpdateSettingsRequest } from '../validators/settings.sanitizer.js';
-import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
-import { GateCode } from '../../auth/types/auth.types.js';
-import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
+import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { GateCode } from '../../../auth/types/auth.types.js';
+import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 
 @Controller()
 export class SettingsController {

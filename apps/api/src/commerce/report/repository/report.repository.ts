@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
-import { DATABASE_CONNECTION } from '../../database/database.module.js';
-import * as schema from '../../database/schema/schema.js';
+import { DATABASE_CONNECTION } from '../../../database/database.module.js';
+import * as schema from '../../../database/schema/schema.js';
 import { FabricStockRecord, FinishedStockRecord, ReportConfig } from '../types/report.types.js';
 
 @Injectable()

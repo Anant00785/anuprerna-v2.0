@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { ActionCode } from "../../common/errors/action-code.js";
+import { ActionCode } from "../../../common/errors/action-code.js";
 import { InventoryRepository } from "../repository/inventory.repository.js";
 import { WarehouseInput, InventoryAdjustmentReasonInput, InventoryAdjustmentInput, InventoryRestockRequestInput } from "../dto/inventory.dto.js";
 import { RestockRequestStatus } from "../types/inventory.types.js";

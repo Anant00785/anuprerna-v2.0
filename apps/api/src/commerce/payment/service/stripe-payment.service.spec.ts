@@ -1,3 +1,6 @@
+// loomOrderId is now persisted as a number: the column is bigint({ mode: "number" }).
+// TransactionStatus is now the string the Postgres enum actually accepts, not an
+// integer. Both were corrected on 2026-08-12 - see docs/KNOWN-GAPS.md.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { StripePaymentService } from "./stripe-payment.service.js";
 import type { StripeTransactionRepository } from "../repository/payment.repository.js";
@@ -74,7 +77,7 @@ describe("StripePaymentService.createSession", () => {
 
     expect(result).toHaveProperty("sessionId");
     expect(result).toHaveProperty("checkoutUrl");
-    expect(fakes.repository.create).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.CREATED, loomOrderId: 1n }));
+    expect(fakes.repository.create).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.CREATED, loomOrderId: 1 }));
   });
 
   it("marks the order failed and throws when the transaction log write fails", async () => {

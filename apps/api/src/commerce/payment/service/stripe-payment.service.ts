@@ -37,7 +37,10 @@ export class StripePaymentService {
         const result = await this.repository.create({
             stripeSessionId: session.id,
             stripePaymentIntentId: session.paymentIntent,
-            loomOrderId: request.loomOrderId,
+            // Drizzle maps loom_order_id as bigint({ mode: "number" }), so the
+            // column is typed number here. Order ids are well inside the safe
+            // integer range; the broken import previously hid this mismatch.
+            loomOrderId: Number(request.loomOrderId),
             amount: (session.amountTotal / 100).toString(),
             paymentType: request.paymentType,
             currency: session.currency,
