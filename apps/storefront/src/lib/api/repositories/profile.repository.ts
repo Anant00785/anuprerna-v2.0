@@ -170,4 +170,19 @@ export const profileRepository = {
     }
     return apiRequest<WholesaleInfo>("get/customer/loyalty/info", { headers });
   },
+
+  /**
+   * Update customer selected forex currency
+   */
+  async updateSelectedForex(currency: string, jwtToken?: string): Promise<any> {
+    const headers: Record<string, string> = {};
+    if (jwtToken) {
+      headers["Authorization"] = `Bearer ${jwtToken}`;
+    }
+    return apiRequest<any>("customer/update/selected-forex", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ currency }),
+    });
+  },
 };

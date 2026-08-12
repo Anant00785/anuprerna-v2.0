@@ -174,243 +174,355 @@ export const INITIAL_NAVIGATION_COLORS: NavigationColorOption[] = [
   { colorId: 14, colorLabel: "Mustard", colorHexCode: "#FFDB58" },
 ];
 
-// 5. ACCESSORIES CATEGORIES & IMAGES (Exact from Screenshot 2)
+// 5. ACCESSORIES CATEGORIES & IMAGES (Exact from Loom API / Angular)
 export const INITIAL_NAVIGATION_ACCESSORIES: NavigationCraft[] = [
   {
-    id: 10,
+    id: 12946,
     segmentCategoryName: "SCARF",
     optionList: [
       {
-        id: 1001,
+        id: 29280027,
         subCategoryName: "Custom Stoles",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/O7L4ELP8YKCSPRNBYUH5KUD9I9SP00509.jpg",
       },
       {
-        id: 1002,
+        id: 12948,
         subCategoryName: "Neckerchief",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/HMD31252OFCZQ08GK3X0WHDXFONU04019.png",
       },
       {
-        id: 1003,
+        id: 29935,
         subCategoryName: "Stoles",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/6FPSW3EI1ZJ8V4K521TUTX5RUG6004222.jpg",
       },
     ],
   },
   {
-    id: 11,
+    id: 31862,
     segmentCategoryName: "BAGS",
     optionList: [
       {
-        id: 1101,
+        id: 414130,
         subCategoryName: "Bucket Bags",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/O12DPVP05FQ18GO1Y9PLULJQA4LC03552.jpg",
       },
       {
-        id: 1102,
+        id: 414147,
         subCategoryName: "Fannypack",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/8W735KSTIGIRPWUNAZHRHKR2S14M09943.jpg",
       },
       {
-        id: 1103,
+        id: 411514,
         subCategoryName: "Lady Bags",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/AVRMBB7BAKFMML9OHD3WLEQ558XM08280.jpg",
       },
       {
-        id: 1104,
+        id: 31864,
         subCategoryName: "Tote Bags",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/JMA1172YLBJ145CR2F7DMHSXCDIY03262.png",
       },
     ],
   },
   {
-    id: 12,
+    id: 589379,
     segmentCategoryName: "SCRUNCHIES",
     optionList: [
       {
-        id: 1201,
+        id: 589382,
         subCategoryName: "Scrunchies",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/ZBPBGCWMRLITXSJKHSMQXWEDY5YA03107.png",
       },
     ],
   },
   {
-    id: 13,
+    id: 31631263,
     segmentCategoryName: "Unisex",
     optionList: [
       {
-        id: 1301,
+        id: 31631647,
         subCategoryName: "Hats",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1521369984125-a4de59b6574f?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/8T5WJJR6H919RB54W3DADUCN0BEB01606.jpg",
       },
       {
-        id: 1302,
+        id: 71711110,
         subCategoryName: "Sleeping Mask",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/5GXVVF03HYDSII33TOF95QPAIFKV02515.png",
       },
     ],
   },
   {
-    id: 14,
+    id: 24350,
     segmentCategoryName: "FABRIC ENVELOPE",
     optionList: [
       {
-        id: 1401,
+        id: 33322,
         subCategoryName: "Drawstring Pouch",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/S58D4UOPR3UTPTKLR2CEDO6WJZOO02372.jpg",
       },
       {
-        id: 1402,
+        id: 24352,
         subCategoryName: "Rectangular Envelope",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/61XJHL0BDUKIPBPUU39N7X1YFUHU02220.jpg",
       },
     ],
   },
 ];
 
-// 6. HOMEWARE CATEGORIES & IMAGES (Exact from Screenshot 3)
+// 6. HOMEWARE CATEGORIES & IMAGES (Exact from Loom API / Angular)
 export const INITIAL_NAVIGATION_HOME: NavigationCraft[] = [
   {
-    id: 20,
+    id: 23797,
     segmentCategoryName: "KITCHENWARE",
     optionList: [
       {
-        id: 2001,
+        id: 33334,
         subCategoryName: "Apron",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FPU5QM1S5EYUZUKJSGDCIYN9QFZ000082.png",
       },
       {
-        id: 2002,
+        id: 32888,
         subCategoryName: "Fabric Coasters",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/2B0PYQGE3DWQZMRGL8MWDNY6TJAR08161.jpg",
       },
       {
-        id: 2003,
+        id: 25051,
         subCategoryName: "Table Napkin",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/59XZP290CHDAWH1IPOXAUE380WPU02829.jpg",
       },
       {
-        id: 2004,
+        id: 31779,
         subCategoryName: "Table Placemat",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/78HBAH3D0ZUYH3NGSXBPRNML9LHB06404.jpg",
       },
       {
-        id: 2005,
+        id: 31757,
         subCategoryName: "Table Runner",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/VBMCHG7919BHDT3QO5KVOSUTUR4B09493.jpg",
       },
       {
-        id: 2006,
+        id: 34294,
         subCategoryName: "Tea Towel",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/0Z3HWGNEUC7LOZKUXP19G71KI53L00670.jpg",
       },
     ],
   },
   {
-    id: 21,
+    id: 33382,
     segmentCategoryName: "HOME LINEN",
     optionList: [
       {
-        id: 2101,
+        id: 299126,
         subCategoryName: "Bed Quilt",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/3T252VIY5LHFPRXIV5Q46OZEH02008429.png",
       },
       {
-        id: 2102,
+        id: 33385,
         subCategoryName: "Cushion Cover",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/X8M8NY53636L0IE2VQG31O9NR98O07986.jpg",
       },
       {
-        id: 2103,
+        id: 33432,
         subCategoryName: "Lumbar Cushion Cover",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/27GKJDFKH793HBXR7JLQZH14Q6VV00195.jpg",
       },
       {
-        id: 2104,
+        id: 32839,
         subCategoryName: "Pillow Cover",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/9TQOWF8ZEAIJYKKVM48ZVL6QFIYI03312.png",
       },
     ],
   },
   {
-    id: 22,
+    id: 23799,
     segmentCategoryName: "DECOR",
     optionList: [
       {
-        id: 2201,
+        id: 275487,
         subCategoryName: "Baby Quilts",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OIJRFGS6729M1UGLH2RJDXRLJALP06411.png",
       },
       {
-        id: 2202,
+        id: 297776,
         subCategoryName: "Curtains",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/ZVUZFTOZJ6RI18M065HGQTCME1EI02952.png",
       },
       {
-        id: 2203,
+        id: 31810,
         subCategoryName: "Sofa Throw",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/Q7I3VZOZVTYOFTKPGTVD76PLGUX608290.png",
       },
       {
-        id: 2204,
+        id: 74922230,
         subCategoryName: "Wall Art",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/WMGFFDU2CCCZPF3IY6JXS1GIUCRK05515.png",
       },
     ],
   },
 ];
 
-// 7. APPAREL CATEGORIES & IMAGES
+// 7. APPAREL CATEGORIES & IMAGES (Exact from Loom API / Angular)
 export const INITIAL_NAVIGATION_APPAREL: NavigationCraft[] = [
   {
-    id: 30,
-    segmentCategoryName: "WOMENSWEAR",
+    id: 167890,
+    segmentCategoryName: "UNISEX",
     optionList: [
       {
-        id: 3001,
-        subCategoryName: "Dresses & Tunics",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=800&q=80",
+        id: 297751,
+        subCategoryName: "Coat",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OWC16EOEXJ8PKUFI09181FK7H1FK02986.png",
       },
       {
-        id: 3002,
-        subCategoryName: "Shirts & Tops",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80",
+        id: 168096,
+        subCategoryName: "Hoodie",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/VUXS3S1BA75OUMQPDA0YP4JT9M7F05256.png",
       },
       {
-        id: 3003,
-        subCategoryName: "Overlay Jackets",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80",
+        id: 322591,
+        subCategoryName: "Jackets",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/2KK954UK6F72ZGJT4DS390BXQ21303236.png",
+      },
+      {
+        id: 168070,
+        subCategoryName: "Kimono Coats",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/HP5Z8M2JRU0JVC6C7F58JFYJ7NTD03207.png",
+      },
+      {
+        id: 322696,
+        subCategoryName: "Pant",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/R8B7XIOL11D1HCG12U96BAO0POC206790.png",
+      },
+      {
+        id: 12289420,
+        subCategoryName: "Unisex Shirts",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/7J6KGAYSDLOAINWDWU7U8XXF5HED08950.png",
+      },
+      {
+        id: 167894,
+        subCategoryName: "Vests",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/IT7QAFEYXQEU3ACVFZ3NEYW8TOBF01665.png",
       },
     ],
   },
   {
-    id: 31,
-    segmentCategoryName: "MENSWEAR",
+    id: 5505,
+    segmentCategoryName: "MEN",
     optionList: [
       {
-        id: 3101,
-        subCategoryName: "Handloom Shirts",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80",
+        id: 25009,
+        subCategoryName: "Kurta",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/EDU8AWFXG5W8K3MCLDNF574KFPID09511.png",
       },
       {
-        id: 3102,
-        subCategoryName: "Kurtas & Short Kurtas",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80",
+        id: 5507,
+        subCategoryName: "Shirt",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/4KOYJZY8REB3WLOFZP60R0A8T88P03940.png",
+      },
+      {
+        id: 91621,
+        subCategoryName: "Trouser",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/3L7T9GWG3VX8CI3XVRHED48U403T08282.png",
+      },
+      {
+        id: 25007,
+        subCategoryName: "T Shirts",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/DM8TJYLATEIPNS74BFQAYZOC23OD04737.png",
       },
     ],
   },
   {
-    id: 32,
-    segmentCategoryName: "LOUNGEWEAR",
+    id: 3512,
+    segmentCategoryName: "WOMEN",
     optionList: [
       {
-        id: 3201,
-        subCategoryName: "Robes & Kaftans",
-        subCategoryFeaturedImage: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=800&q=80",
+        id: 3527,
+        subCategoryName: "Bottoms",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/T155FWRRARQPO4LQT96MIIR7U61G08576.png",
+      },
+      {
+        id: 11445760,
+        subCategoryName: "Co-Ord Set",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FVF8CQ54274KGFFQ8ZS2LWCNZH9A04423.png",
+      },
+      {
+        id: 3531,
+        subCategoryName: "Dresses",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/CWX9IV584U03TL6YOP12DWDCZQN600152.png",
+      },
+      {
+        id: 322566,
+        subCategoryName: "Jacket",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/8DS07RCLNP0656YIY6KJA3S6O75R06952.png",
+      },
+      {
+        id: 1144509,
+        subCategoryName: "Jumpsuit",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/NOID04CNELJETJ6OF4GJKR4ZMKJM05503.png",
+      },
+      {
+        id: 489124,
+        subCategoryName: "Loungewear",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/JZYT103EOMTX09XJXLXKFWIC3EF107582.png",
+      },
+      {
+        id: 1330005,
+        subCategoryName: "Rompers",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/SBUUM0Y8MKB2D95GQINC0JOW18LY09963.png",
+      },
+      {
+        id: 53082,
+        subCategoryName: "Saree",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/P0ADRHOZWL1STGE7VMXIIRZZPIIR05264.png",
+      },
+      {
+        id: 437745,
+        subCategoryName: "Shirts",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/V4FO3I8DKILKYNF2BHVLD1JY8VRX03286.png",
+      },
+      {
+        id: 322618,
+        subCategoryName: "Skirts",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/URU6OYCCYZZYF46WRHPXD0WTX8VW05782.png",
+      },
+      {
+        id: 3529,
+        subCategoryName: "Tops",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/5EO5DKFRAL6DOL2C3KLTYN0SZ91102267.png",
+      },
+    ],
+  },
+  {
+    id: 297770,
+    segmentCategoryName: "KIDS",
+    optionList: [
+      {
+        id: 58550249,
+        subCategoryName: "Co-Ord Set",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/DO6BFY6CHN7JQ7BGW2T554OMRMO300543.png",
+      },
+      {
+        id: 322637,
+        subCategoryName: "Dress",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FELFGX4NBPGNNUXZM1LRPGOR06TX09270.png",
+      },
+      {
+        id: 299156,
+        subCategoryName: "Pants",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/H4PVH2WZF4QEFQVYIIPYXGJX3HXM07784.png",
+      },
+      {
+        id: 58547849,
+        subCategoryName: "Romper",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/KGNIA5CIOU8EUZK0AUV0T2I4L7A507328.png",
+      },
+      {
+        id: 299186,
+        subCategoryName: "Top",
+        subCategoryFeaturedImage: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/UW5EIXO4L0VRD7NYM39AK2MA3T0Q00793.png",
       },
     ],
   },
 ];
+
 
 // 8. COLLABORATIONS, CRAFTS & CLUSTERS (Exact from Screenshot 4)
 export const INITIAL_NAVIGATION_STORY_CRAFTS: NavigationStory[] = [
