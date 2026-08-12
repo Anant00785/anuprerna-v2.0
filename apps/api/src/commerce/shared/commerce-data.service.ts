@@ -114,6 +114,12 @@ export class CommerceDataService {
     return BigInt(id);
   }
 
+  // ponytail: unreachable today — nothing constructs this service with
+  // moduleName "product" or "cart" (those names aren't in rest-api.module.ts's
+  // `resources` list, and that file is itself unwired, see its header
+  // comment). Kept as-is per task scope (no logic changes to this file);
+  // remove this branch only alongside the rest-api.module.ts cleanup once
+  // it's confirmed nothing will ever call this service with those names.
   private domainTable(): "product" | "cart_item" | undefined {
     if (this.tableName === "commerce_product") return "product";
     if (this.tableName === "commerce_cart") return "cart_item";

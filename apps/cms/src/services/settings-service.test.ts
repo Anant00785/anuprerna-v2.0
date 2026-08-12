@@ -12,15 +12,13 @@ describe("SettingsService", () => {
     expect(result).toEqual([{ id: 9, attributeName: "X", attributeType: "TEXT", attributeValue: "y" }]);
   });
 
-  it("BUG-adjacent: getSettings swallows a backend error and silently returns hardcoded fallback data instead of propagating it", async () => {
+  it("getSettings propagates a backend error instead of silently returning hardcoded fallback data", async () => {
     useHandlers(
       http.get("*/get/settings", () => new HttpResponse(null, { status: 500 }))
     );
-    const result = await SettingsService.getSettings();
-    // No error is thrown; the caller cannot distinguish "real settings" from
-    // "backend is down, here are invented defaults" -- see CLAUDE.md rule 2
-    // (never fabricate data to fill a UI) — this is exactly that pattern.
-    expect(result.find((s) => s.attributeName === "DEFAULT_CURRENCY")?.attributeValue).toBe("INR");
+    // The caller must be able to distinguish "real settings" from "backend is
+    // down" -- see CLAUDE.md rule 2 (never fabricate data to fill a UI).
+    await expect(SettingsService.getSettings()).rejects.toBeTruthy();
   });
 
   it("getSettings also falls back when the backend returns an empty settingsList array", async () => {
@@ -31,11 +29,17 @@ describe("SettingsService", () => {
     expect(result.length).toBe(4);
   });
 
-  it("BUG: updateSettingsItem returns true even when the backend request fails, giving callers a false success signal", async () => {
+  it("updateSettingsItem propagates the failure instead of reporting false success", async () => {
     useHandlers(
       http.post("*/update/settings", () => new HttpResponse(null, { status: 500 }))
     );
-    const ok = await SettingsService.updateSettingsItem(1, "new-value");
-    expect(ok).toBe(true);
+    await expect(SettingsService.updateSettingsItem(1, "new-value")).rejects.toBeTruthy();
+  });
+
+  it("updateSettingsItem resolves true when the backend request succeeds", async () => {
+    useHandlers(
+      http.post("*/update/settings", () => HttpResponse.json({ success: true }))
+    );
+    await expect(SettingsService.updateSettingsItem(1, "new-value")).resolves.toBe(true);
   });
 });

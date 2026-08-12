@@ -8,6 +8,11 @@ export default defineConfig({
     include: ["src/**/*.spec.ts"],
     exclude: ["src/**/*.int.spec.ts"],
     environment: "node",
+    // bcrypt at cost 11 takes ~1.4s per hash by design, and the auth suite does
+    // several. Under `turbo run test` three packages hash concurrently and the
+    // 5s default produces flaky failures that pass on a re-run. Raised so the
+    // suite is honest about being slow rather than intermittently red.
+    testTimeout: 30_000,
     setupFiles: ["dotenv/config"],
     coverage: {
       provider: "v8",

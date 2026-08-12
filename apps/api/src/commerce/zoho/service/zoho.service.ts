@@ -1,15 +1,23 @@
 // @ts-nocheck
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ZohoAuthTokenService } from "./zoho-auth.service.js";
 import { ZohoContactPayload, ZohoItemPayload } from "../types/zoho.types.js";
+import type { EnvironmentVariables } from "../../../common/config/env.schema.js";
 
 @Injectable()
 export class ZohoService {
   private readonly logger = new Logger(ZohoService.name);
-  private readonly orgId = process.env.ZOHO_ORG_ID ?? "";
-  private readonly baseUrl = process.env.ZOHO_API_BASE_URL ?? "https://www.zohoapis.com/inventory/v1";
+  private readonly orgId: string;
+  private readonly baseUrl: string;
 
-  constructor(private readonly authService: ZohoAuthTokenService) {}
+  constructor(
+    private readonly authService: ZohoAuthTokenService,
+    private readonly config: ConfigService<EnvironmentVariables, true>,
+  ) {
+    this.orgId = this.config.get("ZOHO_ORG_ID", { infer: true }) ?? "";
+    this.baseUrl = this.config.get("ZOHO_API_BASE_URL", { infer: true }) ?? "https://www.zohoapis.com/inventory/v1";
+  }
 
   async createOrUpdateContact(payload: ZohoContactPayload): Promise<any> {
     const token = await this.authService.getAccessToken();

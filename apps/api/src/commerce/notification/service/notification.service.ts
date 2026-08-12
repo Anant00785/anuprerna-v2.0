@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NotificationRepository } from '../repository/notification.repository.js';
 import { EmailTemplateService } from './email-template.service.js';
 import { EmailNotificationStatus, EmailNotificationEntityType, EmailNotificationTriggerType } from '../types/notification.types.js';
 import * as nodemailer from 'nodemailer';
+import type { EnvironmentVariables } from '../../../common/config/env.schema.js';
 
 @Injectable()
 export class NotificationService {
@@ -12,12 +14,13 @@ export class NotificationService {
 
     constructor(
         private readonly repository: NotificationRepository,
-        private readonly templateService: EmailTemplateService
+        private readonly templateService: EmailTemplateService,
+        private readonly config: ConfigService<EnvironmentVariables, true>,
     ) {
         this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587', 10),
-            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+            host: this.config.get('SMTP_HOST', { infer: true }),
+            port: parseInt(this.config.get('SMTP_PORT', { infer: true }) || '587', 10),
+            auth: { user: this.config.get('SMTP_USER', { infer: true }), pass: this.config.get('SMTP_PASS', { infer: true }) }
         });
     }
 
@@ -29,7 +32,7 @@ export class NotificationService {
             });
 
             await this.transporter.sendMail({
-                from: process.env.SMTP_FROM,
+                from: this.config.get('SMTP_FROM', { infer: true }),
                 to: toEmail,
                 subject: 'Order Confirmation',
                 html

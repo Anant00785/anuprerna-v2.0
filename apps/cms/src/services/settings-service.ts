@@ -21,14 +21,13 @@ export interface ImpactAssumptions {
 
 export class SettingsService {
   public static async getSettings(): Promise<SettingsItem[]> {
-    try {
-      const response = await apiClient.get('/get/settings');
-      const data = unwrapResponseData<SettingsItem[]>(response.data, 'settingsList');
-      if (Array.isArray(data) && data.length > 0) return data;
-    } catch {
-      // Fallback
-    }
+    const response = await apiClient.get('/get/settings');
+    const data = unwrapResponseData<SettingsItem[]>(response.data, 'settingsList');
+    if (Array.isArray(data) && data.length > 0) return data;
 
+    // Backend responded successfully but has no settings configured yet —
+    // seed the UI with defaults. This is NOT an error fallback: a failed
+    // request propagates instead of reaching this line.
     return [
       {
         id: 1,
@@ -68,11 +67,7 @@ export class SettingsService {
   }
 
   public static async updateSettingsItem(id: number, value: any): Promise<boolean> {
-    try {
-      await apiClient.post('/update/settings', { id, attributeValue: value });
-      return true;
-    } catch {
-      return true;
-    }
+    await apiClient.post('/update/settings', { id, attributeValue: value });
+    return true;
   }
 }

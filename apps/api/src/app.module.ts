@@ -8,13 +8,15 @@
  * pick up DATABASE_CONNECTION without re-importing it.
  */
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { DatabaseModule } from "./database/database.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
 import { HealthController } from "./health/health.controller.js";
+import { validate } from "./common/config/env.schema.js";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CommerceModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true, validate }), DatabaseModule, AuthModule, CommerceModule],
   controllers: [HealthController],
 })
 export class AppModule {}

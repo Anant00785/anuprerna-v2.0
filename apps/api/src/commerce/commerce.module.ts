@@ -2,6 +2,13 @@
  * apps/api/src/commerce/commerce.module.ts
  *
  * Root commerce module importing all LOOM-compatible domain feature modules.
+ *
+ * Deliberately does NOT import `RestApiControllers` from `./rest-api.module.js`.
+ * That file holds ~50 auto-generated placeholder CRUD controllers that write
+ * to nonexistent `commerce_*` blob tables and would shadow the real routes
+ * registered below (see the header comment in `rest-api.module.ts` and
+ * docs/KNOWN-GAPS.md). Verified 2026-08-12: it was never wired in to begin
+ * with. Leave it unimported.
  */
 import { Module } from "@nestjs/common";
 import { CartModule } from "./cart/cart.module.js";

@@ -1,20 +1,28 @@
 // @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TransmissionService } from '../../transmission/service/transmission.service.js';
 import { Msg91ActionCode, Msg91OtpResponse } from '../types/msg91.types.js';
+import type { EnvironmentVariables } from '../../../common/config/env.schema.js';
 
 @Injectable()
 export class Msg91Service {
     private readonly logger = new Logger(Msg91Service.name);
-    private readonly fakeMode = process.env.MSG91_FAKE_MODE === 'true';
 
-    constructor(private readonly transmissionService: TransmissionService) {}
+    constructor(
+        private readonly transmissionService: TransmissionService,
+        private readonly config: ConfigService<EnvironmentVariables, true>,
+    ) {}
+
+    private get fakeMode(): boolean {
+        return this.config.get('MSG91_FAKE_MODE', { infer: true }) === 'true';
+    }
 
     async sendOtp(mobile: string): Promise<{ success: boolean }> {
         if (this.fakeMode) return { success: true };
         try {
-            const url = process.env.MSG91_SEND_OTP_URL || '';
-            const params = { authkey: process.env.MSG91_AUTH_KEY || '', mobile, template_id: process.env.MSG91_TEMPLATE_ID || '' };
+            const url = this.config.get('MSG91_SEND_OTP_URL', { infer: true }) || '';
+            const params = { authkey: this.config.get('MSG91_AUTH_KEY', { infer: true }) || '', mobile, template_id: this.config.get('MSG91_TEMPLATE_ID', { infer: true }) || '' };
             const response = await this.transmissionService.executeBasicGET<Msg91OtpResponse>(url, params);
             return { success: response && response.type === 'success' };
         } catch (error) {
@@ -26,8 +34,8 @@ export class Msg91Service {
     async verifyOtp(mobile: string, otp: string): Promise<{ success: boolean }> {
         if (this.fakeMode) return { success: true };
         try {
-            const url = process.env.MSG91_VERIFY_OTP_URL || '';
-            const params = { authkey: process.env.MSG91_AUTH_KEY || '', mobile, otp };
+            const url = this.config.get('MSG91_VERIFY_OTP_URL', { infer: true }) || '';
+            const params = { authkey: this.config.get('MSG91_AUTH_KEY', { infer: true }) || '', mobile, otp };
             const response = await this.transmissionService.executeBasicGET<Msg91OtpResponse>(url, params);
             return { success: response && response.type === 'success' };
         } catch (error) {
@@ -39,8 +47,8 @@ export class Msg91Service {
     async resendOtp(mobile: string): Promise<{ success: boolean }> {
         if (this.fakeMode) return { success: true };
         try {
-            const url = process.env.MSG91_RESEND_OTP_URL || '';
-            const params = { authkey: process.env.MSG91_AUTH_KEY || '', mobile };
+            const url = this.config.get('MSG91_RESEND_OTP_URL', { infer: true }) || '';
+            const params = { authkey: this.config.get('MSG91_AUTH_KEY', { infer: true }) || '', mobile };
             const response = await this.transmissionService.executeBasicGET<Msg91OtpResponse>(url, params);
             return { success: response && response.type === 'success' };
         } catch (error) {

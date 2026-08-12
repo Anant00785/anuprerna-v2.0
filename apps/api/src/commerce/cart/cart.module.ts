@@ -28,6 +28,41 @@ import {
 } from "./types/cart.types.js";
 
 // Safe dummy implementations for cross-module ports not yet migrated.
+//
+// EMAIL_ENCODER_PORT stays a dummy DELIBERATELY — investigated, not
+// forgotten. Legacy emails are encrypted with AES/ECB/PKCS5Padding (128-bit
+// key, deterministic by design so identical plaintext maps to the same DB
+// lookup key), via `NVerseEmailEncoder`/`NVerseAES` wired in
+// loom's `NVerseLaunchSequence2.java`:
+//   emailEncoder(@Value("${nverse.aes.key}") String encoderKey)
+//     => new NVerseEmailEncoder(encoderKey, emailValidator, NVerseAES.SHA512)
+// i.e. the AES key is derived from the `nverse.aes.key` passphrase via
+// SHA-512, truncated to 128 bits. HOWEVER: `NVerseAES.java` itself lives in
+// an external "bmx-nverse" library not present in this checkout, so the
+// exact byte-level truncation/derivation from the 64-byte SHA-512 digest
+// down to a 16-byte AES key (which bytes, what order) is NOT verifiable
+// from source — only described in prose in loom's documentation/. Getting
+// that one detail wrong produces a plausible-looking but WRONG key with no
+// error at runtime — silently garbled decode, not a thrown exception. Per
+// this task's explicit instruction not to guess at unverified crypto, this
+// port is left as a pass-through dummy rather than implementing a guess.
+//
+// Also note: the config schema's EMAIL_ENCRYPTION_KEY is currently mapped
+// from `loom.config.table-explorer.decrypt-email-fingerprint` — that
+// property does not exist anywhere in the loom source. What that name
+// actually refers to (`LoomTenantDAOController.DECRYPT_EMAIL_FINGERPRINT`,
+// `LoomTenantDAOController.java:60`) is an unrelated hardcoded
+// shared-secret string that gates *whether* the table-explorer endpoint is
+// allowed to call decode() at all, not the AES key. The real Spring
+// property for the AES key is `nverse.aes.key`. Flagging for whoever maps
+// EMAIL_ENCRYPTION_KEY next (out of scope here: cart.module.ts doesn't own
+// the config schema).
+//
+// To finish this port: obtain `NVerseAES.java` source (or an
+// encrypted-email/plaintext-email pair from a legacy account) to confirm
+// the exact key derivation, then implement with `node:crypto`
+// (`createDecipheriv("aes-128-ecb", key, null)`) and round-trip-test with a
+// fixture key before wiring it in for real.
 const emailEncoderDummy: EmailEncoderPort = {
   decode: async (cipherText: string) => cipherText,
 };

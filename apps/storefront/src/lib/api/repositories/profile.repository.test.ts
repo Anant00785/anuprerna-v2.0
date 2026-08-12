@@ -40,25 +40,21 @@ describe("profileRepository.getCustomerProfile", () => {
 });
 
 describe("profileRepository.getAddressList", () => {
-  it("BUG: does not unwrap the legacy envelope — returns the raw {success,message,addressList} object, not an Address[]", async () => {
+  it("unwraps the legacy {success,message,addressList} envelope into an Address[]", async () => {
     useHandlers(
       http.get(`${PROXY_BASE}/get/address-list`, () =>
         HttpResponse.json(envelope("addressList", [{ id: 1, city: "Kolkata" }]))
       )
     );
     const result = await profileRepository.getAddressList("tok");
-    // Typed as Promise<Address[]>, but apiRequest only casts — it never
-    // unwraps `payload`/`addressList` the way catalog/cart repositories do.
-    // Any caller doing `addresses.map(...)` on this in production would
-    // throw, since result is not actually an array.
-    expect(Array.isArray(result)).toBe(false);
-    expect((result as unknown as { addressList: unknown[] }).addressList).toEqual([{ id: 1, city: "Kolkata" }]);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toEqual([{ id: 1, city: "Kolkata" }]);
   });
 
-  it("returns an empty envelope's addressList untouched for an empty list", async () => {
+  it("returns an empty array for an empty envelope", async () => {
     useHandlers(http.get(`${PROXY_BASE}/get/address-list`, () => HttpResponse.json(envelope("addressList", []))));
     const result = await profileRepository.getAddressList("tok");
-    expect((result as unknown as { addressList: unknown[] }).addressList).toEqual([]);
+    expect(result).toEqual([]);
   });
 });
 
@@ -94,14 +90,14 @@ describe("profileRepository.deleteAddress", () => {
 });
 
 describe("profileRepository.getOrderList", () => {
-  it("same unwrap gap as getAddressList: the real envelope response is returned whole, not as Order[]", async () => {
+  it("unwraps the legacy {success,message,orderList} envelope into an Order[]", async () => {
     useHandlers(
       http.get(`${PROXY_BASE}/get/customer/order-list/all`, () =>
         HttpResponse.json(envelope("orderList", [{ id: 1, orderNumber: "ORD-1" }]))
       )
     );
     const orders = await profileRepository.getOrderList("tok");
-    expect(Array.isArray(orders)).toBe(false);
-    expect((orders as unknown as { orderList: unknown[] }).orderList).toEqual([{ id: 1, orderNumber: "ORD-1" }]);
+    expect(Array.isArray(orders)).toBe(true);
+    expect(orders).toEqual([{ id: 1, orderNumber: "ORD-1" }]);
   });
 });

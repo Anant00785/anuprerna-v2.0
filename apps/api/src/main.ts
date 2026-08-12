@@ -16,9 +16,11 @@
 import "dotenv/config";
 import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { ConfigService } from "@nestjs/config";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module.js";
+import type { EnvironmentVariables } from "./common/config/env.schema.js";
 
 // Drizzle maps PostgreSQL bigint columns to JavaScript bigint values. Express
 // serializes controller responses through JSON.stringify, so normalize them at
@@ -29,6 +31,7 @@ import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const appConfig = app.get(ConfigService<EnvironmentVariables, true>);
   const logger = new Logger("HTTP");
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
@@ -57,7 +60,7 @@ async function bootstrap() {
 
   // Enable Swagger by default in non-production environments.
   // In production set `SWAGGER=true` to explicitly enable it.
-  const enableSwagger = process.env.NODE_ENV !== "production" || process.env.SWAGGER === "true";
+  const enableSwagger = appConfig.get("NODE_ENV", { infer: true }) !== "production" || appConfig.get("SWAGGER", { infer: true }) === "true";
 
   if (enableSwagger) {
     const document = SwaggerModule.createDocument(app, config);
@@ -108,7 +111,7 @@ async function bootstrap() {
     SwaggerModule.setup("docs", app, document, { jsonDocumentUrl: "docs-json" });
   }
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(appConfig.get("PORT", { infer: true }) ?? 3000);
 
   const url = await app.getUrl();
   console.log("🚀 Server running at:", url);

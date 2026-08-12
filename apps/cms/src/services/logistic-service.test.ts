@@ -53,12 +53,12 @@ describe("LogisticService.getOrders", () => {
     });
   });
 
-  it("swallows request failures and returns an empty array (unlike deleteOrder, which has no try/catch)", async () => {
+  it("propagates request failures instead of masking them as an empty array (consistent with deleteOrder)", async () => {
     useHandlers(
       http.get("*/get/super-user/order-list", () => HttpResponse.json({ success: false, message: "boom" }, { status: 500 }))
     );
 
-    await expect(LogisticService.getOrders()).resolves.toEqual([]);
+    await expect(LogisticService.getOrders()).rejects.toBeTruthy();
   });
 });
 
@@ -100,17 +100,15 @@ describe("LogisticService.getShipments", () => {
     expect(result[0]).toHaveProperty("shipmentType");
   });
 
-  it("falls back to DEFAULT_SHIPMENTS on a request failure (caught and hidden)", async () => {
+  it("propagates a request failure instead of silently falling back to DEFAULT_SHIPMENTS", async () => {
     useHandlers(http.get("*/get/shipment-list", () => HttpResponse.error()));
 
-    const result = await LogisticService.getShipments();
-
-    expect(result.length).toBeGreaterThan(0);
+    await expect(LogisticService.getShipments()).rejects.toBeTruthy();
   });
 });
 
 describe("LogisticService.createShipment", () => {
-  it("posts the payload to /add/shipment, but a failure is caught and silently reported as success", async () => {
+  it("posts the payload to /add/shipment and propagates a failure instead of reporting fake success", async () => {
     let capturedBody: unknown;
     useHandlers(
       http.post("*/add/shipment", async ({ request }) => {
@@ -120,12 +118,19 @@ describe("LogisticService.createShipment", () => {
     );
 
     const payload = { shipmentType: "DOMESTIC" as const, name: "Test", baseCharge: 100, baseUnitsLimit: 5, perExtraUnitRate: 5, estimatedDeliveryTimeline: "3 days" };
-    const result = await LogisticService.createShipment(payload);
 
-    // Bug: the request failed (HttpResponse.error()) but createShipment swallows it
-    // and reports { success: true } to the caller regardless.
-    expect(result).toEqual({ success: true });
+    // An operator must never be told a shipment was created when the request failed.
+    await expect(LogisticService.createShipment(payload)).rejects.toBeTruthy();
     expect(capturedBody).toMatchObject({ name: "Test" });
+  });
+
+  it("resolves with the backend response body on success", async () => {
+    useHandlers(
+      http.post("*/add/shipment", () => HttpResponse.json({ success: true, id: 42 }))
+    );
+
+    const payload = { shipmentType: "DOMESTIC" as const, name: "Test", baseCharge: 100, baseUnitsLimit: 5, perExtraUnitRate: 5, estimatedDeliveryTimeline: "3 days" };
+    await expect(LogisticService.createShipment(payload)).resolves.toEqual({ success: true, id: 42 });
   });
 });
 

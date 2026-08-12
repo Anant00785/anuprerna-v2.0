@@ -52,6 +52,18 @@ describe("mapLegacyCartItemToDomain", () => {
     expect(item.id).toBeTruthy();
     expect(item.productId).toBe("unknown");
   });
+
+  it("treats an explicit unitPrice/totalPrice of 0 (a free item) as real, not absent", () => {
+    const item = mapLegacyCartItemToDomain({
+      productId: 1,
+      productDetails: { id: 1, productName: "Free Sample", priceDetails: { basePrice: 500 } },
+      unitPrice: 0,
+      totalPrice: 0,
+      qty: 2,
+    });
+    expect(item.unitPrice).toBe(0);
+    expect(item.totalPrice).toBe(0);
+  });
 });
 
 describe("mapLegacyCartToDomain", () => {
@@ -73,11 +85,11 @@ describe("mapLegacyCartToDomain", () => {
     expect(cart.itemCount).toBe(3);
     expect(cart.subtotal).toBe(250);
     expect(cart.discount).toBe(20);
-    // BUG: dto.deliveryCharge is explicitly 0 (free shipping from the
-    // backend), but `dto.deliveryCharge || (subtotal > 2000 ? 0 : 150)`
-    // treats 0 as falsy and overrides it with the flat 150 fallback.
-    expect(cart.estimatedShipping).toBe(150);
-    expect(cart.total).toBe(250 - 20 + 150);
+    // dto.deliveryCharge is explicitly 0 (free shipping from the backend).
+    // `dto.deliveryCharge ?? (subtotal > 2000 ? 0 : 150)` only falls back
+    // when deliveryCharge is absent, so an explicit 0 is honoured.
+    expect(cart.estimatedShipping).toBe(0);
+    expect(cart.total).toBe(250 - 20 + 0);
   });
 
   it("returns an empty cart shape for an empty/missing items list", () => {

@@ -68,7 +68,7 @@ export class AuthController {
       email: tenant.email,
       roles: tenant.roles,
     };
-    const token = this.gatekeeper.generateToken(authenticatedTenant);
+    const token = await this.gatekeeper.generateToken(authenticatedTenant);
 
     void this.tenantLookup.updateLoginMetadata(tenant.id, {
       lastAccessTime: Date.now(),
@@ -109,7 +109,7 @@ export class AuthController {
       roles: tenant.roles,
     };
 
-    const token = this.gatekeeper.generateToken(authenticatedTenant);
+    const token = await this.gatekeeper.generateToken(authenticatedTenant);
     return keyedResponse("token", token);
   }
 
@@ -162,7 +162,7 @@ export class AuthController {
       email: tenant.email,
       roles: tenant.roles,
     };
-    const token = this.gatekeeper.generateToken(authenticatedTenant);
+    const token = await this.gatekeeper.generateToken(authenticatedTenant);
 
     void (async () => {
       const hashed = await this.gatekeeper.hashPassword(decodedPassword);

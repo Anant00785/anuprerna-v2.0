@@ -71,29 +71,38 @@ progress — including earlier revisions of these docs — is overstating it. Th
 | …orphaned, wired into nothing | **16** | Dead on arrival — see below |
 | **Additionally**: auto-generated generic CRUD controllers | **50** | Machine-produced from a name list, not ported logic |
 
-### The 50 generic controllers serve empty tables, not your data
+### The 50 generic controllers are dead code, wired into nothing
+
+> **Corrected 2026-08-12.** An earlier revision of this section said these controllers "serve empty
+> tables" and shadow real routes. That was wrong, and the correction matters: they serve **nothing**,
+> because `RestApiControllers` is **never imported anywhere**. `git log --all -S"RestApiControllers"`
+> shows only the commit that defined it. They have never been routable. The description below is what
+> they *would* do if someone wired them in — which is the reason not to.
 
 `apps/api/src/commerce/rest-api.module.ts:66-77` holds a flat list of 50 resource names
-(`"address", "artisan", "order", "payment", …`) and maps each through a `commerceController(resource)`
+(`"address", "artisan", "order", "payment", …`) mapped through a `commerceController(resource)`
 factory that emits identical `GET / GET :id / POST / PATCH / DELETE` handlers.
 
-Each one delegates to `CommerceDataService`, which resolves its table as
-`commerce_<resource>` and, on first use, runs `CREATE TABLE IF NOT EXISTS` for a generic
-`(id, name, payload jsonb)` shape (`commerce-data.service.ts:20, 94`).
+Each delegates to `CommerceDataService`, which resolves its table as `commerce_<resource>` and, on
+first use, runs `CREATE TABLE IF NOT EXISTS` for a generic `(id, name, payload jsonb)` shape
+(`commerce-data.service.ts:20, 94`). **There are zero `commerce_*` tables in the introspected
+production schema.** So wiring them in would create empty side tables and serve nothing from the real
+116-table database.
 
-**Only two resources are mapped to real domain tables** — `commerce-data.service.ts:117-121`
-special-cases `commerce_product` → `product` and `commerce_cart` → `cart_item`. Everything else falls
-through to the generic blob table.
+**25 of the 50 names collide** with a real, registered controller serving the same path: `address`,
+`ai`, `color`, `content`, `discount`, `feedback`, `filter`, `forex`, `image`, `impact`, `inventory`,
+`loyaltyprogram`, `material`, `navigation`, `order`, `pattern`, `payment`, `review`, `search`, `seo`,
+`settings`, `shipment`, `tenant`, `whatsapp`. Wiring the module in would shadow all of them. The
+other 25 have no wired module at all, so nothing serves those paths today.
 
-**There are zero `commerce_*` tables in the introspected production schema** (`grep -c 'pgTable("commerce_'`
-→ 0). So on deployment, 48 of these endpoints would create brand-new empty side tables and serve
-nothing from the real 116-table database. A caller hitting `GET /order` gets rows from
-`commerce_order`, not from `orders`.
+`CommerceDataService.domainTable()`'s `product`/`cart` special-case (`:117-121`) is likewise
+unreachable — neither name appears in the `resources` array, so nothing ever constructs the service
+with them.
 
-| Impact | These are placeholder scaffolding, not a migrated API. They should not be counted as migrated surface, and they must not be exposed publicly — they would silently accept and return arbitrary JSON alongside the real schema. |
+| Impact | None today: unroutable. The risk is entirely future — anyone who "helpfully" wires this module in shadows 25 real controllers at once. |
 |---|---|
-| Status | Open. No production traffic reaches any of it today. |
-| Redo when | Each domain gets a real controller — delete its name from the `resources` list in the same change, or the generic route will shadow the real work. |
+| Status | Documented in the file itself. Deletion deferred one release per plan JC-5. |
+| Redo when | Deleting `rest-api.module.ts` — also delete the dead `domainTable()` branch, and first verify each of the 25 colliding modules has genuinely migrated logic rather than being itself a thin `CommerceDataService` wrapper. |
 
 ### Orphaned rich controllers, with thin generic ones wired in their place
 

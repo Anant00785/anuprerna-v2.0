@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TransmissionService } from '../../transmission/service/transmission.service.js';
 import { WhatsappRepository } from '../repository/whatsapp.repository.js';
 import { WhatsappOutboundMessage, WhatsappTransferResponse, WhatsappNotificationStatus, WhatsappNotificationEntityType, WhatsappNotificationTriggerType, WhatsappNotificationTenantType } from '../types/whatsapp.types.js';
 import * as schema from '../../../database/schema/schema.js';
+import type { EnvironmentVariables } from '../../../common/config/env.schema.js';
 
 @Injectable()
 export class WhatsappService {
@@ -11,7 +13,8 @@ export class WhatsappService {
 
     constructor(
         private readonly transmissionService: TransmissionService,
-        private readonly repository: WhatsappRepository
+        private readonly repository: WhatsappRepository,
+        private readonly config: ConfigService<EnvironmentVariables, true>,
     ) {}
 
     async optIn(mobile: string): Promise<boolean> {
@@ -32,7 +35,7 @@ export class WhatsappService {
     }
 
     async sendTemplateMessage(to: string, templateName: string, entityId: number, tenantId: number): Promise<void> {
-        const url = `${process.env.WHATSAPP_API_URL}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+        const url = `${this.config.get('WHATSAPP_API_URL', { infer: true })}/${this.config.get('WHATSAPP_PHONE_NUMBER_ID', { infer: true })}/messages`;
         const payload: WhatsappOutboundMessage = {
             messaging_product: 'whatsapp',
             recipient_type: 'individual',
@@ -41,7 +44,7 @@ export class WhatsappService {
             template: { name: templateName, language: { code: 'en' } }
         };
 
-        const headers = { Authorization: `Bearer ${process.env.WHATSAPP_API_TOKEN}` };
+        const headers = { Authorization: `Bearer ${this.config.get('WHATSAPP_API_TOKEN', { infer: true })}` };
 
         try {
             const response = await this.transmissionService.executePOSTPayload<WhatsappOutboundMessage, WhatsappTransferResponse>(url, undefined, headers, payload);

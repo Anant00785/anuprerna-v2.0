@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ZohoTokenResponse } from "../types/zoho.types.js";
+import type { EnvironmentVariables } from "../../../common/config/env.schema.js";
 
 @Injectable()
 export class ZohoAuthTokenService {
@@ -8,14 +10,16 @@ export class ZohoAuthTokenService {
   private cachedAccessToken: string | null = null;
   private tokenExpiry: number = 0;
 
+  constructor(private readonly config: ConfigService<EnvironmentVariables, true>) {}
+
   async getAccessToken(): Promise<string> {
     if (this.cachedAccessToken && Date.now() < this.tokenExpiry) {
       return this.cachedAccessToken;
     }
 
-    const clientId = process.env.ZOHO_CLIENT_ID;
-    const clientSecret = process.env.ZOHO_CLIENT_SECRET;
-    const refreshToken = process.env.ZOHO_REFRESH_TOKEN;
+    const clientId = this.config.get("ZOHO_CLIENT_ID", { infer: true });
+    const clientSecret = this.config.get("ZOHO_CLIENT_SECRET", { infer: true });
+    const refreshToken = this.config.get("ZOHO_REFRESH_TOKEN", { infer: true });
 
     if (!clientId || !clientSecret || !refreshToken) {
       this.logger.warn("Zoho API credentials missing from environment variables");

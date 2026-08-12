@@ -88,14 +88,26 @@ describe("ReviewService.fetchReviewList defaults", () => {
   });
 });
 
-// NOTE: uploadReviewImage is not covered by a network round-trip test here.
-// It calls apiClient.post(..., formData, { headers: { 'Content-Type':
-// 'multipart/form-data' } }) — manually setting Content-Type on a FormData
-// body without a boundary parameter. Browsers normally auto-generate this
-// header (including the required boundary) when Content-Type is left unset;
-// overriding it like this is a known anti-pattern that can strip the
-// boundary and break multipart parsing server-side. Reproducing this call
-// through axios+jsdom's XHR in this test environment hangs indefinitely
-// (confirmed: identical call without the header override completes in
-// under 100ms). Flagging as a likely real bug, not fixed here per the
-// "characterize, don't fix" rule — see docs/TESTING.md.
+describe("ReviewService.uploadReviewImage", () => {
+  it("does not manually set Content-Type on the FormData body, so the request resolves instead of hanging", async () => {
+    let capturedContentType: string | null = null;
+    useHandlers(
+      http.post("*/upload/image", async ({ request }) => {
+        capturedContentType = request.headers.get("content-type");
+        return HttpResponse.json({ imageUrl: "https://cdn.example.com/reviews/1.jpg" });
+      })
+    );
+
+    const file = new File(["fake-image-bytes"], "photo.jpg", { type: "image/jpeg" });
+
+    // Previously, manually forcing Content-Type: multipart/form-data (with no
+    // boundary parameter) on a FormData body broke server-side multipart
+    // parsing -- reproduced as an indefinite hang. Letting the platform set
+    // the header resolves promptly and never produces the broken bare
+    // "multipart/form-data" (no boundary=) value that caused it.
+    const url = await ReviewService.uploadReviewImage(file);
+
+    expect(capturedContentType).not.toBe("multipart/form-data");
+    expect(url).toBe("https://cdn.example.com/reviews/1.jpg");
+  });
+});

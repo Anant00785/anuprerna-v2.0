@@ -17,8 +17,8 @@ export function mapLegacyCartItemToDomain(dto: LegacyCartItemDto): CartItem {
       };
 
   const quantity = dto.qty || 1;
-  const unitPrice = dto.unitPrice || product.price;
-  const totalPrice = dto.totalPrice || unitPrice * quantity;
+  const unitPrice = dto.unitPrice ?? product.price;
+  const totalPrice = dto.totalPrice ?? unitPrice * quantity;
 
   return {
     id: String(dto.cartItemId || dto.productId || Math.random().toString()),
@@ -37,7 +37,7 @@ export function mapLegacyCartToDomain(dto: LegacyCartResponseDto): Cart {
   const itemCount = items.reduce((acc, curr) => acc + curr.quantity, 0);
   const subtotal = dto.totalCartValue || items.reduce((acc, curr) => acc + curr.totalPrice, 0);
   const discount = dto.discountAmount || 0;
-  const estimatedShipping = dto.deliveryCharge || (subtotal > 2000 ? 0 : 150);
+  const estimatedShipping = dto.deliveryCharge ?? (subtotal > 2000 ? 0 : 150);
 
   return {
     id: dto.cartId,

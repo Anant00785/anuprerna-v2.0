@@ -95,9 +95,14 @@ describe("mapLegacyProductToDomain", () => {
     expect(product.price).toBe(0);
   });
 
-  it("BUG: availableQuantity of 0 is still treated as in stock (`dto?.availableQuantity ? ... : true` — 0 is falsy)", () => {
+  it("treats availableQuantity of 0 as out of stock (`dto?.availableQuantity != null ? ... : true` distinguishes absent from zero)", () => {
     const product = mapLegacyProductToDomain({ availableQuantity: 0 });
-    expect(product.inStock).toBe(true);
+    expect(product.inStock).toBe(false);
+  });
+
+  it("treats a negative availableQuantity as out of stock too", () => {
+    const product = mapLegacyProductToDomain({ availableQuantity: -1 });
+    expect(product.inStock).toBe(false);
   });
 
   it("falls back through the image field priority: primaryImage > imageUrl > images[0] > coverImage", () => {

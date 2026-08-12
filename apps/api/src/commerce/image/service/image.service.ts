@@ -10,6 +10,7 @@
  *   AWS_S3_BUCKET, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
  */
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   S3Client,
   PutObjectCommand,
@@ -21,20 +22,26 @@ import { path as buildUrl } from "@aws-sdk/util-endpoints";
 import { ImageFormat, ALLOWED_MIME_TYPES } from "../types/image.types.js";
 import * as crypto from "crypto";
 import * as path from "path";
+import type { EnvironmentVariables } from "../../../common/config/env.schema.js";
 
 @Injectable()
 export class ImageService {
   private readonly logger = new Logger(ImageService.name);
-  private readonly bucket = process.env.AWS_S3_BUCKET || process.env.AWS_BUCKET || "anuprerna-bloomscorp";
-  private readonly region = process.env.AWS_S3_REGION || process.env.AWS_REGION || "ap-south-1";
+  private readonly bucket: string;
+  private readonly region: string;
+  private readonly s3: S3Client;
 
-  private readonly s3 = new S3Client({
-    region: this.region,
-    credentials: {
-      accessKeyId: (process.env.AWS_S3_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID || "").trim(),
-      secretAccessKey: (process.env.AWS_S3_SECRET_KEY || process.env.AWS_SECRET_ACCESS_KEY || "").trim(),
-    },
-  });
+  constructor(private readonly config: ConfigService<EnvironmentVariables, true>) {
+    this.bucket = this.config.get("AWS_S3_BUCKET", { infer: true }) || this.config.get("AWS_BUCKET", { infer: true }) || "anuprerna-bloomscorp";
+    this.region = this.config.get("AWS_S3_REGION", { infer: true }) || this.config.get("AWS_REGION", { infer: true }) || "ap-south-1";
+    this.s3 = new S3Client({
+      region: this.region,
+      credentials: {
+        accessKeyId: (this.config.get("AWS_S3_ACCESS_KEY", { infer: true }) || this.config.get("AWS_ACCESS_KEY_ID", { infer: true }) || "").trim(),
+        secretAccessKey: (this.config.get("AWS_S3_SECRET_KEY", { infer: true }) || this.config.get("AWS_SECRET_ACCESS_KEY", { infer: true }) || "").trim(),
+      },
+    });
+  }
 
   // ─── Helpers ───────────────────────────────────────────────────────────
 
