@@ -20,8 +20,8 @@
  */
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
-import { ImageModule } from "../../../image/image.module.js";
-import { ImageService } from "../../../image/service/image.service.js";
+import { ImageModule } from "../../image/image.module.js";
+import { ImageService } from "../../image/service/image.service.js";
 import { SubCategoryController } from "../controller/sub-category.controller.js";
 import { SubCategoryService } from "./service/subCategory.service.js";
 import { SubCategoryRepository } from "./repository/subCategory.repository.js";

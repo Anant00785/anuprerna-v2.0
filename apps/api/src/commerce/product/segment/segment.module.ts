@@ -7,8 +7,8 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { CategoryModule } from "../category/category.module.js";
-import { ImageModule } from "../../../image/image.module.js";
-import { ImageService } from "../../../image/service/image.service.js";
+import { ImageModule } from "../../image/image.module.js";
+import { ImageService } from "../../image/service/image.service.js";
 import { SegmentController } from "../controller/segment.controller.js";
 import { SegmentService } from "./service/segment.service.js";
 import { SegmentRepository } from "./repository/segment.repository.js";
