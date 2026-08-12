@@ -127,23 +127,30 @@ No fixed percentage target (e.g. "80% coverage"). On a 45,000+ LOC codebase curr
 9 tests, a fixed number is either so far away it gets ignored, or gets gamed with shallow tests
 written to hit the number rather than protect behaviour. Neither outcome is useful.
 
-Instead: **a ratchet**. Record the current coverage baseline per workspace (once a coverage
-reporter is wired up — not done yet, since `vitest run` here doesn't currently pass `--coverage`
-in any package script) and enforce, in CI once it exists, that a PR cannot *decrease* the
-recorded baseline for any workspace it touches. It can add zero net-new coverage on an unrelated
-workspace; it cannot regress the one it changes. This makes the bar "don't make it worse" rather
-than "hit an arbitrary number," which is achievable starting from 9 tests and gets stricter
-automatically as more tests land — the ratchet only ever tightens.
+Instead: **a ratchet**. Coverage reporting is now wired up (`--coverage` runs as part of
+`pnpm test:coverage`, the actual CI gate) and each `vitest.config.ts` sets a per-workspace
+threshold at `(actual − 2%)`, enforced in CI. A PR cannot *decrease* the recorded baseline for any
+workspace it touches. It can add zero net-new coverage on an unrelated workspace; it cannot
+regress the one it changes. This makes the bar "don't make it worse" rather than "hit an
+arbitrary number," which is achievable starting from where the suites stand today and gets
+stricter automatically as more tests land — the ratchet only ever tightens.
 
 ## 7. Corrections made during this verification pass
 
-- The 143-error CMS typecheck failure cited by the source audit is not reproducible on
-  `chore/agent-substrate` — `pnpm typecheck` passes 6/6 today. Documented as resolved-or-stale in
-  `docs/KNOWN-GAPS.md`; not re-asserted as a current failure here.
-- `pnpm test` "failing" in the source audit was specific to `database.spec.ts` dialing a live
-  Postgres inside the default unit-test task; the `*.int.spec.ts` split (`apps/api/vitest.config.ts`
-  vs `apps/api/vitest.int.config.ts`) has already fixed this on the current branch — `pnpm test`
-  is green.
+- Total tests: the brief this pass started from cited **589**; the actual measured figure via
+  `pnpm test:coverage` is **588** (330 + 93 + 163 + 2). Both are far closer to reality than the
+  **497** and **551** figures earlier revisions of this document quoted — those were measured at
+  an earlier point in the same day, before `apps/cms`'s suite and further `apps/api` coverage
+  landed.
+- `apps/cms` went from 0 tests / no vitest config (the state at the very start of the day) to 15
+  files / 93 tests — the single largest swing in this document's history.
+- `apps/api`'s `@ts-nocheck` count moved to **348 of 628** files (was 387/573 pre-merge) — see §5
+  above.
+- MSW, previously "not yet installed," is now installed and wired in both `apps/storefront` and
+  `apps/cms` with the `onUnhandledRequest: "error"` guard §1 below describes as a rule — it is no
+  longer aspirational.
+- CI now exists (`.github/workflows/ci.yml`) and is green: lint 3/3, typecheck 6/6, test 6/6 with
+  coverage, build 5/5, plus a separate integration job and a gitleaks scan.
 
 ---
 
@@ -151,32 +158,45 @@ automatically as more tests land — the ratchet only ever tightens.
 
 | Package | Test files | Tests | Coverage (lines) | Threshold |
 |---|---|---|---|---|
-| `apps/api` | 46 | 279 | 35.5% | 33% |
-| `apps/storefront` | 13 | 126 | 82.0% | 80% |
-| `apps/cms` | 15 | 90 | 29.5% | 27% |
-| `packages/types` | 1 | 2 | — | — |
-| **Total** | **75** | **497** | | |
+| `apps/api` | 52 (50 unit + 2 integration) | 335 (330 unit + 4 integration passing + 1 gated skip) | 38.69% | 33% |
+| `apps/storefront` | 14 | 163 | 83.51% | 80% |
+| `apps/cms` | 15 | 93 | 29.70% | 27% |
+| `packages/types` | 1 | 2 | 77.77% | — |
+| **Total (CI gate, unit only)** | **81** | **588** | | |
+| **Total (incl. integration)** | **82** | **593** | | |
 
-Up from 5 files / 12 tests at the start of the day. Coverage is scoped in each `vitest.config.ts`
-to the layers listed there, not whole apps — `apps/api`'s 35.5% line coverage sits alongside 91%
-branch and 94% function coverage, because the include glob spans validator/mapper directories where
-some files are tested exhaustively and others are not yet touched.
+Up from 12 tests at the start of the day. The **589** figure quoted at the top of a prior
+revision of this document, and in this pass's starting brief, does not quite match either
+measured total — 588 is what `pnpm test:coverage` (the CI gate) actually runs, 593 is that plus
+`apps/api`'s separate integration suite. Coverage is scoped in each `vitest.config.ts` to the
+layers listed there, not whole apps — `apps/api`'s 38.69% line coverage sits alongside 91.31%
+branch and 94.11% function coverage, because the include glob spans validator/mapper directories
+where some files are tested exhaustively and others are not yet touched.
 
 Thresholds are set at `(actual − 2%)`. They are a floor that ratchets upward, not a target.
 
 ## What the suites found
 
 Writing these tests surfaced defects that no amount of reading had. They are catalogued in
-[`KNOWN-GAPS.md`](./KNOWN-GAPS.md), not repeated here, but the shape is worth knowing:
+[`KNOWN-GAPS.md`](./KNOWN-GAPS.md), not repeated here, but the shape is worth knowing — and most
+of what was found earlier in the day is now **fixed**, not merely pinned:
 
-- Payment signature verification present in the live Java backend and **absent from the port**.
-- Two money-affecting bugs in live storefront code (delivery charge, stock availability).
-- Services that fabricate success or data when the backend fails.
-- Roughly 50 auto-generated CRUD controllers serving generic tables that do not exist in the schema.
+- **Fixed today**: the six live storefront/CMS bugs (delivery-charge overcharge, out-of-stock
+  shown as in stock, free items repriced, the profile envelope never unwrapped, CMS reporting a
+  failed save as successful, CMS fabricating data on backend failure), the numeric-vs-string
+  `TransactionStatus` mismatch, the scrypt-vs-bcrypt auth mismatch, S3 wiring for
+  category/segment/sub-category, and — found only by trying to boot the server, not by any test —
+  four broken imports that had kept `apps/api` from starting at all despite every gate passing.
+- **Still open, deliberately pinned rather than fixed**: payment signature verification, absent
+  from the port and present in the live Java backend — and no Stripe/Razorpay SDK is even
+  installed. Roughly 50 auto-generated CRUD controllers serving generic tables that do not exist
+  in the schema, wired into nothing. `uploadReviewImage`'s missing multipart boundary.
+  `unwrapResponseData`'s arbitrary key selection on multi-array responses.
 
-None were fixed while testing. Every one is pinned by a test asserting current behaviour, written to
-fail the moment someone corrects it. That is deliberate: a test run should tell you when behaviour
-changes, and changing customer-visible behaviour is a decision, not a side effect.
+Where a bug is now fixed, its test asserts correct behaviour. Where it remains open, the test
+asserts current (broken) behaviour and is written to fail loudly the moment someone corrects it —
+deliberate, because changing customer-visible behaviour is a decision, not a side effect of
+writing a test.
 
 ---
 
