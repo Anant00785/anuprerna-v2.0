@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 /**
  * migrated/order/controller/custom-order.controller.ts
  */
@@ -10,6 +11,7 @@ import type { AuthenticatedTenant } from "../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../common/response/rain-response.js";
 import { OrderService } from "../service/order.service.js";
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class CustomOrderController {
@@ -72,4 +74,3 @@ export class CustomOrderController {
     return simpleResponse(res, res ? "Custom order deleted" : "Failed to delete custom order");
   }
 }
-// @ts-nocheck

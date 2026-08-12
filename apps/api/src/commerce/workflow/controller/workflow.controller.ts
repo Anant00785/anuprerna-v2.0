@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { WorkflowService } from '../service/workflow.service.js';
 import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
@@ -7,6 +8,7 @@ import { simpleResponse, keyedResponse } from '../../common/response/rain-respon
 import { parseWorkflowTemplateInput, parseWorkflowInput } from '../dto/workflow.dto.js';
 import { CurrentTenant } from '../../common/auth/current-tenant.decorator.js';
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class WorkflowController {
@@ -104,4 +106,3 @@ export class WorkflowController {
     return simpleResponse(true, 'Workflow deleted successfully');
   }
 }
-// @ts-nocheck

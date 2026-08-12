@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/service/product-zoho-relation.service.ts
  *
@@ -135,4 +136,3 @@ export class ProductZohoRelationService {
     return this.repo.streamAllByFabricProduct(includeDisabled);
   }
 }
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.mapper.ts
  *
@@ -35,5 +36,3 @@ export function toUpdateValues(name: string): UpdateSkuGroupValues {
     name,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

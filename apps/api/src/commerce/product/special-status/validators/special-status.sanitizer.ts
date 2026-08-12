@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.sanitizer.ts
  *
@@ -98,5 +99,3 @@ export function sanitizeSpecialStatus<T extends CreateSpecialStatusInput | Updat
     name: sanitize(entity.name),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

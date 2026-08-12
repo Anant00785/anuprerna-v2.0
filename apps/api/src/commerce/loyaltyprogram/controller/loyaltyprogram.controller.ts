@@ -1,10 +1,12 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Patch, UseGuards, Body, Param } from '@nestjs/common';
 import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
 import { GateCode } from '../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
 import { LoyaltyprogramService } from '../service/loyaltyprogram.service.js';
 
+@ApiBearerAuth()
 @Controller('')
 export class LoyaltyprogramController {
     constructor(private readonly service: LoyaltyprogramService) {}
@@ -59,4 +61,3 @@ export class LoyaltyprogramController {
         return keyedResponse('data', await this.service.exploreAuditLogById(id));
     }
 }
-// @ts-nocheck

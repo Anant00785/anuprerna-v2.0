@@ -1,9 +1,10 @@
 import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { LoyaltyprogramService } from "./loyaltyprogram.service.js";
 
 @ApiTags("loyaltyprogram")
-@Controller({ path: ["loyaltyprogram", ""] })
+@Controller()
 export class LoyaltyprogramController {
   constructor(private readonly service: LoyaltyprogramService) {}
 
@@ -16,7 +17,7 @@ export class LoyaltyprogramController {
   @Post("create/loyaltyprogram")
   @HttpCode(200)
   @ApiOperation({ summary: "Create a loyaltyprogram record" })
-  @ApiBody({ schema: { type: "object", additionalProperties: true } })
+  @ApiBody({ type: CreateCommerceRecordDto })
   async create(@Body() body: unknown) {
     return this.service.create(body);
   }

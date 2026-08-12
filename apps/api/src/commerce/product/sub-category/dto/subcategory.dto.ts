@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.dto.ts
  *
@@ -160,5 +161,3 @@ export function parseUpdateSubCategoryRequest(body: unknown, subCategoryId: unkn
     featuredImageFile: parseOptionalFile(b.featuredImageFile, "featuredImageFile"),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

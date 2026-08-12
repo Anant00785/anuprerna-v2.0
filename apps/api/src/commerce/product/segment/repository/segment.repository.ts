@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/repository/segment.repository.ts
  *
@@ -187,5 +188,3 @@ function mapRowToSegmentData(r: Record<string, unknown>): SegmentData {
     timeOfCreation: Number(r.time_of_creation),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

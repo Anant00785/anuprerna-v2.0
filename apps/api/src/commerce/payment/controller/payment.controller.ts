@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Param, Query, Body, UseGuards, Req, Headers, BadRequestException } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
@@ -29,6 +30,7 @@ import {
     sanitizeStripePaymentOrderInput 
 } from "../validators/payment.sanitizer.js";
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class PaymentController {
@@ -192,4 +194,3 @@ export class PaymentController {
         }
     }
 }
-// @ts-nocheck

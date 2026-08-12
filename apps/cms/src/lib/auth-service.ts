@@ -103,7 +103,7 @@ export class AuthService {
   }
 
   public static async login(username: string, password: string): Promise<{ token: string; authority?: Authority }> {
-    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/authenticate/email`;
+    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/auth/authenticate`;
 
     try {
       const response = await axios.post(
@@ -151,7 +151,7 @@ export class AuthService {
       throw new Error('No JWT token available to resolve authority');
     }
 
-    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/get/authority/token`;
+    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/auth/authority`;
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${jwtToken}`,
@@ -160,10 +160,11 @@ export class AuthService {
       timeout: 8000,
     });
 
-    const authorityData: Authority = response.data?.authority || response.data || {
-      superuser: false,
-      admin: false,
-      user: false,
+    const rawAuthority = response.data?.authority || response.data;
+    const authorityData: Authority = {
+      superuser: !!(rawAuthority?.superUser || rawAuthority?.superuser),
+      admin: !!(rawAuthority?.superUser || rawAuthority?.admin),
+      user: !!(rawAuthority?.customer || rawAuthority?.user),
       guest: false,
     };
 

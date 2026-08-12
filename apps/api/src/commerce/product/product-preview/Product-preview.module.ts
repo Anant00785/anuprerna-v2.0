@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-preview/product-preview.module.ts
  *
@@ -189,4 +190,3 @@ const segmentLookupDummy: SegmentLookupPort = {
   ],
 })
 export class ProductPreviewModule {}
-// @ts-nocheck

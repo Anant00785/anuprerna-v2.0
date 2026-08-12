@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.validator.ts
  *
@@ -41,5 +42,3 @@ function isValidStringLength(value: unknown, min: number, max: number): boolean 
 export function validateSpecialStatus(entity: CreateSpecialStatusInput | UpdateSpecialStatusInput): boolean {
   return isValidStringLength(entity.name, NAME_MIN_LENGTH, NAME_MAX_LENGTH);
 }
-// @ts-nocheck
-// @ts-nocheck

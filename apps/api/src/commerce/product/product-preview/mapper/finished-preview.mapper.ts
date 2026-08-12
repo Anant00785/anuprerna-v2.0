@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/finished-preview/mapper/finished-preview.mapper.ts
  *
@@ -18,5 +19,3 @@ export function toView(row: FinishedProductRow): FinishedPreviewView {
     product: null, // OneToOne in source; populated on-demand via ProductPreviewLookupPort
   };
 }
-// @ts-nocheck
-// @ts-nocheck

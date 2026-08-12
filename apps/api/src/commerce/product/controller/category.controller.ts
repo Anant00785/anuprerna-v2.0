@@ -35,6 +35,7 @@ const categoryMultipartSchema = {
 };
 
 @ApiTags("Category")
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class CategoryController {

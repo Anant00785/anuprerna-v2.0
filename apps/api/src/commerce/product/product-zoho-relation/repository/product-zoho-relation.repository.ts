@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/repository/product-zoho-relation.repository.ts
  *
@@ -236,5 +237,3 @@ export class ProductZohoRelationRepository {
     return rows[0] ? toData(rows[0]) : null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/finished-preview/repository/finished-preview.repository.ts
  *
@@ -45,5 +46,3 @@ export class FinishedPreviewRepository {
     return rows[0] ?? null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

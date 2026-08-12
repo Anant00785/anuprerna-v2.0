@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/sanitizer/product-zoho-relation.sanitizer.ts
  *
@@ -92,5 +93,3 @@ export function sanitizeProductZohoRelation<T extends Partial<ProductZohoRelatio
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

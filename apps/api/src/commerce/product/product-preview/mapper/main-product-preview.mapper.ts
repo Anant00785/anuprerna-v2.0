@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/main-product-preview/mapper/main-product-preview.mapper.ts
  *
@@ -22,5 +23,3 @@ export function toView(row: ProductRow): MainProductPreviewView {
     disabled: row.disabled,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

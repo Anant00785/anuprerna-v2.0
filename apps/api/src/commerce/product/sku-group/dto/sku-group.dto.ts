@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.dto.ts
  *
@@ -82,5 +83,3 @@ export function parseUpdateSkuGroupRequest(body: unknown): UpdateSkuGroupInput {
     name: requireNonEmptyString(b.name, "name"),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

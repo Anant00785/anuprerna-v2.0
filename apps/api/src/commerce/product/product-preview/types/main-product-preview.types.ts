@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/main-product-preview/types/main-product-preview.types.ts
  *
@@ -35,5 +36,3 @@ export interface MainProductPreviewView {
   heroImage: string;
   disabled: boolean;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Post, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { NotificationService } from '../service/notification.service.js';
 import { parsePaginationInput } from '../dto/notification.dto.js';
@@ -6,6 +7,7 @@ import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
 import { GateCode } from '../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class NotificationController {
@@ -38,4 +40,3 @@ export class NotificationController {
         return keyedResponse('emailHistoryRecord', record);
     }
 }
-// @ts-nocheck

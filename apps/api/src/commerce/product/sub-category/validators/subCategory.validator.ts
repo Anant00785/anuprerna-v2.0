@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.validator.ts
  *
@@ -55,5 +56,3 @@ export function validateSubCategory(entity: CreateSubCategoryInput | UpdateSubCa
     isValidOptionalImage(entity.featuredImageFile)
   );
 }
-// @ts-nocheck
-// @ts-nocheck

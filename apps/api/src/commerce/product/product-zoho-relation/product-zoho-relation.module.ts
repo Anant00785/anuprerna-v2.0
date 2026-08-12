@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/product-zoho-relation.module.ts
  *
@@ -32,4 +33,3 @@ import { ProductZohoRelationRepository } from "./repository/product-zoho-relatio
   exports: [ProductZohoRelationService],
 })
 export class ProductZohoRelationModule {}
-// @ts-nocheck

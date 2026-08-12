@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
@@ -30,6 +31,7 @@ import {
   sanitizeInventoryRestockRequest 
 } from "../validators/inventory.sanitizer.js";
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class InventoryController {
@@ -221,4 +223,3 @@ export class InventoryController {
     return this.getRestockRequests(page, size);
   }
 }
-// @ts-nocheck

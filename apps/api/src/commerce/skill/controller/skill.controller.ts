@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { SkillService } from '../service/skill.service.js';
 import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
@@ -8,6 +9,7 @@ import { parseCreateSkillInput, parseUpdateSkillInput, parseArtisanSkillMappingF
 import { validateCreateSkill, validateUpdateSkill } from '../validators/skill.validator.js';
 import { sanitizeCreateSkill, sanitizeUpdateSkill } from '../validators/skill.sanitizer.js';
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class SkillController {
@@ -66,4 +68,3 @@ export class SkillController {
     return keyedResponse('mappings', mappings);
   }
 }
-// @ts-nocheck

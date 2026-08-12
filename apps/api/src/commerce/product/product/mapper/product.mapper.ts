@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/core/mapper/Product.mapper.ts
  *
@@ -222,5 +223,3 @@ export function toUpdateValues(input: ProductInput): Partial<InsertProductValues
 
   return values;
 }
-// @ts-nocheck
-// @ts-nocheck

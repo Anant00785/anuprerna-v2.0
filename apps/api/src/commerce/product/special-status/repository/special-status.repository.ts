@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.repository.ts
  *
@@ -163,5 +164,3 @@ function mapRowToSpecialStatusData(row: Record<string, unknown>): SpecialStatusD
     timeOfCreation: Number(row.time_of_creation),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

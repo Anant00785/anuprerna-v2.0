@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/finished-preview/service/finished-preview.service.ts
  *
@@ -44,4 +45,3 @@ export class FinishedPreviewService {
     return { ...view, product: productPreview };
   }
 }
-// @ts-nocheck

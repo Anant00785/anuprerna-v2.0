@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Patch, Param, Body, Query, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { SettingsService } from '../service/settings.service.js';
 import { parseUpdateSettingsRequest } from '../dto/settings.dto.js';
@@ -8,6 +9,7 @@ import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
 import { GateCode } from '../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../common/response/rain-response.js';
 
+@ApiBearerAuth()
 @Controller()
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
@@ -88,4 +90,3 @@ export class SettingsController {
     }
   }
 }
-// @ts-nocheck

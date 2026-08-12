@@ -1,10 +1,11 @@
 import { Controller, Get, Param, UseGuards } from "@nestjs/common";
-import { ApiExcludeEndpoint, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiExcludeEndpoint, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 import { RolesGuard } from "../../../common/auth/roles.guard.js";
 import { SearchService } from "../service/search.service.js";
 import { validateSearchTerm } from "../validators/search.validator.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 
+@ApiBearerAuth()
 @Controller()
 @ApiTags("Search")
 @UseGuards(RolesGuard)

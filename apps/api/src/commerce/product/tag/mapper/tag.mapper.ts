@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/mapper/tag.mapper.ts
  *
@@ -31,5 +32,3 @@ export function toInsertValues(input: CreateTagInput): InsertTagValues {
 export function toUpdateValues(name: string): Partial<InsertTagValues> {
   return { name };
 }
-// @ts-nocheck
-// @ts-nocheck

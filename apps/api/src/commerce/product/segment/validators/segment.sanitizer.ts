@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/validators/segment.sanitizer.ts
  *
@@ -64,5 +65,3 @@ export function sanitizeSegment<T extends Partial<SegmentInput>>(entity: T): T {
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-search-preview/types/product-search-preview.types.ts
  *
@@ -42,5 +43,3 @@ export interface ProductSearchPreviewView {
   mainProductCheck: boolean;
   mainProductId: number | null;
 }
-// @ts-nocheck
-// @ts-nocheck

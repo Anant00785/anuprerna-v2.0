@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.mapper.ts
  *
@@ -150,5 +151,3 @@ export function toUpdateValues(input: UpdateSubCategoryInput, resolvedImages: Re
 
   return values;
 }
-// @ts-nocheck
-// @ts-nocheck

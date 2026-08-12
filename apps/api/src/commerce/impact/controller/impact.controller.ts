@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, UseGuards, Body, Param } from '@nestjs/common';
 import { RolesGuard, RequireGate } from '../../common/auth/roles.guard.js';
 import { GateCode } from '../../auth/types/auth.types.js';
@@ -6,6 +7,7 @@ import { simpleResponse, keyedResponse } from '../../common/response/rain-respon
 import { ImpactService } from '../service/impact.service.js';
 import { parseImpactFactorInput } from '../dto/impact.dto.js';
 
+@ApiBearerAuth()
 @Controller('')
 export class ImpactController {
     constructor(private readonly service: ImpactService) {}
@@ -52,4 +54,3 @@ export class ImpactController {
         return keyedResponse('impact', await this.service.getProductImpact(productId));
     }
 }
-// @ts-nocheck

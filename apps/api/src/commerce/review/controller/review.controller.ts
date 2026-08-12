@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
@@ -10,6 +11,7 @@ import { parseReviewInput } from "../dto/review.dto.js";
 import { validateReview, validateReviewStatus } from "../validators/review.validator.js";
 import { sanitizeReview, sanitizeReviewStatus } from "../validators/review.sanitizer.js";
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class ReviewController {
@@ -123,4 +125,3 @@ export class ReviewController {
     return simpleResponse(result, result ? "Review updated successfully." : "Failed to update review.");
   }
 }
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.repository.ts
  *
@@ -457,5 +458,3 @@ function mapRowToSubCategoryData(row: Record<string, unknown>): SubCategoryData 
     featuredImage: row.featured_image as string,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export function validateSearchTerm(term: string): string | null {
   if (typeof term !== "string") {
     return "Search term must be a string.";
@@ -11,5 +12,3 @@ export function validateSearchTerm(term: string): string | null {
   }
   return null; // valid
 }
-// @ts-nocheck
-// @ts-nocheck

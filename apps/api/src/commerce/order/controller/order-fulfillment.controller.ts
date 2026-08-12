@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 /**
  * migrated/order/controller/order-fulfillment.controller.ts
  */
@@ -7,6 +8,7 @@ import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../common/response/rain-response.js";
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class OrderFulfillmentController {
@@ -53,4 +55,3 @@ export class OrderFulfillmentController {
     return keyedResponse("readyList", []);
   }
 }
-// @ts-nocheck

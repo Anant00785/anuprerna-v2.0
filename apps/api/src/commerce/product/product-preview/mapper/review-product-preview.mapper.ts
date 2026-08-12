@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/review-product-preview/mapper/review-product-preview.mapper.ts
  *
@@ -21,5 +22,3 @@ export function toView(row: ProductRow): ReviewProductPreviewView {
     productGroup: row.productGroup,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

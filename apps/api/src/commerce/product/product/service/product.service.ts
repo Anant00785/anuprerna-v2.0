@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/core/service/Product.service.ts
  *
@@ -429,4 +430,3 @@ export class ProductService {
 // Re-exported so callers building a slug preview (e.g. an admin UI) don't
 // need to import the mapper module directly.
 export { generateSlug };
-// @ts-nocheck

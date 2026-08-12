@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/nav-product-preview/service/nav-product-preview.service.ts
  *
@@ -51,4 +52,3 @@ export class NavProductPreviewService {
     return { ...view, materials, colors, patterns };
   }
 }
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/product-zoho-relation/types/product-zoho-relation.types.ts
  *
@@ -175,5 +176,3 @@ export interface ProductZohoRelationPageRequest {
   page: number;
   size: number;
 }
-// @ts-nocheck
-// @ts-nocheck

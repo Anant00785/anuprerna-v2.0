@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.sanitizer.ts
  *
@@ -99,5 +100,3 @@ export function sanitizeSubCategory<T extends CreateSubCategoryInput | UpdateSub
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

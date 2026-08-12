@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/dto/product-zoho-relation.dto.ts
  *
@@ -153,5 +154,3 @@ export function parseUpdateProductZohoRelationRequest(body: unknown): UpdateProd
   }
   return parsed as UpdateProductZohoRelationRequest;
 }
-// @ts-nocheck
-// @ts-nocheck

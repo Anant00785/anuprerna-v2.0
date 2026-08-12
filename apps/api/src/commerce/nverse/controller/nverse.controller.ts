@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Post, Get, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { NVerseService } from '../service/nverse.service.js';
 import { 
@@ -12,6 +13,7 @@ import { simpleResponse } from '../../../common/response/rain-response.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
 import { GateCode } from '../../../auth/types/auth.types.js';
 
+@ApiBearerAuth()
 @Controller('nverse')
 export class NVerseController {
   constructor(private readonly nverseService: NVerseService) {}
@@ -67,4 +69,3 @@ export class NVerseController {
     return this.nverseService.getVerificationTokenById(id);
   }
 }
-// @ts-nocheck

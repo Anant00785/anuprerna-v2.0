@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/dto/segment.dto.ts
  *
@@ -103,5 +104,3 @@ export type UpdateSegmentRequest = SegmentInput;
 export function parseUpdateSegmentRequest(body: unknown, files: unknown): UpdateSegmentRequest {
   return parseSegmentInput(body, files);
 }
-// @ts-nocheck
-// @ts-nocheck

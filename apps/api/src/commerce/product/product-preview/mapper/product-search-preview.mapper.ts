@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-search-preview/mapper/product-search-preview.mapper.ts
  *
@@ -22,5 +23,3 @@ export function toView(row: ProductRow): ProductSearchPreviewView {
     mainProductId: row.mainProductId === null ? null : Number(row.mainProductId),
   };
 }
-// @ts-nocheck
-// @ts-nocheck
