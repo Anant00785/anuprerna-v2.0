@@ -1,9 +1,10 @@
 import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { AiService } from "./ai.service.js";
 
 @ApiTags("ai")
-@Controller({ path: ["ai", ""] })
+@Controller()
 export class AiController {
   constructor(private readonly service: AiService) {}
 
@@ -16,7 +17,7 @@ export class AiController {
   @Post("create/ai")
   @HttpCode(200)
   @ApiOperation({ summary: "Create a ai record" })
-  @ApiBody({ schema: { type: "object", additionalProperties: true } })
+  @ApiBody({ type: CreateCommerceRecordDto })
   async create(@Body() body: unknown) {
     return this.service.create(body);
   }

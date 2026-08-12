@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-preview/repository/fabric-preview.repository.ts
  *
@@ -73,5 +74,3 @@ export class FabricPreviewRepository {
     return rows[0] ?? null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

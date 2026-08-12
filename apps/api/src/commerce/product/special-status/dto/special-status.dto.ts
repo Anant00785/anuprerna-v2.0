@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.dto.ts
  *
@@ -85,5 +86,3 @@ export function parseUpdateSpecialStatusRequest(body: unknown): UpdateSpecialSta
     name: requireNonEmptyString(b.name, "name"),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

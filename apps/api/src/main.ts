@@ -32,6 +32,16 @@ import type { EnvironmentVariables } from "./common/config/env.schema.js";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const appConfig = app.get(ConfigService<EnvironmentVariables, true>);
+
+  // CORS from origin/docs/core-commerce-planning: the CMS and storefront call
+  // this API directly in local development. Not a real conflict with the
+  // ConfigService line above - both are needed, git just saw adjacent edits.
+  app.enableCors({
+    origin: ['http://localhost:3001', 'http://localhost:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3000'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
   const logger = new Logger("HTTP");
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
@@ -64,50 +74,6 @@ async function bootstrap() {
 
   if (enableSwagger) {
     const document = SwaggerModule.createDocument(app, config);
-    const migratedCommerceTags = new Set([
-      "Catalog",
-      "Content",
-      "FAQ",
-      "Filter",
-      "Navigation",
-      "Search",
-      "SEO",
-    ]);
-
-    // The migrated handlers deliberately parse unknown JSON through their
-    // existing validators. Describe that boundary once in OpenAPI instead of
-    // duplicating those runtime DTO contracts in Swagger-only classes.
-    for (const pathItem of Object.values(document.paths)) {
-      for (const [method, operation] of Object.entries(pathItem)) {
-        if (!operation || typeof operation !== "object" || !Array.isArray(operation.tags)) continue;
-        if (!operation.tags.some((tag: string) => migratedCommerceTags.has(tag))) continue;
-
-        if (["post", "patch"].includes(method) && !operation.requestBody) {
-          operation.requestBody = {
-            required: true,
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  additionalProperties: true,
-                  description: "JSON payload validated by the endpoint's existing parser and validator.",
-                },
-              },
-            },
-          };
-        }
-
-        const successCode = method === "post" ? "201" : "200";
-        operation.responses[successCode] ??= {
-          description: "Successful response.",
-          content: {
-            "application/json": {
-              schema: { type: "object", additionalProperties: true },
-            },
-          },
-        };
-      }
-    }
     SwaggerModule.setup("docs", app, document, { jsonDocumentUrl: "docs-json" });
   }
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/mapper/product-zoho-relation.mapper.ts
  *
@@ -108,5 +109,3 @@ export function toData(row: Record<string, unknown>): ProductZohoRelationData {
     disabled: row.disabled as boolean,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

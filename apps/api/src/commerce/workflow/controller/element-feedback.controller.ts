@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { WorkflowService } from '../service/workflow.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -7,6 +8,7 @@ import { simpleResponse, keyedResponse } from '../../../common/response/rain-res
 import { parseElementFeedbackInput } from '../dto/workflow.dto.js';
 import { CurrentTenant } from '../../../common/auth/current-tenant.decorator.js';
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class ElementFeedbackController {
@@ -55,4 +57,3 @@ export class ElementFeedbackController {
     return keyedResponse('data', result);
   }
 }
-// @ts-nocheck

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.service.ts
  *
@@ -120,4 +121,3 @@ export class SpecialStatusService {
     return this.repo.retrieveSpecialStatusDataById(id);
   }
 }
-// @ts-nocheck

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from '../service/profile.service.js';
@@ -17,6 +18,7 @@ import {
   validateUpdateSizeProfile,
 } from '../validators/profile.validator.js';
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class SizeProfileController {
@@ -85,4 +87,3 @@ export class SizeProfileController {
     return this.profileService.exploreSizeProfileOption(Number(page) || 0, Number(size) || 10);
   }
 }
-// @ts-nocheck

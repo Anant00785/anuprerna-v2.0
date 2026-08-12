@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AddressService, type CreateAddressInput } from "./address.service.js";
 
 @ApiTags("address")
-@Controller({ path: ["address", ""] })
+@Controller()
 export class AddressController {
   constructor(private readonly service: AddressService) {}
 

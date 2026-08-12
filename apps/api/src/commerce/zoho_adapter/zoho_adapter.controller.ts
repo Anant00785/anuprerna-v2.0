@@ -1,9 +1,10 @@
 import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { ZohoAdapterService } from "./zoho_adapter.service.js";
 
 @ApiTags("zoho_adapter")
-@Controller({ path: ["zoho_adapter", ""] })
+@Controller()
 export class ZohoAdapterController {
   constructor(private readonly service: ZohoAdapterService) {}
 
@@ -16,7 +17,7 @@ export class ZohoAdapterController {
   @Post("create/zoho_adapter")
   @HttpCode(200)
   @ApiOperation({ summary: "Create a zoho_adapter record" })
-  @ApiBody({ schema: { type: "object", additionalProperties: true } })
+  @ApiBody({ type: CreateCommerceRecordDto })
   async create(@Body() body: unknown) {
     return this.service.create(body);
   }

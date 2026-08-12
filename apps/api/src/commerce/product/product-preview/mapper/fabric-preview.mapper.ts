@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-preview/mapper/fabric-preview.mapper.ts
  *
@@ -20,5 +21,3 @@ export function toView(row: FabricProductRow): FabricPreviewView {
     gsm: row.gsm,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

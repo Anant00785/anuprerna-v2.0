@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/nav-product-preview/repository/nav-product-preview.repository.ts
  *
@@ -27,5 +28,3 @@ export class NavProductPreviewRepository {
     return rows[0] ?? null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

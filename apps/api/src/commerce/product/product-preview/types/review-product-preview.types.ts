@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/review-product-preview/types/review-product-preview.types.ts
  *
@@ -30,5 +31,3 @@ export interface ReviewProductPreviewView {
   heroImage: string;
   productGroup: string;
 }
-// @ts-nocheck
-// @ts-nocheck

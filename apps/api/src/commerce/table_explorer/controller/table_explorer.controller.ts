@@ -6,9 +6,10 @@ import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
 import { GateCode } from '../../../auth/types/auth.types.js';
 import { keyedResponse, simpleResponse } from '../../../common/response/rain-response.js';
 
-import { ApiExcludeController } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExcludeController } from "@nestjs/swagger";
 
 @ApiExcludeController()
+@ApiBearerAuth()
 @Controller('get/table-explorer')
 @UseGuards(RolesGuard)
 export class TableExplorerController {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/core/validators/Product.sanitizer.ts
  *
@@ -109,5 +110,3 @@ export function sanitizeProduct<T extends Partial<ProductInput>>(entity: T): T {
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

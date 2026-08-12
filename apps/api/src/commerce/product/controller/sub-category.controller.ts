@@ -84,6 +84,7 @@ function mergeFilesIntoBody(body: unknown, files: unknown): unknown {
 }
 
 @ApiTags("SubCategory")
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class SubCategoryController {

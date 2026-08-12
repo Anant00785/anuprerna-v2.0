@@ -73,6 +73,7 @@ import {
 import { ActionCode } from "../../../common/errors/action-code.js";
 
 @ApiTags("Product")
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class ProductController {

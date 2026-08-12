@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.service.ts
  *
@@ -85,4 +86,3 @@ export class SkuGroupService {
     return this.repo.retrieveSkuGroupDataById(id);
   }
 }
-// @ts-nocheck

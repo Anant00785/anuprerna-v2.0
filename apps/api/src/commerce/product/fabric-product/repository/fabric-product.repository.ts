@@ -328,11 +328,13 @@ export class FabricProductRepository {
 
   /** findFabricFilterPreview(categoryName, segmentCategoryName) — named native query `findFabricFilterPreview`, verbatim. */
   async findFabricFilterPreview(categoryName: string | null, segmentCategoryName: string | null): Promise<FabricFilterPreview[]> {
+    const cat = categoryName ?? null;
+    const seg = segmentCategoryName ?? null;
     const rows = await this.db.execute<Record<string, unknown>>(sql`
       ${FABRIC_FILTER_PREVIEW_CTE_AND_SELECT}
       where product.disabled=false
-      and (${categoryName} is null or ${categoryName} = '' or lower(category.name) = lower(${categoryName}))
-      and (${segmentCategoryName} is null or ${segmentCategoryName} = '' or lower(segment.name) = lower(${segmentCategoryName}))
+      and (${cat}::text is null or ${cat}::text = '' or lower(category.name) = lower(${cat}::text))
+      and (${seg}::text is null or ${seg}::text = '' or lower(segment.name) = lower(${seg}::text))
       order by product_fabric.id desc
     `);
     return rows.map(mapFabricFilterPreviewRow);
@@ -345,11 +347,13 @@ export class FabricProductRepository {
     limit: number,
     offset: number,
   ): Promise<FabricFilterPreview[]> {
+    const cat = categoryName ?? null;
+    const seg = segmentCategoryName ?? null;
     const rows = await this.db.execute<Record<string, unknown>>(sql`
       ${FABRIC_FILTER_PREVIEW_CTE_AND_SELECT}
       where product.disabled=false
-      and (${categoryName} is null or ${categoryName} = '' or lower(category.name) = lower(${categoryName}))
-      and (${segmentCategoryName} is null or ${segmentCategoryName} = '' or lower(segment.name) = lower(${segmentCategoryName}))
+      and (${cat}::text is null or ${cat}::text = '' or lower(category.name) = lower(${cat}::text))
+      and (${seg}::text is null or ${seg}::text = '' or lower(segment.name) = lower(${seg}::text))
       order by product_fabric.id desc
       LIMIT ${limit} OFFSET ${offset}
     `);
@@ -454,39 +458,64 @@ export class FabricProductRepository {
 
   /** findFabricFilterPreviewFiltered(...) — named native query `findFabricFilterPreviewFiltered`, verbatim. */
   async findFabricFilterPreviewFiltered(filters: FabricFilterPreviewFilters): Promise<FabricFilterPreview[]> {
-    const { colors, materials, patterns, minPrice, maxPrice, minGSM, maxGSM, segments, subCategories, limit, offset } = filters;
+    const col = filters.colors ?? null;
+    const mat = filters.materials ?? null;
+    const pat = filters.patterns ?? null;
+    const minPrice = filters.minPrice ?? null;
+    const maxPrice = filters.maxPrice ?? null;
+    const minGSM = filters.minGSM ?? null;
+    const maxGSM = filters.maxGSM ?? null;
+    const segs = filters.segments ?? null;
+    const subCats = filters.subCategories ?? null;
+    const limit = filters.limit ?? 20;
+    const offset = filters.offset ?? 0;
 
     const rows = await this.db.execute<Record<string, unknown>>(sql`
       ${FABRIC_FILTER_PREVIEW_CTE_AND_SELECT}
       where product.disabled = false
       and (
-          ${colors} is null or ${colors} = '' or exists (
+          ${col}::text is null or ${col}::text = '' or exists (
               select 1
               from color
               where lower(color.name) = any(
-                  array(select lower(trim(c)) from unnest(string_to_array(${colors}, ',')) as c)
+                  array(select lower(trim(c)) from unnest(string_to_array(${col}::text, ',')) as c)
               )
-              and color.id = any(string_to_array(product.color_id, ',')::bigint[])
+              and (
+                case when product.color_id ~ '^[0-9]+(,[0-9]+)*$'
+                  then color.id = any(string_to_array(product.color_id, ',')::bigint[])
+                else false
+                end
+              )
           )
       )
       and (
-          ${materials} is null or ${materials} = '' or exists (
+          ${mat}::text is null or ${mat}::text = '' or exists (
               select 1
               from material
               where lower(material.name) = any(
-                  array(select lower(trim(m)) from unnest(string_to_array(${materials}, ',')) as m)
+                  array(select lower(trim(m)) from unnest(string_to_array(${mat}::text, ',')) as m)
               )
-              and material.id = any(string_to_array(product.material_id, ',')::bigint[])
+              and (
+                case when product.material_id ~ '^[0-9]+(,[0-9]+)*$'
+                  then material.id = any(string_to_array(product.material_id, ',')::bigint[])
+                else false
+                end
+              )
           )
       )
       and (
-          ${patterns} is null or ${patterns} = '' or exists (
+          ${pat}::text is null or ${pat}::text = '' or exists (
               select 1
               from pattern
               where lower(pattern.name) = any(
-                  array(select lower(trim(p)) from unnest(string_to_array(${patterns}, ',')) as p)
+                  array(select lower(trim(p)) from unnest(string_to_array(${pat}::text, ',')) as p)
               )
-              and pattern.id = any(string_to_array(product.pattern_id, ',')::bigint[])
+              and (
+                case when product.pattern_id ~ '^[0-9]+(,[0-9]+)*$'
+                  then pattern.id = any(string_to_array(product.pattern_id, ',')::bigint[])
+                else false
+                end
+              )
           )
       )
       and (${minPrice}::numeric is null or product.price >= ${minPrice})
@@ -494,17 +523,17 @@ export class FabricProductRepository {
       and (${minGSM}::integer is null or product_fabric.gsm >= ${minGSM})
       and (${maxGSM}::integer is null or product_fabric.gsm <= ${maxGSM})
       and (
-          ((${segments} is null or ${segments} = '') and (${subCategories} is null or ${subCategories} = ''))
+          ((${segs}::text is null or ${segs}::text = '') and (${subCats}::text is null or ${subCats}::text = ''))
           or
-          (${segments} is not null and ${segments} != '' and sub_category.segment_id in (
+          (${segs}::text is not null and ${segs}::text != '' and sub_category.segment_id in (
               select id from segment
               where lower(segment.name) = any(
-                  array(select lower(trim(sg)) from unnest(string_to_array(${segments}, ',')) as sg)
+                  array(select lower(trim(sg)) from unnest(string_to_array(${segs}::text, ',')) as sg)
               )
           ))
           or
-          (${subCategories} is not null and ${subCategories} != '' and lower(sub_category.name) = any(
-              array(select lower(trim(s)) from unnest(string_to_array(${subCategories}, ',')) as s)
+          (${subCats}::text is not null and ${subCats}::text != '' and lower(sub_category.name) = any(
+              array(select lower(trim(s)) from unnest(string_to_array(${subCats}::text, ',')) as s)
           ))
       )
       order by product_fabric.id desc

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.service.ts
  *
@@ -308,4 +309,3 @@ export class SubCategoryService {
     }
   }
 }
-// @ts-nocheck

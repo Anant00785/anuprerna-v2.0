@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TARGET_HOST = 'https://loom-v2.anuprerna.com';
+const TARGET_HOST = process.env.BACKEND_URL || 'http://localhost:3000';
 
 async function handleProxy(request: NextRequest, params: { path?: string[] }) {
   const pathArray = params?.path || [];
@@ -10,9 +10,10 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
 
   // Clone headers and set origin/host to match backend Angular website origin
   const headers = new Headers(request.headers);
-  headers.set('host', 'loom-v2.anuprerna.com');
-  headers.set('origin', 'https://weave.bloomscorp.com');
-  headers.set('referer', 'https://weave.bloomscorp.com/');
+  headers.set('host', 'localhost:3000');
+  // Do not override origin/referer for local development
+  headers.delete('origin');
+  headers.delete('referer');
 
   // Remove next.js / browser internal headers that cause backend conflicts
   headers.delete('x-forwarded-host');

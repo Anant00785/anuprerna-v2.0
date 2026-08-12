@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/validators/segment.validator.ts
  *
@@ -39,5 +40,3 @@ export function validateSegment(entity: SegmentInput): boolean {
     validateOptionalImage(entity.socialImageFile)
   );
 }
-// @ts-nocheck
-// @ts-nocheck

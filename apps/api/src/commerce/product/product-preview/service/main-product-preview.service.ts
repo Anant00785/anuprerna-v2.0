@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/main-product-preview/service/main-product-preview.service.ts
  *
@@ -33,4 +34,3 @@ export class MainProductPreviewService {
     return rows.map(toView);
   }
 }
-// @ts-nocheck

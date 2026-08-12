@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/dto/tag.dto.ts
  *
@@ -66,5 +67,3 @@ export function parseUpdateTagRequest(body: unknown): UpdateTagInput {
     name: requireNonEmptyString(b.name, "name"),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

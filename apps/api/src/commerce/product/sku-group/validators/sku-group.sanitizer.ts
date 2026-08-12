@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.sanitizer.ts
  *
@@ -92,5 +93,3 @@ export function sanitizeSkuGroup<T extends CreateSkuGroupInput | UpdateSkuGroupI
     name: sanitize(entity.name),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

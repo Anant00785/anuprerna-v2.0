@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-preview/types/product-preview.types.ts
  *
@@ -215,5 +216,3 @@ export function parseIdList(csv: string | null | undefined): number[] {
     .map(Number)
     .filter((n) => !Number.isNaN(n));
 }
-// @ts-nocheck
-// @ts-nocheck

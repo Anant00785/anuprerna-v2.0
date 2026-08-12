@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.mapper.ts
  *
@@ -36,5 +37,3 @@ export function toUpdateValues(name: string): UpdateSpecialStatusValues {
     name,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

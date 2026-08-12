@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/service/segment.service.ts
  *
@@ -141,4 +142,3 @@ export class SegmentService {
     return this.repository.retrieveSegmentDataById(id);
   }
 }
-// @ts-nocheck

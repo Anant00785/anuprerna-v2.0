@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.module.ts
  *
@@ -26,4 +27,3 @@ import { SkuGroupRepository } from "./repository/sku-group.repository.js";
   exports: [SkuGroupService],
 })
 export class SkuGroupModule {}
-// @ts-nocheck

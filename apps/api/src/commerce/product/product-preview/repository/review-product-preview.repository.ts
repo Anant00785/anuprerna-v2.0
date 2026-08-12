@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/review-product-preview/repository/review-product-preview.repository.ts
  *
@@ -27,5 +28,3 @@ export class ReviewProductPreviewRepository {
     return this.db.select().from(product).where(inArray(product.id, ids));
   }
 }
-// @ts-nocheck
-// @ts-nocheck

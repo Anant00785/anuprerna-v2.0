@@ -42,7 +42,7 @@
  * #2) — the naming mismatch is preserved as-is, not "corrected" here.
  */
 import { Body, ConflictException, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FabricProductService } from "../fabric-product/service/fabric-product.service.js";
 import { OptimisticLockError } from "../fabric-product/repository/fabric-product.repository.js";
 import { AuthenticatedTenant, GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -121,6 +121,8 @@ export class FabricProductController {
   @Get("/get/table-explorer/data/fabric-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of fabric products." })
+  @ApiQuery({ name: "page", required: false, example: 0, description: "Page number (0-indexed)" })
+  @ApiQuery({ name: "size", required: false, example: 20, description: "Page size" })
   @ApiResponse({ status: 200, description: "Page of fabric product data." })
   async getFabricProductData(@Query() query: unknown) {
     const { page, size } = parsePageQuery(query);
@@ -132,6 +134,8 @@ export class FabricProductController {
   @Get("/get/fabric-product/filter-preview")
   @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Fabric filter-preview list, optionally scoped by category/segment-category name." })
+  @ApiQuery({ name: "categoryName", required: false, description: "Category name" })
+  @ApiQuery({ name: "segmentCategoryName", required: false, description: "Segment category name" })
   @ApiResponse({ status: 200, description: "Matching fabric filter previews." })
   async getFabricFilterPreview(@Query() query: unknown) {
     const { categoryName, segmentCategoryName } = parseFabricFilterPreviewQuery(query);
@@ -143,6 +147,10 @@ export class FabricProductController {
   @Get("/get/fabric-product/filter-preview/page")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated fabric filter-preview list." })
+  @ApiQuery({ name: "categoryName", required: false, description: "Category name" })
+  @ApiQuery({ name: "segmentCategoryName", required: false, description: "Segment category name" })
+  @ApiQuery({ name: "limit", required: false, example: 20, description: "Limit" })
+  @ApiQuery({ name: "offset", required: false, example: 0, description: "Offset" })
   @ApiResponse({ status: 200, description: "Page of matching fabric filter previews." })
   async getFabricFilterPreviewPage(@Query() query: unknown) {
     const { categoryName, segmentCategoryName, limit, offset } = parseFabricFilterPreviewPageQuery(query);

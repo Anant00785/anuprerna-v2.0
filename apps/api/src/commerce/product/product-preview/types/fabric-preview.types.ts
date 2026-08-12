@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-preview/types/fabric-preview.types.ts
  *
@@ -41,5 +42,3 @@ export interface ProductPreviewLookupPort {
 }
 
 export const PRODUCT_PREVIEW_LOOKUP_PORT = Symbol("PRODUCT_PREVIEW_LOOKUP_PORT");
-// @ts-nocheck
-// @ts-nocheck

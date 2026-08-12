@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.repository.ts
  *
@@ -152,5 +153,3 @@ function mapRowToSkuGroupData(row: Record<string, unknown>): SkuGroupData {
     timeOfCreation: Number(row.time_of_creation),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

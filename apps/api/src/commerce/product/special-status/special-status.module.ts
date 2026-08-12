@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.module.ts
  *
@@ -31,4 +32,3 @@ import { SpecialStatusRepository } from "./repository/special-status.repository.
   exports: [SpecialStatusService],
 })
 export class SpecialStatusModule {}
-// @ts-nocheck

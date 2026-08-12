@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { Controller, Get, Patch, Body, Param, UseGuards, BadRequestException } from '@nestjs/common';
 import { ProfileService } from '../service/profile.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -14,6 +15,7 @@ import {
   validateUpdateCustomerProfile,
 } from '../validators/profile.validator.js';
 
+@ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class TenantProfileController {
@@ -47,4 +49,3 @@ export class TenantProfileController {
     return this.profileService.updateCustomerProfile(tenant.id, input);
   }
 }
-// @ts-nocheck

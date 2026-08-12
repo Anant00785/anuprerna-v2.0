@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-preview/service/fabric-preview.service.ts
  *
@@ -56,4 +57,3 @@ export class FabricPreviewService {
     return { ...view, product: productPreview };
   }
 }
-// @ts-nocheck

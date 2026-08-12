@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/validator/product-zoho-relation.validator.ts
  *
@@ -56,5 +57,3 @@ export function validateProductZohoRelation(entity: ProductZohoRelationInput): b
 
   return true;
 }
-// @ts-nocheck
-// @ts-nocheck

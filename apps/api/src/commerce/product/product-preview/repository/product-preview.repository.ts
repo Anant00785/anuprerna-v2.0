@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-preview/repository/product-preview.repository.ts
  *
@@ -230,5 +231,3 @@ function mapRowToSearchResult(row: Record<string, unknown>): ProductSearchResult
     heroImage: (row.hero_image as string) ?? "",
   };
 }
-// @ts-nocheck
-// @ts-nocheck

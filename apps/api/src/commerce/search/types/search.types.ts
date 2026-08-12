@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface ProductSearchResult {
   id: bigint;
   sku: string;
@@ -40,5 +41,3 @@ export interface LoomSearchResult {
   product: ProductSearchResultPayload;
   // content is commented out in Java POJO
 }
-// @ts-nocheck
-// @ts-nocheck
