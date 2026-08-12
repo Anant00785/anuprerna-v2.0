@@ -1,253 +1,242 @@
 # Known Gaps — the honest ledger
 
 Every open item in the codebase lives here, grouped by area, so no other doc has to hedge.
-Verified against `chore/agent-substrate` on 2026-08-12. Format per item: what's wrong, evidence,
-impact, status. "What to redo when X lands" flags where this entry goes stale.
+Verified against `main` on 2026-08-12, post-merge of `chore/agent-substrate`. Format per item:
+what's wrong, evidence, impact, status. "What to redo when X lands" flags where this entry goes
+stale.
 
 Related docs, not duplicated here: `docs/ARCHITECTURE.md`, `docs/DATA-FLOW.md`,
 `docs/STATE-INVENTORY.md`, `docs/DATA-INVENTORY.md`, `docs/MODULE-MAP.md`,
 `docs/AGENT-FRAMEWORK.md`, `docs/ENDPOINT-INVENTORY.md`, `docs/TESTING.md`.
 
-## The one thing to say before anything else: the API is not deployed
+## Fixed since the last revision of this document — kept here, not deleted
+
+A great deal changed on `main` today. Deleting the history of a gap would hide how bad it was;
+these are marked resolved instead.
+
+| # | What was wrong | Fixed by | Verified |
+|---|---|---|---|
+| 1 | **The API never booted.** Four broken imports were concealed by files carrying `@ts-nocheck` — every gate (lint/typecheck/test/build) passed while `node dist/main.js` died at `MODULE_NOT_FOUND`. All gates were green and the server was still dead. | Commits `9f91ddc` (repaired 114 broken imports) and `ceab4c4` (corrected `ImageModule` import depth) | `apps/api` now boots and serves Swagger at `/docs` |
+| 2 | **The committed schema had drifted from production**: 116 tables/68 enums vs production's 117/45. The 23 extra enums were phantom non-`_enum` twins (`order_status` beside `order_status_enum`) left over from a database that carried two naming generations production never had. `custom_impact_factor` was missing entirely. | Commit `91cbd74` — re-introspected read-only against live production through a temporary tunnel (now closed) | `schema.ts` now declares 117 tables / 45 enums, matching production exactly |
+| 3 | **`TransactionStatus` was a numeric enum** (`PAID = 2`, etc.) written into a Postgres **string** enum column. Every transaction-status write would have been rejected outright by Postgres at runtime. | Commit `91cbd74` / `659250a` era work — corrected to string values matching the DB enum | `stripe-payment.service.spec.ts` and `razorpay-payment.service.ts` now use the string values |
+| 4 | **Auth was broken for all password accounts.** `gatekeeper.service.ts` used scrypt; the legacy Java system uses `bcrypt(pepper + password)` at cost 11. The mismatch would have locked out all 3,784 password accounts on cutover. | Commit `659250a`, per `documentation/bmx-nverse.md:895-904` and `NVerseLaunchSequence1.java:141-159` | Confirmed against real production hashes: all 7,254 accounts are `$2a$11$…`, 60 chars. Split 3,784 BASIC / 3,390 GOOGLE / 80 UNKNOWN |
+| 5 | **S3 uploads silently did nothing.** Category, segment and sub-category bound their storage ports to dummy adapters returning `""` while a real `ImageService` sat unused. | Commit `659250a` — all three now delegate to `ImageService` via `useFactory` adapters | `grep -rl ImageService` shows `category.module.ts`, `segment.module.ts`, `subcategory.module.ts` now import it |
+| 6 | **Six live customer-facing bugs**, all "falsy zero" or fabrication bugs: delivery-charge overcharge on free shipping, out-of-stock shown as in stock, free items (`unitPrice`/`totalPrice: 0`) repriced, the profile envelope (`{success, addressList: [...]}`) never unwrapped so `.map()` threw, CMS reporting a failed settings save as successful, and CMS services fabricating data (including a fake `{success: true}`) on backend failure. | Commit `659250a` | Tests now assert **correct** behaviour instead of pinning the bug — see `docs/TESTING.md` |
+| 7 | **The PLP discount calculation** was removed in commit `9361c3b`. | Commit `10aaae7` | Restored |
+| 8 | **No CI existed.** Nothing enforced lint/typecheck/test/build staying green on a PR. | `.github/workflows/ci.yml` added | Two jobs: `verify` (lint → typecheck → test with coverage → build) and a separate `integration` job against a real `pgvector/pgvector:pg16` Postgres. A gitleaks secret scan also runs. Green on `main` as of this pass — verified by re-running all four gates locally: lint 3/3, typecheck 6/6, test 6/6, build 5/5 |
+| 9 | Earlier revision said 50 auto-generated CRUD controllers "serve empty tables" and shadow real routes | Already corrected in a prior pass | They are dead code, wired into nothing — `RestApiControllers` is never imported anywhere. Correction carried forward below, unchanged |
+
+## The one thing to say before anything else: the API still carries 0% of production traffic
 
 | | |
 |---|---|
-| What | `apps/api` (116 controllers, 550 routes, 42,685 LOC) exists in this branch but nothing points at it in production |
-| Evidence | Both frontends hardwire the legacy Java backend: `apps/storefront` via `NEXT_PUBLIC_SPRINGBOOT_API_URL` (e.g. `apps/storefront/src/app/api/plp/route.ts:4`) and the storefront/CMS `[...path]` proxies; CMS via `TARGET_HOST = 'https://loom-v2.anuprerna.com'` (`apps/cms/src/app/api/backend/[...path]/route.ts:3`) |
-| Impact | 0% of production traffic transits `apps/api`. Every gap below in `apps/api` is a pre-launch gap, not a live incident — but it is also why nothing here has been through real traffic yet |
-| Status | Open. This is the headline framing for the whole document |
-| Redo when | `apps/api` is cut over for even one route in production — re-audit which of the items below actually matter under load |
+| What | `apps/api` (117 controllers, 628 `.ts` files) now boots and serves real responses, but nothing in production points at it |
+| Evidence | Both frontends still hardwire the legacy Java backend: `apps/storefront` via `NEXT_PUBLIC_SPRINGBOOT_API_URL` and the storefront/CMS `[...path]` proxies; CMS via `TARGET_HOST = 'https://loom-v2.anuprerna.com'` (`apps/cms/src/app/api/backend/[...path]/route.ts:3`) |
+| Impact | Every remaining gap in `apps/api` below is still a pre-launch gap, not a live incident. The API booting is necessary but not sufficient — no cutover has begun |
+| Status | Open. This is still the headline framing for the whole document |
+| Redo when | `apps/api` is cut over for even one route in production — re-audit which items below actually matter under load |
 
-## Bugs the test programme found in code serving live customers
+## Bugs the test programme found in code serving live customers — now fixed
 
-Unlike everything under `apps/api`, these are in the storefront and CMS, which **do** serve real
-traffic today. Each is pinned by a test asserting current behaviour; none was fixed, because changing
-customer-visible behaviour is a deliberate decision, not a side effect of writing tests.
+The six bugs previously pinned by tests-that-assert-the-bug are fixed. Kept here as a record of
+what was wrong and where, since the history is useful.
 
-| # | Bug | Evidence | Impact |
-|---|---|---|---|
-| 1 | **Customers are overcharged for delivery.** `dto.deliveryCharge \|\| (subtotal > 2000 ? 0 : 150)` treats an explicit `deliveryCharge: 0` from the backend as falsy and replaces it with the flat ₹150 fallback. | `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.ts:40` | When the backend grants free shipping, the customer is billed ₹150 anyway. Money, and directly customer-facing. |
-| 2 | **Out-of-stock products show as in stock.** `dto?.availableQuantity ? dto.availableQuantity > 0 : true` — `availableQuantity: 0` is falsy, so it takes the `true` branch. | `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.ts:62` | Zero-stock items are purchasable. Oversells. |
-| 3 | **Profile repository returns the envelope, not the array.** `getAddressList`/`getOrderList` are typed `Address[]`/`Order[]` but never unwrap the `{success, message, addressList: [...]}` envelope the way the cart and catalog repositories do. | `apps/storefront/src/lib/api/repositories/profile.repository.ts` | Any caller doing `.map()` on the result throws. Masked today only because most profile routes are served by `dummy-data.ts` rather than this code. |
-| 4 | **CMS reports a failed save as successful.** `SettingsService.updateSettingsItem()` always resolves `true`, regardless of whether the POST succeeded. | `apps/cms/src/services/settings-service.ts` | An admin changes a setting, sees success, and it silently did not save. Data loss with a false confirmation. |
-| 5 | **CMS fabricates data on backend failure.** `SettingsService.getSettings()` swallows any error and returns hardcoded defaults (e.g. `DEFAULT_CURRENCY: 'INR'`). `logistic-service.ts` does the same across most methods, including `createShipment` returning a fake `{ success: true }` on a network failure. | `apps/cms/src/services/settings-service.ts`, `logistic-service.ts` | This is the exact "never fabricate data to fill a UI" rule from `apps/cms/CLAUDE.md`, violated inside the service layer. An operator cannot distinguish real state from a fallback. |
-| 6 | **Review image upload is likely broken.** `uploadReviewImage` sets `Content-Type: multipart/form-data` manually on a `FormData` body, so no `boundary` parameter is generated. | `apps/cms/src/services/review-service.ts` | Multipart parsing fails server-side. Reproduced in-test: the call hangs past 8s with the header override and completes in under 100ms without it. |
-| 7 | **`unwrapResponseData` picks arbitrarily when a response has multiple array keys** — first in `Object.keys()` order wins, with no name-based tie-break. | `apps/cms/src/lib/api-helper.ts` | Every one of the 96 CMS routes passes through this function. If the backend adds a second array field to any response, the wrong data starts flowing silently. |
-| 8 | **`hasValidJWT()` ignores expiry** — it only checks the string is non-empty. `isTokenExpired()` exists and is correct but has zero callers. | `apps/cms/src/lib/auth-service.ts` | An expired token reads as valid client-side. The backend is still the real authority, so this is a UX and trust-boundary issue rather than an access-control hole. |
+| # | Bug (now fixed) | Where |
+|---|---|---|
+| 1 | Delivery overcharge on free shipping — `dto.deliveryCharge \|\| (subtotal > 2000 ? 0 : 150)` treated an explicit `0` as falsy | `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.ts` |
+| 2 | Out-of-stock shown as in stock — `dto?.availableQuantity ? ... > 0 : true` | `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.ts` |
+| 3 | Profile repository returned the raw envelope instead of unwrapping it | `apps/storefront/src/lib/api/repositories/profile.repository.ts` |
+| 4 | Free items (`unitPrice`/`totalPrice: 0`) got repriced by the same falsy-zero class of bug | storefront cart/catalog adapters |
+| 5 | CMS reported a failed settings save as successful | `apps/cms/src/services/settings-service.ts` |
+| 6 | CMS fabricated data on backend failure, including `createShipment` returning a fake success | `apps/cms/src/services/settings-service.ts`, `logistic-service.ts` |
 
-Cleared on inspection, worth recording as checked: logout **does** correctly clear all persisted auth
-state in both apps — all nine keys in the CMS (including the five obfuscated chunks) and both the
-`localStorage` entry and `jwt_token` cookie in the storefront. Tests now pin this.
+Two items from the prior pass remain open and are **not** part of the fixed six — see the CMS
+section below: `uploadReviewImage`'s missing multipart boundary, and `unwrapResponseData`'s
+arbitrary key selection.
 
-## The schema snapshot had never been executed
+Cleared on inspection, worth recording as checked: logout **does** correctly clear all persisted
+auth state in both apps.
 
-Found on 2026-08-12 while making CI green. `apps/api/src/database/schema/0000_dashing_xavin.sql` is
-the only artifact that can rebuild the database from scratch, and it could not run.
+## The schema now matches production — and the introspect trap remains a standing risk
+
+**Status: fixed and verified**, per item 2 in the "Fixed" table above. `schema.ts` applies
+cleanly and the integration suite passes against it, both locally against the disposable
+`pgvector/pgvector:pg16` container and in CI.
+
+But `drizzle-kit introspect` output does **not** compile or apply as generated, and this
+regenerates every time the tool is re-run — it is a standing trap, not a one-time fix:
 
 | # | Defect | Detail |
 |---|---|---|
-| 1 | The entire file is inside a `/* ... */` block | `drizzle-kit introspect` emits it commented out, with a header saying to uncomment before running. Piping it to `psql` executes one giant comment: zero tables created, exit code 0. Any pipeline applying it "succeeded" against an empty database. |
-| 2 | `sub_category_audit.changed_at` default has unbalanced parentheses | `DEFAULT ((EXTRACT(epoch FROM now()) * (1000),` — a syntax error that aborts the run 54 of 116 tables in. Corrected in place. |
-| 3 | `idx_image_optimization_record_claim` uses `enum_ops` on a `bigint` column | Introspect applied `enum_ops` to all three indexed columns, but `enqueued_at` is `bigint`. Explicit operator classes removed. |
-| 4 | Two extensions are required and undocumented | `vector` (the embedding tables declare `vector(1536)`) and `pg_trgm` (trigram indexes). Plain `postgres:16` cannot build either; CI now uses `pgvector/pgvector:pg16` and creates both. |
+| 1 | 206 columns whose database default is the empty string emit `.default(')'` | An unterminated string literal — a generator bug. A schema regenerated by `db:introspect` does not compile until all 206 are repaired |
+| 2 | `sub_category_audit.changed_at` default has unbalanced parentheses | A syntax error that aborts a raw-SQL apply partway through the table list |
+| 3 | `idx_image_optimization_record_claim` uses `enum_ops` on a `bigint` column (`enqueued_at`) | Introspect applies `enum_ops` to all three indexed columns regardless of type |
 
-**Status: fixed and verified.** The schema applies with exit 0 and all 116 tables, and the
-integration suite passes against it, both locally against a disposable container and in CI.
+All three repaired in the current `schema.ts` (commit `91cbd74`). Two extensions are also
+required and undocumented by the tool: `vector` (embedding tables declare `vector(1536)`) and
+`pg_trgm` (trigram indexes) — plain `postgres:16` cannot build either; CI uses
+`pgvector/pgvector:pg16` and creates both explicitly.
 
-> **Redo when:** anyone re-runs `pnpm db:introspect`. Defects 1-3 are regenerated by the tool and must
-> be re-applied. That is a standing trap — treat a fresh introspect output as unrunnable until proven
-> otherwise, and prove it the way this was proved: apply it to an empty database with
-> `psql -v ON_ERROR_STOP=1` and count the tables.
+> **Redo when:** anyone re-runs `pnpm db:introspect`. All three defects are regenerated by the
+> tool and must be re-applied. Treat a fresh introspect output as unrunnable until proven
+> otherwise: apply it to an empty database with `psql -v ON_ERROR_STOP=1` and count the tables
+> (117) and enums (45).
 
-## The "116 controllers" number is real but badly misleading
+## The "117 controllers" number is real but badly misleading
 
-Found on 2026-08-12 while writing tests. Anyone quoting the controller count as a measure of migration
-progress — including earlier revisions of these docs — is overstating it. The honest breakdown:
+The honest breakdown, re-verified this pass:
 
 | | Count | What it is |
 |---|---|---|
-| Controller **files** carrying `@Controller` | 116 | Real, hand-ported from the Java source |
-| …of those, referenced by any `*.module.ts` | 100 | Actually reachable |
-| …orphaned, wired into nothing | **16** | Dead on arrival — see below |
-| **Additionally**: auto-generated generic CRUD controllers | **50** | Machine-produced from a name list, not ported logic |
+| Controller files carrying `@Controller` | 117 | Real, hand-ported from the Java source |
+| Auto-generated generic CRUD controllers | 50 | Machine-produced from a name list, not ported logic, and **never imported anywhere** |
 
 ### The 50 generic controllers are dead code, wired into nothing
 
-> **Corrected 2026-08-12.** An earlier revision of this section said these controllers "serve empty
-> tables" and shadow real routes. That was wrong, and the correction matters: they serve **nothing**,
-> because `RestApiControllers` is **never imported anywhere**. `git log --all -S"RestApiControllers"`
-> shows only the commit that defined it. They have never been routable. The description below is what
-> they *would* do if someone wired them in — which is the reason not to.
+`RestApiControllers` (`apps/api/src/commerce/rest-api.module.ts`) is never imported by any
+module. `git log --all -S"RestApiControllers"` shows only the commit that defined it. They have
+never been routable, and wiring them in would shadow 25 real controllers serving the same
+resource names (`address`, `order`, `payment`, `review`, `search`, `seo`, `settings`, etc.) while
+the other 25 would serve a generic `commerce_<resource>` table shape that does not exist in the
+production schema.
 
-`apps/api/src/commerce/rest-api.module.ts:66-77` holds a flat list of 50 resource names
-(`"address", "artisan", "order", "payment", …`) mapped through a `commerceController(resource)`
-factory that emits identical `GET / GET :id / POST / PATCH / DELETE` handlers.
-
-Each delegates to `CommerceDataService`, which resolves its table as `commerce_<resource>` and, on
-first use, runs `CREATE TABLE IF NOT EXISTS` for a generic `(id, name, payload jsonb)` shape
-(`commerce-data.service.ts:20, 94`). **There are zero `commerce_*` tables in the introspected
-production schema.** So wiring them in would create empty side tables and serve nothing from the real
-116-table database.
-
-**25 of the 50 names collide** with a real, registered controller serving the same path: `address`,
-`ai`, `color`, `content`, `discount`, `feedback`, `filter`, `forex`, `image`, `impact`, `inventory`,
-`loyaltyprogram`, `material`, `navigation`, `order`, `pattern`, `payment`, `review`, `search`, `seo`,
-`settings`, `shipment`, `tenant`, `whatsapp`. Wiring the module in would shadow all of them. The
-other 25 have no wired module at all, so nothing serves those paths today.
-
-`CommerceDataService.domainTable()`'s `product`/`cart` special-case (`:117-121`) is likewise
-unreachable — neither name appears in the `resources` array, so nothing ever constructs the service
-with them.
-
-| Impact | None today: unroutable. The risk is entirely future — anyone who "helpfully" wires this module in shadows 25 real controllers at once. |
+| Impact | None today: unroutable. The risk is entirely future — anyone who "helpfully" wires this module in shadows 25 real controllers at once |
 |---|---|
-| Status | Documented in the file itself. Deletion deferred one release per plan JC-5. |
-| Redo when | Deleting `rest-api.module.ts` — also delete the dead `domainTable()` branch, and first verify each of the 25 colliding modules has genuinely migrated logic rather than being itself a thin `CommerceDataService` wrapper. |
+| Status | Documented in the file itself. Deletion deferred one release per plan JC-5 |
+| Redo when | Deleting `rest-api.module.ts` — first verify each of the 25 colliding modules has genuinely migrated logic |
 
 ### Orphaned rich controllers, with thin generic ones wired in their place
 
-The starkest case is `order/`. `order.module.ts` wires a 24-line generic
-`order/order.controller.ts` and an 11-line `order/order.service.ts` that extends `CommerceDataService`.
-Meanwhile the substantial port — `order/controller/order.controller.ts` plus its
-`service/`, `repository/`, `dto/` and `types/` siblings, and the `custom-order`,
-`order-fulfillment` and `order-feedback` controllers — is imported by nothing.
+Unverified in this pass — carried forward from the prior audit, needs a fresh grep. `order/`
+previously had a 24-line generic `order.controller.ts` wired while the substantial port
+(`order/controller/order.controller.ts` plus `custom-order`, `order-fulfillment`,
+`order-feedback`) sat unimported. Re-check before relying on this.
 
-`custom-order.controller.ts` additionally calls `OrderService` methods (`createCustomOrder`,
-`getCustomOrderById`) that exist on neither `OrderService` class, so it would fail at runtime if it
-were ever wired up.
+## Payments: not implemented, and the port dropped signature verification the legacy system performs
 
-Consequences for the commerce migration checklist, all confirmed by grep rather than assumed:
-- **Order attribution (row C3)** — `promoteAdAttribution` does not exist anywhere in `apps/api`.
-  `clickId`/`utm*` appear only under `cart/`. The feature is unbuilt, not broken.
-- **Order-preview search (row C29)** — no `order-preview/` directory, no search endpoint.
-- **Custom-order validation (rows D3/D13)** — no `CustomOrderValidator` exists at all.
+Two separate problems, both open, both must be fixed before `apps/api` handles a single real
+payment:
 
-> **Redo when:** any orphaned controller is wired up — re-check that its service methods exist first,
-> and remove the corresponding generic resource name so the two do not collide.
+**No provider is actually wired up.** `grep -i "stripe\|razorpay" apps/api/package.json
+package.json` returns nothing — no Stripe SDK, no Razorpay SDK, no provider dependency installed
+anywhere in the repo. The payment services call a `repository` and construct response shapes, but
+there is no outbound call to a real payment provider.
 
-## Payment: the port dropped signature verification the legacy system performs
-
-Found on 2026-08-12 by the unit-test programme, before `apps/api` ever carried traffic. This is a
-**migration regression**, not a pre-existing flaw: the live Java backend does this correctly and the
-TypeScript port silently lost it. Both items below must be fixed before `apps/api` handles a single
-real payment.
-
-### 1. Razorpay success is accepted on the client's word
+**Signature verification is absent, and the legacy Java backend does it correctly** — this is a
+migration regression, not a pre-existing flaw:
 
 | | |
 |---|---|
-| Legacy (correct) | `RazorpayTransactionDAOController.java:273-282` calls `paymentService.isValidSignature(razorpayOrderId, transactionId, transactionSignature)`, implemented at `RazorpayPaymentService.java:61-73` as `Utils.verifyPaymentSignature(options, PAYMENT_KEY_SECRET)`. Failure routes to `processInvalidTransactionSignature` / `processSignatureValidationFailure`, and `TransactionFailureCode` carries dedicated codes 1 and 2 for exactly this. |
-| Port (broken) | `apps/api/src/commerce/payment/service/razorpay-payment.service.ts:59` contains the comment `// Verify signature here` and **no verification of any kind**. Execution continues straight to `transaction.status = TransactionStatus.PAID`. |
-| Impact | A client can POST a fabricated payment success for a real order. The server marks the transaction PAID, moves the order to processing, and fires the confirmation email and WhatsApp notification. **Free goods.** |
-| Status | Open. Pinned by a test that names checklist row E2 so the gap cannot silently persist; the test asserts current behaviour and will fail loudly when verification is added — which is the point. |
+| Razorpay (legacy, correct) | `RazorpayTransactionDAOController.java:273-282` calls `paymentService.isValidSignature(...)`, implemented via `Utils.verifyPaymentSignature`. Failure routes to dedicated failure codes |
+| Razorpay (port) | `apps/api/src/commerce/payment/service/razorpay-payment.service.ts:62` — comment `// Verify signature here`, no verification of any kind. Execution proceeds straight to `TransactionStatus.PAID` |
+| Stripe (legacy, correct) | `StripeWebhookController.java:125-132` calls `Webhook.constructEvent(...)`, returns 400 on `SignatureVerificationException` |
+| Stripe (port) | `apps/api/src/commerce/payment/controller/payment.controller.ts:174-179` checks only that the `Stripe-Signature` header is **present**, with a comment saying real verification "would be constructed using the Stripe SDK" |
+| Impact | A client can POST a fabricated payment success for a real order and the server marks it PAID. Combined with no SDK installed, payments cannot function at all today, correctly or otherwise |
+| Status | Open. Pinned by tests asserting current (broken) behaviour, not fixed behaviour — the tests are written to fail loudly the moment verification is added |
 
-### 2. The Stripe webhook does not verify its signature
+Also open, unchanged from the prior pass: no idempotency on either provider (retries re-run the
+whole success path), three documented Stripe events (`PAYMENT_INTENT_CREATED`, `PAYMENT_FAILED`,
+`CANCELED`) have no handler, and Stripe input validation is weaker than the documented contract
+(`paymentType`/`customerEmail`/`currency` under-validated) while `validateRazorpayPaymentInput`
+is stricter than the documented Java source in one place — the port was not a faithful
+transliteration in either direction.
 
-| | |
+## The Google OAuth path has never been verified
+
+Of the 7,254 production accounts, 3,390 are `GOOGLE` provider. Auth for the 3,784 `BASIC`
+accounts is now confirmed correct (bcrypt cost 11 against real hashes — see the "Fixed" table
+above). **The Google OAuth flow itself has not been exercised against anything real.** This is
+the largest unknown in whether people can actually log in after a cutover — a majority-adjacent
+slice of the user base (47% of accounts) rides on an unverified path. No test, integration or
+otherwise, exercises the Google token-exchange flow end to end.
+
+| Status | Open — flagged, not yet worked |
 |---|---|
-| Legacy (correct) | `StripeWebhookController.java:125-132` calls `Webhook.constructEvent(payload, signatureHeader, webhookSecret)` and returns 400 on `SignatureVerificationException`. |
-| Port (broken) | `apps/api/src/commerce/payment/controller/payment.controller.ts:174-179` checks only that the `Stripe-Signature` **header is present**, then `const event = payload; // In a real scenario, this would be constructed using the Stripe SDK to verify the signature.` |
-| Impact | Any unauthenticated caller who knows the URL can forge a webhook and drive order state. |
-| Status | Open. |
+| Redo when | Someone builds a way to test the OAuth flow against real or sandboxed Google credentials |
 
-### 3. No idempotency on either provider
+## Email encryption is deliberately a dummy
 
-| | |
+`EMAIL_ENCODER_PORT` is bound to a stub, on purpose. The real algorithm is
+`AES/ECB/PKCS5Padding`, keyed via SHA-512 of `nverse.aes.key` truncated to 16 bytes — but the
+exact truncation logic lives in a Bloom Java library this repo does not have access to. A wrong
+guess at the truncation would not throw; it would silently produce a key that decrypts to
+garbage, corrupting every stored email with no error raised anywhere in the pipeline.
+
+| Impact | Cannot decrypt real production email data until the truncation algorithm is sourced (from the Bloom jar, or reverse-engineered and verified against known plaintext) |
 |---|---|
-| Evidence | Neither service checks transaction status before overwriting, nor dedupes by provider event id (`razorpay-payment.service.ts`, `stripe-payment.service.ts`). |
-| Impact | Providers retry webhooks by design. A duplicate `checkout.session.completed` re-runs the whole success path — re-sending the confirmation email and WhatsApp message, and re-clearing the cart. |
-| Status | Open. Documented as absent rather than covered by an invented test. |
-
-### 4. Three documented Stripe events have no handler
-
-| | |
-|---|---|
-| Evidence | Only `handlePaymentSuccess` and `handlePaymentFailure` exist. `PAYMENT_INTENT_CREATED`, `PAYMENT_FAILED` and `CANCELED` are documented in `docs/backend/commerce/02-api-documentation.md` §E but land in the default branch. |
-| Impact | Those events are silently discarded. |
-| Status | Open. |
-
-### 5. Stripe input validation is weaker than the documented contract
-
-Found independently while testing `payment/validators/`. Each is pinned by an `it.fails` test in
-`apps/api/src/commerce/payment/validators/payment.validator.spec.ts`.
-
-| Rule per `backend/commerce/02-api-documentation.md` §E8 | What the port actually does |
-|---|---|
-| `paymentType` must be one of `advance` \| `remaining` | Only checks the string is non-blank — `"bogus"` passes |
-| `customerEmail` must be 5-255 characters | **Never inspected at all** |
-| `currency` must be a valid `CURRENCY_ENUM` | Only checks non-blank |
-
-Note the inverse also occurs: `validateRazorpayPaymentInput` **rejects** a non-positive `orderId`,
-where the documented Java source (`RazorpayPaymentOrderValidator`) is a stub that always returns
-`true`. So the port is stricter in one place and looser in three — it was not a faithful
-transliteration in either direction, which is the general lesson for the rest of the migration.
-
-> **Redo when:** any of the above is fixed — the pinning tests in
-> `apps/api/src/commerce/payment/**/*.spec.ts` are written to fail at that moment, on purpose.
-> Update this section rather than deleting the tests.
+| Status | Open, deliberate — do not guess at the truncation and ship it. A silent wrong answer is worse than an explicit stub |
 
 ## apps/api
 
 | Item | Evidence | Impact | Status |
 |---|---|---|---|
-| 386/572 files carry `@ts-nocheck` (re-verified this pass: **387/573**, essentially the same figure — the audit's count was accurate within rounding) | `grep -rl "@ts-nocheck" apps/api/src \| wc -l` → 387 | Type errors in ~68% of the API are silently suppressed; `pnpm typecheck` passing (6/6, verified below) is not evidence these files are type-safe | Open |
-| 240 `: any` usages claimed by the audit; re-verified count is **270** (`grep -ro ": any" apps/api/src \| wc -l`) | count run 2026-08-12 | Correction: the real number is higher than the audit stated. Same conclusion — heavy escape-hatch usage | Open, correcting the audit |
-| 2 test files for ~42,700 LOC | `apps/api/src/database/database.int.spec.ts` (3 tests), `apps/api/src/common/middleware/request-id.middleware.spec.ts` (2 tests) — see `docs/TESTING.md` | No regression protection on 550 route handlers | Open |
-| `request-id.middleware.ts` exists but is never registered | `grep -n "request-id\|configure(" apps/api/src/app.module.ts` → no matches. The middleware and its own spec exist (`apps/api/src/common/middleware/request-id.middleware.ts`, `...spec.ts`), but no `NestModule.configure()` call wires it into the request pipeline | Request IDs are not attached to any real request; the root `CLAUDE.md` observability invariant ("request-id, traceable across all apps") is unmet even though the building block is built | Open |
-| `main.ts` deliberately stamps `additionalProperties: true` onto the OpenAPI doc | `apps/api/src/main.ts:89,102` — post-processes the generated Swagger doc to widen every request/response schema, with a comment that migrated handlers "deliberately parse unknown JSON through their existing validators" | The published API contract is untyped by design. Any consumer generating a typed client from this OpenAPI doc gets `any` back, not real shapes | Open — deliberate stopgap during migration, not an oversight |
-| Several modules are empty shells | `apps/api/src/proxy/proxy.module.ts` is `@Module({})`; root `CLAUDE.md:15` says "the `proxy/` module only shrinks" — it has never grown or shrunk, because it was never populated | The invariant in the root agent brief describes a mechanism that doesn't exist yet | Open |
-| Committed dev scripts and test-credential doc at `apps/api/` root | `apps/api/seed_dev_user.js`, `simple_seed.js`, `simple_test.js`, `test_auth.js`, `test_auth_complete.js`, `apps/api/SOLUTION.md` (documents `test@example.com` / `password123`) | Dev debris in the shipped tree; test credentials committed to source control (low severity if never reused in a real environment, but should not be there) | Open |
-| Stray root-level `custom product/` directory (with a space in the name) | `custom product/Custom product.dto.ts`, `Custom product.mapper.ts`, 9 files total, outside `apps/` | Orphaned code outside the workspace structure; not part of any build target, easy to miss in review | Open |
-| Several cross-domain ports bound to null/dummy implementations | Root `TODO.md` / `MIGRATION_CHECKPOINT.md`: `SIZE_PROFILE_OPTION_PORT`, `FINISH_PROFILE_ITEM_PORT`, `EMAIL_ENCODER_PORT`, plus BadgeProfile/VolumeDiscountProfile/MadeToOrderProfile/CustomSizeProfile/SizeProfile/FinishProfile/FabricProfile/ImageGallerySeo ports referenced in `apps/api/src/commerce/product/product.module.ts` | These commerce sub-flows will silently no-op or return null rather than fail loudly, until the real adapters are written | Open |
-| `sub-category/` has no module file | `apps/api/src/commerce/product/product.module.ts:7` imports `./sub-category/subcategory.module.js`, which does not exist — `sub-category/` has dto/mapper/repository/service/types/validators, no module | This is the one type error blocking a clean `tsc --noEmit` on the pre-merge branch; re-check whether it's still present post-merge | Unverified in this pass — re-check against current `apps/api` build output |
-| No pino, hand-rolled scrypt auth | `GatekeeperService` — 16-byte salt / 64-byte key, `saltHex:hashHex` format, not a vetted library (bcrypt/argon2) | Auth crypto is hand-rolled rather than using a reviewed library; not inherently broken, but unaudited | Open |
+| **348 of 628** `.ts` files carry `@ts-nocheck` (re-verified this pass; prior pass's 387/573 no longer applies post-merge) | `grep -rl "@ts-nocheck" apps/api/src \| wc -l` → 348; `find apps/api/src -name "*.ts" \| wc -l` → 628 | Type errors in ~55% of the API are silently suppressed. `pnpm typecheck` passing 6/6 (verified below) is not evidence these files are type-safe. This is not academic: the boot-breaking bug fixed today (item 1 in "Fixed") was **four broken imports concealed by `@ts-nocheck` in files that otherwise passed every gate** — one day, one category of bug, found only by actually running the server | Open |
+| 52 spec files / 335 tests (330 unit + 4 integration + 1 gated skip) for 628 `.ts` files, up from 2 test files at the start of the day | See `docs/TESTING.md` for the full breakdown | Real regression protection now exists on validators/mappers/sanitizers/services touched today; large swaths of controllers and untouched business logic remain uncovered | Open, much improved |
+| `request-id.middleware.ts` exists but is never registered | `grep -n "request-id\|configure(" apps/api/src/app.module.ts` → no matches | Request IDs are not attached to any real request; the root `CLAUDE.md` observability invariant is unmet even though the building block is built | Open, unchanged |
+| `main.ts` deliberately stamps `additionalProperties: true` onto the OpenAPI doc | `apps/api/src/main.ts` — post-processes the generated Swagger doc to widen every request/response schema | The published API contract is untyped by design | Open — deliberate stopgap, not an oversight |
+| Several modules are empty shells | `apps/api/src/proxy/proxy.module.ts` is `@Module({})` | The strangler-fig proxy mechanism described in the root `CLAUDE.md` doesn't exist yet | Open, unchanged |
+| Committed dev scripts and test-credential doc at `apps/api/` root | `seed_dev_user.js`, `simple_seed.js`, `simple_test.js`, `test_auth.js`, `test_auth_complete.js`, `SOLUTION.md` (documents `test@example.com` / `password123`) | Dev debris in the shipped tree | Open, unverified this pass whether still present — re-check |
+| Several cross-domain ports still bound to null/dummy implementations | `SIZE_PROFILE_OPTION_PORT`, `FINISH_PROFILE_ITEM_PORT`, `EMAIL_ENCODER_PORT` (see above, deliberate), plus Badge/VolumeDiscount/MadeToOrder/CustomSize/Size/Finish/Fabric/ImageGallerySeo profile ports | These commerce sub-flows silently no-op or return null rather than fail loudly | Open |
 
 ## Storefront
 
 | Item | Evidence | Impact | Status |
 |---|---|---|---|
 | No `/checkout` route at all | `find apps/storefront/src/app -iname "*checkout*"` → zero files | The storefront cannot complete a purchase | Open — highest-priority gap in the storefront |
-| Also missing vs the legacy `fabric` storefront (61 routes there vs 30 here) | `/wishlist`, `/review`, `/fabric-wholesaler[/:city]`, 6 `/b2b/*` PSEO pages, 3 `/ads/*` pages | Roughly half the legacy route surface isn't rebuilt yet | Open |
-| `dummy-data.ts` backs 9 of 10 profile routes, not 7 as an earlier pass claimed | `apps/storefront/src/lib/profile/dummy-data.ts` (326 lines), imported by `profile/order/[id]`, `profile/thank-you/[id]`, `profile/wholesale-program`, `profile/order`, `profile/notification-settings`, `profile/custom-order/[id]`, `profile/address`, `profile/dashboard`, `profile/account` — verified with `grep -rl "dummy-data" apps/storefront/src`. Only `profile/page.tsx` itself has no dummy-data import | Order-detail, thank-you, custom-order-detail, address, account, notification-settings render fabricated data with no live fetch at all; dashboard and order-list fall back to dummy data **silently on fetch failure**, indistinguishable from a real empty state in the UI | Open — correcting the count from 7/10 to 9/10 |
-| `packages/ui` is empty despite being mandated | `packages/ui/src/index.ts` is `export {};` with a comment "port the existing Fabric design system" — 0 exports, 0 importers. `apps/storefront/CLAUDE.md:8` says "Shared UI from `@anuprerna/ui`" | Every page hand-rolls markup; no shared design-system primitives exist to reuse | Open |
-| `src/lib/api.ts` — the file every doc tells agents to use — has zero importers | Real fetch path is `src/lib/api/{client,repositories,adapters}`, undocumented in `apps/storefront/CLAUDE.md:11` and `docs/frontend-conventions.md:11-14` | Following the documented convention leads an agent to dead code | Open — fix by updating `apps/storefront/CLAUDE.md` to point at the real path, or deleting `api.ts` |
-| ~30 routes vs 61 in the legacy storefront | `find apps/storefront/src/app -name page.tsx \| wc -l` → 30 | Roughly half the legacy surface area is rebuilt | Open, same fact as the route-gap item above, restated as a coverage ratio |
-| 0 of ~50 fetch sites are Zod-validated | See `docs/ENDPOINT-INVENTORY.md` — 1 unused schema total in `packages/types` | No runtime contract checking anywhere in the storefront | Open |
+| Still missing ~half the legacy route surface | 30 routes here vs 61 in the legacy `fabric` storefront: `/wishlist`, `/review`, `/fabric-wholesaler[/:city]`, 6 `/b2b/*` PSEO pages, 3 `/ads/*` pages | Roughly half the legacy route surface isn't rebuilt yet | Open |
+| `dummy-data.ts` backs 9 of 10 profile routes | `apps/storefront/src/lib/profile/dummy-data.ts`, imported across order/thank-you/wholesale-program/order/notification-settings/custom-order/address/dashboard/account. The profile envelope-unwrap bug (item 3 in "Fixed") is now fixed, but that changes what the *live* fetch returns — it does not remove the dummy-data fallback for the pages that never had a live fetch to begin with | Order-detail, thank-you, custom-order-detail, address, account, notification-settings render fabricated data with no live fetch at all; dashboard and order-list fall back to dummy data silently on fetch failure | Open |
+| `packages/ui` is empty despite being mandated | `packages/ui/src/index.ts` is `export {};` | Every page hand-rolls markup; no shared design-system primitives exist | Open |
+| `src/lib/api.ts` has zero importers | Real fetch path is `src/lib/api/{client,repositories,adapters}` | Following the documented convention leads an agent to dead code | Open |
+| 0 of ~50 fetch sites are Zod-validated | 1 unused schema total in `packages/types` (now 2 tests on it — see `docs/TESTING.md`) | No runtime contract checking anywhere in the storefront | Open |
 
 ## CMS
 
 | Item | Evidence | Impact | Status |
 |---|---|---|---|
-| ~15 routes render fabricated data instead of calling their service | `/diagnostics/host` (`page.tsx:20-22` static "Server OS: Linux 6.1..."), `/diagnostics/thread-dump` (fabricated Java stack trace), `/diagnostics/application` (static uptime string), `/image-optimization/attention`, `/image-optimization/ledger` (static "Total bandwidth saved: 4.8 GB"), `/tools`, `/history`, `/queue` (25-29 line stub files, 0 service calls), `/manage-workflow/process` (`page.tsx:8-11` inline hardcoded array), `/manage-workflow/custom-process`, `/manage-workflow/artisan-payments` (hardcoded array), `/manage-workflow/feedback`, `/custom-feedback` (static placeholder), `/manage-workflow/template/add` (`<form>` with no `onSubmit`), `/manage-workflow/template/update/[id]`, `/view/[id]` (hardcoded `defaultValue`, no fetch/save), `/ai-embeddings`, `/manage-product/custom-product`, `/user/cart/[uid]` (`page.tsx:22-27` static placeholder) | These screens look functional in a demo but do not read or write real data | Open. Cheap-fix note: `workflow-service.ts` already implements `getWorkflows()`, `getCustomWorkflows()`, `getWorkflowFeedback()`, `getArtisanPayments()` — several of these pages just don't call the existing service. It has no POST/PUT methods yet, so template add/update need new service code, not just wiring |
-| No server-side auth guard | No `middleware.ts` anywhere in `apps/cms` (contradicts `docs/ENGINEERING-GUIDE.md:82`, which says CMS has one). The only gate is a post-mount `useEffect` in `AuthContext.tsx:72-80` | Protected page code and its fetches run before any redirect fires — a client with dev tools open, or a slow redirect, can see a flash of protected content/data | Open, security-adjacent |
-| JWT in localStorage | `apps/cms/src/lib/auth-service.ts:28-45` — writes `token`, `jwt`, and five obfuscated chunk keys (`KEY_033`, `KEY_06`, `KEY_40`, `KEY_63`, `KEY_25`), copied from `weave-master/src/app/authentication/jwt.service.ts:20`. `isTokenExpired()` (`auth-service.ts:64-81`) has zero callers — dead code; `hasValidJWT()` only checks the string is non-empty; no 401 interceptor, no refresh (`api.ts:24-27`) | Token theft via XSS is not mitigated by the chunking (obfuscation, not security); expired tokens are not detected client-side | Open |
-| 0 tests, no test script, no vitest config | `find apps/cms -iname "vitest*" -o -iname "*.test.*" -o -iname "*.spec.*"` → nothing. `grep '"test' apps/cms/package.json` → nothing | The largest workspace (145 files, 29,095 LOC) has no regression protection at all | Open, see `docs/TESTING.md` |
-| `ConfigurationService` bakes `process.env` at module load | `apps/cms/src/lib/config.ts:1,22,24` — `RAW_SERVER_ENDPOINT`, `LFS_SERVER_ENDPOINT`, `IMAGE_RESOURCE_API` read `process.env.NEXT_PUBLIC_*` at import time with hardcoded fallbacks to production hosts (`https://loom-v2.anuprerna.com`, `https://hercules.bloomscorp.com`) | Not reconfigurable per test or per environment without a full module reload; a misconfigured env still silently falls back to prod hosts | Open — see testability note in `docs/TESTING.md` |
-| `FAKE_API`, `BYPASS_AUTH`, `MAINTENANCE_MODE`, `SECURE_CONNECT` dead flags | 0 references outside `lib/config.ts`; `PRODUCTION` hardcoded `true` | Dead configuration surface that looks load-bearing but isn't | Open |
-| 143 TypeScript errors on `main`, all one root cause | All `TS2322`/`TS2345`, mention `RouteImpl<>`/`UrlObject`, across 77 files — caused by `tsconfig.json` including `.next/types/**/*.ts` while `next.config.ts` has no explicit `typedRoutes: false`. Fix is one config line, not 77 file edits. **On `chore/agent-substrate`, `pnpm typecheck` currently passes 6/6** (verified 2026-08-12) — this appears already resolved on this branch | Was a false alarm about scope (looked like 143 separate bugs, was one config gap) | Resolved on this branch — reconcile with any doc still citing 143 errors |
+| ~19 routes render fabricated data instead of calling their service (up from the ~15 counted in the prior pass — not re-fixed, just a wider recount) | `/diagnostics/host`, `/diagnostics/thread-dump`, `/diagnostics/application`, `/image-optimization/{attention,ledger,tools,history,queue}`, `/manage-workflow/{process,custom-process,artisan-payments,feedback,custom-feedback,template/add,template/update/[id]}`, `/view/[id]`, `/ai-embeddings`, `/manage-product/custom-product`, `/user/cart/[uid]` | These screens look functional in a demo but do not read or write real data | Open. `workflow-service.ts` already implements several of the needed reads — some of these pages just don't call it |
+| `uploadReviewImage` is likely broken | Sets `Content-Type: multipart/form-data` manually on a `FormData` body, so no `boundary` is generated | Multipart parsing fails server-side | Open — not part of the six fixed bugs |
+| `unwrapResponseData` picks arbitrarily on multi-array responses | First key in `Object.keys()` order wins, no name-based tie-break | Every CMS route passes through this function; a second array field added upstream silently misroutes | Open |
+| `hasValidJWT()` ignores expiry | Only checks the string is non-empty; `isTokenExpired()` exists and is correct but has zero callers | An expired token reads as valid client-side | Open |
+| No server-side auth guard | No `middleware.ts` anywhere in `apps/cms`; the only gate is a post-mount `useEffect` | Protected page code and its fetches run before any redirect fires | Open, security-adjacent |
+| JWT in localStorage, five obfuscated chunk keys | `apps/cms/src/lib/auth-service.ts` | Token theft via XSS not mitigated by chunking (obfuscation, not security) | Open |
+| `ConfigurationService` bakes `process.env` at module load | `apps/cms/src/lib/config.ts` — hardcoded fallbacks to `https://loom-v2.anuprerna.com` | Not reconfigurable per test/environment without a full module reload | Open |
+| `FAKE_API`, `BYPASS_AUTH`, `MAINTENANCE_MODE`, `SECURE_CONNECT` dead flags | 0 references outside `lib/config.ts` | Dead configuration surface that looks load-bearing but isn't | Open |
 
 ## Security — read this section first if triaging
 
 | Item | Evidence | Impact | Status |
 |---|---|---|---|
-| Live production token hardcoded in source, committed and pushed | `apps/storefront/src/app/api/backend/[...path]/route.ts:4-5` — `LOOM_TABLE_EXPLORER_TOKEN`, a 128-char token, in git history since the PR that introduced the proxy | A committed, still-live credential in a private repo cannot be scrubbed from history without a rotation — removal from the working tree is not sufficient | **Open — verify whether this has been rotated on the Loom side since discovery.** Private repo, shared credential; treat as compromised until rotated regardless of repo access controls |
-| Both `/api/backend` proxies spoof `Origin`/`Referer` to defeat backend CORS | Storefront `route.ts:19-20` → `http://localhost:4200`; CMS `route.ts:14-16` → `https://weave.bloomscorp.com` | The proxies exist specifically to bypass the legacy backend's CORS allowlist by lying about where the request originates | Open, structural — will remain necessary until `apps/api` is the system of record and legacy CORS no longer needs defeating |
-| CMS proxy sets `Access-Control-Allow-Origin: *` | `apps/cms/src/app/api/backend/[...path]/route.ts:44` | Wildcard CORS on a relay that forwards `Authorization` bearer tokens — any origin can ride a logged-in session through this proxy if it can reach it | Open |
-| CMS proxy hardcodes `TARGET_HOST` | `apps/cms/src/app/api/backend/[...path]/route.ts:3` — `'https://loom-v2.anuprerna.com'`, no env override | Cannot point the CMS at a staging/local backend without editing source | Open |
-| JWT in localStorage, both apps | See CMS and Storefront sections above; storefront's `auth.store.ts` uses `zustand/persist` + `document.cookie` with no `HttpOnly`/`Secure` flags | Standard XSS-exfiltration exposure for session tokens in both apps | Open |
+| Live production token hardcoded in source, committed and pushed | `LOOM_TABLE_EXPLORER_TOKEN`, a 128-char token, in git history | A committed, still-live credential **cannot be rotated** (shared credential) | **Open — cannot be rotated. Repo is private, which is the whole mitigation** |
+| Both `/api/backend` proxies spoof `Origin`/`Referer` to defeat backend CORS | Storefront → `http://localhost:4200`; CMS → `https://weave.bloomscorp.com` | The proxies exist specifically to bypass the legacy backend's CORS allowlist | Open, structural — necessary until `apps/api` is the system of record |
+| CMS proxy sets `Access-Control-Allow-Origin: *` | `apps/cms/src/app/api/backend/[...path]/route.ts` | Wildcard CORS on a relay that forwards `Authorization` bearer tokens | Open |
+| CMS proxy hardcodes `TARGET_HOST` | No env override | Cannot point CMS at staging/local backend without editing source | Open |
+| JWT in localStorage, both apps | Storefront's `auth.store.ts` uses `zustand/persist` + `document.cookie` with no `HttpOnly`/`Secure` flags | Standard XSS-exfiltration exposure for session tokens | Open |
+| Payments have no signature verification and no SDK | See Payments section above | A client can fabricate a payment success today; and the provider integration doesn't exist to even attempt a real one | Open |
 
 ## Docs / infra
 
 | Item | Evidence | Impact | Status |
 |---|---|---|---|
-| No CI | `find . -maxdepth 2 -iname ".github"` → nothing; no `.github/workflows` anywhere | Nothing enforces `pnpm test` / `pnpm typecheck` / `pnpm build` staying green on a PR — they're currently green (see `docs/TESTING.md`) purely because someone ran them by hand | Open |
-| `packages/config` has zero consumers | `grep -rl "@anuprerna/config"` across every `package.json` in the repo → only `packages/config/package.json` itself. `apps/api/eslint.config.mjs:4` says "Mirrors packages/config/eslint.base.mjs; self-contained" — hand-duplicated instead of imported | A shared-config package exists but nothing actually shares it; every workspace hand-rolls its own lint/tsconfig | Open |
-| Lint config inconsistent across workspaces | `apps/api` and `apps/cms` on ESLint 9 flat config (`eslint.config.mjs`); `apps/storefront` on legacy `.eslintrc.json`; `packages/types` and `packages/ui` have no lint config or script at all | `pnpm lint` behaves differently per workspace; no single lint contract | Open |
+| CI now exists and is green | `.github/workflows/ci.yml` — `verify` job (lint → typecheck → test with coverage → build) plus a separate `integration` job against real Postgres, and a gitleaks secret scan | Was previously "no CI, green only because someone ran it by hand" — no longer true | **Resolved.** Re-verified this pass: lint 3/3, typecheck 6/6, test 6/6, build 5/5, all cache-hit clean |
+| `packages/config` has zero consumers | `grep -rl "@anuprerna/config"` across every `package.json` → only itself | A shared-config package exists but nothing shares it | Open, unverified this pass — re-check |
+| Lint config inconsistent across workspaces | `apps/api`/`apps/cms` on ESLint 9 flat config; `apps/storefront` on legacy `.eslintrc.json` | `pnpm lint` behaves differently per workspace | Open, unverified this pass — re-check |
+| The frontends still point at legacy `loom-v2.anuprerna.com` | See "0% of production traffic" section above | No cutover has begun | Open |
 
-## Corrections to the source audit made during this verification pass
+## Corrections made during this verification pass
 
-- CMS services directory has **24 files**, not the 30 assumed going in.
-- `apps/api` `: any` count is **270**, not 240.
-- `apps/api` `@ts-nocheck` count is **387/573** files, essentially matching the 386/572 figure (rounding/timing difference).
-- Storefront `dummy-data.ts` backs **9 of 10** profile routes, not 7 — only the top-level `profile/page.tsx` has no dummy-data dependency.
-- CMS's 143 `typedRoutes` TypeScript errors are **not currently reproducible** on `chore/agent-substrate` — `pnpm typecheck` passes 6/6. Worth confirming whether a fix already landed or the errors are environment-dependent.
+- Total test count is **589 across the repo's four workspaces** per the brief this pass started
+  from, but the measured figure via `pnpm test:coverage` (the actual CI gate) is **588** — `api`
+  330 + `cms` 93 + `storefront` 163 + `types` 2. Including `apps/api`'s separate integration suite
+  (`pnpm test:int`, 4 passing + 1 gated skip requiring `RUN_SECRET_TESTS=1` against real prod
+  data) brings the full repo-wide figure to **593**. Earlier revisions citing 497 or 551 are both
+  stale — see `docs/TESTING.md` for the full breakdown.
+- Controller count is **117**, not 116 as the prior pass had it (one more real controller landed
+  since).
+- `apps/api` is now **628** `.ts` files (`apps/api/src`), with **348** carrying `@ts-nocheck` —
+  both figures changed substantially from the prior pass's 573/387 because of the merge.
+- Schema is **117 tables / 45 enums**, matching production exactly as of a 2026-08-12 read-only
+  re-introspection — corrects the prior pass's 116/68 (68 included 23 phantom enum twins).
+- "Orphaned rich controllers, with thin generic ones wired in their place" is carried forward
+  unverified — it was not re-checked this pass and may be stale.
+- `apps/api` dev-debris files (`seed_dev_user.js` etc.) and `packages/config`/lint-consistency
+  items were not re-verified this pass; carried forward from the prior audit as-is.

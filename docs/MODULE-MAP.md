@@ -214,12 +214,14 @@ already exist and are implemented — see section 2) is the next highest-leverag
 
 | Metric | Count | How verified |
 |---|---|---|
-| Files with `@ts-nocheck` | **387 of 573** (67.5%) | `grep -rl "@ts-nocheck" --include="*.ts" apps/api/src \| wc -l` against `find apps/api/src -name "*.ts" \| wc -l` |
-| `: any` occurrences | **270** | `grep -ro ": any" --include="*.ts" apps/api/src \| wc -l` |
-| Test files (`*.spec.ts` / `*.test.ts`) | **2** — `database/database.int.spec.ts`, `common/middleware/request-id.middleware.spec.ts` | `find apps/api/src -name "*.spec.ts" -o -name "*.test.ts"` |
+| Files with `@ts-nocheck` | **348 of 628** (55.4%) | `grep -rl "@ts-nocheck" --include="*.ts" apps/api/src \| wc -l` against `find apps/api/src -name "*.ts" \| wc -l` |
+| `: any` occurrences | **273** | `grep -ro ": any" --include="*.ts" apps/api/src \| wc -l` |
+| Test files (`*.spec.ts`) | **52**, 330 tests passing (`vitest run`) | `find apps/api/src -name "*.spec.ts" \| wc -l` |
 | `request-id.middleware.ts` registered in `app.module.ts`? | **No.** `app.module.ts` imports only `DatabaseModule`, `AuthModule`, `CommerceModule` and registers `HealthController` directly — there is no `MiddlewareConsumer.apply(...)` call anywhere in it, so `RequestIdMiddleware` (tested in isolation by its own spec) is never wired into the actual request pipeline. | Read `apps/api/src/app.module.ts` in full; grepped for `request-id` across `apps/api/src` — only the middleware file and its own spec reference it. |
 
-These four numbers are current as of this document's writing (2026-08-12) — re-verify before
-quoting them again if the branch has moved on. `@ts-nocheck` at 67.5% means type errors across
-two-thirds of the backend are currently invisible to `tsc`; treat any refactor touching a
+Test coverage has grown substantially since the last pass (2 spec files to 52, 330 passing tests),
+but `@ts-nocheck` coverage is still over half the codebase even after dropping from 67.5% to
+55.4%. Both figures are current as of this document's writing (2026-08-12) — re-verify before
+quoting them again if the branch has moved on. `@ts-nocheck` at 55.4% still means type errors
+across over half the backend are currently invisible to `tsc`; treat any refactor touching a
 `@ts-nocheck` file as untyped until that pragma is removed and the file is made to compile clean.

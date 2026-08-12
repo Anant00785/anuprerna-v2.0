@@ -3,22 +3,39 @@
 Source of truth for what business data exists on the platform, and where. Written for a client
 demo and as an orientation doc for AI coding agents working in `apps/api`.
 
-Verified against the live-introspected Drizzle schema on branch `chore/agent-substrate`:
+Verified against the Drizzle schema on `main`, **regenerated from the live production database on
+2026-08-12**:
 
-- `apps/api/src/database/schema/schema.ts` — 116 `pgTable` definitions, 2,952 lines
-- `apps/api/src/database/schema/relations.ts` — 94 relation blocks, 975 lines
-- `apps/api/src/database/schema/0000_dashing_xavin.sql` — 1,992 lines, 124 indexes, 134 foreign keys
+- `apps/api/src/database/schema/schema.ts` — 117 `pgTable` definitions, 45 `pgEnum` definitions
+- `apps/api/src/database/schema/relations.ts`, `0000_dashing_xavin.sql` — see §6 for the
+  regeneration/drift caveat; line and index/FK counts below were not re-verified this pass and may
+  have shifted along with the table/enum counts.
 
 For system architecture and request flow, see `docs/ARCHITECTURE.md` and `docs/DATA-FLOW.md`. For
 runtime/process state (queues, caches, sessions), see `docs/STATE-INVENTORY.md`. For the module
 that owns each table, see `docs/MODULE-MAP.md`.
 
-All counts below were produced by grepping the schema files directly (`grep -c "pgTable("`,
-manual domain sort of all 116 table names) — not estimated.
+**This regeneration corrected a schema that had drifted badly from production.** The previous pass
+said 116 tables and 68 enums. Production actually has **117 tables** — `custom_impact_factor` was
+missing entirely — and **45 enums**, not 68: the 23 extras were phantom non-`_enum` twins
+(`order_status` beside `order_status_enum`, `address_type` beside `address_type_enum`) left over
+from a database that had carried two naming generations. Three enums were also missing values
+production uses: `order_status_enum` lacked `PARTIALLY_DISPATCHED`, `settings_attribute_enum`
+lacked `IMPACT_ASSUMPTIONS`, and `user_role_enum` lacked `ROLE_ARTISAN` — meaning the backend
+previously had no concept of an artisan role, on a platform built around artisans. All three values
+are now present in `schema.ts`. All counts below were produced by grepping the schema file directly
+(`grep -c 'pgTable('`, `grep -c 'pgEnum('`, manual domain sort of all 117 table names) — not
+estimated.
 
-## 1. Domain grouping — all 116 tables
+**A local production dataset now backs this schema for development:** database `loom_prod` on
+`localhost:5433`, loaded from a 2026-08-04 production dump with 0 errors. It contains 7,254
+customers, 4,837 products, 4,733 orders, 27,558 order items, and 82 artisans — those are the counts
+the domain groupings below actually hold data for.
 
-17 domains, verified to sum to 116.
+## 1. Domain grouping — all 117 tables
+
+17 domains, verified to sum to 117 (the extra table versus the prior count is `custom_impact_factor`,
+folded into the cross-cutting lookups row below alongside its siblings `discount`/`impact_factor`).
 
 | # | Domain | Tables |
 |---|--------|--------|
@@ -39,8 +56,8 @@ manual domain sort of all 116 table names) — not estimated.
 | 15 | Image optimization | 5 |
 | 16 | Diagnostics / cron | 1 |
 | 17 | AI / vector | 2 |
-| — | Discounts, pricing, misc lookups (segment, tag, forex, impact) | 26 |
-| — | **Total** | **116** |
+| — | Discounts, pricing, misc lookups (segment, tag, forex, impact, `custom_impact_factor`) | 27 |
+| — | **Total** | **117** |
 
 The last row groups tables that are genuinely cross-cutting lookups (discount profiles, volume
 discount, forex rates, segment/tag taxonomy, impact factor, special-status, settings) rather than
@@ -51,7 +68,7 @@ actually owns; the grouping above is the navigation aid, not a strict partition.
 
 | Table | Purpose | Key columns | Main FKs |
 |---|---|---|---|
-| `loom_tenant` | Root user/account record (customers, staff, artisans all live here) | `email` (encrypted at rest), `user_password` (scrypt hash), `user_type`, `gender`, `active`/`suspended`/`banned` | none (root) |
+| `loom_tenant` | Root user/account record (customers, staff, artisans all live here) | `email` (encrypted at rest), `user_password` (bcrypt hash, see §4), `user_type`, `gender`, `active`/`suspended`/`banned` | none (root) |
 | `super_user` | Elevated/admin flag on a tenant | `tenant_id` | → `loom_tenant.id` |
 | `user_role` | Role assignment | `user_id`, role enum | → `loom_tenant.id` |
 | `authentication_log` | Login/auth event audit trail | `tenant_id`, action, timestamp | (see relations.ts) |
@@ -247,10 +264,13 @@ general-purpose sibling.
 | `product_vector` | pgvector embedding (1536-dim) for a product, for similarity search | `product_id` (unique), `embedding` | → `product.id` |
 | `blog_vector` | pgvector embedding for a blog post | `blog_content_id` (unique), `embedding` | → `blog_content.id` |
 
-### Remaining cross-cutting lookups (26 tables)
+### Remaining cross-cutting lookups (27 tables)
 
 Discounts (`discount`, `volume_discount_profile`, `volume_discount_profile_item`), forex
-(`forex`, `forex_exchange_rate`), impact (`impact_factor`), navigation/config (`settings`,
+(`forex`, `forex_exchange_rate`), impact (`impact_factor`, `custom_impact_factor` — the table
+missing from the previous schema pass, carrying FKs to `workflow`, `custom_order`,
+`custom_order_item`, and `loom_tenant`, and holding per-order sustainability metrics like
+`co2_offset_kg`/`water_saved_litres`/`artisan_hours`), navigation/config (`settings`,
 `filter_page_config`), tenant-facing badges/status already listed under Catalog/Identity, plus
 the join and lookup tables that sit between the domains above (`product_size_profile`,
 `story_product_mapping`, `sub_category_audit`, etc.). These are real tables backing real
@@ -354,10 +374,12 @@ to share `tenant_id` as their only common ancestor.
   decrypt-at-read-time pattern (`emailEncoder.decode(tenant.email)`), with the failure mode
   deliberately swallowed per-record so one bad row doesn't fail a whole listing. Plaintext email is
   never persisted — see `docs/adr/0003-managed-postgres-and-email-crypto.md`.
-- **`loom_tenant.user_password`** — scrypt-derived hash (`apps/api/src/auth/service/
-  gatekeeper.service.ts`, Node's built-in `crypto.scrypt`). Legacy Loom passwords were **not
-  exportable** from the source system's API — there is no plaintext or reversible password data to
-  migrate; new/reset passwords are the only path forward post-cutover.
+- **`loom_tenant.user_password`** — `bcrypt(pepper + password)` at cost 11, produced via
+  `bcryptjs` (`apps/api/src/auth/service/gatekeeper.service.ts`), a direct port of the legacy
+  `NVersePasswordEncoder`'s scheme, not a hand-rolled replacement. Verified against real
+  production hashes: all 7,254 `loom_tenant` rows carry a `$2a$11$`, 60-character hash in this
+  format. `auth_provider_enum` (`UNKNOWN` \| `BASIC` \| `GOOGLE` \| `FACEBOOK`) splits the account
+  base: 3,784 BASIC (password-based), 3,390 GOOGLE (social login), 80 UNKNOWN.
 - **PII-bearing tables**: `loom_tenant` (email, phone, DOB, gender), `address` (postal address),
   `customer`, `authentication_log` (login events tied to a tenant), `order_review_scheduled_email`
   and the notification-history tables (`email_notification_history`,
@@ -377,7 +399,7 @@ against the schema:
 grep -c '^export const.*= pgTable("af_' apps/api/src/database/schema/schema.ts   →  0
 ```
 
-**No table in the 116-table schema uses an `af_` prefix.** ArtisanFlow's actual data lives in
+**No table in the 117-table schema uses an `af_` prefix.** ArtisanFlow's actual data lives in
 plainly-named, unprefixed tables: `workflow`, `workflow_template`, `workflow_artisan_mapping`,
 `workflow_custom_order_mapping`, `artisan`, `artisan_skill_mapping`, `artisan_payment_record`,
 `skill`, `element`, `element_template`, `element_feedback`, `step_element`,
@@ -406,3 +428,10 @@ single entry in `apps/api/src/database/schema/meta/_journal.json` (`idx: 0`, tag
   run, not a live contract. Before relying on a table/column for a demo or a build, a fresh
   `pnpm db:introspect` (or a direct `\d` against the live DB) is the only way to confirm current
   shape.
+- **`drizzle-kit introspect` output does not compile or apply as generated — this is a standing
+  trap, not a one-time bug.** The 2026-08-12 regeneration hit three defects: 206 unterminated
+  `.default(')` empty-string literals, unbalanced parentheses in `sub_category_audit.changed_at`,
+  and `enum_ops` applied to a `bigint` index column. All three were hand-repaired in `schema.ts`
+  with comments marking the fix, but introspect regenerates the same defects on every re-run —
+  do not blind-copy fresh introspect output over `schema.ts` without diffing for these three
+  patterns again.
