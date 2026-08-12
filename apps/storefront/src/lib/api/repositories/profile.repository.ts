@@ -92,7 +92,12 @@ export const profileRepository = {
     if (jwtToken) {
       headers["Authorization"] = `Bearer ${jwtToken}`;
     }
-    return apiRequest<Address[]>("get/address-list", { headers });
+    const response = await apiRequest<{ addressList?: Address[]; payload?: Address[]; content?: Address[] } | Address[]>(
+      "get/address-list",
+      { headers }
+    );
+    if (Array.isArray(response)) return response;
+    return response.addressList || response.payload || response.content || [];
   },
 
   /**
@@ -147,7 +152,12 @@ export const profileRepository = {
     if (jwtToken) {
       headers["Authorization"] = `Bearer ${jwtToken}`;
     }
-    return apiRequest<Order[]>("get/customer/order-list/all", { headers });
+    const response = await apiRequest<{ orderList?: Order[]; payload?: Order[]; content?: Order[] } | Order[]>(
+      "get/customer/order-list/all",
+      { headers }
+    );
+    if (Array.isArray(response)) return response;
+    return response.orderList || response.payload || response.content || [];
   },
 
   /**

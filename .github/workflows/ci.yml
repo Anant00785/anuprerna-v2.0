@@ -1,0 +1,129 @@
+name: CI
+
+# The repo shipped 45,000 LOC across five feature PRs with no CI, so the
+# documented rules (tests required, types at the boundary, green before merge)
+# were never enforced once. This workflow is what turns those from wishes
+# into rules: if it is red, the work is not done.
+
+on:
+  push:
+    branches: [main, "chore/**", "feat/**", "feature/**", "fix/**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint / typecheck / test / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` here on purpose — it conflicts with the `packageManager`
+      # field in package.json and fails with ERR_PNPM_BAD_PM_VERSION. The action
+      # reads the pinned version from package.json instead.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # --coverage enforces the per-package thresholds in each vitest.config.ts.
+      # Those are scoped to the layers we chose to protect, not whole apps.
+      - name: Test
+        run: pnpm test:coverage
+
+      - name: Build
+        run: pnpm build
+
+  # Integration tests need a real Postgres, so they are a separate job and a
+  # separate vitest config (apps/api/vitest.int.config.ts). Keeping them out
+  # of `pnpm test` is what lets a clean checkout run the unit suite green.
+  integration:
+    name: api integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        # pgvector, not plain postgres: the introspected schema declares
+        # vector(1536) columns for the AI embedding tables.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: loom
+          POSTGRES_PASSWORD: loom
+          POSTGRES_DB: loom
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` here on purpose — it conflicts with the `packageManager`
+      # field in package.json and fails with ERR_PNPM_BAD_PM_VERSION. The action
+      # reads the pinned version from package.json instead.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # drizzle-kit introspect emits the whole file inside a /* ... */ block,
+      # with a header telling you to uncomment it before running. Feeding it to
+      # psql as-is executes one giant comment: nothing is created, and psql
+      # still exits 0, so the step "passed" while leaving an empty database.
+      # Strip the two wrapper lines, and use ON_ERROR_STOP so a genuine SQL
+      # error fails the job instead of being skipped.
+      - name: Apply schema
+        env:
+          PGPASSWORD: loom
+        run: |
+          # vector for the embedding columns, pg_trgm for the trigram indexes.
+          psql -v ON_ERROR_STOP=1 -h localhost -p 5433 -U loom -d loom \
+            -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+          sed '/^\/\*$/d; /^\*\/$/d' apps/api/src/database/schema/0000_dashing_xavin.sql \
+            | psql -v ON_ERROR_STOP=1 -h localhost -p 5433 -U loom -d loom
+          echo "tables created:"
+          psql -h localhost -p 5433 -U loom -d loom -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'"
+
+      - name: Integration tests
+        env:
+          DATABASE_URL: postgresql://loom:loom@localhost:5433/loom
+        run: pnpm --filter @anuprerna/api test:int
+
+  # Fails the build if a credential-shaped literal reaches source. A live
+  # token was committed to this repo once already; this is the backstop.
+  secret-scan:
+    name: secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

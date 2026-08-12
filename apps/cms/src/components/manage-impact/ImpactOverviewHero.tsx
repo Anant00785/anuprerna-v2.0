@@ -109,7 +109,7 @@ export const ImpactOverviewHero: React.FC<ImpactOverviewHeroProps> = ({
           <div className="h-8 w-px bg-slate-100 hidden sm:block" />
 
           <div className="space-y-0.5">
-            <p className="text-xs text-slate-500 font-medium">Women's hours</p>
+            <p className="text-xs text-slate-500 font-medium">Women&apos;s hours</p>
             <p className="text-base font-bold text-slate-800">{format(womenHours)} hrs</p>
           </div>
         </div>
@@ -117,7 +117,7 @@ export const ImpactOverviewHero: React.FC<ImpactOverviewHeroProps> = ({
         {/* Women's share progress bar */}
         <div className="w-full lg:w-72 space-y-2">
           <div className="flex justify-between items-center text-xs font-semibold">
-            <span className="text-slate-600">Women's share of work hours</span>
+            <span className="text-slate-600">Women&apos;s share of work hours</span>
             <span className="text-emerald-600 font-bold text-sm">{womenSharePercent}%</span>
           </div>
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">

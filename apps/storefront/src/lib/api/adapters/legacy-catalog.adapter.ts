@@ -59,7 +59,7 @@ export function mapLegacyProductToDomain(dto: any): Product {
     currency: dto?.currencySymbol || dto?.priceDetails?.currencySymbol || "INR",
     thumbnail: resolveImageUrl(primaryImgRaw),
     gallery,
-    inStock: dto?.availableQuantity ? dto.availableQuantity > 0 : true,
+    inStock: dto?.availableQuantity != null ? dto.availableQuantity > 0 : true,
     availableQuantity: dto?.availableQuantity,
     material: dto?.materialName || dto?.material,
     craft: dto?.craftName || dto?.craft,

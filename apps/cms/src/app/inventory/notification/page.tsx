@@ -151,7 +151,7 @@ export default function StockNotificationPage() {
         <div>
           <PageHeading heading="Stock Alerts & Restock Requests" />
           <p className="text-xs text-slate-500 font-normal mt-1">
-            Customer out-of-stock "notify me" requests & inventory alert notifications 🔔
+            Customer out-of-stock &quot;notify me&quot; requests & inventory alert notifications 🔔
           </p>
         </div>
 

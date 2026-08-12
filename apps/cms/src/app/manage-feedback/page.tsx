@@ -457,7 +457,7 @@ export default function ManageFeedbackPage() {
                         <AlertTriangle className="w-3.5 h-3.5" />
                         <span>{selectedFeedback.question2Negative || 'What were you looking for?'}</span>
                       </p>
-                      <p className="text-amber-800 italic">"{selectedFeedback.question2NegativeAnswer}"</p>
+                      <p className="text-amber-800 italic">&quot;{selectedFeedback.question2NegativeAnswer}&quot;</p>
                     </div>
                   )}
                 </div>
@@ -470,7 +470,7 @@ export default function ManageFeedbackPage() {
                 </p>
                 {selectedFeedback.question3Answer ? (
                   <blockquote className="p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 italic leading-relaxed shadow-2xs">
-                    "{selectedFeedback.question3Answer}"
+                    &quot;{selectedFeedback.question3Answer}&quot;
                   </blockquote>
                 ) : (
                   <p className="text-xs text-slate-400 italic">💭 No written comment left.</p>

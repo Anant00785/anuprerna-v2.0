@@ -12,8 +12,19 @@ human intervention — follow this brief exactly.**
 5. **Handoff:** on completion, append to the spec's `## Handoff log` (see `docs/AGENT-HANDOFF.md`).
 
 ## Invariants (do not violate)
-- The `proxy/` module only **shrinks** — every feature moves a route out of it, never in.
+- **The strangler boundary must only shrink toward `apps/api`.** `apps/api/src/proxy` is the
+  intended landing zone for this, but as of `chore/agent-substrate` it is an empty `@Module({})`
+  shell — nothing has ever been proxied through it and 0% of traffic transits it. Today the real
+  boundary is the two frontends' `/api/backend/[...path]` route handlers
+  (`apps/storefront/src/app/api/backend/[...path]/route.ts`,
+  `apps/cms/src/app/api/backend/[...path]/route.ts`), which talk to the legacy backend directly.
+  Do not widen `proxy/` with dead scaffolding to satisfy this invariant on paper — either route
+  real traffic through it as features cut over, or treat the frontend proxy routes as the
+  boundary until it is populated. See `docs/adr/0002-strangler-proxy-migration.md` (status
+  update) and `docs/ARCHITECTURE.md` §3.
 - Auth is **dual-accept** until the cutover runbook says otherwise; don't break legacy Loom tokens.
+  > **Status:** not yet implemented — `identity/` is an empty shell; see
+  > `docs/features/0001-identity-dual-accept-auth.md` (NOT STARTED).
 - Never persist decrypted email; decrypt only at the boundary.
 - Never point outbound email/SMS/payments at real creds outside a sandbox.
 
@@ -21,6 +32,9 @@ human intervention — follow this brief exactly.**
 `apps/{api,storefront,cms,worker}` · `packages/{types,ui,config}` · `docs/{adr,features,runbooks}` · `tests/`
 Each app's `CLAUDE.md` is the local source of truth. `docs/README.md` explains the work loop.
 
-## Observability (from week 1)
-pino structured logs + request-id (traceable across all apps), Sentry errors/traces, PostHog analytics,
-uptime/health checks. Wire in `apps/api/src/common`.
+## Observability
+> **Status:** target state, not current reality. `apps/api/src/common/middleware/request-id.middleware.ts`
+> exists but is never registered in `app.module.ts` — no request ID is attached to any real
+> request. There is no Sentry or PostHog integration anywhere in the code, and no uptime/health
+> alerting beyond the bare `GET /health` endpoint. Wire pino structured logs + request-id, Sentry,
+> and PostHog in `apps/api/src/common` as the work is picked up; see `docs/KNOWN-GAPS.md`.

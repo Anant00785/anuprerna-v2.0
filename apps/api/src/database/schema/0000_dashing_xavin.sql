@@ -37,7 +37,7 @@ CREATE TYPE "public"."log_type" AS ENUM('ALERT', 'CRITICAL', 'DEBUG', 'EMERGENCY
 CREATE TYPE "public"."loyalty_config_audit_log_type" AS ENUM('ONBOARDING', 'RENEWAL_AUTO', 'RENEWAL_MANUAL', 'ADJUSTMENT');--> statement-breakpoint
 CREATE TYPE "public"."nverse_auth_provider" AS ENUM('BASIC', 'FACEBOOK', 'GOOGLE', 'UNKNOWN');--> statement-breakpoint
 CREATE TYPE "public"."order_status" AS ENUM('CANCELLED', 'DELIVERED', 'DISPATCHED', 'FAILED', 'INITIATED', 'IN_TRANSIT', 'PROCESSING');--> statement-breakpoint
-CREATE TYPE "public"."order_status_enum" AS ENUM('INITIATED', 'PROCESSING', 'CANCELLED', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'DISPATCHED');--> statement-breakpoint
+CREATE TYPE "public"."order_status_enum" AS ENUM('INITIATED', 'PROCESSING', 'CANCELLED', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'DISPATCHED', 'PARTIALLY_DISPATCHED');--> statement-breakpoint
 CREATE TYPE "public"."order_type" AS ENUM('IN_STOCK', 'MADE_TO_ORDER', 'PRE_ORDER');--> statement-breakpoint
 CREATE TYPE "public"."order_type_enum" AS ENUM('IN_STOCK', 'MADE_TO_ORDER', 'PRE_ORDER');--> statement-breakpoint
 CREATE TYPE "public"."payment_mode_enum" AS ENUM('RAZORPAY', 'STRIPE', 'BANK', 'COD');--> statement-breakpoint
@@ -49,7 +49,7 @@ CREATE TYPE "public"."review_status_enum" AS ENUM('PENDING', 'APPROVED', 'REMOVE
 CREATE TYPE "public"."scheduled_email_enum" AS ENUM('COMPLETED', 'PENDING');--> statement-breakpoint
 CREATE TYPE "public"."scheduled_email_status" AS ENUM('PENDING', 'COMPLETED');--> statement-breakpoint
 CREATE TYPE "public"."settings_attribute" AS ENUM('CASH_ON_DELIVERY', 'CRAFT_SITE_NOTIFICATION', 'FABRIC_SITE_NOTIFICATION', 'SWATCH_PRICE_PERCENTAGE');--> statement-breakpoint
-CREATE TYPE "public"."settings_attribute_enum" AS ENUM('CASH_ON_DELIVERY', 'SWATCH_PRICE_PERCENTAGE', 'FABRIC_SITE_NOTIFICATION', 'CRAFT_SITE_NOTIFICATION');--> statement-breakpoint
+CREATE TYPE "public"."settings_attribute_enum" AS ENUM('CASH_ON_DELIVERY', 'SWATCH_PRICE_PERCENTAGE', 'FABRIC_SITE_NOTIFICATION', 'CRAFT_SITE_NOTIFICATION', 'IMPACT_ASSUMPTIONS');--> statement-breakpoint
 CREATE TYPE "public"."settings_attribute_type" AS ENUM('BOOLEAN', 'NUMBER', 'TEXT');--> statement-breakpoint
 CREATE TYPE "public"."settings_attribute_type_enum" AS ENUM('NUMBER', 'BOOLEAN', 'TEXT');--> statement-breakpoint
 CREATE TYPE "public"."story_content_type" AS ENUM('ARTISTS', 'CLUSTERS', 'COLLABORATIONS', 'CRAFTS');--> statement-breakpoint
@@ -59,7 +59,7 @@ CREATE TYPE "public"."transaction_status_enum" AS ENUM('CREATED', 'PAID', 'FAILE
 CREATE TYPE "public"."unit_enum" AS ENUM('METER', 'UNIT');--> statement-breakpoint
 CREATE TYPE "public"."usage_type" AS ENUM('MULTIPLE', 'SINGLE');--> statement-breakpoint
 CREATE TYPE "public"."usage_type_enum" AS ENUM('SINGLE', 'MULTIPLE');--> statement-breakpoint
-CREATE TYPE "public"."user_role_enum" AS ENUM('ROLE_GOD_MODE', 'ROLE_SUPER_USER', 'ROLE_ADMIN', 'ROLE_CUSTOMER');--> statement-breakpoint
+CREATE TYPE "public"."user_role_enum" AS ENUM('ROLE_GOD_MODE', 'ROLE_SUPER_USER', 'ROLE_ADMIN', 'ROLE_CUSTOMER', 'ROLE_ARTISAN');--> statement-breakpoint
 CREATE TYPE "public"."whatsapp_notification_entity_type_enum" AS ENUM('ORDER', 'ORDER_FULFILLMENT', 'CUSTOM_ORDER', 'CUSTOM_ORDER_FULFILLMENT');--> statement-breakpoint
 CREATE TYPE "public"."whatsapp_notification_status_enum" AS ENUM('PENDING_SEND', 'POST_SUCCESS', 'POST_FAILED', 'POST_ERROR', 'SENT', 'DELIVERED', 'READ', 'FAILED_DELIVERY');--> statement-breakpoint
 CREATE TYPE "public"."whatsapp_notification_tenant_type_enum" AS ENUM('CUSTOMER', 'ARTISAN');--> statement-breakpoint
@@ -863,7 +863,11 @@ CREATE TABLE "sub_category_audit" (
 	"operation_type" varchar(10),
 	"old_data" jsonb,
 	"new_data" jsonb,
-	"changed_at" bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000),
+	-- Corrected 2026-08-12: drizzle-kit introspect emitted this default with
+	-- unbalanced parentheses, making the whole file unrunnable from this point on
+	-- (54 of 116 tables created before psql aborted). Re-running introspect will
+	-- reintroduce it; re-apply this fix if you do.
+	"changed_at" bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint,
 	"status" varchar(10) DEFAULT 'PENDING'
 );
 --> statement-breakpoint
@@ -1989,5 +1993,8 @@ CREATE INDEX "ix_custom_order_item_fulfillment_custom_order_item_id" ON "custom_
 CREATE INDEX "ix_custom_order_ready_custom_order_id" ON "custom_order_ready" USING btree ("custom_order_id" int8_ops);--> statement-breakpoint
 CREATE INDEX "ix_stripe_transaction_loom_order_id" ON "stripe_transaction" USING btree ("loom_order_id" int8_ops);--> statement-breakpoint
 CREATE INDEX "ix_impact_factor_tenant_id" ON "impact_factor" USING btree ("tenant_id" int8_ops);--> statement-breakpoint
-CREATE INDEX "idx_image_optimization_record_claim" ON "image_optimization_record" USING btree ("state" enum_ops,"priority" enum_ops,"enqueued_at" enum_ops);
+-- Corrected 2026-08-12: introspect assigned enum_ops to all three columns, but
+-- enqueued_at is bigint and enum_ops does not accept it. Dropping the explicit
+-- operator classes lets Postgres choose the default per column type.
+CREATE INDEX "idx_image_optimization_record_claim" ON "image_optimization_record" USING btree ("state","priority","enqueued_at");
 */

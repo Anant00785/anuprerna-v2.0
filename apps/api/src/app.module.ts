@@ -1,23 +1,22 @@
+/**
+ * apps/api/src/app.module.ts
+ *
+ * Root module. Did not exist in the uploaded sources — assembled here so
+ * main.ts has something to bootstrap. DatabaseModule is @Global() (see
+ * database/database.module.ts) but must still be imported once at the
+ * root for its providers to be registered; AuthModule/CartModule then
+ * pick up DATABASE_CONNECTION without re-importing it.
+ */
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { DatabaseModule } from "./database/database.module.js";
-import { IdentityModule } from "./identity/identity.module.js";
+import { AuthModule } from "./auth/auth.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
-import { WorkflowModule } from "./workflow/workflow.module.js";
-import { MigrationModule } from "./migration/migration.module.js";
-import { ProxyModule } from "./proxy/proxy.module.js";
-import { HealthModule } from "./common/health/health.module.js";
+import { HealthController } from "./health/health.controller.js";
+import { validate } from "./common/config/env.schema.js";
 
-// Root wiring. ProxyModule is the strangler catch-all: it forwards not-yet-converted
-// reads to legacy Loom and blocks writes. It shrinks to nothing as modules are built.
 @Module({
-  imports: [
-    DatabaseModule,
-    HealthModule,
-    IdentityModule,
-    CommerceModule,
-    WorkflowModule,
-    MigrationModule,
-    ProxyModule, // keep LAST — catch-all
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true, validate }), DatabaseModule, AuthModule, CommerceModule],
+  controllers: [HealthController],
 })
 export class AppModule {}

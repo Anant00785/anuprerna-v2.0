@@ -57,11 +57,7 @@ export class ReviewService {
   public static async uploadReviewImage(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('imageFile', file);
-    const response = await apiClient.post('/upload/image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await apiClient.post('/upload/image', formData);
     return response.data?.imageUrl || response.data?.url || '';
   }
 }
