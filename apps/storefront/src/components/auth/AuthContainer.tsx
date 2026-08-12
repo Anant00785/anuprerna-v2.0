@@ -43,12 +43,10 @@ export const AuthContainer: React.FC = () => {
     }
 
     try {
-      // 1. Try loginSocial first
       let res;
       try {
         res = await authRepository.loginSocial("google_user", credential, "GOOGLE");
       } catch (err: any) {
-        // 2. If 401 Unauthorized, try social registration for new user
         if (err?.message?.includes("401")) {
           res = await authRepository.registerSocial("google_user@anuprerna.com", credential, "GOOGLE");
         } else {
@@ -78,19 +76,20 @@ export const AuthContainer: React.FC = () => {
 
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "dummy-google-client-id"}>
-      <section className="w-full flex justify-center items-center min-h-[90vh] bg-[#fffcf7] p-4 sm:p-6">
-        <div className="w-full max-w-[956px] min-h-[580px] bg-white rounded-2xl p-4 md:p-8 shadow-xl flex flex-col md:flex-row justify-between items-stretch gap-6 border border-[#f0e8dc]">
+      <section className="fb-login w-full flex justify-center items-center min-h-[90vh] bg-[#fffcf7]">
+        <div className="w-full max-w-[956px] min-h-[67vh] bg-white rounded-2xl p-3 md:p-6 m-3 drop-shadow-xl flex flex-col md:flex-row justify-between items-stretch gap-3">
+          
           {/* Left Panel: Dynamic Auth Steps */}
-          <div className="md:flex-[50%] flex justify-center items-center py-4 relative">
+          <div className="md:flex-[50%] flex justify-center items-center">
             {googleLoading ? (
-              <div className="flex flex-col items-center gap-3 text-center">
+              <div className="flex flex-col items-center gap-3 text-center py-8">
                 <div className="w-8 h-8 border-4 border-[#8E7862] border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-sm font-medium text-gray-700">Verifying Google Sign In...</p>
               </div>
             ) : (
-              <>
+              <div className="w-full flex justify-center items-center">
                 {googleError && (
-                  <div className="absolute top-0 left-0 right-0 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200">
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200 w-full">
                     {googleError}
                   </div>
                 )}
@@ -143,27 +142,23 @@ export const AuthContainer: React.FC = () => {
                     onBack={() => setStep("LOGIN")}
                   />
                 )}
-              </>
+              </div>
             )}
           </div>
 
-          {/* Right Panel: Handloom Fabric Artwork Image matching Angular site */}
-          <div className="md:flex-[50%] rounded-xl overflow-hidden relative flex justify-center items-center min-h-[300px] md:min-h-[auto] bg-gray-100">
+          {/* Right Panel: Auth Image matching legacy Angular site */}
+          <div className="md:flex-[50%] rounded-2xl overflow-hidden relative flex justify-center items-center min-h-[300px] md:min-h-[480px]">
             <Image
-              src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/auth.jpeg"
-              alt="Anuprerna Artisan Handloom Fabric"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
+              src="/assets/img/auth.jpeg"
+              alt="Anuprerna"
+              width={400}
+              height={500}
+              className="w-full h-full object-cover"
               priority
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent flex items-end p-6">
-              <p className="text-white text-sm font-light leading-relaxed drop-shadow">
-                Crafted by Indian Artisans • Sustainable &amp; Recycled Handloom Fabrics
-              </p>
-            </div>
           </div>
+
         </div>
       </section>
     </GoogleOAuthProvider>

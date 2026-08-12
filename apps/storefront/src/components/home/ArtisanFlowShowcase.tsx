@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatedCounter } from "./AnimatedCounter";
 
 export function ArtisanFlowShowcase() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -13,7 +14,12 @@ export function ArtisanFlowShowcase() {
         videoRef.current.pause();
         setIsPlaying(false);
       } else {
-        videoRef.current.play();
+        videoRef.current.play().then(() => {
+          if (videoRef.current) {
+            videoRef.current.controls = true;
+            videoRef.current.muted = false;
+          }
+        }).catch(() => {});
         setIsPlaying(true);
       }
     }
@@ -28,6 +34,7 @@ export function ArtisanFlowShowcase() {
           <video
             ref={videoRef}
             onClick={togglePlay}
+            controls={isPlaying}
             className="rounded-xl w-full h-auto cursor-pointer shadow-md border border-gray-100"
             poster="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/artisan-flow/artisan-flow-video-thumbnail.png"
             src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/artisan-flow/artisan-flow-demo-mobile.mp4"
@@ -70,7 +77,9 @@ export function ArtisanFlowShowcase() {
                 src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/artisan-flow/carbon-af.png"
                 alt="Carbon offset"
               />
-              <span className="text-xl md:text-2xl font-bold text-[#7d5b20]">+</span>
+              <span className="text-xl md:text-2xl font-bold text-[#7d5b20]">
+                <AnimatedCounter end={45708} />
+              </span>
               <p className="font-bold text-gray-800 leading-tight">
                 Kilograms of <br />
                 Carbon Offset
@@ -84,7 +93,9 @@ export function ArtisanFlowShowcase() {
                 src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/artisan-flow/artisan-hour-af.png"
                 alt="Hours of artisan work"
               />
-              <span className="text-xl md:text-2xl font-bold text-[#7d5b20]">+</span>
+              <span className="text-xl md:text-2xl font-bold text-[#7d5b20]">
+                <AnimatedCounter end={107548} />
+              </span>
               <p className="font-bold text-gray-800 leading-tight">
                 Hours of Work of <br />
                 500+ Artisans
@@ -98,7 +109,9 @@ export function ArtisanFlowShowcase() {
                 src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/artisan-flow/water-saving-af.png"
                 alt="Litres of water savings"
               />
-              <span className="text-xl md:text-2xl font-bold text-[#7d5b20]">+</span>
+              <span className="text-xl md:text-2xl font-bold text-[#7d5b20]">
+                <AnimatedCounter end={966253} />
+              </span>
               <p className="font-bold text-gray-800 leading-tight">
                 Litres of Water <br />
                 Savings

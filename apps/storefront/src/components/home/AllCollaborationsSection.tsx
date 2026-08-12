@@ -13,59 +13,64 @@ interface StoryItem {
 interface ProductItem {
   id: string;
   name: string;
+  displayName: string;
   heroImage: string;
   slug: string;
 }
 
 const COLLAB_STORIES: StoryItem[] = [
   {
-    id: "collab-1",
-    slug: "zero-waste-fashion-partnership",
-    title: "Global Ethical Designers: Zero Waste Fashion",
+    id: "273394",
+    slug: "cynthia-director",
+    title: "Cynthia Director",
     description:
-      "Partnering with eco-conscious independent designers across Europe and North America to create low-carbon capsule collections.",
+      "As part of our endeavour to bring modernism to our indigenous crafts, Anuprerna welcomes designers from around the world. This time, we are collaborating with Cynthia Director, an American product designer, for a range of home accessories and garments...",
     bannerImageDesktop:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/home-hero-4.png",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/08DKUXSCDHFKW8IJDGFMOOXARW6E06231.jpg",
   },
   {
-    id: "collab-2",
-    slug: "artisan-community-empowerment",
-    title: "Empowering 500+ Rural Weavers in West Bengal",
+    id: "54087",
+    slug: "maria-tolvanen",
+    title: "MARIA TOLVANEN",
     description:
-      "Co-creating fair-trade employment opportunities and fair wage standards directly benefiting East Indian weaving clusters.",
+      "As Part Of Our Endeavour To Bring In Modernism In Our Indigenous Crafts, Anuprerna Welcomes Designers From Around The World. This Time, We Are Collabo...",
     bannerImageDesktop:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/home-hero-3.png",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/Z0UIRJ25BLZ39VY4EEDLBIA5OO9E06531.jpeg",
   },
 ];
 
 const COLLAB_PRODUCTS: ProductItem[] = [
   {
     id: "collab-p1",
-    name: "Co-Designed Linen Stole",
+    name: "Stripe Black Pure Linen Table Runner",
+    displayName: "Stripe Black Pu...",
     heroImage:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/customisations.png",
-    slug: "co-designed-linen-stole",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/52CMIB62ELZ1MMJNMM6BYSC7TIWQ00782.jpg",
+    slug: "stripe-black-pure-linen-table-runner",
   },
   {
     id: "collab-p2",
-    name: "Hand-Dyed Indigo Scarf",
+    name: "Pin-Tuck Square Cushion Cover",
+    displayName: "Pin-Tuck Square...",
     heroImage:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/custom-dyeing.png",
-    slug: "hand-dyed-indigo-scarf",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/ELDXZS71UAXSX9I57FIATHKV23P105347.jpg",
+    slug: "pin-tuck-square-cushion-cover",
   },
   {
     id: "collab-p3",
-    name: "Organic Cotton Kimono",
+    name: "Jamdani Adjustable Wrap Skirt",
+    displayName: "Jamdani Adjusta...",
     heroImage:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/home-hero-2.png",
-    slug: "organic-cotton-kimono",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/4K1MWK0DN6Q5Q946PKK8VIWYF4UA04170.png",
+    slug: "jamdani-adjustable-wrap-skirt",
   },
   {
     id: "collab-p4",
-    name: "Handloom Cushion Cover",
+    name: "Handwoven Jamdani Tiered Skirt Set",
+    displayName: "Handwoven Jamda...",
     heroImage:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/swatch-bundle-min.jpg",
-    slug: "handloom-cushion-cover",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/SCIY8B5ZH5SUZ8QMBPIQC9TDV05C03271.png",
+    slug: "handwoven-jamdani-tiered-skirt-set",
   },
 ];
 
@@ -77,7 +82,7 @@ export function AllCollaborationsSection() {
         {/* Top Grid (grid-3: Story Card 1 + Story Card 2 + Product Card 1) */}
         <div className="fb-blog-gallery grid-3 w-full lg:mt-5">
 
-          {/* Story 1 */}
+          {/* Story 1 (Cynthia Director) */}
           {COLLAB_STORIES[0] && (
             <Link
               href={`/stories/${COLLAB_STORIES[0].slug}/${COLLAB_STORIES[0].id}`}
@@ -112,7 +117,7 @@ export function AllCollaborationsSection() {
             </Link>
           )}
 
-          {/* Story 2 */}
+          {/* Story 2 (MARIA TOLVANEN) */}
           {COLLAB_STORIES[1] && (
             <Link
               href={`/stories/${COLLAB_STORIES[1].slug}/${COLLAB_STORIES[1].id}`}
@@ -147,7 +152,7 @@ export function AllCollaborationsSection() {
             </Link>
           )}
 
-          {/* Product Card 1 */}
+          {/* Product Card 1 (Stripe Black Pu...) */}
           {COLLAB_PRODUCTS[0] && (
             <Link
               href={`/products/finished?search=${COLLAB_PRODUCTS[0].slug}`}
@@ -161,7 +166,7 @@ export function AllCollaborationsSection() {
               />
               <div className="w-[90%] max-w-[300px] flex justify-between items-center fb-fp-view px-3 py-2 absolute bottom-5">
                 <p className="text-white text-xs sm:text-sm font-semibold truncate max-w-[170px]">
-                  {COLLAB_PRODUCTS[0].name}
+                  {COLLAB_PRODUCTS[0].displayName}
                 </p>
                 <button className="rounded-xl text-white bg-[#6c5b48] hover:bg-[#584938] px-3 py-1 text-xs font-semibold">
                   View
@@ -178,12 +183,12 @@ export function AllCollaborationsSection() {
 
             {/* Header Block */}
             <div className="w-full flex flex-col justify-center my-4">
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 font-normal">All</h2>
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl text-[#7D5B20] font-medium mb-2">Collaborations</h2>
+              <h2 className="fb-font-dm text-5xl lg:text-6xl text-gray-900 font-normal">All</h2>
+              <h2 className="fb-font-dm text-4xl sm:text-5xl lg:text-5xl text-[#7D5B20] font-medium mb-2">Collaborations</h2>
               <Link
                 href="/stories?category=collaborations"
                 target="_blank"
-                className="text-xl py-2 fb_animate_icon_button font-medium text-gray-900"
+                className="text-xl py-2 fb_animate_icon_button font-medium text-gray-900 flex items-center gap-2"
               >
                 <i className="fb_animate">
                   <b></b>
@@ -208,7 +213,7 @@ export function AllCollaborationsSection() {
                 />
                 <div className="w-[90%] max-w-[300px] flex justify-between items-center fb-fp-view px-3 py-2 absolute bottom-5">
                   <p className="text-white text-xs sm:text-sm font-semibold truncate max-w-[170px]">
-                    {prod.name}
+                    {prod.displayName}
                   </p>
                   <button className="rounded-xl text-white bg-[#6c5b48] hover:bg-[#584938] px-3 py-1 text-xs font-semibold">
                     View

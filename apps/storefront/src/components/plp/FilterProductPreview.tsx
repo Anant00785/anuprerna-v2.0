@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { PLPProduct } from "@/types/domain/plp";
+import { useCurrencyStore } from "@/stores/currency.store";
 
 interface FilterProductPreviewProps {
   product: PLPProduct;
@@ -17,6 +17,15 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [inWishlist, setInWishlist] = useState(Boolean(product.inWishlist));
+
+  const { selectedCurrency, convertPrice } = useCurrencyStore();
+  const currencyCode = selectedCurrency.toUpperCase();
+
+  const rawBasePrice = Number(product.calculatedPrice || product.price || 0);
+  const convertedBasePrice = convertPrice(rawBasePrice);
+  const convertedDiscountedPrice = product.calculatedDiscountedPrice
+    ? convertPrice(Number(product.calculatedDiscountedPrice))
+    : null;
 
   // Determine badge text
   const isStockAvailable =
@@ -48,6 +57,7 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
       <Link href={productUrl} className="w-full block group">
         <div className="px-3 pt-3 pb-1 relative overflow-hidden rounded md:rounded-lg">
           <div className="w-full aspect-square relative bg-gray-100 rounded md:rounded-lg overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={displayImage || "/assets/img/item.png"}
               alt={product.name}
@@ -71,17 +81,28 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 
         {/* Price Display */}
         <div className="flex justify-start items-center mb-3 text-lg md:text-xl font-medium px-3 text-[#2E2E2E] flex-wrap sm:flex-nowrap">
-          <span className="text-xs mr-1 text-[#75787F]">INR</span>
+          <span className="text-xs mr-1 text-[#75787F]">{currencyCode}</span>
 
-          {!product.calculatedDiscountedPrice ? (
-            <span>{Number(product.calculatedPrice || product.price || 0).toLocaleString("en-IN")}</span>
+          {!convertedDiscountedPrice ? (
+            <span>
+              {convertedBasePrice.toLocaleString("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           ) : (
             <span className="flex items-center gap-1.5">
               <span className="line-through text-xs sm:text-sm text-[#898E9A]">
-                {Number(product.calculatedPrice || product.price || 0).toLocaleString("en-IN")}
+                {convertedBasePrice.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
               </span>
               <span className="text-base sm:text-lg text-emerald-700 font-semibold">
-                {Number(product.calculatedDiscountedPrice).toLocaleString("en-IN")}
+                {convertedDiscountedPrice.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             </span>
           )}
@@ -108,6 +129,7 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
           className="w-max bg-[#fffcf7] rounded md:rounded-lg text-[#7D5B20] py-1.5 px-2.5 cursor-pointer flex justify-center items-center border border-[#75787F]/20 hover:bg-[#fcf4e8] transition-colors"
           title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={inWishlist ? "/assets/img/favourite.svg" : "/assets/img/non-favourite.svg"}
             alt="Wishlist"
@@ -126,6 +148,7 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
               className="w-7 h-7 rounded-full border-2 border-[#b7a98f] overflow-hidden hover:scale-110 transition-transform"
               title={related.name}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={related.hero_image}
                 alt={related.name}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface PressNewsItem {
   id: string;
@@ -125,7 +125,16 @@ const PRESS_ITEMS: PressNewsItem[] = [
 
 export function PressNewsSection() {
   const [startIndex, setStartIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const itemsPerPage = 4;
+
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setStartIndex((prev) => (prev + 1) % PRESS_ITEMS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
 
   const nextSlide = () => {
     setStartIndex((prev) => (prev + 1) % PRESS_ITEMS.length);
@@ -142,8 +151,12 @@ export function PressNewsSection() {
   }
 
   return (
-    <section className="fb-third-party w-full flex flex-col justify-center items-center py-10 bg-[#fffcf7]">
-      <h2 className="text-3xl sm:text-5xl text-[#7D5B20] font-medium mb-10 text-center px-4">
+    <section
+      className="fb-third-party w-full flex flex-col justify-center items-center py-10 bg-[#fffcf7]"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <h2 className="fb-font-dm text-3xl sm:text-5xl text-[#7D5B20] font-medium mb-10 text-center px-4">
         We are in the <span className="text-black">news</span>
       </h2>
 

@@ -6,44 +6,89 @@ import Link from "next/link";
 interface SectionItem {
   id?: number;
   sortOrder?: number;
+  templateType?: number;
   heading?: string;
   title1?: string;
   title2?: string;
-  sectionTitle?: string;
-  subTitle?: string;
   paragraph1?: string;
   paragraph2?: string;
-  description?: string;
   image1?: string;
   image2?: string;
-  image?: string;
+  image1Alt?: string;
+  image2Alt?: string;
+  image1Link?: string;
+  image2Link?: string;
   caption1?: string;
   caption2?: string;
-  imageCaption?: string;
-  quote?: string;
-  quoteAuthor?: string;
-  callout?: string;
-  topMotif?: string;
-  bottomMotif?: string;
+  video1?: string;
+  video2?: string;
+  ctaButtonName1?: string;
+  ctaButtonName2?: string;
+  ctaLink1?: string;
+  ctaLink2?: string;
+}
+
+interface FaqQuestion {
+  id?: number;
+  question: string;
+  answer: string;
+}
+
+interface FaqData {
+  heading: string;
+  faqQuestionList: FaqQuestion[];
+}
+
+interface ContentPreviewItem {
+  id: number;
+  title: string;
+  slug: string;
+  bannerImageMobile?: string;
 }
 
 interface BlogDetails {
   id: number;
   title: string;
-  subTitle?: string;
   description?: string;
-  content?: string;
+  readingTime?: number;
+  timeOfCreation?: number;
+  lastUpdateTime?: number;
   bannerImageDesktop?: string;
   bannerImageMobile?: string;
-  heroImage?: string;
-  author?: string;
-  timeOfCreation?: number;
+  slug?: string;
+  blogContentCategory?: {
+    name: string;
+    blogContentType?: {
+      name: string;
+    };
+  };
   blogContentSectionList?: SectionItem[];
+  faq?: FaqData;
+  nextBlogDetails?: ContentPreviewItem;
+  previousBlogDetails?: ContentPreviewItem;
+}
+
+function formatDate(timestamp?: number): string {
+  if (!timestamp) return "11th Oct, 2023";
+  const d = new Date(timestamp);
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export function CustomContentPage({ blogId }: { blogId: string }) {
-  const [data, setData] = useState<BlogDetails | null>(null);
+  const [blogDetails, setBlogDetails] = useState<BlogDetails | null>(null);
+  const [recommendedList, setRecommendedList] = useState<ContentPreviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Active TOC Section
+  const [activeSectionId, setActiveSectionId] = useState<string>("");
+  const [mobileTocOpen, setMobileTocOpen] = useState(false);
+
+  // FAQ Accordion Open State (index of open question)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,7 +98,7 @@ export function CustomContentPage({ blogId }: { blogId: string }) {
         if (!res.ok) throw new Error(`Content HTTP ${res.status}`);
         const json = await res.json();
         if (isMounted && json.data) {
-          setData(json.data);
+          setBlogDetails(json.data);
         }
       } catch (err) {
         console.error("Failed to load custom content:", err);
@@ -67,19 +112,43 @@ export function CustomContentPage({ blogId }: { blogId: string }) {
     };
   }, [blogId]);
 
+  // ScrollSpy to highlight active section in TOC
+  useEffect(() => {
+    if (!blogDetails) return;
+
+    const handleScroll = () => {
+      const sections = document.querySelectorAll("[id^='section-'], #faq-header");
+      let currentId = "";
+
+      sections.forEach((sec) => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= 160) {
+          currentId = sec.id;
+        }
+      });
+
+      if (currentId) {
+        setActiveSectionId(currentId);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [blogDetails]);
+
   if (isLoading) {
     return (
-      <div className="w-full min-h-[600px] flex flex-col justify-center items-center gap-3">
+      <div className="w-full min-h-[700px] flex flex-col justify-center items-center gap-3">
         <div className="w-10 h-10 border-4 border-[#8E7862] border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-500 font-medium text-sm">Loading article...</p>
+        <p className="text-gray-500 font-medium text-sm">Loading content details...</p>
       </div>
     );
   }
 
-  if (!data) {
+  if (!blogDetails) {
     return (
-      <div className="w-full py-20 text-center flex flex-col items-center gap-4">
-        <h2 className="text-2xl font-serif font-bold text-gray-800">Article Not Found</h2>
+      <div className="w-full py-24 text-center flex flex-col items-center gap-4">
+        <h2 className="text-2xl font-serif font-bold text-gray-800">Content Page Not Found</h2>
         <p className="text-gray-500">The content page you requested could not be found.</p>
         <Link href="/" className="bg-[#8E7862] text-white px-6 py-2.5 rounded-lg font-bold">
           Return to Home
@@ -88,195 +157,380 @@ export function CustomContentPage({ blogId }: { blogId: string }) {
     );
   }
 
-  const rawSections = data.blogContentSectionList || [];
-  const sections = [...rawSections].sort(
-    (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)
-  );
+  const rawSections = blogDetails.blogContentSectionList || [];
+  const sections = [...rawSections].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
-  const heroImage =
-    data.bannerImageDesktop || data.bannerImageMobile || data.heroImage;
+  const bannerImg = blogDetails.bannerImageMobile || blogDetails.bannerImageDesktop;
+  const categoryName = blogDetails.blogContentCategory?.name || "ANUPRERNA - IN A NUTSHELL";
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const topOffset = el.getBoundingClientRect().top + window.pageYOffset - 100;
+      window.scrollTo({ top: topOffset, behavior: "smooth" });
+    }
+  };
 
   return (
-    <article className="w-full bg-white text-gray-900 pb-20">
-      {/* Header Banner */}
-      <section className="w-full bg-[#fdfbf7] py-14 px-4 border-b border-[#EFEEE9]">
-        <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-4">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#8E7862] bg-[#fcf4e8] px-3.5 py-1 rounded-full">
-            Care Guide & Sustainability
-          </span>
+    <section className="w-full flex justify-center items-center bg-white text-[#1f1f1f] fb-font-inter">
+      <div className="max-w-[1290px] w-full px-4 md:px-6 my-6 md:my-16 flex flex-col md:flex-row justify-between items-start gap-8 relative min-h-screen">
 
-          <h1 className="text-3xl sm:text-5xl font-serif text-[#302e2e] font-bold tracking-tight leading-tight">
-            {data.title}
-          </h1>
+        {/* LEFT COLUMN: Table of Contents (ON THIS PAGE) */}
+        <aside className="hidden lg:flex lg:w-[220px] shrink-0 sticky top-[100px] self-start flex-col items-start text-xs">
+          <div className="uppercase text-slate-400 font-bold tracking-wider pl-5 mb-3">
+            ON THIS PAGE
+          </div>
+          <div className="border-l border-slate-200 flex flex-col items-start w-full text-[13px] leading-snug font-medium">
+            {sections.map((sec, i) => {
+              const secId = `section-${i}`;
+              const label = sec.heading || sec.title1 || `Section ${i + 1}`;
+              const isSelected = activeSectionId === secId;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToSection(secId)}
+                  className={`w-full text-left py-1.5 pl-5 pr-2 transition-colors duration-100 capitalize line-clamp-2 ${isSelected
+                    ? "text-[#7d5b1f] font-semibold relative before:absolute before:-left-[1px] before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-[#7d5b1f]"
+                    : "text-slate-600 hover:text-[#7d5b1f]"
+                    }`}
+                >
+                  {label.toLowerCase()}
+                </button>
+              );
+            })}
 
-          {data.subTitle && (
-            <p className="text-base md:text-lg text-gray-600 max-w-2xl font-sans">
-              {data.subTitle}
-            </p>
-          )}
+            {blogDetails.faq && (
+              <button
+                type="button"
+                onClick={() => scrollToSection("faq-header")}
+                className={`w-full text-left py-1.5 pl-5 pr-2 transition-colors duration-100 capitalize line-clamp-2 ${activeSectionId === "faq-header"
+                  ? "text-[#7d5b1f] font-semibold relative before:absolute before:-left-[1px] before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-[#7d5b1f]"
+                  : "text-slate-600 hover:text-[#7d5b1f]"
+                  }`}
+              >
+                {(blogDetails.faq.heading || "Continuous Impact Improvement Areas").toLowerCase()}
+              </button>
+            )}
+          </div>
+        </aside>
 
-          {heroImage && (
-            <div className="w-full max-w-3xl mt-6 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
-              <img
-                src={heroImage}
-                alt={data.title}
-                className="w-full h-auto object-cover"
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Main Content Layout with Table of Contents */}
-      <div className="max-w-5xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-4 gap-10">
-        {/* Table of Contents Sidebar (Desktop) */}
-        {sections.length > 1 && (
-          <aside className="hidden lg:block lg:col-span-1 sticky top-28 self-start bg-[#fffcf7] p-5 rounded-xl border border-[#EFEEE9] shadow-sm">
-            <h3 className="text-xs font-bold uppercase text-[#8E7862] tracking-wider mb-3">
-              Table of Contents
-            </h3>
-            <nav className="flex flex-col gap-2">
-              {sections.map((sec, i) => {
-                const titleText =
-                  sec.heading || sec.sectionTitle || sec.title1 || `Section ${i + 1}`;
-                return (
-                  <a
-                    key={i}
-                    href={`#section-${i}`}
-                    className="text-xs text-gray-700 hover:text-[#8E7862] hover:underline leading-snug font-medium line-clamp-2"
-                  >
-                    {i + 1}. {titleText}
-                  </a>
-                );
-              })}
-            </nav>
-          </aside>
-        )}
-
-        {/* Section List Body */}
-        <main className={`w-full flex flex-col gap-10 ${sections.length > 1 ? "lg:col-span-3" : "lg:col-span-4"}`}>
-          {/* Main Description / Lead Content if available */}
-          {data.description && (
-            <div
-              className="prose prose-stone max-w-none text-gray-700 leading-relaxed text-base border-b border-gray-100 pb-6"
-              dangerouslySetInnerHTML={{ __html: data.description }}
+        {/* CENTER COLUMN: Main Content Article */}
+        <main className="flex-1 w-full max-w-[839px] px-2 md:px-4 flex flex-col text-[#1f1f1f]">
+          {/* Banner Hero Image */}
+          {bannerImg && (
+            <img
+              src={bannerImg}
+              alt={blogDetails.title}
+              className="rounded-lg mb-4 max-h-[250px] object-cover aspect-video w-full shadow-xs border border-gray-100"
             />
           )}
 
-          {/* Section Rendering */}
-          {sections.map((sec, i) => {
-            const heading = sec.heading || sec.sectionTitle || sec.title1;
-            const subHeading = sec.title2 || sec.subTitle;
-            const htmlContent1 = sec.paragraph1 || sec.description;
-            const htmlContent2 = sec.paragraph2;
-            const img1 = sec.image1 || sec.image;
-            const img2 = sec.image2;
-            const cap1 = sec.caption1 || sec.imageCaption;
-            const cap2 = sec.caption2;
+          {/* Main Title */}
+          <h1 className="fb-font-dm font-medium text-2xl md:text-3xl text-[#1f1f1f] leading-tight mb-4">
+            {blogDetails.title}
+          </h1>
+
+          {/* Author & Publication Meta Block */}
+          <div className="w-full flex justify-start items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+            <div className="bg-[#dfd0bb] p-2 rounded-md w-10 h-10 flex justify-center items-center shrink-0">
+              <span className="font-serif font-bold text-lg text-[#1f1f1f]">A</span>
+            </div>
+            <div className="text-xs text-[#6B7280] leading-tight flex flex-col gap-0.5">
+              <div className="text-sm font-bold text-[#1f1f1f] capitalize">{categoryName.toLowerCase()}</div>
+              <div>Published on {formatDate(blogDetails.timeOfCreation)}</div>
+              <div>Last Edited on {formatDate(blogDetails.lastUpdateTime || blogDetails.timeOfCreation)}</div>
+              <div className="font-semibold text-[#7d5b1f]">
+                Reading Time: {blogDetails.readingTime || 3} Minute Read
+              </div>
+            </div>
+          </div>
+
+          {/* Article Description / Lead Paragraph */}
+          {blogDetails.description && (
+            <div
+              className="text-sm md:text-base text-[#3c3c3c] leading-relaxed my-4 prose prose-stone max-w-none border-b border-gray-100 pb-6"
+              dangerouslySetInnerHTML={{ __html: blogDetails.description }}
+            />
+          )}
+
+          {/* Section Templates Loop */}
+          {sections.map((template, i) => {
+            const secId = `section-${i}`;
+            const tType = template.templateType || 1;
 
             return (
-              <section key={i} id={`section-${i}`} className="flex flex-col gap-4 border-b border-gray-100 pb-8 last:border-0">
-                {sec.topMotif && (
-                  <div className="w-8 h-8 opacity-60 my-1">
-                    <img src={sec.topMotif} alt="" className="w-full h-full object-contain" />
-                  </div>
-                )}
-
-                {heading && (
-                  <h2 className="text-2xl md:text-3xl font-serif font-bold text-[#302e2e] leading-snug">
-                    {heading}
-                  </h2>
-                )}
-
-                {subHeading && (
-                  <h3 className="text-lg font-semibold text-[#8E7862]">
-                    {subHeading}
+              <div key={i} className="my-8 border-b border-gray-100 pb-8 last:border-0">
+                {/* Section Heading */}
+                {template.heading && (
+                  <h3 id={secId} className="fb-font-dm text-xl md:text-2xl font-medium text-[#1f1f1f] mb-4">
+                    {template.heading}
                   </h3>
                 )}
 
-                {/* Primary Image */}
-                {img1 && (
-                  <div className="w-full my-3 rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                    <img src={img1} alt={heading || "Article image"} className="w-full h-auto object-cover" />
-                    {cap1 && (
-                      <p className="text-xs text-gray-500 italic p-2 text-center bg-gray-50">
-                        {cap1}
-                      </p>
+                {/* Template Type 1: Image Left, Text Right */}
+                {tType === 1 && (
+                  <div className="flex flex-col lg:flex-row justify-between items-start gap-6 mt-4">
+                    {template.image1 && (
+                      <div className="flex flex-col justify-center items-center lg:w-[48%] shrink-0">
+                        <img
+                          src={template.image1}
+                          alt={template.image1Alt || template.heading || ""}
+                          className="object-cover w-full h-auto rounded-md max-h-[450px]"
+                        />
+                        {template.caption1 && (
+                          <div className="text-[#948467] mt-1.5 text-xs font-medium text-center">
+                            {template.caption1}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      {template.title1 && <h4 className="font-bold text-base text-[#1f1f1f] mb-2">{template.title1}</h4>}
+                      {template.paragraph1 && (
+                        <div
+                          className="text-sm text-[#3c3c3c] leading-relaxed prose max-w-none"
+                          dangerouslySetInnerHTML={{ __html: template.paragraph1 }}
+                        />
+                      )}
+                      {template.ctaLink1 && (
+                        <a
+                          href={template.ctaLink1}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-max capitalize bg-[#fffcf7] hover:bg-white hover:shadow-md rounded md:rounded-md border-2 border-[#8E7862] text-[#8E7862] py-1.5 px-4 text-xs font-bold transition-all flex items-center gap-2 mt-4"
+                        >
+                          {template.ctaButtonName1 || "Discover More"}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Template Type 2: Text Left, Image Right */}
+                {tType === 2 && (
+                  <div className="flex flex-col-reverse lg:flex-row justify-between items-start gap-6 mt-4">
+                    <div className="flex-1">
+                      {template.title1 && <h4 className="font-bold text-base text-[#1f1f1f] mb-2">{template.title1}</h4>}
+                      {template.paragraph1 && (
+                        <div
+                          className="text-sm text-[#3c3c3c] leading-relaxed prose max-w-none"
+                          dangerouslySetInnerHTML={{ __html: template.paragraph1 }}
+                        />
+                      )}
+                      {template.ctaLink1 && (
+                        <a
+                          href={template.ctaLink1}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-max capitalize bg-[#fffcf7] hover:bg-white hover:shadow-md rounded md:rounded-md border-2 border-[#8E7862] text-[#8E7862] py-1.5 px-4 text-xs font-bold transition-all flex items-center gap-2 mt-4"
+                        >
+                          {template.ctaButtonName1 || "Discover More"}
+                        </a>
+                      )}
+                    </div>
+                    {template.image1 && (
+                      <div className="flex flex-col justify-center items-center lg:w-[48%] shrink-0">
+                        <img
+                          src={template.image1}
+                          alt={template.image1Alt || template.heading || ""}
+                          className="object-cover w-full h-auto rounded-md max-h-[450px]"
+                        />
+                        {template.caption1 && (
+                          <div className="text-[#948467] mt-1.5 text-xs font-medium text-center">
+                            {template.caption1}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Primary Paragraph HTML */}
-                {htmlContent1 && (
-                  <div
-                    className="prose prose-stone max-w-none text-gray-800 leading-relaxed text-base sm:text-lg"
-                    dangerouslySetInnerHTML={{ __html: htmlContent1 }}
-                  />
-                )}
-
-                {/* Secondary Image */}
-                {img2 && (
-                  <div className="w-full my-3 rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                    <img src={img2} alt={heading || "Article image 2"} className="w-full h-auto object-cover" />
-                    {cap2 && (
-                      <p className="text-xs text-gray-500 italic p-2 text-center bg-gray-50">
-                        {cap2}
-                      </p>
+                {/* Fallback / Other Template Types (3 to 10) */}
+                {tType >= 3 && (
+                  <div className="flex flex-col gap-4 mt-4">
+                    {template.title1 && <h4 className="font-bold text-base text-[#1f1f1f]">{template.title1}</h4>}
+                    {template.image1 && (
+                      <div className="w-full rounded-lg overflow-hidden my-2">
+                        <img
+                          src={template.image1}
+                          alt={template.image1Alt || ""}
+                          className="w-full h-auto object-cover max-h-[450px] rounded-md"
+                        />
+                        {template.caption1 && (
+                          <div className="text-[#948467] mt-1 text-xs text-center">{template.caption1}</div>
+                        )}
+                      </div>
+                    )}
+                    {template.paragraph1 && (
+                      <div
+                        className="text-sm text-[#3c3c3c] leading-relaxed prose max-w-none"
+                        dangerouslySetInnerHTML={{ __html: template.paragraph1 }}
+                      />
+                    )}
+                    {template.ctaLink1 && (
+                      <a
+                        href={template.ctaLink1}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-max capitalize bg-[#fffcf7] hover:bg-white hover:shadow-md rounded md:rounded-md border-2 border-[#8E7862] text-[#8E7862] py-1.5 px-4 text-xs font-bold transition-all flex items-center gap-2 mt-2"
+                      >
+                        {template.ctaButtonName1 || "Discover More"}
+                      </a>
                     )}
                   </div>
                 )}
-
-                {/* Secondary Paragraph HTML */}
-                {htmlContent2 && (
-                  <div
-                    className="prose prose-stone max-w-none text-gray-800 leading-relaxed text-base sm:text-lg"
-                    dangerouslySetInnerHTML={{ __html: htmlContent2 }}
-                  />
-                )}
-
-                {sec.quote && (
-                  <blockquote className="my-4 p-5 bg-[#fcf4e8] border-l-4 border-[#8E7862] italic text-[#7D5B20] rounded-r-xl">
-                    &ldquo;{sec.quote}&rdquo;
-                    {sec.quoteAuthor && (
-                      <cite className="block text-xs font-bold text-gray-700 mt-2 not-italic">
-                        &mdash; {sec.quoteAuthor}
-                      </cite>
-                    )}
-                  </blockquote>
-                )}
-
-                {sec.callout && (
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-sm font-medium">
-                    {sec.callout}
-                  </div>
-                )}
-
-                {sec.bottomMotif && (
-                  <div className="w-8 h-8 opacity-60 my-1 self-end">
-                    <img src={sec.bottomMotif} alt="" className="w-full h-full object-contain" />
-                  </div>
-                )}
-              </section>
+              </div>
             );
           })}
 
-          {/* Bottom Action Box */}
-          <div className="mt-8 p-8 bg-[#8E7862] text-white rounded-2xl shadow-xl text-center flex flex-col items-center gap-4">
-            <h3 className="text-2xl font-serif font-bold">Have Questions About Custom Orders?</h3>
-            <p className="text-sm text-gray-100 max-w-md">
-              Connect with our team to request custom samples, yarn-dyed developments, or production timelines.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 mt-2">
-              <Link href="/contact" className="bg-white text-[#8E7862] hover:bg-[#fffcf7] font-bold px-6 py-2.5 rounded-lg text-sm transition-colors">
-                Contact Our Studio
+          {/* FAQ Accordion Section (Continuous Impact Improvement Areas) */}
+          {blogDetails.faq && (
+            <div className="mt-12 pt-6 border-t border-gray-100">
+              <h3 id="faq-header" className="fb-font-dm text-xl md:text-2xl font-medium text-[#1f1f1f] mb-6 capitalize">
+                {(blogDetails.faq.heading || "Continuous Impact Improvement Areas").toLowerCase()}
+              </h3>
+
+              <div className="flex flex-col gap-3 w-full">
+                {blogDetails.faq.faqQuestionList?.map((qItem, qIdx) => {
+                  const isOpen = openFaqIndex === qIdx;
+                  return (
+                    <div
+                      key={qItem.id || qIdx}
+                      className="w-full bg-[#FAF9F6] border border-[#EFEEE9] rounded-lg p-3 md:p-4 transition-colors"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setOpenFaqIndex(isOpen ? null : qIdx)}
+                        className="w-full flex justify-between items-center gap-3 text-left font-bold text-sm md:text-base text-[#1f1f1f] hover:text-[#7d5b1f] transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-200/80 p-2 rounded-md text-gray-700 flex justify-center items-center shrink-0">
+                            <span className="material-symbols-outlined text-lg">live_help</span>
+                          </div>
+                          <span>{qItem.question}</span>
+                        </div>
+                        <span className="material-symbols-outlined text-gray-500 shrink-0">
+                          {isOpen ? "arrow_drop_up" : "arrow_drop_down"}
+                        </span>
+                      </button>
+
+                      {isOpen && (
+                        <div className="mt-3 pt-3 border-t border-gray-200/60 text-xs md:text-sm text-[#3c3c3c] leading-relaxed pl-12 animate-in fade-in duration-150">
+                          <p>{qItem.answer}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* More Blogs Section */}
+          <div className="mt-14 pt-8 border-t border-gray-100">
+            <h3 className="fb-font-dm text-xl font-medium text-[#1f1f1f] mb-6">More Blogs</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Link
+                href="/content/about-us/about-the-brand/56485"
+                className="p-4 rounded-lg bg-[#F9F8F6] border border-[#EFEEE9] hover:shadow-md transition-shadow flex flex-col gap-2 group"
+              >
+                <h4 className="font-bold text-sm text-[#1f1f1f] group-hover:text-[#7d5b1f]">About The Brand</h4>
+                <p className="text-xs text-[#6B7280] line-clamp-2">Discover the origins and story behind Anuprerna handwoven textiles.</p>
               </Link>
-              <Link href="/wholesale-partner-program" className="bg-[#73604d] hover:bg-[#5e4e3e] text-white border border-white/30 font-bold px-6 py-2.5 rounded-lg text-sm transition-colors">
-                Wholesale Partner Program
+              <Link
+                href="/content/about-us/about-the-founder/57073"
+                className="p-4 rounded-lg bg-[#F9F8F6] border border-[#EFEEE9] hover:shadow-md transition-shadow flex flex-col gap-2 group"
+              >
+                <h4 className="font-bold text-sm text-[#1f1f1f] group-hover:text-[#7d5b1f]">About The Founder</h4>
+                <p className="text-xs text-[#6B7280] line-clamp-2">Learn about our vision for empowering rural handloom weaving clusters.</p>
               </Link>
             </div>
           </div>
         </main>
+
+        {/* RIGHT COLUMN: About Us Card & Related Blogs */}
+        <aside className="w-full lg:w-[260px] shrink-0 sticky top-[100px] self-start flex flex-col gap-8">
+          {/* About Us Card */}
+          <div className="flex flex-col items-start bg-[#FAF9F6] p-4 rounded-xl border border-[#EFEEE9]">
+            <img
+              src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/home-hero-1.png"
+              alt="About Us"
+              className="rounded-lg object-cover w-full max-h-[200px] aspect-square mb-3"
+            />
+            <h2 className="text-[#7d5b1f] text-lg font-bold mb-1">About Us</h2>
+            <p className="text-xs text-[#3c3c3c] leading-relaxed">
+              Discover Anuprerna&apos;s sustainable handloom fabrics crafted by 300+ skilled artisans in East India. We also offer low MOQ custom manufacturing of apparel, stoles, scarves, handbags, and home furnishings in organic khadi, cotton, linen, wool, bamboo, mulberry, ahimsa silk and more.
+            </p>
+            <Link
+              href="/content/about-us/about-our-impact/57938"
+              className="w-max bg-[#fffcf7] hover:bg-white hover:shadow-md rounded md:rounded-md border-2 border-[#8E7862] text-[#8E7862] py-1.5 px-4 text-xs font-bold transition-all mt-4"
+            >
+              Discover Our Impact
+            </Link>
+          </div>
+
+          {/* Related Blogs Section */}
+          <div className="flex flex-col items-start w-full">
+            <h2 className="text-[#7d5b1f] text-lg font-bold mb-3">Related Blogs</h2>
+            <div className="flex flex-col gap-2 w-full">
+              {[
+                { title: "A Production Update On Sustainable Weaving", href: "/content/about-us/about-the-brand/56485" },
+                { title: "Artisanal Impact Report 2025 Highlights", href: "/content/about-us/about-our-impact/57938" },
+                { title: "How To Nurture Natural Dyed Fabrics", href: "/content/care-guide/how-to-nurture-your-natural-dyed-clothing/126408" },
+                { title: "Wholesale Custom Manufacturing & Production", href: "/content/wholesale/wholesale-production-preorder/59335" },
+              ].map((rel, rIdx) => (
+                <Link
+                  key={rIdx}
+                  href={rel.href}
+                  className="flex items-start gap-1 text-xs text-[#3c3c3c] hover:text-[#7d5b1f] hover:underline font-medium transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm text-[#7d5b1f] shrink-0 mt-0.5">
+                    arrow_right
+                  </span>
+                  <span>{rel.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </aside>
+
       </div>
-    </article>
+
+      {/* Floating Mobile TOC Dropdown Button */}
+      <div className="lg:hidden fixed top-[85px] right-3 z-30">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMobileTocOpen(!mobileTocOpen)}
+            className="bg-[#FFFBF7] border border-[#8E7862] text-[#7d5b1f] text-xs font-bold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1"
+          >
+            <span>On this Page</span>
+            <span className="material-symbols-outlined text-sm">
+              {mobileTocOpen ? "arrow_drop_up" : "arrow_drop_down"}
+            </span>
+          </button>
+
+          {mobileTocOpen && (
+            <div className="absolute right-0 top-10 bg-white border border-gray-200 shadow-xl rounded-xl p-3 w-[240px] flex flex-col gap-2 max-h-[60vh] overflow-y-auto animate-in fade-in duration-150">
+              <div className="text-[11px] font-bold text-gray-400 uppercase border-b pb-1">On this page</div>
+              {sections.map((sec, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    scrollToSection(`section-${i}`);
+                    setMobileTocOpen(false);
+                  }}
+                  className="text-left text-xs text-gray-700 hover:text-[#7d5b1f] py-1 truncate"
+                >
+                  {sec.heading || sec.title1 || `Section ${i + 1}`}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

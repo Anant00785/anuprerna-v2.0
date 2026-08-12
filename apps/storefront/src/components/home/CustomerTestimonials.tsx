@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ReviewProduct {
   sku: string;
@@ -145,8 +145,17 @@ const REVIEWS_DATA: CustomerReview[] = [
 
 export function CustomerTestimonials() {
   const [startIndex, setStartIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const stars = [0, 1, 2, 3, 4];
   const itemsPerPage = 3;
+
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setStartIndex((prev) => (prev + 1) % REVIEWS_DATA.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
 
   const nextSlide = () => {
     setStartIndex((prev) => (prev + 1) % REVIEWS_DATA.length);
@@ -168,8 +177,12 @@ export function CustomerTestimonials() {
   };
 
   return (
-    <section className="fb-home-review w-full flex flex-col justify-center items-center py-10 bg-[#fffcf7]">
-      <h2 className="text-3xl sm:text-5xl text-[#7D5B20] font-medium mb-10 text-center px-4">
+    <section
+      className="fb-home-review w-full flex flex-col justify-center items-center py-10 bg-[#fffcf7]"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <h2 className="fb-font-dm text-3xl sm:text-5xl text-[#7D5B20] font-medium mb-10 text-center px-4">
         Hear from our <span className="text-black">Customers</span>
       </h2>
 
