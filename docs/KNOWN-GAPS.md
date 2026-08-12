@@ -240,3 +240,66 @@ garbage, corrupting every stored email with no error raised anywhere in the pipe
   unverified — it was not re-checked this pass and may be stale.
 - `apps/api` dev-debris files (`seed_dev_user.js` etc.) and `packages/config`/lint-consistency
   items were not re-verified this pass; carried forward from the prior audit as-is.
+
+## Verified 2026-08-12 (late pass) — four items re-checked rather than carried forward
+
+Earlier revisions of this file carried these forward unverified. They have now been measured.
+
+### CMS routes rendering fabricated or placeholder data: **19**, enumerated
+
+Previously quoted as "~15" and then "~19". The exact list, confirmed by checking each `page.tsx`
+for any service call, `useEffect` or `apiClient` use:
+
+| Route | Note |
+|---|---|
+| `ai-embeddings` | |
+| `diagnostics/application` | |
+| `diagnostics/host` | |
+| `diagnostics/thread-dump` | Hardcodes a fake Java stack trace, including `OrderService.processOrder(OrderService.java:142)` |
+| `image-optimization/attention` | |
+| `image-optimization/history` | |
+| `image-optimization/ledger` | |
+| `image-optimization/queue` | |
+| `image-optimization/tools` | |
+| `manage-product/custom-product` | |
+| `manage-workflow/artisan-payments` | Service method exists and is uncalled |
+| `manage-workflow/custom-feedback` | |
+| `manage-workflow/custom-process` | Service method exists and is uncalled |
+| `manage-workflow/feedback` | Service method exists and is uncalled |
+| `manage-workflow/process` | Service method exists and is uncalled |
+| `manage-workflow/template/add` | Form has no submit handler |
+| `manage-workflow/template/update/[id]` | |
+| `manage-workflow/template/view/[id]` | |
+| `user/cart/[uid]` | |
+
+A methodology note worth keeping, because it nearly produced a wrong number: an automated scan
+first classified `diagnostics/thread-dump` as wired, because the fabricated stack trace contains
+the literal `OrderService.` and matched a naive service-call grep. **The fake data defeated the
+detector for the fake data.** Anything counting these routes must inspect content, not just
+grep for a call pattern.
+
+Nine of 96 CMS routes are legitimately static — `login`, `dashboard`, and navigation hub pages
+such as `logistic`, `manage-content`, `manage-whatsapp`, `manage-workflow`. Those are not
+fabrications and are excluded from the 19.
+
+### Orphaned controllers: **16 of 117** — confirmed still open
+
+Verified by checking every `*.controller.ts` for a reference from any `*.module.ts`:
+101 referenced, 16 orphaned. `commerce/order/controller/custom-order.controller.ts`,
+`order-fulfillment`, `order-feedback`, `content/content.controller.ts`,
+`product-api`, `cart-api`, `catalog-item-api`, three `profile/` controllers, three
+`workflow/` element controllers, and `sku-group`, `tag`, `special-status`.
+
+### `apps/api` dev debris: **resolved** — this entry was stale
+
+`seed_dev_user.js`, `simple_seed.js`, `simple_test.js`, `test_auth.js`, `test_auth_complete.js`,
+`SOLUTION.md` (which documented test credentials), root `TODO.md` / `MIGRATION_CHECKPOINT.md`, and
+the stray root `custom product/` directory were all removed earlier on 2026-08-12. Verified absent.
+`TODO.md` and `MIGRATION_CHECKPOINT.md` were preserved as `apps/api/docs/` with provenance banners.
+
+### `packages/config` has zero consumers: **confirmed still open**
+
+The only reference to `@anuprerna/config` anywhere is inside its own `eslint.base.mjs` comment.
+No `package.json` depends on it; `apps/api/eslint.config.mjs` hand-mirrors its content instead of
+importing it. Still a candidate for deletion.
+
