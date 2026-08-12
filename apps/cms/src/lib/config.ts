@@ -1,0 +1,25 @@
+const RAW_SERVER_ENDPOINT = process.env.NEXT_PUBLIC_SERVER_ENDPOINT || 'https://loom-v2.anuprerna.com';
+
+export const ConfigurationService = {
+  PRODUCTION: true,
+  MAINTENANCE_MODE: false,
+  FAKE_API: false,
+  BYPASS_AUTH: false,
+  SECURE_CONNECT: true,
+  PROTOCOL: 'https://',
+  DOMAIN_PRODUCTION: 'loom-v2.anuprerna.com',
+  DOMAIN_LOCALHOST: 'localhost',
+  LFS_DOMAIN_PRODUCTION: 'hercules.bloomscorp.com',
+  LFS_DOMAIN_LOCALHOST: 'localhost',
+  DOMAIN: 'loom-v2.anuprerna.com',
+  SERVER_PORT: '',
+  LFS_DOMAIN: 'hercules.bloomscorp.com',
+  LFS_SERVER_PORT: '',
+  API_PORT: '',
+  FRONTEND_PORT: ':3000',
+  SERVER_ENDPOINT: typeof window !== 'undefined' ? '/api/backend' : RAW_SERVER_ENDPOINT,
+  RAW_SERVER_ENDPOINT: RAW_SERVER_ENDPOINT,
+  LFS_SERVER_ENDPOINT: process.env.NEXT_PUBLIC_LFS_SERVER_ENDPOINT || 'https://hercules.bloomscorp.com',
+  API_ENDPOINT: typeof window !== 'undefined' ? '/api/backend' : RAW_SERVER_ENDPOINT,
+  IMAGE_RESOURCE_API: process.env.NEXT_PUBLIC_IMAGE_API || 'https://loom-v2.anuprerna.com',
+};

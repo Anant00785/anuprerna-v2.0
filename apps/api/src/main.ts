@@ -1,10 +1,118 @@
-import "reflect-metadata";
+/**
+ * apps/api/src/main.ts
+ *
+ * Application bootstrap + Swagger/OpenAPI setup. This file did not exist
+ * in the uploaded sources — if you already have a main.ts with other
+ * bootstrap logic (CORS, global pipes, etc.), merge the DocumentBuilder/
+ * SwaggerModule block below into it rather than overwriting.
+ *
+ * @nestjs/swagger only, as requested — no additional Swagger-adjacent
+ * packages. Bearer JWT auth is enabled via addBearerAuth() so
+ * @ApiBearerAuth() on protected controller routes renders an "Authorize"
+ * lock icon in the UI. Tags are pre-registered via addTag(...) so all
+ * three groups (Health, Authentication, Cart) appear in a stable order
+ * even before/regardless of which controllers are scanned.
+ */
+import "dotenv/config";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module.js";
 
-// Bootstrap stub — wire pino, request-id, health, and Sentry here (see common/).
+// Drizzle maps PostgreSQL bigint columns to JavaScript bigint values. Express
+// serializes controller responses through JSON.stringify, so normalize them at
+// the application boundary rather than duplicating conversion in repositories.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 8090);
+  const logger = new Logger("HTTP");
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+    whitelist: true,
+    forbidUnknownValues: true,
+  }));
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    response.on("finish", () => {
+      logger.log(`${request.method} ${request.originalUrl} ${response.statusCode} ${Date.now() - startedAt}ms`);
+    });
+    next();
+  });
+
+  const config = new DocumentBuilder()
+    .setTitle("Anuprerna API")
+    .setDescription("Migrated LOOM Backend")
+    .setVersion("2.0")
+    .addBearerAuth()
+    .addTag("Health")
+    .addTag("Authentication")
+    .addTag("Cart")
+    .addTag("Product")
+    .build();
+
+  // Enable Swagger by default in non-production environments.
+  // In production set `SWAGGER=true` to explicitly enable it.
+  const enableSwagger = process.env.NODE_ENV !== "production" || process.env.SWAGGER === "true";
+
+  if (enableSwagger) {
+    const document = SwaggerModule.createDocument(app, config);
+    const migratedCommerceTags = new Set([
+      "Catalog",
+      "Content",
+      "FAQ",
+      "Filter",
+      "Navigation",
+      "Search",
+      "SEO",
+    ]);
+
+    // The migrated handlers deliberately parse unknown JSON through their
+    // existing validators. Describe that boundary once in OpenAPI instead of
+    // duplicating those runtime DTO contracts in Swagger-only classes.
+    for (const pathItem of Object.values(document.paths)) {
+      for (const [method, operation] of Object.entries(pathItem)) {
+        if (!operation || typeof operation !== "object" || !Array.isArray(operation.tags)) continue;
+        if (!operation.tags.some((tag: string) => migratedCommerceTags.has(tag))) continue;
+
+        if (["post", "patch"].includes(method) && !operation.requestBody) {
+          operation.requestBody = {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  additionalProperties: true,
+                  description: "JSON payload validated by the endpoint's existing parser and validator.",
+                },
+              },
+            },
+          };
+        }
+
+        const successCode = method === "post" ? "201" : "200";
+        operation.responses[successCode] ??= {
+          description: "Successful response.",
+          content: {
+            "application/json": {
+              schema: { type: "object", additionalProperties: true },
+            },
+          },
+        };
+      }
+    }
+    SwaggerModule.setup("docs", app, document, { jsonDocumentUrl: "docs-json" });
+  }
+
+  await app.listen(process.env.PORT ?? 3000);
+
+  const url = await app.getUrl();
+  console.log("🚀 Server running at:", url);
+  if (enableSwagger) console.log("📖 Swagger UI:", `${url}/docs`);
 }
+
 bootstrap();

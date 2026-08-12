@@ -1,3 +1,628 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --fb-primary: #D4A373;            /* Primary warm gold/tan */
+  --fb-secondary: #BC9D81;          /* Secondary muted brown */
+  --fb-accent: #D4A373;             /* Accent color */
+  --fb-accent-bg: #fffbf8;          /* Light cream accent background */
+  --fb-top-notification-bg: #fbf4e8;/* Notification bar background */
+  --fb-text-black: #302e2e;         /* Dark body text */
+  --fb-text-grey: #3c3c3c;          /* Secondary grey text */
+  --fb-primary-brown: #7D5A20;      /* Deep primary brown */
+  --fb-border-gray: #D1D4DB;         /* Input/card border grey */
+  --fb-somewhat-white: #fefefe;      /* Off-white background */
+  --fb-error: #FF0000;              /* Error status */
+  --fb-warn: #FF7F50;               /* Warning status */
+}
+
+.fb-font-dm {
+  font-family: var(--font-dm-serif), serif;
+}
+
+.fb-font-inter {
+  font-family: var(--font-inter), sans-serif;
+}
+
+.fb-font-jost {
+  font-family: var(--font-jost), sans-serif;
+}
+
+.fb-font-mulish {
+  font-family: var(--font-mulish), sans-serif;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif !important;
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+/* Custom Signature Button Hover Animation (.fb_animate & .fb_animate_icon_button) */
+.fb_animate_icon_button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 5px 24px 5px 0;
+  transition: all 0.5s ease;
+  width: max-content;
+
+  .fb_animate {
+    width: 20px;
+    height: 0.5px;
+    position: relative;
+    border-bottom: 0.5px solid #9c8a6c;
+
+    b {
+      position: absolute;
+      left: 0;
+      top: -3.5px;
+      width: 7px;
+      height: 7px;
+      background: #efeee9;
+      transform: rotate(45deg);
+      border: 0.5px solid #9c8a6c;
+      opacity: 1;
+      transition: all 0.5s ease;
+    }
+
+    span {
+      position: absolute;
+      left: 3px;
+      top: -5px;
+      width: 0;
+      height: 0;
+      border-top: 5.4px solid transparent;
+      border-bottom: 5.4px solid transparent;
+      border-left: 5.4px solid black;
+      opacity: 0;
+      transition: all 0.5s ease;
+    }
+  }
+
+  &:hover {
+    padding: 5px 4px 5px 5px;
+
+    .fb_animate {
+      transition: all 0.7s ease;
+      border: 0.5px solid #000;
+
+      b {
+        left: 11px;
+        transition: all 0.1s ease;
+        opacity: 0;
+      }
+
+      span {
+        left: 16px;
+        transition: all 0.5s ease;
+        opacity: 1;
+      }
+    }
+  }
+}
+
+/* Signature animation inside normal buttons / links */
+.fb_animate {
+  width: 20px;
+  height: 0.5px;
+  position: relative;
+  border-bottom: 0.5px solid #9c8a6c;
+
+  b {
+    position: absolute;
+    left: 0;
+    top: -3.5px;
+    width: 7px;
+    height: 7px;
+    background: #efeee9;
+    transform: rotate(45deg);
+    border: 0.5px solid #9c8a6c;
+    opacity: 1;
+    transition: all 0.5s ease;
+  }
+
+  span {
+    position: absolute;
+    left: 3px;
+    top: -5px;
+    width: 0;
+    height: 0;
+    border-top: 5.4px solid transparent;
+    border-bottom: 5.4px solid transparent;
+    border-left: 5.4px solid black;
+    opacity: 0;
+    transition: all 0.5s ease;
+  }
+}
+
+a:hover .fb_animate, button:hover .fb_animate {
+  transition: all 0.7s ease;
+  border: 0.5px solid #000;
+
+  b {
+    left: 11px;
+    transition: all 0.1s ease;
+    opacity: 0;
+  }
+
+  span {
+    left: 16px;
+    transition: all 0.5s ease;
+    opacity: 1;
+  }
+}
+
+/* Accordion Flex Story Gallery (.fb_story_gallery) */
+.fb_story_gallery {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+
+  .fb_story_container {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+    flex: 1;
+    height: 95%;
+    min-height: 400px;
+    cursor: pointer;
+    transition: flex 0.8s ease, filter 0.5s ease, opacity 0.5s ease;
+    transform-origin: top left;
+    overflow: hidden;
+
+    .material-symbols-outlined.top {
+      position: absolute;
+      top: 1.25rem;
+      left: 0.75rem;
+      color: white;
+      z-index: 3;
+    }
+
+    .fb_story_content {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 0;
+      width: 100%;
+      padding-left: 1.5rem;
+      z-index: 3;
+
+      .material-symbols-outlined {
+        color: white;
+        display: none;
+        opacity: 0;
+        font-size: 18px;
+      }
+
+      .fb_story_title {
+        font-size: 1.125rem;
+        font-weight: 500;
+        color: #fff;
+        width: 90%;
+        display: none;
+        opacity: 0;
+      }
+
+      .fb_story_description {
+        font-size: 0.875rem;
+        color: #fff;
+        width: 90%;
+        opacity: 0;
+        display: none;
+        margin-top: 10px;
+      }
+
+      .fb_story_button {
+        font-weight: 500;
+        color: #fff;
+        opacity: 0;
+        display: none;
+
+        svg {
+          opacity: 0;
+        }
+      }
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      max-height: 600px;
+      object-position: left;
+      object-fit: cover;
+    }
+
+    &:first-child {
+      img, &:after {
+        border-top-left-radius: 1rem;
+        border-bottom-left-radius: 1rem;
+      }
+    }
+
+    &:last-child {
+      img, &:after {
+        border-top-right-radius: 1rem;
+        border-bottom-right-radius: 1rem;
+      }
+    }
+
+    &:after {
+      position: absolute;
+      content: '';
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      opacity: 0;
+      background-image: linear-gradient(rgba(0, 0, 0, 0.20) 60%, rgba(0, 0, 0, 0.20) 100%);
+      pointer-events: none;
+    }
+
+    &.fb_content_hover {
+      flex: 4;
+
+      .fb_story_content {
+        .material-symbols-outlined,
+        .fb_story_title {
+          animation: fb_visible 0.5s ease 0.3s forwards;
+          display: block;
+        }
+
+        .fb_story_description {
+          animation: fb_visible 0.5s ease 0.6s forwards;
+          display: block;
+        }
+
+        .fb_story_button {
+          animation: fb_visible 0.5s ease 0.6s forwards;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+
+          svg {
+            animation: fb_visible 0.5s ease 0.7s forwards;
+          }
+        }
+      }
+
+      &:after {
+        animation: fb_visible 0.5s ease forwards;
+      }
+    }
+  }
+}
+
+@keyframes fb_visible {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Custom Grid Layouts for Blog & Crafts Sections */
+.fb-blog-gallery {
+  width: 100%;
+
+  &.grid-1 {
+    display: grid;
+    grid-template-columns: 0.6fr 1.6fr 1.1fr;
+    gap: 15px;
+
+    @media (max-width: 1023px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &.grid-3 {
+    display: grid;
+    grid-template-columns: 1.5fr 1.1fr 0.7fr;
+    gap: 15px;
+
+    @media (max-width: 1023px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+
+    @media (max-width: 1023px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .fb-blog-container {
+    overflow: hidden;
+    border-radius: 1.5rem;
+    position: relative;
+    display: block;
+
+    .fb-blog-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      transform-origin: center;
+      transition: transform 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+      min-height: 400px;
+
+      @media (min-width: 1024px) {
+        aspect-ratio: 2 / 1;
+        min-height: unset;
+      }
+    }
+
+    &:hover .fb-blog-image {
+      transform: scale(1.1);
+    }
+
+    .fb-blog-content {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 0;
+      width: 100%;
+      padding-left: 1.5rem;
+      z-index: 2;
+
+      .fb-blog-title {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: #fff;
+        width: 90%;
+        display: block;
+      }
+
+      .fb-blog-description {
+        font-size: 0.875rem;
+        color: #fff;
+        width: 90%;
+        display: block;
+        margin-top: 10px;
+      }
+
+      .fb_story_button {
+        font-weight: 500;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+    }
+
+    &:after {
+      pointer-events: none;
+      position: absolute;
+      content: '';
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background-image: linear-gradient(rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0.25) 100%);
+    }
+  }
+
+  .fb-product-container {
+    &.grid-product-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+  }
+}
+
+/* Glassmorphic product card view badge (.fb-fp-view) */
+.fb-fp-card {
+  transition: box-shadow 0.3s ease;
+
+  .fb-fp-image {
+    width: 100%;
+    max-width: 330px;
+    height: 400px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 1rem;
+  }
+
+  .fb-fp-view {
+    background: rgba(255, 252, 247, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.27);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    white-space: nowrap;
+  }
+}
+
+/* Custom scrollbars */
+.fb-disable-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.fb-disable-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Header & Navbar Morphing Floating Dropdown Background */
+.dropdownBackground {
+  width: 100px;
+  height: 100px;
+  max-height: 86vh;
+  position: absolute;
+  top: 0;
+  background: white;
+  border: 3px solid #EFEEE9;
+  border-radius: 8px;
+  transition: all 0.3s ease, opacity 0.15s ease, transform 0.25s ease;
+  transform-origin: 50% 0;
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 40;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.dropdownBackground .arrow {
+  position: absolute;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  display: block;
+  background: #EFEEE9;
+  transform: translate(-35%, -50%) rotate(45deg);
+  transition: left 0.25s ease;
+}
+
+.dropdownBackground.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Single Mega Dropdown Pointer Arrow */
+.dropdown-arrow {
+  position: absolute;
+  top: -7px;
+  left: 28px;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-top: 3px solid #EFEEE9;
+  border-left: 3px solid #EFEEE9;
+  transform: rotate(45deg);
+  z-index: 51;
+}
+
+
+/* Color Palettes for Mega Dropdowns */
+.color-base {
+  background-color: rgba(183, 169, 143, 0.6);
+  color: black;
+}
+
+.color-complementary {
+  background-color: rgba(143, 157, 183, 0.2);
+  color: black;
+}
+
+.color-complementary-2 {
+  background-color: rgba(255, 245, 229, 0.2);
+  color: black;
+}
+
+.color-analogous-1 {
+  background-color: rgba(183, 156, 143, 0.2);
+  color: black;
+}
+
+.color-analogous-2 {
+  background-color: rgba(183, 182, 143, 0.2);
+  color: black;
+}
+
+.color-triadic-1 {
+  background-color: rgba(143, 183, 169, 0.2);
+  color: black;
+}
+
+.color-triadic-2 {
+  background-color: rgba(169, 143, 183, 0.6);
+  color: white;
+}
+
+.color-tetradic-1 {
+  background-color: rgba(143, 183, 163, 0.2);
+  color: black;
+}
+
+.color-tetradic-2 {
+  background-color: rgba(157, 143, 183, 0.2);
+  color: black;
+}
+
+.color-tetradic-3 {
+  background-color: rgba(183, 143, 157, 0.1);
+  color: black;
+}
+
+/* Arrow Button Animation (.fb-arrow-btn) */
+.fb-arrow-btn {
+  color: black;
+  padding: 3px 0;
+  outline: none;
+  opacity: 1;
+  cursor: pointer;
+
+  .HoverArrow, .HoverArrow__tipPath, .HoverArrow__linePath {
+    transition: opacity 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+    transition-property: opacity, transform;
+  }
+
+  .HoverArrow {
+    .HoverArrow__tipPath {
+      transform: translateX(0);
+    }
+
+    .HoverArrow__linePath {
+      opacity: 0;
+    }
+
+    position: relative;
+    top: 1px;
+    margin-left: 3px;
+    stroke-width: 2px;
+    fill: none;
+    stroke: currentColor;
+  }
+
+  &:hover {
+    color: #9c8a6c;
+
+    .HoverArrow {
+      .HoverArrow__tipPath {
+        transform: translateX(3px);
+      }
+
+      .HoverArrow__linePath {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+/* Badge Count Overlay */
+.count {
+  background: var(--fb-primary, #D4A373);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 11px;
+  min-width: 15px;
+  height: 15px;
+  font-size: 9px;
+  border-radius: 50%;
+  padding-top: 2.5px;
+  color: var(--fb-text-black, #302e2e);
+}
+
+@media (min-width: 1280px) {
+  .count {
+    min-width: 20px;
+    font-size: 9px;
+    height: 18px;
+  }
+}
+

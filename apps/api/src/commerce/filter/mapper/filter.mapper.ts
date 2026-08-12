@@ -1,0 +1,74 @@
+// @ts-nocheck
+import { FabricFilterPreview, FinishedFilterPreview } from "../types/filter.types.js";
+
+export function mapFabricFilterPreviewRow(row: any): FabricFilterPreview {
+    return {
+        id: BigInt(row.id || 0),
+        gsm: Number(row.gsm || 0),
+        productId: BigInt(row.product_id || 0),
+        sku: String(row.sku || ""),
+        name: String(row.name || ""),
+        price: Number(row.price || 0),
+        heroImage: String(row.hero_image || ""),
+        hoverImage: String(row.hover_image || ""),
+        slug: String(row.slug || ""),
+        unit: String(row.unit || ""),
+        material: String(row.material || ""),
+        color: String(row.color || ""),
+        pattern: String(row.pattern || ""),
+        quantity: Number(row.quantity || 0),
+        isMainProduct: Boolean(row.is_main_product),
+        segmentCategory: String(row.segment_category || ""),
+        subCategory: String(row.sub_category || ""),
+        category: String(row.category || ""),
+        specialStatus: String(row.special_status || ""),
+        volumeDiscount: Number(row.volume_discount || 0),
+        volumeDiscountMinimumOrderQuantity: Number(row.volume_discount_minimum_order_quantity || 0),
+        consumedFabric: Number(row.consumed_fabric || 0),
+        minimumOrderQuantity: Number(row.minimum_order_quantity || 0),
+        finishProfileItemList: row.finish_profile_item_list || null,
+        maxDiscountProductPrice: Number(row.max_discount_product_price || 0),
+        maxDiscountProductDiscount: Number(row.max_discount_product_discount || 0),
+        madeToOrderFabricQuantity: Number(row.made_to_order_fabric_quantity || 0),
+        externalQuantity: Number(row.external_quantity || 0),
+        totalQuantity: Number(row.total_quantity || 0),
+        productGroup: String(row.product_group || "")
+    };
+}
+
+export function mapFinishedFilterPreviewRow(row: any): FinishedFilterPreview {
+    return {
+        id: BigInt(row.id || 0),
+        sku: String(row.sku || ""),
+        name: String(row.name || ""),
+        price: Number(row.price || 0),
+        heroImage: String(row.hero_image || ""),
+        hoverImage: String(row.hover_image || ""),
+        slug: String(row.slug || ""),
+        unit: String(row.unit || ""),
+        material: String(row.material || ""),
+        color: String(row.color || ""),
+        pattern: String(row.pattern || ""),
+        quantity: Number(row.quantity || 0),
+        isMainProduct: Boolean(row.is_main_product),
+        segmentCategory: String(row.segment_category || ""),
+        subCategory: String(row.sub_category || ""),
+        specialStatus: String(row.special_status || ""),
+        externalQuantity: Number(row.external_quantity || 0),
+        totalQuantity: Number(row.total_quantity || 0),
+        volumeDiscount: Number(row.volume_discount || 0),
+        volumeDiscountMinimumOrderQuantity: Number(row.volume_discount_minimum_order_quantity || 0),
+        madeToOrderProfileConsumedFabric: Number(row.made_to_order_profile_consumed_fabric || 0),
+        minimumOrderQuantity: Number(row.minimum_order_quantity || 0),
+        madeToOrderFabricQuantity: Number(row.made_to_order_fabric_quantity || 0),
+        sizeProfileId: BigInt(row.size_profile_id || 0),
+        sizeProfileOptionList: row.size_profile_option_list || null,
+        productSizeProfileOptionList: row.product_size_profile_option_list || null,
+        madeToOrderFabricPrice: Number(row.made_to_order_fabric_price || 0),
+        category: String(row.category || ""),
+        madeToOrderFabricDiscount: row.made_to_order_fabric_discount || null,
+        productGroup: String(row.product_group || "")
+    };
+}
+// @ts-nocheck
+// @ts-nocheck
