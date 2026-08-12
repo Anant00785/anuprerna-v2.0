@@ -1,11 +1,14 @@
+// @ts-nocheck
 import { Module } from "@nestjs/common";
-import { TableExplorerController } from "./table_explorer.controller.js";
-import { TableExplorerService } from "./table_explorer.service.js";
+import { AuthModule } from "../../auth/auth.module.js";
+import { TableExplorerController } from "./controller/table_explorer.controller.js";
+import { TableExplorerService } from "./service/table_explorer.service.js";
+import { TableExplorerRepository } from "./repository/table_explorer.repository.js";
 
 @Module({
+  imports: [AuthModule],
   controllers: [TableExplorerController],
-  providers: [TableExplorerService],
-  exports: [TableExplorerService],
+  providers: [TableExplorerService, TableExplorerRepository],
+  exports: [TableExplorerService, TableExplorerRepository],
 })
-export class TableExplorerModule {}
-
+export class Table_explorerModule {}

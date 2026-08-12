@@ -68,6 +68,7 @@
  * per the brief.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
 import { FabricPreviewService } from "./service/fabric-preview.service.js";
 import { FabricPreviewRepository } from "./repository/fabric-preview.repository.js";
 import {
@@ -132,6 +133,7 @@ const segmentLookupDummy: SegmentLookupPort = {
 };
 
 @Module({
+  imports: [AuthModule],
   providers: [
     ProductPreviewService,
     ProductPreviewRepository,

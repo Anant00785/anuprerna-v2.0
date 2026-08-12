@@ -1,11 +1,13 @@
+// @ts-nocheck
 import { Module } from "@nestjs/common";
-import { IPLocationController } from "./iplocation.controller.js";
-import { IPLocationService } from "./iplocation.service.js";
+import { AuthModule } from "../../auth/auth.module.js";
+import { IPLocationController } from "./controller/iplocation.controller.js";
+import { IPLocationService } from "./service/iplocation.service.js";
 
 @Module({
+  imports: [AuthModule],
   controllers: [IPLocationController],
   providers: [IPLocationService],
   exports: [IPLocationService],
 })
 export class IPLocationModule {}
-

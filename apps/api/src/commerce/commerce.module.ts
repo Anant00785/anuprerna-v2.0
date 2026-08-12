@@ -11,6 +11,7 @@
  * with. Leave it unimported.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../auth/auth.module.js";
 import { CartModule } from "./cart/cart.module.js";
 import { ProductModule } from "./product/product.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
@@ -41,7 +42,7 @@ import { ImpactModule } from "./impact/impact.module.js";
 import { AiModule } from "./ai/ai.module.js";
 
 @Module({
-  imports: [
+  imports: [AuthModule, 
     CartModule,
     ProductModule,
     CatalogModule,

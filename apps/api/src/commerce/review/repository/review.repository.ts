@@ -31,10 +31,11 @@ export class ReviewRepository {
   async findStatistics() {
     const query = sql`SELECT COUNT(r.id) AS count, CEIL(COALESCE(AVG(r.rating), 0)) AS rating FROM review r WHERE r.status = 'APPROVED'`;
     const res = await this.db.execute(query);
-    if (res.rows.length === 0) return { count: 0, rating: 0 };
+    const rows = Array.isArray(res) ? res : (res.rows || []);
+    if (rows.length === 0) return { count: 0, rating: 0 };
     return { 
-        count: Number(res.rows[0].count), 
-        rating: Number(res.rows[0].rating) 
+        count: Number(rows[0].count), 
+        rating: Number(rows[0].rating) 
     };
   }
 
