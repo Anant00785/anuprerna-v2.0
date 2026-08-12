@@ -43,11 +43,24 @@ describe("calculateProductPrice", () => {
     expect(result.calculatedDiscountedPrice).toBeUndefined();
   });
 
+  // Regression guard. Commit 9361c3b replaced this computation with a literal
+  // `undefined`, so no discount could render on the PLP; restored 2026-08-12.
+  // If this fails again, the calculation has been removed a second time.
   it("computes discounted price when max_discount fields present", () => {
     const result = calculateProductPrice(
       makeProduct({ price: 200, max_discount_product_price: 200, max_discount_product_discount: 25 })
     );
     expect(result.calculatedDiscountedPrice).toBe(150);
+  });
+
+  it("returns no discounted price when max_discount_product_price is absent", () => {
+    const result = calculateProductPrice(makeProduct({ price: 200, max_discount_product_discount: 25 }));
+    expect(result.calculatedDiscountedPrice).toBeUndefined();
+  });
+
+  it("treats a missing discount percentage as zero, not as a free product", () => {
+    const result = calculateProductPrice(makeProduct({ price: 200, max_discount_product_price: 200 }));
+    expect(result.calculatedDiscountedPrice).toBe(200);
   });
 
   it("defaults price-less product to calculatedPrice 0", () => {

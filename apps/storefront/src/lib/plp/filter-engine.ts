@@ -39,7 +39,13 @@ export function calculateProductPrice(product: PLPProduct): PLPProduct {
   return {
     ...product,
     calculatedPrice: calcPrice,
-    calculatedDiscountedPrice: undefined,
+    // Restored 2026-08-12. Commit 9361c3b had replaced this with a literal
+    // `undefined`, which meant no discount could ever render on the PLP even
+    // though max_discount_* still populate and FilterProductPreview still has
+    // the branch to display one. Covered by filter-engine.test.ts.
+    calculatedDiscountedPrice: product.max_discount_product_price
+      ? Math.round(calcPrice * (1 - (product.max_discount_product_discount || 0) / 100))
+      : undefined,
   };
 }
 

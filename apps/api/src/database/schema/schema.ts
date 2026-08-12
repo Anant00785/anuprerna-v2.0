@@ -1405,7 +1405,11 @@ export const subCategoryAudit = pgTable("sub_category_audit", {
 	oldData: jsonb("old_data"),
 	newData: jsonb("new_data"),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	changedAt: bigint("changed_at", { mode: "number" }).default(sql`((EXTRACT(epoch FROM now()) * (1000)`),
+	// drizzle-kit introspect mangles this default: it emits
+	// `((EXTRACT(epoch FROM now()) * (1000)` with unbalanced parentheses, which is
+	// invalid SQL and aborts any generated migration at this table. Re-applied by
+	// hand after each introspect - see docs/KNOWN-GAPS.md.
+	changedAt: bigint("changed_at", { mode: "number" }).default(sql`((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint`),
 	status: varchar({ length: 10 }).default('PENDING'),
 });
 
@@ -2739,7 +2743,11 @@ export const imageOptimizationRecord = pgTable("image_optimization_record", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	completedAt: bigint("completed_at", { mode: "number" }),
 }, (table) => [
-	index("idx_image_optimization_record_claim").using("btree", table.state.asc().nullsLast().op("enum_ops"), table.priority.asc().nullsLast().op("enum_ops"), table.enqueuedAt.asc().nullsLast().op("enum_ops")),
+	// drizzle-kit introspect assigns enum_ops to all three columns, but enqueued_at
+	// is bigint and enum_ops does not accept it, so the generated index fails.
+	// Operator classes dropped: Postgres picks the right default per column type.
+	// Re-apply after each introspect - see docs/KNOWN-GAPS.md.
+	index("idx_image_optimization_record_claim").using("btree", table.state.asc().nullsLast(), table.priority.asc().nullsLast(), table.enqueuedAt.asc().nullsLast()),
 	unique("unique_image_optimization_record_object_key").on(table.objectKey),
 ]);
 
