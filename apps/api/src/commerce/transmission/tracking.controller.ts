@@ -85,7 +85,7 @@ export class TrackingController {
     if (isNaN(id)) return simpleResponse(false, "Invalid order ID.");
 
     try {
-      const records: TrackingRecord[] = (await this.transmissionService.getAll()) || [];
+      const records = ((await this.transmissionService.getAll()) as unknown as TrackingRecord[]) || [];
       const found = records.find((r) =>
         Array.isArray(r.payload?.orderIds) && r.payload.orderIds.includes(id)
       );
@@ -108,7 +108,7 @@ export class TrackingController {
     if (!trackingNumber?.trim()) return simpleResponse(false, "Tracking number is required.");
 
     try {
-      const records: TrackingRecord[] = (await this.transmissionService.getAll()) || [];
+      const records = ((await this.transmissionService.getAll()) as unknown as TrackingRecord[]) || [];
       const found = records.find((r) =>
         r.payload?.trackingNumber?.toLowerCase() === trackingNumber.toLowerCase()
       );
@@ -128,7 +128,7 @@ export class TrackingController {
   @ApiParam({ name: "batchNo", example: "TRM-2026-0801", description: "Transmission Batch Number" })
   async trackByBatch(@Param("batchNo") batchNo: string) {
     try {
-      const records: TrackingRecord[] = (await this.transmissionService.getAll()) || [];
+      const records = ((await this.transmissionService.getAll()) as unknown as TrackingRecord[]) || [];
       const found = records.find((r) =>
         r.payload?.transmissionBatchNo?.toLowerCase() === batchNo.toLowerCase()
       );
@@ -147,7 +147,7 @@ export class TrackingController {
   @ApiOperation({ summary: "Get all active dispatch batches & their tracking status" })
   async getAllTracking() {
     try {
-      const records: TrackingRecord[] = (await this.transmissionService.getAll()) || [];
+      const records = ((await this.transmissionService.getAll()) as unknown as TrackingRecord[]) || [];
       const valid = records.filter((r) => r.payload?.transmissionBatchNo);
       const trackingList = valid.map((r) => buildTrackingResponse(r, "all", r.payload.transmissionBatchNo));
       return { success: true, message: "", trackingList };
