@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of `chore/agent-substrate`, 2026-08-12. This is the orientation document for
+Status: current as of `main`, 2026-08-12. This is the orientation document for
 humans and AI agents. If something here disagrees with the code, the code wins — file an issue
 against this doc.
 
@@ -17,10 +17,12 @@ traffic is migrated route by route, not in one cutover.
 
 ## 2. Component landscape
 
-The single most important fact about this system: **the new backend is built but carries zero
-production traffic today.** Both live frontends still call the legacy Java backend directly through
-a proxy route. `apps/api` exists, compiles, and has real business logic — it is just not deployed
-anywhere, and nothing points at it.
+The single most important fact about this system: **the new backend now boots, but still carries
+zero production traffic.** It runs on `:4000` and serves Swagger at `/docs` — four broken imports
+that `@ts-nocheck` had been concealing (lint/typecheck/build all passed while `node dist/main.js`
+died at `MODULE_NOT_FOUND`) are fixed. But it is still not deployed anywhere, and both live
+frontends still call the legacy Java backend directly through a proxy route. Do not read "the API
+boots now" as "the migration has progressed" — nothing points production traffic at it yet.
 
 ```mermaid
 graph TD
@@ -49,8 +51,8 @@ graph TD
     Storefront -.uses.-> Types
     CMS -.uses.-> Types
 
-    subgraph NotLive["Built, not yet deployed - no production traffic"]
-        Api["apps/api<br/>NestJS, 572 files<br/>~42.7k LOC"]
+    subgraph NotLive["Boots locally on port 4000 - zero production traffic"]
+        Api["apps/api<br/>NestJS, 628 files<br/>117 controllers"]
         Worker["apps/worker<br/>stub, 1 file"]
     end
     Api -.would read/write.-> PG
@@ -68,24 +70,27 @@ graph TD
     style NotLive stroke-dasharray: 5 5
 ```
 
-Verified counts (see `docs/AGENT-HANDOFF.md` for methodology, or re-run `find`/`grep` yourself):
+Verified counts (re-run `find`/`grep` yourself before trusting these on a later pass):
 
-- `apps/api/src`: 573 `.ts` files, 42,757 LOC, 116 `*.controller.ts`, 118 `*.service.ts`,
-  79 `*.module.ts`, 35 `*.dto.ts`, spanning `commerce/` (57 subdomains), `identity/`, `auth/`,
-  `workflow/`, `migration/`, `proxy/`, `database/`. Swagger UI wired at `/docs`
-  (`apps/api/src/main.ts:108`).
-- `apps/storefront/src`: 128 files. `apps/cms/src`: 143 files. `apps/worker/src`: 1 file
-  (`index.ts`, a placeholder — no queue, no jobs registered).
-- `packages/types/src`: 2 source files — 1 Zod schema (`customer.schema.ts`) plus its test.
+- `apps/api/src`: 628 `.ts` files, 117 `*.controller.ts`, 348 files still carrying `@ts-nocheck`,
+  spanning `commerce/` (55 subdomains), `identity/`, `auth/`, `workflow/`, `migration/`, `proxy/`,
+  `database/`. Swagger UI wired at `/docs` (`apps/api/src/main.ts:77`), app listens on
+  `PORT` env var (`apps/api/src/main.ts:80`, defaults to 3000; local `.env` sets `PORT=4000`).
+- `apps/storefront/src`: tests only verified in this pass — 163 storefront tests across 14 files.
+  `apps/cms/src`: 93 tests across 15 files. `apps/worker/src`: 1 file (`index.ts`, a placeholder —
+  no queue, no jobs registered).
+- `packages/types/src`: 2 tests (1 Zod schema, `customer.schema.ts`, plus its test).
   `packages/ui/src`: 1 file, `export {}` — no components yet. `packages/config`: shared
   `eslint.base.mjs` / `tsconfig.base.json`, no runtime code.
+- Test totals (`vitest run` per workspace, 2026-08-12): api 330, storefront 163, cms 93, types 2 —
+  **588 total.** Gates on `main`: lint 3/3, typecheck 6/6, test 6/6, build 5/5, all green in CI.
 
 ## 3. Strangler-fig migration state
 
 | Domain | Legacy (live) | Rebuilt in `apps/api` | Cut over? |
 |---|---|---|---|
 | Product catalog, cart, checkout, orders, payments | Yes — serves all real traffic | Yes — `commerce/` subdomains implemented | **No** |
-| Identity / auth | Yes — legacy JWT, dual-accept planned | Yes — `identity/`, `auth/` (scrypt-based `GatekeeperService`) | **No** |
+| Identity / auth | Yes — legacy JWT, dual-accept planned | Yes — `identity/` (empty shell), `auth/` (`GatekeeperService`: `bcrypt(pepper + password)` at cost 11 via `bcryptjs`, tokens signed with `jose`) | **No** |
 | Workflow / artisan management | Yes | Yes — `workflow/` module | **No** |
 | Storefront UI | Fabric (Angular) retired; `apps/storefront` (Next 15) is live and serves users | N/A (frontend) | Frontend: done. Backend calls: still 100% legacy. |
 | Admin UI | Weave (Angular) retired; `apps/cms` (Next 16) is live and serves users | N/A (frontend) | Frontend: done. Backend calls: still 100% legacy. |
@@ -131,7 +136,7 @@ graph LR
 |---|---|---|
 | `apps/storefront` | Customer-facing site, Next 15, App Router | 128 files |
 | `apps/cms` | Staff admin console, Next 16, App Router | 143 files |
-| `apps/api` | Rebuilt NestJS backend — 55+ commerce subdomains, auth, workflow. Not deployed. | 573 files / 42,757 LOC |
+| `apps/api` | Rebuilt NestJS backend — 55 commerce subdomains, auth, workflow. Boots on `:4000`; not deployed. | 628 files / 117 controllers |
 | `apps/worker` | Background job runner (email, Zoho sync, webhooks). Not started. | 1 file, stub |
 | `packages/types` | Cross-app Zod schemas — the intended single source of truth for API contracts | 2 files, 1 schema |
 | `packages/ui` | Shared UI primitives | empty (`export {}`) |
@@ -201,21 +206,36 @@ allowlisted `Origin`; requests without one, or with an origin outside its allowl
 Removing this spoofing breaks every proxied call in production. Treat this as a hard constraint on
 both proxy routes until the legacy backend's CORS policy changes or the routes stop targeting it.
 
-**The Drizzle schema is introspected, not hand-authored.** `apps/api/src/database/schema/schema.ts`
-and the accompanying `0000_dashing_xavin.sql` were generated by pointing `drizzle-kit introspect`
-at the live production Postgres database, not written by hand and not derived from a separate
-migrations history. There is a single snapshot migration, no incremental migration chain, and no
-CI check that the schema still matches the live database. Treat the schema as a point-in-time
-mirror, not a maintained source of truth — re-introspect before trusting it for anything that
-matters.
+**The Drizzle schema is introspected, not hand-authored — and it had drifted badly.** The schema
+was regenerated from the live production database on 2026-08-12: production has **117 tables**
+(the previous schema said 116 — `custom_impact_factor` was missing entirely) and **45 enums** (the
+previous schema said 68; the 23 extras were phantom non-`_enum` twins like `order_status` beside
+`order_status_enum`, left over from a database that had carried two naming generations). Three
+enums were also missing values production actually uses: `order_status_enum` was missing
+`PARTIALLY_DISPATCHED`, `settings_attribute_enum` was missing `IMPACT_ASSUMPTIONS`, and
+`user_role_enum` was missing `ROLE_ARTISAN` — meaning the backend previously had no concept of an
+artisan role at all, on a platform built around artisans. All three are now present. See
+`docs/DATA-INVENTORY.md` for the full table/enum accounting.
 
-**67% of `apps/api` is unchecked.** 387 of 573 files (`grep -rl '@ts-nocheck' apps/api/src`) carry
-`@ts-nocheck`, and there are 270 explicit `: any` annotations. The backend typechecks green
-(6/6 workspaces) and builds green (5/5) largely because most of it is excluded from the type
-checker, not because it is fully typed. Only 2 spec files exist under `apps/api/src`
-(`database/database.int.spec.ts`, `common/middleware/request-id.middleware.spec.ts`) against
-42,757 lines of source. Do not read "typecheck passes" as "this code is type-safe" — verify the
-specific file you're touching isn't under `@ts-nocheck` before trusting its types.
+`drizzle-kit introspect` output does not compile or apply as generated — it has three standing
+defects (206 unterminated `.default(')` empty-string literals, unbalanced parentheses in
+`sub_category_audit.changed_at`, `enum_ops` applied to a `bigint` index column) that were hand-
+repaired in `schema.ts` with comments, and regenerate on every re-run of introspect. There is a
+single snapshot migration, no incremental migration chain, and no CI check that the schema still
+matches the live database. Treat the schema as a point-in-time mirror, not a maintained source of
+truth — re-introspect (and re-repair) before trusting it for anything that matters.
+
+**A local production dataset now exists for development against this schema:** database
+`loom_prod` on `localhost:5433`, loaded from a 2026-08-04 production dump with 0 errors —
+7,254 customers, 4,837 products, 4,733 orders, 27,558 order items, 82 artisans. See
+`docs/DATA-INVENTORY.md`.
+
+**55% of `apps/api` is unchecked.** 348 of 628 files (`grep -rl '@ts-nocheck' apps/api/src`) carry
+`@ts-nocheck`. The backend typechecks green (6/6 workspaces) and builds green (5/5) largely because
+much of it is excluded from the type checker, not because it is fully typed. Test coverage is
+thin relative to the codebase — 52 spec files under `apps/api/src` (330 passing tests) against 628
+source files. Do not read "typecheck passes" as "this code is type-safe" — verify the specific
+file you're touching isn't under `@ts-nocheck` before trusting its types.
 
 ## Related docs
 

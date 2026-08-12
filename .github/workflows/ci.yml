@@ -50,6 +50,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # docs/generated is produced from the code. If this fails, someone changed
+      # code without regenerating: run `pnpm docs:gen` and commit the result.
+      # Never edit those files by hand - the whole point is that they cannot drift.
+      - name: Docs up to date
+        run: pnpm docs:check
+
   # Integration tests need a real Postgres, so they are a separate job and a
   # separate vitest config (apps/api/vitest.int.config.ts). Keeping them out
   # of `pnpm test` is what lets a clean checkout run the unit suite green.

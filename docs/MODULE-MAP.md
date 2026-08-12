@@ -3,14 +3,15 @@
 The definitive navigation reference for `apps/api`. Written for a client demo and for AI coding
 agents adding or modifying backend modules.
 
-Verified directly against the code on branch `chore/agent-substrate`, 2026-08-12:
+Verified directly against the code on `main`, 2026-08-12:
 
-- 573 TypeScript files under `apps/api/src`
-- 116 `*.controller.ts` files
-- 118 `*.service.ts` files
-- 79 `*.module.ts` files (55 of them one per `commerce/` subdomain, plus the top-level modules and
-  `commerce/commerce.module.ts` / `commerce/rest-api.module.ts`)
+- 628 TypeScript files under `apps/api/src`
+- 117 `*.controller.ts` files
+- 348 files still carrying `@ts-nocheck`
 - 55 subdomains under `apps/api/src/commerce/`
+
+The API now boots — `node dist/main.js` runs on `:4000` and serves Swagger at `/docs` — but it is
+still not deployed and carries zero production traffic; see `docs/ARCHITECTURE.md` §2.
 
 For system architecture and request flow, see `docs/ARCHITECTURE.md` and `docs/DATA-FLOW.md`. For
 the data these modules operate on, see `docs/DATA-INVENTORY.md`. For runtime/process state, see
@@ -20,7 +21,7 @@ the data these modules operate on, see `docs/DATA-INVENTORY.md`. For runtime/pro
 
 | Module | Owns | Entry file | State |
 |---|---|---|---|
-| `auth/` | Password auth (`GatekeeperService`, scrypt), tenant lookup, `RolesGuard`. Auth0/social login bound to a dummy that always rejects. | `auth/auth.module.ts` | **Real implementation.** Controller, service, repository, DTOs, types all present (6 files). |
+| `auth/` | Password auth (`GatekeeperService`: `bcrypt(pepper + password)` at cost 11 via `bcryptjs`, tokens signed with `jose`), tenant lookup, `RolesGuard`. Auth0/social login bound to a dummy that always rejects. | `auth/auth.module.ts` | **Real implementation.** Controller, service, repository, DTOs, types all present (6 files). |
 | `commerce/` | Catalog, cart, checkout, orders (all 4 types), customers, payments, and every other business subdomain — 55 subdomains, wired through `commerce.module.ts` (56 imports). | `commerce/commerce.module.ts` | **Real implementation** — the bulk of the backend. |
 | `common/` | Shared cross-cutting code: pino-style logger stub, request-id middleware, auth decorators/guard, error codes, response envelope (`RainResponse`), a `health/health.module.ts`. | no single entry — a grab-bag under `common/*` | **Partially real.** `request-id.middleware.ts` and `roles.guard.ts` are implemented but `request-id.middleware.ts` is never registered anywhere (see section 5). `common/logger/` has only a README, no logger code. |
 | `database/` | Drizzle ORM client, `DATABASE_CONNECTION` provider (global), schema (`schema/schema.ts`, `relations.ts`, one migration snapshot). | `database/database.module.ts` | **Real implementation**, plus the repo's only two DB-adjacent tests (`database.int.spec.ts`). |
@@ -164,15 +165,17 @@ commerce/product/category/
   validators/category.validator.ts
 ```
 
-`category.module.ts` (trimmed):
+`category.module.ts` (trimmed) — this port is **no longer a dummy**:
 
 ```ts
-{ provide: IMAGE_STORAGE_PORT, useValue: imageStorageDummy },
+{ provide: IMAGE_STORAGE_PORT, useFactory: imageStorageAdapter, inject: [ImageService] },
 ```
 
-This is the pattern to copy for a new domain: real controller/service/repository/mapper wired
-normally through Nest's DI, and exactly one out-of-scope cross-domain dependency
-(`IMAGE_STORAGE_PORT`) bound to a dummy rather than left unbound, so the module still boots. Note
+`category`, `segment`, and `sub-category` all now bind `IMAGE_STORAGE_PORT` (`sub-category`:
+`S3_STORAGE_PORT`) to a `useFactory` adapter that delegates to the real `ImageService`, not a
+dummy that returned `""`. This is the pattern to copy going forward for closing out a dummy port:
+real controller/service/repository/mapper wired normally through Nest's DI, and the previously
+out-of-scope cross-domain dependency now wired to its real sibling service via `useFactory`. Note
 the controller lives in a shared `commerce/product/controller/` directory rather than inside
 `category/controller/` — controllers for `product`'s many sibling domains are consolidated there;
 check the parent domain's `controller/` folder, not just the leaf directory, when adding a route.
@@ -180,30 +183,32 @@ check the parent domain's `controller/` folder, not just the leaf directory, whe
 ## 4. Dummy-bound ports — technical debt inventory
 
 The migration bound cross-domain dependencies that were out of scope for a given module's own port
-to no-op dummies rather than leaving them unwired (which would crash Nest's DI at boot). Found via
-`grep -rn "useValue:" --include="*.ts" .` filtered to dummy-suffixed values, and
-`grep -rln "Dummy"` across `apps/api/src`. 12 files contain `Dummy` identifiers; the table below
-lists every `useValue:` binding to one.
+to no-op dummies rather than leaving them unwired (which would crash Nest's DI at boot). **S3 image
+ports have since been wired for real:** `category`, `segment`, and `sub-category` now delegate
+`IMAGE_STORAGE_PORT`/`S3_STORAGE_PORT` to the real `ImageService` via `useFactory` adapters instead
+of a dummy returning `""` — see the worked example in section 3. Every other port below is still a
+dummy. Found via `grep -rln "Dummy" apps/api/src` (excluding specs): 10 files contain `Dummy`
+identifiers; the table below lists every `useValue:` binding to one. Re-derive this list with the
+same grep rather than trusting it verbatim on a later pass — it will drift as ports get wired.
 
 | Port token | Bound in | Should eventually point at |
 |---|---|---|
 | `AUTH0_VALIDATION_PORT` | `auth/auth.module.ts` | Real Auth0 JWKS validation client — social login rejects every attempt until this is wired (dummy's `validateToken` always returns `false`). |
-| `IMAGE_STORAGE_PORT` | `commerce/product/category/category.module.ts`, `commerce/product/segment/segment.module.ts` | Real S3/blob image storage service. |
 | `PRODUCT_PORT`, `COLOR_PORT`, `MATERIAL_PORT`, `PATTERN_PORT`, `TAG_PORT`, `MAIN_PRODUCT_PREVIEW_PORT`, `SIZE_PROFILE_PORT`, `ZOHO_ADAPTER_PORT`, `PRODUCT_ZOHO_RELATION_PORT`, `PRODUCT_SIZE_PROFILE_PORT` | `commerce/product/finished-product/finished-product.module.ts` | Their respective real sibling services under `commerce/product/*` and `commerce/zoho_adapter`. |
 | `CUSTOM_ORDER_ITEM_PORT`, `SYNC_ERROR_LOGGER_PORT` | `commerce/product/custom-product/custom-product.module.ts` | Real `custom_order_item` repository access; a real error-logging sink. |
 | `SUB_CATEGORY_PORT`, `SKU_GROUP_PORT`, `SPECIAL_STATUS_PORT`, `BADGE_PROFILE_PORT`, `VOLUME_DISCOUNT_PROFILE_PORT`, `MADE_TO_ORDER_PROFILE_PORT`, `MADE_TO_ORDER_PRODUCT_PREVIEW_PORT`, `CUSTOM_SIZE_PROFILE_PORT`, `SIZE_PROFILE_PORT`, `FINISH_PROFILE_PORT`, `FABRIC_PROFILE_PORT`, `PRODUCT_SIZE_PROFILE_PORT`, `PRODUCT_ZOHO_RELATION_PORT`, `IMAGE_GALLERY_SEO_PORT` | `commerce/product/product/product.module.ts` | Their respective real sibling services — `product` is the most heavily dummy-dependent module in the codebase (14 dummy ports). |
 | `SIZE_PROFILE_OPTION_PORT` | `commerce/product/product-size-profile/product-size-profile.module.ts` | Real `size_profile_option` repository access. |
 | `MATERIAL_LOOKUP_PORT`, `COLOR_LOOKUP_PORT`, `PATTERN_LOOKUP_PORT`, `CATEGORY_LOOKUP_PORT`, `SEGMENT_LOOKUP_PORT`, `NAV_MATERIAL_LOOKUP_PORT`, `NAV_COLOR_LOOKUP_PORT`, `NAV_PATTERN_LOOKUP_PORT` | `commerce/product/product-preview/Product-preview.module.ts` | Real lookup services for each attribute (note the `.module.ts` file has an inconsistent capital-P filename). |
 | `COLOR_PORT`, `MATERIAL_PORT`, `PATTERN_PORT`, `TAG_PORT`, `MAIN_PRODUCT_PREVIEW_PORT`, `SIZE_PROFILE_PREPARE_PORT`, `FABRIC_PROFILE_ENRICH_PORT`, `SUB_CATEGORY_HIERARCHY_PORT`, `FABRIC_PRODUCT_ZOHO_RELATION_PORT`, `ZOHO_ADAPTER_PORT` | `commerce/product/fabric-product/fabric-product.module.ts` | Same sibling-service targets as `finished-product`. |
-| `SEGMENT_PORT`, `BADGE_PROFILE_PORT`, `MADE_TO_ORDER_PROFILE_PORT`, `VOLUME_DISCOUNT_PROFILE_PORT`, `CUSTOM_SIZE_PROFILE_PORT`, `SIZE_PROFILE_PORT`, `FINISH_PROFILE_PORT`, `FABRIC_PROFILE_PORT`, `S3_STORAGE_PORT` | `commerce/product/sub-category/subcategory.module.ts` | Real sibling services plus real S3 storage. |
+| `SEGMENT_PORT`, `BADGE_PROFILE_PORT`, `MADE_TO_ORDER_PROFILE_PORT`, `VOLUME_DISCOUNT_PROFILE_PORT`, `CUSTOM_SIZE_PROFILE_PORT`, `SIZE_PROFILE_PORT`, `FINISH_PROFILE_PORT`, `FABRIC_PROFILE_PORT` | `commerce/product/sub-category/subcategory.module.ts` | Real sibling services — note `S3_STORAGE_PORT` on this module is **no longer a dummy** (wired to real `ImageService`, see section 3); everything else in this row still is. |
 | `EMAIL_ENCODER_PORT`, `FABRIC_PREVIEW_PORT`, `FINISHED_PREVIEW_PORT`, `FINISH_PROFILE_ITEM_PORT`, `SIZE_PROFILE_OPTION_PORT`, `TENANT_LOOKUP_PORT` | `commerce/cart/cart.module.ts` | `EMAIL_ENCODER_PORT` in particular blocks the encrypted-email decrypt path described in `docs/DATA-INVENTORY.md` section 4 — cart's tenant overview currently cannot decrypt an email through this port. |
 
-**Reading this table:** `commerce/product/*` accounts for the overwhelming majority of dummy
-bindings — the product domain's sub-splits (`product`, `fabric-product`, `finished-product`,
-`sub-category`, `product-preview`) each depend on several sibling `product/*` services that were
-not yet wired together at merge time. This is the single highest-leverage place to start closing
-dummy ports: wiring `product`'s 14 ports to their real siblings (all of which already exist and
-are implemented — see section 2) unblocks most of the list above at once.
+**Reading this table:** `commerce/product/*` still accounts for the overwhelming majority of
+remaining dummy bindings — the product domain's sub-splits (`product`, `fabric-product`,
+`finished-product`, `product-preview`) each depend on several sibling `product/*` services that
+were not yet wired together at merge time. `category`, `segment`, and `sub-category`'s image ports
+were the first to close; wiring `product`'s remaining 14 ports to their real siblings (all of which
+already exist and are implemented — see section 2) is the next highest-leverage step.
 
 ## 5. Health warnings — verified counts
 

@@ -38,3 +38,21 @@ Each app's `CLAUDE.md` is the local source of truth. `docs/README.md` explains t
 > request. There is no Sentry or PostHog integration anywhere in the code, and no uptime/health
 > alerting beyond the bare `GET /health` endpoint. Wire pino structured logs + request-id, Sentry,
 > and PostHog in `apps/api/src/common` as the work is picked up; see `docs/KNOWN-GAPS.md`.
+
+## Documentation is part of the change, not a follow-up
+
+`docs/generated/` is produced from the code by `scripts/gen-docs/index.mjs` — routes,
+endpoints, the test catalogue, the schema, and the state inventory. **Never edit those files
+by hand.** Run `pnpm docs:gen` and commit the result; CI runs `pnpm docs:check` and fails when
+they are stale.
+
+A `PostToolUse` hook (`.claude/settings.json`) regenerates them automatically whenever you edit
+anything under `apps/` or `packages/`, and tells you when a change has likely invalidated a
+hand-written document. Generated docs cannot write prose, so that part is on you:
+
+- Changed behaviour a document describes? Update that document in the same change.
+- Found a gap, or knowingly left one? It goes in `docs/KNOWN-GAPS.md`, which is the authoritative
+  ledger and is expected to be blunt.
+- Do not describe intent as if it were reality. This repository shipped 45,000 lines against docs
+  that confidently described a fetch path with zero importers and a CMS auth middleware that never
+  existed. Mark unbuilt things unbuilt.

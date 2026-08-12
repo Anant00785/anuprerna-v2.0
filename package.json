@@ -7,6 +7,8 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "docs:gen": "node scripts/gen-docs/index.mjs",
+    "docs:check": "node scripts/gen-docs/index.mjs --check",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
