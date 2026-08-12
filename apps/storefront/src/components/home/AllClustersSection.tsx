@@ -13,54 +13,57 @@ interface StoryItem {
 interface ProductItem {
   id: string;
   name: string;
+  displayName: string;
   heroImage: string;
   slug: string;
 }
 
 const CLUSTER_STORIES: StoryItem[] = [
   {
-    id: "cluster-1",
-    slug: "burdwan-jamdani-cluster",
-    title: "Burdwan Weaving Cluster: Heritage of West Bengal",
+    id: "8392",
+    slug: "jamdani-cluster",
+    title: "JAMDANI CLUSTER",
     description:
-      "Supporting over 200 traditional artisan families producing fine count Jamdani sarees and meterage fabrics.",
+      "Indian Traditional Textiles Are Treasured Across The Globe For Their Richness And Quality. These Beautiful Fabrics Are Woven By The Skilled Weavers On A Loom. Jamdani In One Such Craft That Requires Experienced Weavers. These Artisans Take Immense Pr...",
     bannerImageDesktop:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/home-hero-3.png",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/YL56QKLUWOIMXYNZ2ZVTWIHC3TK302594.png",
   },
   {
-    id: "cluster-2",
-    slug: "fulia-tangail-cluster",
-    title: "Fulia & Santipur Artisanal Weaving Hub",
+    id: "8700",
+    slug: "mulberry-silk-cluster",
+    title: "MULBERRY SILK CLUSTER",
     description:
-      "Famous globally for soft-spun handloom cotton, fine silk borders, and time-honored weaving techniques passed through generations.",
+      "Mulberry Silk Is The Highest Quality Silk Available For Purchase. It Is Made From Silkworms That Are Raised In Captivity Under Exacting Conditions. It Is Also The Most Expensive Type Of Silk.",
     bannerImageDesktop:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/video-thumbnails.png",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/76FL3JYVLQZOMGPO0N5QSJQUWDYA03019.png",
   },
   {
-    id: "cluster-3",
-    slug: "murshidabad-silk-cluster",
-    title: "Murshidabad Silk: The Golden Thread Legacy",
+    id: "8798",
+    slug: "peace-silk-cluster",
+    title: "PEACE SILK CLUSTER",
     description:
-      "Eco-friendly mulberry silk cocoon cultivation and reeling techniques supporting rural livelihoods.",
+      "Peace silk, also known as Ahimsa silk, is an eco-friendly fabric crafted without harming silkworms. Renowned for its soft texture, natural sheen, and breathable quality, it is ideal for luxury garments and accessories.",
     bannerImageDesktop:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/customisations.png",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/F0FVLMSQ5OSQPG13FWWV2TGSW7E706718.jpg",
   },
 ];
 
 const CLUSTER_PRODUCTS: ProductItem[] = [
   {
     id: "cl-p1",
-    name: "Burdwan Handloom Silk",
+    name: "Check Olive and Cream Jamdani Pure Khadi Fabric",
+    displayName: "Check Olive and...",
     heroImage:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/hero/home-hero-2.png",
-    slug: "burdwan-handloom-silk",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/9PIE4UM0AVLUJ77FU3GRGECRLSDH05484.jpg",
+    slug: "check-olive-and-cream-jamdani-pure-khadi-120-gsm-handwoven-fabric-69",
   },
   {
     id: "cl-p2",
-    name: "Fulia Cotton Stole",
+    name: "Plain Natural Pink Silk Fabric",
+    displayName: "Plain Natural P...",
     heroImage:
-      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/home/bulk-order.png",
-    slug: "fulia-cotton-stole",
+      "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/WL6KO3R8ZLWAT4LC8JTGN2J1NBI403607.jpg",
+    slug: "plain-natural-pink-silk-fabric",
   },
 ];
 
@@ -74,12 +77,12 @@ export function AllClustersSection() {
 
           {/* Header Block */}
           <div className="w-full flex flex-col justify-center">
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 font-normal">All</h2>
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl text-[#7D5B20] font-medium mb-2">Clusters</h2>
+            <h2 className="fb-font-dm text-5xl lg:text-6xl text-gray-900 font-normal">All</h2>
+            <h2 className="fb-font-dm text-5xl lg:text-7xl text-[#7D5B20] font-medium mb-2">Clusters</h2>
             <Link
               href="/stories"
               target="_blank"
-              className="text-xl py-2 fb_animate_icon_button font-medium text-gray-900"
+              className="text-xl py-2 fb_animate_icon_button font-medium text-gray-900 flex items-center gap-2"
             >
               <i className="fb_animate">
                 <b></b>
@@ -89,7 +92,7 @@ export function AllClustersSection() {
             </Link>
           </div>
 
-          {/* Story 1 Card */}
+          {/* Story 1 Card (Jamdani Cluster) */}
           {CLUSTER_STORIES[0] && (
             <Link
               href={`/stories/${CLUSTER_STORIES[0].slug}/${CLUSTER_STORIES[0].id}`}
@@ -124,7 +127,7 @@ export function AllClustersSection() {
             </Link>
           )}
 
-          {/* Story 2 Card */}
+          {/* Story 2 Card (Mulberry Silk Cluster) */}
           {CLUSTER_STORIES[1] && (
             <Link
               href={`/stories/${CLUSTER_STORIES[1].slug}/${CLUSTER_STORIES[1].id}`}
@@ -164,7 +167,7 @@ export function AllClustersSection() {
         {/* Bottom Grid (grid-2: Story Card 3 + Product Cards Grid) */}
         <div className="fb-blog-gallery grid-2 w-full mt-5">
 
-          {/* Story 3 Card */}
+          {/* Story 3 Card (Peace Silk Cluster) */}
           {CLUSTER_STORIES[2] && (
             <Link
               href={`/stories/${CLUSTER_STORIES[2].slug}/${CLUSTER_STORIES[2].id}`}
@@ -215,7 +218,7 @@ export function AllClustersSection() {
                 />
                 <div className="w-[90%] max-w-[300px] flex justify-between items-center fb-fp-view px-3 py-2 absolute bottom-5">
                   <p className="text-white text-xs sm:text-sm font-semibold truncate max-w-[170px]">
-                    {prod.name}
+                    {prod.displayName}
                   </p>
                   <button className="rounded-xl text-white bg-[#6c5b48] hover:bg-[#584938] px-3 py-1 text-xs font-semibold">
                     View

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { NotificationBar } from "./NotificationBar";
 import { ForexDropdown } from "./ForexDropdown";
 import { CustomerDropdown } from "./CustomerDropdown";
 import { MobileMenu } from "./MobileMenu";
@@ -17,6 +16,7 @@ import {
   INITIAL_NAVIGATION_STORY_CRAFTS,
   INITIAL_NAVIGATION_STORY_CLUSTERS,
   INITIAL_NAVIGATION_STORY_COLLABORATIONS,
+  NavigationCraft,
   NavigationCraftOption,
   NavigationStory,
   NavigationStoryOption,
@@ -27,13 +27,16 @@ import {
 } from "../../lib/data/navigationData";
 
 export function Header() {
-  const [showNotification, setShowNotification] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [tenantName, setTenantName] = useState("Guest");
+
+  // Dynamic finished product navigation states
+  const [accessoriesList, setAccessoriesList] = useState<NavigationCraft[]>(INITIAL_NAVIGATION_ACCESSORIES);
+  const [homeList, setHomeList] = useState<NavigationCraft[]>(INITIAL_NAVIGATION_HOME);
+  const [apparelList, setApparelList] = useState<NavigationCraft[]>(INITIAL_NAVIGATION_APPAREL);
 
   // Dynamic story navigation states
   const [storyCraftsList, setStoryCraftsList] = useState<NavigationStory[]>(INITIAL_NAVIGATION_STORY_CRAFTS);
@@ -60,10 +63,13 @@ export function Header() {
     INITIAL_NAVIGATION_STORY_COLLABORATIONS[0]?.optionList[0] || { storyId: 0, storyTitle: "", slug: "", bannerImage: "" }
   );
 
-  const navRef = useRef<HTMLDivElement>(null);
+  const dropdownBgRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let isMounted = true;
+
     async function loadStoryNav() {
       try {
         const [crRes, colRes, clRes] = await Promise.all([
@@ -99,445 +105,475 @@ export function Header() {
         console.error("Failed to load story navigation:", err);
       }
     }
+
+    async function loadFinishedNav() {
+      try {
+        const [accRes, homeRes, appRes] = await Promise.all([
+          fetch("/api/navigation/finish/accessories"),
+          fetch("/api/navigation/finish/home"),
+          fetch("/api/navigation/finish/apparel"),
+        ]);
+
+        if (isMounted) {
+          if (accRes.ok) {
+            const accData = await accRes.json();
+            if (accData.data && Array.isArray(accData.data) && accData.data.length > 0) {
+              setAccessoriesList(accData.data);
+              if (accData.data[0]?.optionList?.[0]) setSelectedAccessory(accData.data[0].optionList[0]);
+            }
+          }
+          if (homeRes.ok) {
+            const homeData = await homeRes.json();
+            if (homeData.data && Array.isArray(homeData.data) && homeData.data.length > 0) {
+              setHomeList(homeData.data);
+              if (homeData.data[0]?.optionList?.[0]) setSelectedHomeware(homeData.data[0].optionList[0]);
+            }
+          }
+          if (appRes.ok) {
+            const appData = await appRes.json();
+            if (appData.data && Array.isArray(appData.data) && appData.data.length > 0) {
+              setApparelList(appData.data);
+              if (appData.data[0]?.optionList?.[0]) setSelectedApparel(appData.data[0].optionList[0]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load finished navigation:", err);
+      }
+    }
+
     loadStoryNav();
+    loadFinishedNav();
+
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const handleNavMouseEnter = (menuName: string) => {
-    setActiveDropdown(menuName);
+  const onEnter = (e: React.MouseEvent<HTMLLIElement>) => {
+    const dropdownBg = dropdownBgRef.current;
+    const trigger = e.currentTarget;
+    const dropdown = trigger.querySelector<HTMLElement>(".fb-s-nav-dropdown");
+    const navbar = navRef.current;
+
+    if (!dropdown || !navbar || !dropdownBg) return;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    trigger.classList.add("trigger-enter");
+    timerRef.current = setTimeout(() => {
+      if (trigger.classList.contains("trigger-enter")) {
+        trigger.classList.add("trigger-enter-active");
+      }
+    }, 150);
+
+    dropdownBg.classList.add("open");
+
+    const dropdownCoords = dropdown.getBoundingClientRect();
+    const navCoords = navbar.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || 0;
+
+    let leftPosition = dropdownCoords.left - navCoords.left;
+
+    if (dropdownCoords.right > viewportWidth) {
+      leftPosition -= dropdownCoords.right - (viewportWidth - 30);
+      dropdown.style.setProperty("left", `-${dropdownCoords.right - (viewportWidth - 10)}px`);
+    }
+
+    const coords = {
+      height: dropdownCoords.height,
+      width: dropdownCoords.width,
+      top: dropdownCoords.top - navCoords.top,
+      left: leftPosition,
+    };
+
+    dropdownBg.style.setProperty("width", `${coords.width}px`);
+    dropdownBg.style.setProperty("height", `${coords.height}px`);
+    dropdownBg.style.setProperty("transform", `translate(${coords.left}px, ${coords.top}px)`);
+
+    const arrow = dropdownBg.querySelector<HTMLElement>(".arrow");
+    if (arrow) {
+      const triggerCoords = trigger.getBoundingClientRect();
+      let leftPositionArrow = dropdownCoords.left;
+      if (dropdownCoords.right > viewportWidth) {
+        leftPositionArrow -= dropdownCoords.right - viewportWidth;
+      }
+      const arrowLeft =
+        triggerCoords.left - leftPositionArrow + triggerCoords.width / 2 - arrow.offsetWidth / 2;
+      arrow.style.setProperty("left", `${arrowLeft}px`);
+    }
   };
 
-  const handleNavMouseLeave = () => {
-    setActiveDropdown(null);
+  const onLeave = (e: React.MouseEvent<HTMLLIElement>) => {
+    const dropdownBg = dropdownBgRef.current;
+    const trigger = e.currentTarget;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    trigger.classList.remove("trigger-enter", "trigger-enter-active");
+    if (dropdownBg) {
+      dropdownBg.classList.remove("open");
+    }
   };
 
   return (
     <header className="desk_nav w-full sticky top-0 z-50 bg-white border-b border-[#efeee9] shadow-xs">
+      <nav ref={navRef} className="fb-s-navigation w-full container mx-auto flex justify-between items-center gap-2">
 
-      {/* Main Navigation Container */}
-      <div className="fb-s-navigation-container w-full flex justify-center items-center relative">
-        <nav ref={navRef} className="fb-s-navigation w-full max-w-[1536px] mx-auto flex justify-between items-center gap-2 px-4 py-3 xl:py-0 relative">
+        {/* Logo Section */}
+        <div className="xl:flex-[12%] flex justify-start items-center gap-2">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="hamburger xl:hidden"
+            aria-label="Toggle menu"
+          >
+            <span className="material-symbols-outlined">
+              {isMobileMenuOpen ? "close" : "menu"}
+            </span>
+          </button>
 
-          {/* Logo Section */}
-          <div className="xl:flex-[12%] flex justify-start items-center gap-2">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="hamburger xl:hidden p-1 text-gray-800 hover:text-black"
-              aria-label="Toggle menu"
-            >
-              <span className="material-symbols-outlined text-2xl leading-none">
-                {isMobileMenuOpen ? "close" : "menu"}
-              </span>
-            </button>
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex justify-start items-center">
+            <img
+              className="fb-logo-svg"
+              src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/logo_black.svg"
+              alt="Anuprerna"
+            />
+            <div className="font-bold text-base lg:text-xl"><span className="opacity-0 hidden">A</span>nuprerna</div>
+          </Link>
+        </div>
 
-            <Link href="/" className="flex justify-start items-center gap-1">
-              <img
-                className="fb-logo-svg h-6 lg:h-7 xl:h-8 max-h-8 w-auto shrink-0 object-contain"
-                style={{ maxHeight: "32px", width: "auto" }}
-                src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/logo_black.svg"
-                alt="Anuprerna Logo"
-              />
-              <div className="font-bold text-base lg:text-xl text-gray-900 tracking-tight">
-                <span className="opacity-0 hidden">A</span>nuprerna
-              </div>
+        {/* Morphing Floating Background Box & Arrow */}
+        <div ref={dropdownBgRef} className="dropdownBackground">
+          <span className="arrow"></span>
+        </div>
+
+        {/* Desktop Navigation Links */}
+        <ul className="xl:flex-[63%] text-sm xl:text-base hidden xl:flex justify-start items-center fb-default-transition">
+
+          {/* 1. FABRIC */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <Link href="/products/fabric" className="fb-s-nav-main">
+              Fabric
             </Link>
-          </div>
 
-          {/* Desktop Navigation Links & Single Mega Dropdowns */}
-          <ul className="xl:flex-[63%] text-sm xl:text-base hidden xl:flex justify-start items-center font-medium">
-
-            {/* 1. FABRIC */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer"
-              onMouseEnter={() => handleNavMouseEnter("fabric")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <Link href="/products/fabric" className={`fb-s-nav-main transition-colors ${activeDropdown === "fabric" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>
-                Fabric
-              </Link>
-
-              {activeDropdown === "fabric" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] left-0 bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[980px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "30px" }} />
-
-                  <div className="flex justify-between items-stretch gap-1">
-                    {/* Crafts (3 cols grid) */}
-                    <div className="grid grid-cols-3 flex-[55%] color-tetradic-3 rounded-md pt-2 p-2">
-                      {INITIAL_NAVIGATION_CRAFT.map((segment) => (
-                        <div key={segment.id} className="fb-sn-section rounded px-3 py-2 mx-1">
-                          <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs tracking-wider">
-                            {segment.segmentCategoryName.toLowerCase() !== "swatchkit" ? (
-                              <Link
-                                href={generateCategoryRedirectionLink("/products/fabric", segment)}
-                                className="cursor-pointer hover:underline"
-                              >
-                                {segment.segmentCategoryName}
-                              </Link>
-                            ) : (
-                              <Link
-                                href="/products/fabric?category=swatchkit"
-                                className="bg-[#B78F9D] text-white rounded-md px-2.5 py-1 cursor-pointer text-xs font-semibold whitespace-nowrap inline-block shadow-sm hover:bg-[#a37987]"
-                              >
-                                Order A SwatchKit
-                              </Link>
+            <div className="fb-s-nav-dropdown fb-fabric-dropdown">
+              <div className="flex justify-between items-stretch gap-1">
+                {/* Segment Crafts (3 cols) */}
+                <div className="grid grid-cols-3 flex-[55%] color-tetradic-3 rounded-md pt-2">
+                  {INITIAL_NAVIGATION_CRAFT.map((segment) => (
+                    <div key={segment.id} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                      <div className="fb-sn-category capitalize font-bold mb-2">
+                        {segment.segmentCategoryName.toLowerCase() !== "swatchkit" ? (
+                          <div>
+                            <Link
+                              href={generateCategoryRedirectionLink("/products/fabric", segment)}
+                              className="cursor-pointer"
+                            >
+                              {segment.segmentCategoryName}
+                            </Link>
+                          </div>
+                        ) : (
+                          <div>
+                            <Link
+                              href="/products/fabric?category=swatchkit"
+                              className="bg-[#B78F9D] text-white rounded-md px-2 py-1 cursor-pointer text-base whitespace-nowrap"
+                            >
+                              Order a SwatchKit
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                      {segment.segmentCategoryName.toLowerCase() !== "swatchkit" &&
+                        segment.optionList.map((subCategory) => (
+                          <div key={subCategory.id} className="fb-sn-sub-category">
+                            {subCategory.subCategoryName !== "Custom Product" && (
+                              <div className="my-[3px]">
+                                <Link
+                                  href={generateSegmentRedirectionLink("/products/fabric", segment.segmentCategoryName, subCategory.subCategoryName)}
+                                  className="capitalize hover:underline cursor-pointer"
+                                >
+                                  {subCategory.subCategoryName.toLowerCase()}
+                                </Link>
+                              </div>
                             )}
                           </div>
-                          {segment.segmentCategoryName.toLowerCase() !== "swatchkit" &&
-                            segment.optionList.map((subCategory) => (
-                              <div key={subCategory.id} className="fb-sn-sub-category my-[3px]">
-                                {subCategory.subCategoryName !== "Custom Product" && (
-                                  <Link
-                                    href={generateSegmentRedirectionLink("/products/fabric", segment.segmentCategoryName, subCategory.subCategoryName)}
-                                    className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-xs"
-                                  >
-                                    {subCategory.subCategoryName.toLowerCase()}
-                                  </Link>
-                                )}
-                              </div>
-                            ))}
+                        ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Material */}
+                <div className="flex flex-wrap flex-[15%] color-tetradic-1 rounded-md">
+                  <div className="w-full fb-sn-section rounded px-1.5 py-3 mx-1 my-1">
+                    <div className="fb-sn-category capitalize font-bold mb-2">
+                      <div>Material</div>
+                    </div>
+                    {INITIAL_NAVIGATION_MATERIALS.map((material) => (
+                      <div key={material.materialId} className="fb-sn-sub-category">
+                        <div className="my-[3px]">
+                          <Link
+                            href={generateRedirectionLink("/products/fabric", "material", material.materialName)}
+                            className="capitalize hover:underline cursor-pointer"
+                          >
+                            {material.materialName.toLowerCase()}
+                          </Link>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Material */}
-                    <div className="flex flex-wrap flex-[15%] color-tetradic-1 rounded-md p-2">
-                      <div className="w-full fb-sn-section rounded px-1.5 py-3 mx-1 my-1">
-                        <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">Material</div>
-                        {INITIAL_NAVIGATION_MATERIALS.map((material) => (
-                          <div key={material.materialId} className="fb-sn-sub-category my-[3px]">
-                            <Link
-                              href={generateRedirectionLink("/products/fabric", "material", material.materialName)}
-                              className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-xs"
-                            >
-                              {material.materialName.toLowerCase()}
-                            </Link>
-                          </div>
-                        ))}
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
 
-                    {/* Pattern */}
-                    <div className="flex flex-wrap flex-[15%] color-tetradic-2 rounded-md p-2">
-                      <div className="w-full fb-sn-section rounded px-1.5 py-3 mx-1 my-1">
-                        <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">Pattern</div>
-                        {INITIAL_NAVIGATION_PATTERNS.map((pattern) => (
-                          <div key={pattern.patternId} className="fb-sn-sub-category my-[3px]">
-                            <Link
-                              href={generateRedirectionLink("/products/fabric", "pattern", pattern.patternName)}
-                              className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-xs"
-                            >
-                              {pattern.patternName.toLowerCase()}
-                            </Link>
-                          </div>
-                        ))}
+                {/* Pattern */}
+                <div className="flex flex-wrap flex-[15%] color-tetradic-2 rounded-md">
+                  <div className="w-full fb-sn-section rounded px-1.5 py-3 mx-1 my-1">
+                    <div className="fb-sn-category capitalize font-bold mb-2">
+                      <div>Pattern</div>
+                    </div>
+                    {INITIAL_NAVIGATION_PATTERNS.map((pattern) => (
+                      <div key={pattern.patternId} className="fb-sn-sub-category">
+                        <div className="my-[3px]">
+                          <Link
+                            href={generateRedirectionLink("/products/fabric", "pattern", pattern.patternName)}
+                            className="capitalize hover:underline cursor-pointer"
+                          >
+                            {pattern.patternName.toLowerCase()}
+                          </Link>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
 
-                    {/* Color */}
-                    <div className="flex flex-wrap flex-[15%] rounded-md p-2 bg-white">
-                      <div className="w-full fb-sn-section rounded px-1.5 py-3 mx-1 my-1">
-                        <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">Color</div>
-                        {INITIAL_NAVIGATION_COLORS.map((color) => (
-                          <div key={color.colorId} className="fb-sn-sub-category fb-sn-colors my-[2px]">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="w-4 h-4 border border-gray-300 inline-block rounded-xs shadow-2xs"
-                                style={{ backgroundColor: color.colorHexCode }}
-                              />
+                {/* Color */}
+                <div className="flex flex-wrap flex-[15%] rounded-md">
+                  <div className="w-full fb-sn-section rounded px-1.5 py-3 mx-1 my-1">
+                    <div className="fb-sn-category capitalize font-bold mb-2">
+                      <div>Color</div>
+                    </div>
+                    {INITIAL_NAVIGATION_COLORS.map((color, idx) => (
+                      <div key={color.colorId} className="fb-sn-sub-category fb-sn-colors">
+                        <div className="flex justify-center items-center gap-1.5">
+                          <span
+                            className={`w-7 h-7 ${idx === 0 ? "rounded-top" : ""} ${
+                              idx === INITIAL_NAVIGATION_COLORS.length - 1 ? "rounded-bottom" : ""
+                            }`}
+                            style={{ backgroundColor: color.colorHexCode }}
+                          />
+                          <Link
+                            href={generateRedirectionLink("/products/fabric", "color", color.colorLabel)}
+                            className="capitalize cursor-pointer"
+                          >
+                            {color.colorLabel.toLowerCase()}
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </li>
+
+          {/* 2. ACCESSORIES */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <Link href="/products/finished?category=accessories" className="fb-s-nav-main">
+              Accessories
+            </Link>
+
+            <div className="fb-s-nav-dropdown fb-finish-dropdown">
+              <div className="flex justify-between items-stretch gap-6">
+                <div className="fb-sn-segment grid grid-cols-3 flex-[55%] color-complementary rounded-md pt-2">
+                  {accessoriesList.map((segment, sIdx) => (
+                    <div key={segment.id || sIdx} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                      <div className="fb-sn-category capitalize font-bold mb-2">
+                        <div>
+                          <Link
+                            href={generateCategoryRedirectionLink("/products/finished", segment, "accessories")}
+                            className="cursor-pointer"
+                          >
+                            {segment.segmentCategoryName}
+                          </Link>
+                        </div>
+                      </div>
+                      {segment.optionList.map((subCategory, subIdx) => (
+                        <div key={subCategory.id || subIdx} className="fb-sn-sub-category">
+                          {subCategory.subCategoryName !== "Custom Product" && (
+                            <div className="my-[3px]">
                               <Link
-                                href={generateRedirectionLink("/products/fabric", "color", color.colorLabel)}
-                                className="capitalize cursor-pointer hover:underline text-gray-700 text-xs"
+                                href={generateSegmentRedirectionLink("/products/finished", segment.segmentCategoryName, subCategory.subCategoryName, "accessories")}
+                                onMouseEnter={() => {
+                                  if (subCategory.subCategoryFeaturedImage) setSelectedAccessory(subCategory);
+                                }}
+                                className="capitalize hover:underline cursor-pointer"
                               >
-                                {color.colorLabel}
+                                {subCategory.subCategoryName.toLowerCase()}
                               </Link>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-            </li>
-
-            {/* 2. ACCESSORIES */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer"
-              onMouseEnter={() => handleNavMouseEnter("accessories")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <Link href="/products/finished?category=accessories" className={`fb-s-nav-main transition-colors ${activeDropdown === "accessories" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>
-                Accessories
-              </Link>
-
-              {activeDropdown === "accessories" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] -left-10 bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[760px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "65px" }} />
-                  <div className="flex justify-between items-stretch gap-6">
-                    <div className="fb-sn-segment grid grid-cols-3 flex-[55%] color-complementary rounded-md pt-2 p-2 max-h-[450px] overflow-y-auto">
-                      {INITIAL_NAVIGATION_ACCESSORIES.map((segment) => (
-                        <div key={segment.id} className="fb-sn-section rounded px-3 py-2 mx-1">
-                          <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">
-                            <Link
-                              href={generateCategoryRedirectionLink("/products/finished", segment, "accessories")}
-                              className="cursor-pointer hover:underline"
-                            >
-                              {segment.segmentCategoryName}
-                            </Link>
-                          </div>
-                          {segment.optionList.map((subCategory) => (
-                            <div key={subCategory.id} className="fb-sn-sub-category my-[3px]">
-                              {subCategory.subCategoryName !== "Custom Product" && (
-                                <Link
-                                  href={generateSegmentRedirectionLink("/products/finished", segment.segmentCategoryName, subCategory.subCategoryName, "accessories")}
-                                  onMouseEnter={() => setSelectedAccessory(subCategory)}
-                                  className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-xs"
-                                >
-                                  {subCategory.subCategoryName.toLowerCase()}
-                                </Link>
-                              )}
-                            </div>
-                          ))}
+                          )}
                         </div>
                       ))}
                     </div>
-
-                    <img
-                      className="flex-[45%] w-full max-w-[360px] max-h-[440px] object-cover rounded-md shadow-sm"
-                      src={selectedAccessory.subCategoryFeaturedImage || "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?auto=format&fit=crop&w=800&q=80"}
-                      alt={selectedAccessory.subCategoryName}
-                    />
-                  </div>
+                  ))}
                 </div>
-              )}
-            </li>
 
-            {/* 3. HOMEWARE */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer"
-              onMouseEnter={() => handleNavMouseEnter("homeware")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <Link href="/products/finished?category=home" className={`fb-s-nav-main transition-colors ${activeDropdown === "homeware" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>
-                Homeware
-              </Link>
-
-              {activeDropdown === "homeware" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] -left-16 bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[760px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "105px" }} />
-                  <div className="flex justify-between items-stretch gap-6">
-                    <div className="fb-sn-segment grid grid-cols-3 flex-[55%] color-analogous-1 rounded-md pt-2 p-2 max-h-[450px] overflow-y-auto">
-                      {INITIAL_NAVIGATION_HOME.map((segment) => (
-                        <div key={segment.id} className="fb-sn-section rounded px-3 py-2 mx-1">
-                          <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">
-                            <Link
-                              href={generateCategoryRedirectionLink("/products/finished", segment, "home")}
-                              className="cursor-pointer hover:underline"
-                            >
-                              {segment.segmentCategoryName}
-                            </Link>
-                          </div>
-                          {segment.optionList.map((subCategory) => (
-                            <div key={subCategory.id} className="fb-sn-sub-category my-[3px]">
-                              {subCategory.subCategoryName !== "Custom Product" && (
-                                <Link
-                                  href={generateSegmentRedirectionLink("/products/finished", segment.segmentCategoryName, subCategory.subCategoryName, "home")}
-                                  onMouseEnter={() => setSelectedHomeware(subCategory)}
-                                  className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-xs"
-                                >
-                                  {subCategory.subCategoryName.toLowerCase()}
-                                </Link>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-
-                    <img
-                      className="flex-[45%] w-full max-w-[360px] max-h-[440px] object-cover rounded-md shadow-sm"
-                      src={selectedHomeware.subCategoryFeaturedImage || "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80"}
-                      alt={selectedHomeware.subCategoryName}
-                    />
-                  </div>
+                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center">
+                  <img
+                    className="w-full h-full object-cover rounded-md"
+                    src={selectedAccessory.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/O7L4ELP8YKCSPRNBYUH5KUD9I9SP00509.jpg"}
+                    alt={selectedAccessory.subCategoryName}
+                  />
                 </div>
-              )}
-            </li>
+              </div>
+            </div>
+          </li>
 
-            {/* 4. APPAREL */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer"
-              onMouseEnter={() => handleNavMouseEnter("apparel")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <Link href="/products/finished?category=apparel" className={`fb-s-nav-main transition-colors ${activeDropdown === "apparel" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>
-                Apparel
-              </Link>
+          {/* 3. HOMEWARE */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <Link href="/products/finished?category=home" className="fb-s-nav-main">
+              Homeware
+            </Link>
 
-              {activeDropdown === "apparel" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] -left-24 bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[760px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "140px" }} />
-                  <div className="flex justify-between items-center gap-6">
-                    <div className="fb-sn-segment grid grid-cols-3 flex-[55%] color-analogous-2 rounded-md pt-2 p-2 max-h-[450px] overflow-y-auto">
-                      {INITIAL_NAVIGATION_APPAREL.map((segment) => (
-                        <div key={segment.id} className="fb-sn-section rounded px-3 py-2 mx-1">
-                          <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">
-                            <Link
-                              href={generateCategoryRedirectionLink("/products/finished", segment, "apparel")}
-                              className="cursor-pointer hover:underline"
-                            >
-                              {segment.segmentCategoryName}
-                            </Link>
-                          </div>
-                          {segment.optionList.map((subCategory) => (
-                            <div key={subCategory.id} className="fb-sn-sub-category my-[3px]">
-                              {subCategory.subCategoryName !== "Custom Product" && (
-                                <Link
-                                  href={generateSegmentRedirectionLink("/products/finished", segment.segmentCategoryName, subCategory.subCategoryName, "apparel")}
-                                  onMouseEnter={() => setSelectedApparel(subCategory)}
-                                  className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-xs"
-                                >
-                                  {subCategory.subCategoryName.toLowerCase()}
-                                </Link>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-
-                    <img
-                      className="flex-[45%] w-full max-w-[360px] max-h-[440px] object-cover rounded-md shadow-sm"
-                      src={selectedApparel.subCategoryFeaturedImage || "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=800&q=80"}
-                      alt={selectedApparel.subCategoryName}
-                    />
-                  </div>
-                </div>
-              )}
-            </li>
-
-            {/* 5. COLLABORATIONS (Matches Angular Website Exact Items & API Hierarchy) */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer"
-              onMouseEnter={() => handleNavMouseEnter("collaborations")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <Link href="/stories" className={`fb-s-nav-main transition-colors ${activeDropdown === "collaborations" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>
-                Collaborations
-              </Link>
-
-              {activeDropdown === "collaborations" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] -left-[280px] bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[960px] max-w-[1000px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "325px" }} />
-                  <div className="container-d grid grid-cols-2 gap-4 p-1">
-
-                    {/* Left Half: Crafts & Clusters Top + Collaborations Bottom */}
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <div className="font-bold text-sm mb-2 text-gray-900">Crafts &amp; Clusters</div>
-                        <div className="flex flex-col justify-between items-stretch gap-1">
-
-                          {/* Crafts Top Grid + Image */}
-                          <div className="grid grid-cols-2 flex-[50%] pt-2 gap-x-3">
-                            <div className="fb-sn-segment color-tetradic-3 rounded-md p-2 max-h-[300px] overflow-y-auto">
-                              <div className="font-bold text-xs px-2 py-1 text-[#b37487]">Crafts</div>
-                              <div className="grid grid-cols-2 gap-1">
-                                {storyCraftsList.map((story, sIdx) => (
-                                  <div key={story.id || sIdx} className="fb-sn-section rounded px-2 py-1 mx-0.5">
-                                    <div className="fb-sn-category capitalize font-bold mb-1 text-gray-900 text-[11px]">
-                                      <Link href={createCategoryUrl(story.storyCategoryName)}>
-                                        {story.storyCategoryName.toLowerCase()}
-                                      </Link>
-                                    </div>
-                                    {story.optionList.map((subCategory, subIdx) => (
-                                      <div key={subCategory.storyId || subIdx} className="fb-sn-sub-category my-[2px]">
-                                        {subCategory.storyTitle !== "Custom Product" && (
-                                          <Link
-                                            href={`/stories/${subCategory.slug}/${subCategory.storyId}`}
-                                            onMouseEnter={() => setSelectedCraftsStory(subCategory)}
-                                            className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-[11px] leading-tight"
-                                          >
-                                            {subCategory.storyTitle.toLowerCase()}
-                                          </Link>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <img
-                              className="h-full max-h-[220px] w-full object-cover rounded-md shadow-sm border border-gray-200"
-                              src={selectedCraftsStory.bannerImage || "https://images.unsplash.com/photo-1606744888344-493238951221?auto=format&fit=crop&w=800&q=80"}
-                              alt={selectedCraftsStory.storyTitle}
-                            />
-                          </div>
-
-                          {/* Collaborations Bottom Grid + Image */}
-                          <div className="mt-3">
-                            <div className="font-bold text-sm mb-1 text-gray-900">Collaborations</div>
-                            <div className="flex-[50%] flex justify-start items-stretch gap-2">
-                              <div className="fb-sn-segment designers grid grid-cols-1 w-full color-tetradic-2 rounded-md p-2 max-h-[200px] overflow-y-auto">
-                                {storyCollabsList.map((story, sIdx) => (
-                                  <div key={story.id || sIdx} className="fb-sn-section rounded px-2 py-1 mx-0.5">
-                                    <div className="fb-sn-category capitalize font-bold mb-1 text-gray-900 text-[11px]">
-                                      <Link href={createCategoryUrl(story.storyCategoryName)}>
-                                        {story.storyCategoryName}
-                                      </Link>
-                                    </div>
-                                    {story.optionList.map((subCategory, subIdx) => (
-                                      <div key={subCategory.storyId || subIdx} className="fb-sn-sub-category my-[2px]">
-                                        {subCategory.storyTitle !== "Custom Product" && (
-                                          <Link
-                                            href={`/stories/${subCategory.slug}/${subCategory.storyId}`}
-                                            onMouseEnter={() => setSelectedCollaborationStory(subCategory)}
-                                            className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-[11px] leading-tight"
-                                          >
-                                            {subCategory.storyTitle.toLowerCase()}
-                                          </Link>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ))}
-                              </div>
-                              <img
-                                className="designers max-w-[220px] h-[140px] object-cover rounded-md shadow-sm border border-gray-200"
-                                src={selectedCollaborationStory.bannerImage || "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80"}
-                                alt={selectedCollaborationStory.storyTitle}
-                              />
-                            </div>
-                          </div>
-
+            <div className="fb-s-nav-dropdown fb-finish-dropdown">
+              <div className="flex justify-between items-stretch gap-6">
+                <div className="fb-sn-segment grid grid-cols-3 flex-[55%] color-analogous-1 rounded-md pt-2">
+                  {homeList.map((segment, sIdx) => (
+                    <div key={segment.id || sIdx} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                      <div className="fb-sn-category capitalize font-bold mb-2">
+                        <div>
+                          <Link
+                            href={generateCategoryRedirectionLink("/products/finished", segment, "home")}
+                            className="cursor-pointer"
+                          >
+                            {segment.segmentCategoryName}
+                          </Link>
                         </div>
                       </div>
+                      {segment.optionList.map((subCategory, subIdx) => (
+                        <div key={subCategory.id || subIdx} className="fb-sn-sub-category">
+                          {subCategory.subCategoryName !== "Custom Product" && (
+                            <div className="my-[3px]">
+                              <Link
+                                href={generateSegmentRedirectionLink("/products/finished", segment.segmentCategoryName, subCategory.subCategoryName, "home")}
+                                onMouseEnter={() => {
+                                  if (subCategory.subCategoryFeaturedImage) setSelectedHomeware(subCategory);
+                                }}
+                                className="capitalize hover:underline cursor-pointer"
+                              >
+                                {subCategory.subCategoryName.toLowerCase()}
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
+                  ))}
+                </div>
 
-                    {/* Right Half: Clusters Grid + Image & Discover CTA */}
-                    <div className="grid grid-cols-2 pt-2 gap-x-3 mt-1">
-                      <div className="fb-cluster-segment overflow-y-auto color-tetradic-1 rounded-md p-2 max-h-[380px]">
-                        <div className="font-bold text-xs px-2 py-1 text-[#4c6e5d]">Clusters</div>
-                        <div className="grid grid-cols-2 gap-1">
-                          {storyClustersList.map((story, sIdx) => (
-                            <div key={story.id || sIdx} className="fb-sn-section rounded px-2 py-1 mx-0.5">
-                              <div className="fb-sn-category capitalize font-bold mb-1 text-gray-900 text-[11px]">
-                                <Link href={createCategoryUrl(story.storyCategoryName)}>
-                                  {story.storyCategoryName}
-                                </Link>
+                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center">
+                  <img
+                    className="w-full h-full object-cover rounded-md"
+                    src={selectedHomeware.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FPU5QM1S5EYUZUKJSGDCIYN9QFZ000082.png"}
+                    alt={selectedHomeware.subCategoryName}
+                  />
+                </div>
+              </div>
+            </div>
+          </li>
+
+          {/* 4. APPAREL */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <Link href="/products/finished?category=apparel" className="fb-s-nav-main">
+              Apparel
+            </Link>
+
+            <div className="fb-s-nav-dropdown fb-finish-dropdown">
+              <div className="flex justify-between items-center gap-6">
+                <div className="fb-sn-segment grid grid-cols-3 flex-[55%] color-analogous-2 rounded-md pt-2">
+                  {apparelList.map((segment, sIdx) => (
+                    <div key={segment.id || sIdx} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                      <div className="fb-sn-category capitalize font-bold mb-2">
+                        <div>
+                          <Link
+                            href={generateCategoryRedirectionLink("/products/finished", segment, "apparel")}
+                            className="cursor-pointer"
+                          >
+                            {segment.segmentCategoryName}
+                          </Link>
+                        </div>
+                      </div>
+                      {segment.optionList.map((subCategory, subIdx) => (
+                        <div key={subCategory.id || subIdx} className="fb-sn-sub-category">
+                          {subCategory.subCategoryName !== "Custom Product" && (
+                            <div className="my-[3px]">
+                              <Link
+                                href={generateSegmentRedirectionLink("/products/finished", segment.segmentCategoryName, subCategory.subCategoryName, "apparel")}
+                                onMouseEnter={() => {
+                                  if (subCategory.subCategoryFeaturedImage) setSelectedApparel(subCategory);
+                                }}
+                                className="capitalize hover:underline cursor-pointer"
+                              >
+                                {subCategory.subCategoryName.toLowerCase()}
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center">
+                  <img
+                    className="w-full h-full object-cover rounded-md"
+                    src={selectedApparel.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OWC16EOEXJ8PKUFI09181FK7H1FK02986.png"}
+                    alt={selectedApparel.subCategoryName}
+                  />
+                </div>
+              </div>
+            </div>
+          </li>
+
+          {/* 5. COLLABORATIONS */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <Link href="/stories" className="fb-s-nav-main">
+              Collaborations
+            </Link>
+
+            <div className="fb-s-nav-dropdown fb-story-dropdown">
+              <div className="container-d grid grid-cols-2 gap-2">
+                <div>
+                  <div className="font-bold text-base">Crafts &amp; Clusters</div>
+                  <div className="flex flex-col justify-between items-stretch gap-1">
+
+                    {/* Crafts Top Grid + Image */}
+                    <div className="grid grid-cols-2 flex-[50%] pt-2 gap-x-3">
+                      <div className="fb-sn-segment color-tetradic-3 rounded-md">
+                        <div className="font-bold text-base px-3 py-2 text-[#b37487]">Crafts</div>
+                        <div className="grid grid-cols-2">
+                          {storyCraftsList.map((story, sIdx) => (
+                            <div key={story.id || story.storyCategoryName || sIdx} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                              <div className="fb-sn-category capitalize font-bold mb-2">
+                                <div>
+                                  <Link href={createCategoryUrl(story.storyCategoryName)}>
+                                    {story.storyCategoryName.toLowerCase()}
+                                  </Link>
+                                </div>
                               </div>
                               {story.optionList.map((subCategory, subIdx) => (
-                                <div key={subCategory.storyId || subIdx} className="fb-sn-sub-category my-[2px]">
+                                <div key={subCategory.storyId || subIdx} className="fb-sn-sub-category">
                                   {subCategory.storyTitle !== "Custom Product" && (
-                                    <Link
-                                      href={`/stories/${subCategory.slug}/${subCategory.storyId}`}
-                                      onMouseEnter={() => setSelectedClusterStory(subCategory)}
-                                      className="capitalize hover:underline cursor-pointer text-gray-700 hover:text-[#9c8a6c] block text-[11px] leading-tight"
-                                    >
-                                      {subCategory.storyTitle.toLowerCase()}
-                                    </Link>
+                                    <div className="my-[3px]">
+                                      <Link
+                                        href={`/stories/${subCategory.slug}/${subCategory.storyId}`}
+                                        onMouseEnter={() => {
+                                          if (subCategory.bannerImage) setSelectedCraftsStory(subCategory);
+                                        }}
+                                        className="capitalize hover:underline cursor-pointer"
+                                      >
+                                        {subCategory.storyTitle.toLowerCase()}
+                                      </Link>
+                                    </div>
                                   )}
                                 </div>
                               ))}
@@ -545,189 +581,274 @@ export function Header() {
                           ))}
                         </div>
                       </div>
+                      <img
+                        className="h-full object-cover rounded-md"
+                        src={selectedCraftsStory.bannerImage || "https://images.unsplash.com/photo-1606744888344-493238951221?auto=format&fit=crop&w=800&q=80"}
+                        alt={selectedCraftsStory.storyTitle}
+                      />
+                    </div>
 
-                      <div className="flex flex-col justify-between items-stretch gap-2">
-                        <img
-                          className="object-cover rounded-md h-[72%] max-h-[240px] shadow-sm border border-gray-200"
-                          src={selectedClusterStory.bannerImage || "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80"}
-                          alt={selectedClusterStory.storyTitle}
-                        />
-                        <div className="h-[28%] bg-[#FAF7F2] border border-amber-100/60 rounded-md flex justify-center items-center p-2 text-center">
-                          <Link href="/story" className="fb-arrow-btn flex items-center justify-center font-bold text-xs text-[#7D5B20] hover:underline">
-                            <span className="mr-1 text-[11px]">Discover More About Our Journey</span>
-                            <svg className="HoverArrow w-2.5 h-2.5" viewBox="0 0 10 10" aria-hidden="true">
-                              <g fillRule="evenodd">
-                                <path className="HoverArrow__linePath" d="M0 5h7" />
-                                <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4" />
-                              </g>
-                            </svg>
-                          </Link>
+                    {/* Collaborations Bottom Grid + Image */}
+                    <div>
+                      <div className="font-bold text-base my-1.5">Collaborations</div>
+                      <div className="flex-[50%] flex justify-start items-stretch gap-2">
+                        <div className="fb-sn-segment designers grid grid-cols-1 w-full color-tetradic-2 rounded-md pt-2">
+                          {storyCollabsList.map((story, sIdx) => (
+                            <div key={story.id || story.storyCategoryName || sIdx} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                              <div className="fb-sn-category capitalize font-bold mb-2">
+                                <div>
+                                  <Link href={createCategoryUrl(story.storyCategoryName)}>
+                                    {story.storyCategoryName}
+                                  </Link>
+                                </div>
+                              </div>
+                              {story.optionList.map((subCategory, subIdx) => (
+                                <div key={subCategory.storyId || subIdx} className="fb-sn-sub-category">
+                                  {subCategory.storyTitle !== "Custom Product" && (
+                                    <div className="my-[3px]">
+                                      <Link
+                                        href={`/stories/${subCategory.slug}/${subCategory.storyId}`}
+                                        onMouseEnter={() => {
+                                          if (subCategory.bannerImage) setSelectedCollaborationStory(subCategory);
+                                        }}
+                                        className="capitalize hover:underline cursor-pointer"
+                                      >
+                                        {subCategory.storyTitle.toLowerCase()}
+                                      </Link>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
                         </div>
+                        <img
+                          className="designers max-w-[280px] h-[200px] object-cover rounded-md"
+                          src={selectedCollaborationStory.bannerImage || "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80"}
+                          alt={selectedCollaborationStory.storyTitle}
+                        />
                       </div>
-
                     </div>
 
                   </div>
                 </div>
-              )}
-            </li>
 
-            {/* 6. OUR STORY */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer whitespace-nowrap"
-              onMouseEnter={() => handleNavMouseEnter("ourstory")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <span className={`fb-s-nav-main transition-colors ${activeDropdown === "ourstory" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>Our Story</span>
+                {/* Right Side: Clusters Grid + Image & Discover CTA */}
+                <div className="grid grid-cols-2 pt-2 gap-x-3 mt-6">
+                  <div className="fb-cluster-segment overflow-y-auto color-tetradic-1 rounded-md">
+                    <div className="font-bold text-base px-3 py-2 text-[#4c6e5d]">Clusters</div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {storyClustersList.map((story, sIdx) => (
+                        <div key={story.id || story.storyCategoryName || sIdx} className="fb-sn-section rounded px-3 py-2 mx-1 fb-default-transition">
+                          <div className="fb-sn-category capitalize font-bold mb-2">
+                            <div>
+                              <Link href={createCategoryUrl(story.storyCategoryName)}>
+                                {story.storyCategoryName}
+                              </Link>
+                            </div>
+                          </div>
+                          {story.optionList.map((subCategory, subIdx) => (
+                            <div key={subCategory.storyId || subIdx} className="fb-sn-sub-category">
+                              {subCategory.storyTitle !== "Custom Product" && (
+                                <div className="my-[3px]">
+                                  <Link
+                                    href={`/stories/${subCategory.slug}/${subCategory.storyId}`}
+                                    onMouseEnter={() => {
+                                      if (subCategory.bannerImage) setSelectedClusterStory(subCategory);
+                                    }}
+                                    className="capitalize hover:underline cursor-pointer"
+                                  >
+                                    {subCategory.storyTitle.toLowerCase()}
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-              {activeDropdown === "ourstory" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] -left-[140px] bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[520px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "175px" }} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="fb-sn-section color-tetradic-1 rounded-md px-3 py-3">
-                      <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">About Us</div>
-                      <div className="fb-sn-sub-category flex flex-col gap-1.5">
-                        <Link href="/content/about-us/about-the-brand/56485" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          About The Brand
-                        </Link>
-                        <Link href="/content/about-us/about-our-impact/57938" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          About Our Impact
-                        </Link>
-                        <Link href="/content/about-us/about-the-founder/57073" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          About the Founder
-                        </Link>
-                        <Link href="/content/about-us/about-anuprerna-studio/53794" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          About the studio
-                        </Link>
-                        <Link href="/contact" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          Contact Us
-                        </Link>
-                      </div>
-                    </div>
-                    <div className="fb-sn-section color-complementary-2 rounded-md px-3 py-3">
-                      <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">Care guide</div>
-                      <div className="fb-sn-sub-category flex flex-col gap-1.5">
-                        <Link href="/content/care-guide/how-to-nurture-your-natural-dyed-clothing/126408" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          Natural Dyed Fabric CareGuide
-                        </Link>
-                        <Link href="/content/care-guide/handmade-textiles-care-guide/108968" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          Handmade Textiles CareGuide
-                        </Link>
-                        <Link href="/content/care-guide/say-goodbye-to-shrinkage-a-guide-for-fabric-care/2114526" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                          Fabric Shrinkage CareGuide
-                        </Link>
-                      </div>
-                    </div>
-                    <div className="fb-sn-section color-analogous-1 rounded-md flex justify-center items-center min-h-[80px] col-span-2 mt-1">
-                      <Link href="/blogs" target="_blank" className="fb-arrow-btn flex items-center justify-center font-bold text-xs text-[#7D5B20] hover:underline">
-                        <span className="mr-1">Read More Of Our Stories</span>
-                        <svg className="HoverArrow w-2.5 h-2.5" viewBox="0 0 10 10" aria-hidden="true">
+                  <div className="flex flex-col justify-stretch items-stretch gap-2">
+                    <img
+                      className="object-cover rounded-md h-[70%]"
+                      src={selectedClusterStory.bannerImage || "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80"}
+                      alt={selectedClusterStory.storyTitle}
+                    />
+                    <div className="h-[30%] color-base rounded-md flex justify-center items-center">
+                      <Link href="/story" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
+                        <span className="mr-1">Discover More About Our Journey</span>
+                        <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
                           <g fillRule="evenodd">
-                            <path className="HoverArrow__linePath" d="M0 5h7" />
-                            <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4" />
+                            <path className="HoverArrow__linePath" d="M0 5h7"></path>
+                            <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4"></path>
                           </g>
                         </svg>
                       </Link>
                     </div>
                   </div>
+
                 </div>
-              )}
-            </li>
 
-            {/* 7. B2B */}
-            <li
-              className="fb-s-nav-link py-4 px-3 xl:px-5 relative group cursor-pointer whitespace-nowrap"
-              onMouseEnter={() => handleNavMouseEnter("b2b")}
-              onMouseLeave={handleNavMouseLeave}
-            >
-              <span className={`fb-s-nav-main transition-colors ${activeDropdown === "b2b" ? "text-[#9c8a6c]" : "text-gray-800 hover:text-[#9c8a6c]"}`}>B2B</span>
+              </div>
+            </div>
+          </li>
 
-              {activeDropdown === "b2b" && (
-                <div className="fb-s-nav-dropdown absolute top-[calc(100%-4px)] -left-[160px] bg-white text-gray-800 p-3 rounded-lg shadow-2xl z-50 text-xs min-w-[320px] border-3 border-[#EFEEE9] animate-in fade-in duration-150">
-                  <span className="dropdown-arrow" style={{ left: "185px" }} />
-                  <div className="fb-sn-section color-tetradic-3 rounded-md p-3">
-                    <div className="fb-sn-category capitalize font-bold mb-2 text-gray-900 text-xs">Wholesale for Brands</div>
-                    <div className="fb-sn-sub-category flex flex-col gap-2">
-                      <Link href="/wholesale-partner-program" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Wholesale <span className="font-bold">Partner</span> Program
-                      </Link>
-                      <Link href="/artisanflow" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Traceability Platform: <span className="font-bold">ArtisanFlow</span>
-                      </Link>
-                      <Link href="/content/wholesale/order-fabric-swatches/59195" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Order Fabric Swatches
-                      </Link>
-                      <Link href="/content/wholesale/natural-sustainable-custom-dyeing/59105" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Sustainable Dyeing
-                      </Link>
-                      <Link href="/content/wholesale/eco-printing/24862107" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Sustainable Printing
-                      </Link>
-                      <Link href="/content/wholesale/wholesale-production-preorder/59335" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Custom Fabric Production
-                      </Link>
-                      <Link href="/content/wholesale/custom-clothing-accessories-homewares/703160" target="_blank" className="hover:underline text-gray-700 hover:text-[#9c8a6c]">
-                        Finished Product Development
-                      </Link>
-                    </div>
+          {/* 6. OUR STORY */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <span className="fb-s-nav-main whitespace-nowrap">Our Story</span>
+
+            <div className="fb-s-nav-dropdown fb-resources-dropdown">
+              <div className="grid grid-cols-2 gap-1">
+                <div className="fb-sn-section color-tetradic-1 rounded px-3 py-3">
+                  <div className="fb-sn-category capitalize font-bold mb-2">
+                    <span className="flex justify-start items-center gap-2">
+                      <div>About Us</div>
+                    </span>
+                  </div>
+                  <div className="fb-sn-sub-category">
+                    <Link href="/content/about-us/about-the-brand/56485" target="_blank">
+                      <div>About The Brand</div>
+                    </Link>
+                    <Link href="/content/about-us/about-our-impact/57938" target="_blank">
+                      <div>About Our Impact</div>
+                    </Link>
+                    <Link href="/content/about-us/about-the-founder/57073" target="_blank">
+                      <div>About the Founder</div>
+                    </Link>
+                    <Link href="/content/about-us/about-anuprerna-studio/53794" target="_blank">
+                      <div>About the studio</div>
+                    </Link>
+                    <Link href="/contact">
+                      <div>Contact Us</div>
+                    </Link>
                   </div>
                 </div>
-              )}
-            </li>
 
-            {/* 8. SEARCH */}
-            <li className="fb-s-nav-link py-4 px-3 xl:px-5">
-              <Link href="/display/search" className="fb-s-nav-main flex items-center gap-1.5 text-gray-800 hover:text-[#9c8a6c]">
-                <span className="material-symbols-outlined text-lg leading-none">search</span>
-                <span>Search</span>
-              </Link>
-            </li>
+                <div className="fb-sn-section color-complementary-2 rounded px-3 py-3">
+                  <div className="fb-sn-category capitalize font-bold mb-2">
+                    <div>Care guide</div>
+                  </div>
+                  <div className="fb-sn-sub-category">
+                    <Link href="/content/care-guide/how-to-nurture-your-natural-dyed-clothing/126408" target="_blank">
+                      <div>Natural Dyed Fabric CareGuide</div>
+                    </Link>
+                    <Link href="/content/care-guide/handmade-textiles-care-guide/108968" target="_blank">
+                      <div>Handmade Textiles CareGuide</div>
+                    </Link>
+                    <Link href="/content/care-guide/say-goodbye-to-shrinkage-a-guide-for-fabric-care/2114526" target="_blank">
+                      <div>Fabric Shrinkage CareGuide</div>
+                    </Link>
+                  </div>
+                </div>
 
-          </ul>
-
-          {/* Right Action Utilities: Forex Dropdown, Wishlist, Cart, Sign In */}
-          <div className="xl:flex-[25%] flex justify-end items-center gap-3">
-            <div className="hidden xl:block">
-              <ForexDropdown />
+                <div className="fb-sn-section color-analogous-1 rounded-md flex justify-center items-center min-h-[100px] col-span-2">
+                  <Link href="/blogs" target="_blank" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
+                    <span className="mr-1">Read More Of Our Stories</span>
+                    <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                      <g fillRule="evenodd">
+                        <path className="HoverArrow__linePath" d="M0 5h7"></path>
+                        <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4"></path>
+                      </g>
+                    </svg>
+                  </Link>
+                </div>
+              </div>
             </div>
+          </li>
 
-            <Link href="/display/search" className="xl:hidden p-1 text-gray-800 hover:text-black">
-              <span className="material-symbols-outlined text-xl leading-none">search</span>
+          {/* 7. B2B */}
+          <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <span className="fb-s-nav-main whitespace-nowrap">B2B</span>
+
+            <div className="fb-s-nav-dropdown fb-resources-dropdown">
+              <div className="grid grid-cols-1 gap-1">
+                <div className="fb-sn-section color-tetradic-3 rounded px-3 py-3">
+                  <div className="fb-sn-category capitalize font-bold mb-2">
+                    <div>Wholesale for Brands</div>
+                  </div>
+                  <div className="fb-sn-sub-category">
+                    <Link href="/wholesale-partner-program" target="_blank">
+                      <div>Wholesale <span className="font-bold">Partner</span> Program</div>
+                    </Link>
+                    <Link href="/artisanflow" target="_blank">
+                      <div>Traceability Platform: <span className="font-bold">ArtisanFlow</span></div>
+                    </Link>
+                    <Link href="/content/wholesale/order-fabric-swatches/59195" target="_blank">
+                      <div>Order Fabric Swatches</div>
+                    </Link>
+                    <Link href="/content/wholesale/natural-sustainable-custom-dyeing/59105" target="_blank">
+                      <div>Sustainable Dyeing</div>
+                    </Link>
+                    <Link href="/content/wholesale/eco-printing/24862107" target="_blank">
+                      <div>Sustainable Printing</div>
+                    </Link>
+                    <Link href="/content/wholesale/wholesale-production-preorder/59335" target="_blank">
+                      <div>Custom Fabric Production</div>
+                    </Link>
+                    <Link href="/content/wholesale/custom-clothing-accessories-homewares/703160" target="_blank">
+                      <div>Finished Product Development</div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          {/* 8. SEARCH */}
+          <li className="fb-s-nav-link">
+            <Link href="/display/search" className="fb-s-nav-main flex justify-between items-center gap-1.5">
+              <span className="material-symbols-outlined">search</span>
+              <span>Search</span>
             </Link>
+          </li>
 
-            <Link href="/products/fabric?wishlist=true" className="p-1 text-gray-800 hover:text-black relative flex items-center">
-              {wishlistCount > 0 && (
-                <strong className="absolute -top-1.5 -right-1.5 bg-[#8E7862] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                  {wishlistCount}
-                </strong>
-              )}
-              <span className="material-symbols-outlined text-xl leading-none">favorite</span>
-            </Link>
+        </ul>
 
-            <button type="button" className="p-1 text-gray-800 hover:text-black relative flex items-center mr-2 xl:mr-0">
-              {cartCount > 0 && (
-                <strong className="absolute -top-1.5 -right-1.5 bg-[#8E7862] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                  {cartCount}
-                </strong>
-              )}
-              <span className="material-symbols-outlined text-xl leading-none">shopping_cart</span>
-            </button>
+        {/* Right Action Utilities: Forex Dropdown, Wishlist, Cart, Sign In */}
+        <div className="xl:flex-[25%] flex justify-end items-center gap-3">
+          <ForexDropdown className="hidden xl:block" />
 
-            {!isLoggedIn ? (
-              <Link
-                href="/wholesale-partner-program"
-                className="fb-arrow-btn flex items-center justify-center text-xs font-bold text-gray-900 border border-gray-300 hover:border-gray-900 px-3.5 py-1.5 rounded-md transition-colors"
-              >
-                <span className="mr-1">Sign In</span>
-                <span className="text-xs">&rarr;</span>
-              </Link>
-            ) : (
-              <CustomerDropdown tenantName={tenantName} />
+          <Link href="/display/search" onClick={() => setIsMobileMenuOpen(false)} className="xl:hidden flex justify-between items-center gap-1.5">
+            <span className="material-symbols-outlined">search</span>
+          </Link>
+
+          <Link href="/products/fabric?wishlist=true" onClick={() => setIsMobileMenuOpen(false)} className="flex justify-between items-center relative">
+            {wishlistCount > 0 && (
+              <strong className="absolute top-[-10px] -right-2 count">
+                {wishlistCount}
+              </strong>
             )}
-          </div>
+            <span className="material-symbols-outlined">favorite</span>
+          </Link>
 
-        </nav>
-      </div>
+          <button type="button" className="flex justify-between items-center relative mr-2 xl:mr-0">
+            {cartCount > 0 && (
+              <strong className="absolute top-[-10px] -right-2 count">
+                {cartCount}
+              </strong>
+            )}
+            <span className="material-symbols-outlined">shopping_cart</span>
+          </button>
+
+          {!isLoggedIn ? (
+            <button>
+              <Link href="/auth" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
+                <span className="mr-1">Sign In</span>
+                <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                  <g fillRule="evenodd">
+                    <path className="HoverArrow__linePath" d="M0 5h7"></path>
+                    <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4"></path>
+                  </g>
+                </svg>
+              </Link>
+            </button>
+          ) : (
+            <CustomerDropdown tenantName={tenantName} />
+          )}
+        </div>
+
+      </nav>
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (

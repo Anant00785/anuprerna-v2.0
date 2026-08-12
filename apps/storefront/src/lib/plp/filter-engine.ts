@@ -39,9 +39,7 @@ export function calculateProductPrice(product: PLPProduct): PLPProduct {
   return {
     ...product,
     calculatedPrice: calcPrice,
-    calculatedDiscountedPrice: product.max_discount_product_price
-      ? Math.round(calcPrice * (1 - (product.max_discount_product_discount || 0) / 100))
-      : undefined,
+    calculatedDiscountedPrice: undefined,
   };
 }
 
