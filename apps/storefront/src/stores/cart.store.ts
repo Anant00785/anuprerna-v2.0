@@ -1,26 +1,48 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { Cart } from "@/types/domain/cart";
+import { cartRepository } from "@/lib/api/repositories/cart.repository";
 
-// EXAMPLE Zustand store — the pattern for CLIENT state (cart, UI toggles, wizard steps).
-// Rule: server data stays server-side via lib/api.ts. Do NOT mirror server state here.
-// Persisted stores must hold no secrets — this is localStorage.
-export type CartItem = { productId: number; qty: number };
+// Loom owns the cart: it is keyed to the bearer token, not to this browser, so
+// this store is a cache of the server's answer plus the drawer's open/closed
+// flag. Deliberately NOT `persist`-backed — persisting would both go stale
+// against Loom and leak one customer's cart to the next user of the browser.
+// Nothing is read before the first `refresh()`, so server and first client
+// render agree (itemCount 0) and there is no hydration mismatch to gate.
 
 type CartState = {
-  items: CartItem[];
-  add: (item: CartItem) => void;
-  remove: (productId: number) => void;
+  cart: Cart | null;
+  isOpen: boolean;
+  isLoading: boolean;
+  error: string | null;
+  open: () => void;
+  close: () => void;
+  /** Re-read the cart from Loom. Safe to call when signed out — yields an empty cart. */
+  refresh: () => Promise<void>;
   clear: () => void;
 };
 
-export const useCartStore = create<CartState>()(
-  persist(
-    (set) => ({
-      items: [],
-      add: (item) => set((s) => ({ items: [...s.items, item] })),
-      remove: (productId) => set((s) => ({ items: s.items.filter((i) => i.productId !== productId) })),
-      clear: () => set({ items: [] }),
-    }),
-    { name: "anuprerna-cart" },
-  ),
-);
+export const useCartStore = create<CartState>()((set) => ({
+  cart: null,
+  isOpen: false,
+  isLoading: false,
+  error: null,
+  open: () => set({ isOpen: true }),
+  close: () => set({ isOpen: false }),
+  refresh: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      // cartRepository.getCart swallows transport failures and returns an empty
+      // cart, so this only ever throws on a programming error.
+      const cart = await cartRepository.getCart();
+      set({ cart, isLoading: false });
+    } catch (err: any) {
+      set({ error: err?.message || "Could not load your cart.", isLoading: false });
+    }
+  },
+  clear: () => set({ cart: null, error: null }),
+}));
+
+/** Total units in the cart, 0 before the first load. */
+export function selectCartItemCount(state: CartState): number {
+  return state.cart?.itemCount ?? 0;
+}

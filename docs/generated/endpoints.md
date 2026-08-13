@@ -6,7 +6,7 @@
 
 **apps/api exposes 554 routes** across 117 controllers (DELETE 35, GET 324, PATCH 59, POST 136).
 
-**The frontends call 127 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
+**The frontends call 131 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
 gap is the migration. See `docs/KNOWN-GAPS.md`.
 
 ## apps/api routes
@@ -614,6 +614,9 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 - `/get/color-list`
 - `/get/cron-logs`
 - `/get/custom-size-profile-list`
+- `/get/customer/custom-order/{orderId}`
+- `/get/customer/order/{orderId}`
+- `/get/customer/profile`
 - `/get/customers`
 - `/get/customers/whatsapp-status`
 - `/get/diagnostics/app`
@@ -665,6 +668,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 - `/update/blog-content-category`
 - `/update/blog-content-type`
 - `/update/blog-content/`
+- `/update/cart-item`
 - `/update/category/`
 - `/update/color`
 - `/update/custom-size-profile`

@@ -37,17 +37,22 @@ describe("authRepository.loginEmail", () => {
 });
 
 describe("authRepository.checkEmailTenant", () => {
-  it("POSTs to check-email/tenant and returns the tenant status", async () => {
+  // Loom really answers `{entity: {registered, emailVerified}, success}` — reading
+  // `registered` off the top level made every existing customer look unregistered,
+  // which sent them to the signup form instead of the login form.
+  it("unwraps the {entity} envelope Loom actually returns", async () => {
     let capturedUrl: string | undefined;
     useHandlers(
       http.post(`${PROXY_BASE}/check-email/tenant`, ({ request }) => {
         capturedUrl = request.url;
-        return HttpResponse.json(envelope("registered", true));
+        return HttpResponse.json(
+          envelope("entity", { registered: true, emailVerified: false })
+        );
       })
     );
     const res = await authRepository.checkEmailTenant("user@test.com");
     expect(capturedUrl).toBe(`${PROXY_BASE}/check-email/tenant`);
-    expect(res.registered).toBe(true);
+    expect(res).toEqual({ registered: true, emailVerified: false });
   });
 
   it("swallows a failing request and falls back to { registered: false } instead of throwing", async () => {
@@ -58,19 +63,88 @@ describe("authRepository.checkEmailTenant", () => {
   });
 });
 
+describe("authRepository.validateProvider", () => {
+  it("reports a Google account as invalid for BASIC and names the real provider", async () => {
+    // Observed live for a GOOGLE-provider tenant: {"success":false,"provider":2}
+    useHandlers(
+      http.post(`${PROXY_BASE}/validate/provider`, () =>
+        HttpResponse.json({ success: false, provider: 2 })
+      )
+    );
+    await expect(authRepository.validateProvider("g@test.com")).resolves.toEqual({
+      valid: false,
+      actualProvider: "GOOGLE",
+    });
+  });
+
+  it("reports a password account as valid", async () => {
+    useHandlers(
+      http.post(`${PROXY_BASE}/validate/provider`, () =>
+        HttpResponse.json({ success: true, provider: -1 })
+      )
+    );
+    await expect(authRepository.validateProvider("b@test.com")).resolves.toEqual({
+      valid: true,
+      actualProvider: "BASIC",
+    });
+  });
+
+  it("fails open to the password form rather than stranding the user on a network error", async () => {
+    useHandlers(
+      http.post(`${PROXY_BASE}/validate/provider`, () => HttpResponse.json({}, { status: 500 }))
+    );
+    await expect(authRepository.validateProvider("x@test.com")).resolves.toEqual({
+      valid: true,
+      actualProvider: "BASIC",
+    });
+  });
+});
+
 describe("authRepository.registerCustomer", () => {
-  it("POSTs the full registration payload to customer/registration", async () => {
+  // `/customer/registration` 404s on Loom, and a flat body is rejected 406
+  // ("A minion wasn't in the right place at the right time. [NPX]") because the
+  // controller binds a Customer whose tenant fields sit under a `tenant` key.
+  it("POSTs a tenant-wrapped payload to customer/registration/email", async () => {
     let capturedBody: unknown;
     useHandlers(
-      http.post(`${PROXY_BASE}/customer/registration`, async ({ request }) => {
+      http.post(`${PROXY_BASE}/customer/registration/email`, async ({ request }) => {
         capturedBody = await request.json();
-        return HttpResponse.json(envelope("jwt", "new-user-jwt"));
+        return HttpResponse.json({ success: true, message: "The request is successfully added to database." });
       })
     );
-    const data = { email: "new@test.com", password: "pw", firstName: "A", lastName: "B" };
-    const res = await authRepository.registerCustomer(data);
-    expect(capturedBody).toEqual(data);
-    expect(res.jwt).toBe("new-user-jwt");
+    const res = await authRepository.registerCustomer({
+      email: "new@test.com",
+      password: "pw",
+      firstName: "A",
+      lastName: "B",
+    });
+    expect(capturedBody).toEqual({
+      tenant: {
+        name: "A B",
+        email: "new@test.com",
+        password: "pw",
+        emailVerified: false,
+        provider: "BASIC",
+        gender: "",
+      },
+    });
+    expect(res.success).toBe(true);
+  });
+});
+
+describe("authRepository.registerSocial", () => {
+  it("wraps the Auth0 ID token as the tenant password under `tenant`", async () => {
+    let capturedBody: unknown;
+    useHandlers(
+      http.post(`${PROXY_BASE}/customer/registration/social`, async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({ success: true, message: "" });
+      })
+    );
+    await authRepository.registerSocial("g@test.com", "auth0.id.token", "GOOGLE");
+    expect(capturedBody).toEqual({
+      tenant: { email: "g@test.com", password: "auth0.id.token", provider: "GOOGLE" },
+    });
   });
 });
 

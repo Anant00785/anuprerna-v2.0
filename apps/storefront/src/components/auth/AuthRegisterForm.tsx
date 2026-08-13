@@ -3,18 +3,14 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { authRepository } from "@/lib/api/repositories/auth.repository";
-import { profileRepository } from "@/lib/api/repositories/profile.repository";
-import { useAuthStore } from "@/stores/auth.store";
 
 interface AuthRegisterFormProps {
   email: string;
-  onSuccessRegister: () => void;
   onBack: () => void;
 }
 
 export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
   email,
-  onSuccessRegister,
   onBack,
 }) => {
   const [firstName, setFirstName] = useState("");
@@ -28,8 +24,6 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccessful, setIsSuccessful] = useState(false);
-
-  const { setToken, setUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,25 +48,19 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
     setErrorMsg(null);
 
     try {
+      // Loom's registration endpoint returns an ack, never a JWT — the customer
+      // has to verify their email and then log in. Do not auto-authenticate here.
       const res = await authRepository.registerCustomer({
         email,
         password,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       });
-      if (res && res.jwt) {
-        setToken(res.jwt);
-        try {
-          const profile = await profileRepository.getCustomerProfile(res.jwt);
-          setUser(profile);
-        } catch {
-          setUser({ email, firstName, lastName });
-        }
-        setIsSuccessful(true);
-        onSuccessRegister();
-      } else {
-        setIsSuccessful(true);
+      if (res?.success === false) {
+        setErrorMsg(res.message || "Registration failed. Please try again.");
+        return;
       }
+      setIsSuccessful(true);
     } catch (err: any) {
       setErrorMsg(err?.message || "Registration failed. Please try again.");
     } finally {
