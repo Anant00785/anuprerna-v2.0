@@ -13,7 +13,7 @@
   "dependencies": {
     "@anuprerna/types": "workspace:*",
     "@anuprerna/ui": "workspace:*",
-    "@react-oauth/google": "^0.13.5",
+    "@auth0/auth0-react": "^2.23.0",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

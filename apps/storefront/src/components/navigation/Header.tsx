@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ForexDropdown } from "./ForexDropdown";
 import { CustomerDropdown } from "./CustomerDropdown";
+import { useAuthStore } from "@/stores/auth.store";
+import { useCartStore } from "@/stores/cart.store";
+import { CartDrawer } from "./CartDrawer";
 import { MobileMenu } from "./MobileMenu";
 import {
   INITIAL_NAVIGATION_CRAFT,
@@ -28,10 +31,38 @@ import {
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [wishlistCount, setWishlistCount] = useState(0);
-  const [cartCount, setCartCount] = useState(0);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [tenantName, setTenantName] = useState("Guest");
+  // TODO: wishlistCount has the same defect cartCount had — local state with no
+  // setter call site anywhere, so the badge can never appear. Left as-is because
+  // the storefront has no wishlist repository to read from yet.
+  const [wishlistCount] = useState(0);
+  // Was `useState(false)` / `useState("Guest")` with no setter ever called, so the
+  // header read "Sign In" even while the profile pages showed the signed-in user.
+  // `hydrated` gates it: the auth store is `persist`-backed, so on the server and
+  // the first client render it is still empty — reading it directly would trip a
+  // hydration mismatch.
+  const { isLoggedIn: storeLoggedIn, user } = useAuthStore();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const isLoggedIn = hydrated && storeLoggedIn;
+  const tenantName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    user?.email ||
+    "Guest";
+
+  // `cartCount` was `useState(0)` with no `setCartCount` call site anywhere, so
+  // the badge was hardcoded to hidden however many items Loom actually held.
+  // The count now comes from the shared cart store, which the PDP's Add to Cart
+  // also refreshes. The store starts empty (not persisted), so server and first
+  // client render both produce 0 and there is nothing to gate on `hydrated`.
+  const openCart = useCartStore((s) => s.open);
+  const refreshCart = useCartStore((s) => s.refresh);
+  const cartCount = useCartStore((s) => s.cart?.itemCount ?? 0);
+
+  // Loom scopes the cart to the bearer token, so there is nothing to fetch until
+  // the auth store has hydrated and reports a signed-in customer.
+  useEffect(() => {
+    if (isLoggedIn) refreshCart();
+  }, [isLoggedIn, refreshCart]);
 
   // Dynamic finished product navigation states
   const [accessoriesList, setAccessoriesList] = useState<NavigationCraft[]>(INITIAL_NAVIGATION_ACCESSORIES);
@@ -822,7 +853,16 @@ export function Header() {
             <span className="material-symbols-outlined">favorite</span>
           </Link>
 
-          <button type="button" className="flex justify-between items-center relative mr-2 xl:mr-0">
+          <button
+            type="button"
+            aria-label={`Cart, ${cartCount} items`}
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              openCart();
+              if (isLoggedIn) refreshCart();
+            }}
+            className="flex justify-between items-center relative mr-2 xl:mr-0"
+          >
             {cartCount > 0 && (
               <strong className="absolute top-[-10px] -right-2 count">
                 {cartCount}
@@ -844,11 +884,18 @@ export function Header() {
               </Link>
             </button>
           ) : (
-            <CustomerDropdown tenantName={tenantName} />
+            <CustomerDropdown
+              tenantName={tenantName}
+              isLoggedIn={isLoggedIn}
+              onLogout={() => useAuthStore.getState().logout()}
+            />
           )}
         </div>
 
       </nav>
+
+      {/* Cart Side Tab — opened by the cart button above and by Add to Cart */}
+      <CartDrawer />
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (

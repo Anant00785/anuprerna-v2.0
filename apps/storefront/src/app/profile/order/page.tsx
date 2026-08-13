@@ -1,45 +1,38 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { mockOrderList } from '@/lib/profile/dummy-data';
+import React, { useCallback, useEffect, useState } from 'react';
 import { OrderListItem } from '@/types/domain/profile';
 import { OrderListCard } from '@/components/profile/OrderListCard';
 import { profileRepository } from '@/lib/api/repositories/profile.repository';
+import { toOrderListItem } from '@/lib/profile/adapters';
+import { ProfileDataState } from '@/components/profile/ProfileDataState';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function OrderListingPage() {
   const { jwt } = useAuthStore();
-  const [orders, setOrders] = useState<OrderListItem[]>(mockOrderList);
-  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'ALL' | 'PROCESSING' | 'DISPATCHED' | 'CANCELLED'>('ALL');
 
-  useEffect(() => {
-    async function loadLiveOrders() {
-      setLoading(true);
-      try {
-        const liveOrders = await profileRepository.getOrderList(jwt || undefined);
-        if (Array.isArray(liveOrders) && liveOrders.length > 0) {
-          const mapped: OrderListItem[] = liveOrders.map((o, idx) => ({
-            orderId: o.id || idx + 101,
-            orderType: 'ORDER',
-            status: (o.status?.toUpperCase() || 'PROCESSING') as any,
-            createdAt: o.orderDate || new Date().toISOString(),
-            estimatedDeliveryDate: new Date(Date.now() + 7 * 864e5).toISOString(),
-            totalItemCount: o.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 1,
-            currency: o.currency || 'INR',
-            totalAmount: o.totalAmount || 0,
-          }));
-          setOrders(mapped);
-        }
-      } catch (err) {
-        // Retain initial fallback state if backend endpoint fails
-      } finally {
-        setLoading(false);
-      }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const liveOrders = await profileRepository.getOrderList(jwt || undefined);
+      // No mock seeding and no "only replace if non-empty": zero orders is a real
+      // answer and must render as such.
+      setOrders(liveOrders.map(toOrderListItem));
+    } catch (err: any) {
+      setError(err?.message || 'Could not load your orders.');
+    } finally {
+      setLoading(false);
     }
-
-    loadLiveOrders();
   }, [jwt]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const activeOrders = orders.filter((o) => o.status === 'PROCESSING' || o.status === 'INITIATED' || o.status === 'READY');
   const dispatchedOrders = orders.filter((o) => o.status === 'DISPATCHED' || o.status === 'DELIVERED' || o.status === 'IN_TRANSIT' || o.status === 'PARTIALLY_DISPATCHED');
@@ -64,12 +57,7 @@ export default function OrderListingPage() {
     <div className="w-full space-y-6">
       <h3 className="text-2xl font-bold text-gray-900">Your Orders</h3>
 
-      {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-pulse">
-          <div className="h-48 bg-gray-100 rounded-xl"></div>
-          <div className="h-48 bg-gray-100 rounded-xl"></div>
-        </div>
-      ) : (
+      <ProfileDataState loading={loading} error={error} onRetry={load}>
         <>
           {/* Filter Summary Tabs */}
           {orders.length > 0 && (
@@ -161,7 +149,7 @@ export default function OrderListingPage() {
             </div>
           )}
         </>
-      )}
+      </ProfileDataState>
     </div>
   );
 }

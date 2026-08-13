@@ -1,44 +1,68 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { http, HttpResponse } from "msw";
 import { useCartStore } from "./cart.store";
+import { useHandlers, PROXY_BASE } from "@/test/msw";
 
-// EXAMPLE co-located store test — every store ships one.
+const cartRow = {
+  id: 166340327,
+  quantity: 2,
+  unit: "METER",
+  productGroup: "fabric",
+  makingCharge: 0,
+  fabricProductPreview: {
+    id: 163523574,
+    product: { id: 163523575, name: "Handwoven Fabric", slug: "handwoven", price: 446, unit: "METER" },
+  },
+};
+
 describe("cart.store", () => {
-  beforeEach(() => useCartStore.getState().clear());
-
-  it("adds and removes items", () => {
-    useCartStore.getState().add({ productId: 1, qty: 2 });
-    expect(useCartStore.getState().items).toHaveLength(1);
-    useCartStore.getState().remove(1);
-    expect(useCartStore.getState().items).toHaveLength(0);
+  beforeEach(() => {
+    useCartStore.setState({ cart: null, isOpen: false, isLoading: false, error: null });
   });
 
-  it("appends rather than merges when the same productId is added twice", () => {
-    useCartStore.getState().add({ productId: 1, qty: 1 });
-    useCartStore.getState().add({ productId: 1, qty: 3 });
-    // Characterizes actual behaviour: add() is a plain append with no
-    // dedupe/merge-by-productId logic, so the same product can appear twice.
-    expect(useCartStore.getState().items).toEqual([
-      { productId: 1, qty: 1 },
-      { productId: 1, qty: 3 },
-    ]);
+  it("starts empty so the header badge renders 0 on the server and first client render", () => {
+    expect(useCartStore.getState().cart).toBeNull();
+    expect(useCartStore.getState().isOpen).toBe(false);
   });
 
-  it("remove() is a no-op when the productId is not in the cart", () => {
-    useCartStore.getState().add({ productId: 1, qty: 2 });
-    useCartStore.getState().remove(999);
-    expect(useCartStore.getState().items).toHaveLength(1);
+  it("refresh() loads the cart out of Loom's cartItemList envelope", async () => {
+    useHandlers(
+      http.get(`${PROXY_BASE}/get/cart-item/list`, () =>
+        HttpResponse.json({ cartItemList: [cartRow], success: true, message: "" })
+      )
+    );
+    await useCartStore.getState().refresh();
+    const { cart, isLoading } = useCartStore.getState();
+    expect(isLoading).toBe(false);
+    expect(cart?.itemCount).toBe(2);
+    expect(cart?.subtotal).toBe(892);
+    expect(cart?.items[0].product.name).toBe("Handwoven Fabric");
   });
 
-  it("clear() empties the cart regardless of item count", () => {
-    useCartStore.getState().add({ productId: 1, qty: 1 });
-    useCartStore.getState().add({ productId: 2, qty: 1 });
-    useCartStore.getState().clear();
-    expect(useCartStore.getState().items).toEqual([]);
+  it("refresh() yields an empty cart (not a throw) when the backend fails", async () => {
+    useHandlers(
+      http.get(`${PROXY_BASE}/get/cart-item/list`, () =>
+        HttpResponse.json({ success: false, message: "unauthorized" }, { status: 401 })
+      )
+    );
+    await useCartStore.getState().refresh();
+    expect(useCartStore.getState().cart?.itemCount).toBe(0);
   });
 
-  it("persists items to localStorage under the anuprerna-cart key", () => {
-    useCartStore.getState().add({ productId: 5, qty: 1 });
-    const raw = localStorage.getItem("anuprerna-cart");
-    expect(raw).toContain('"productId":5');
+  it("open()/close() drive the side tab", () => {
+    useCartStore.getState().open();
+    expect(useCartStore.getState().isOpen).toBe(true);
+    useCartStore.getState().close();
+    expect(useCartStore.getState().isOpen).toBe(false);
+  });
+
+  it("does NOT persist to localStorage — the cart belongs to the bearer token, not the browser", async () => {
+    useHandlers(
+      http.get(`${PROXY_BASE}/get/cart-item/list`, () =>
+        HttpResponse.json({ cartItemList: [cartRow], success: true, message: "" })
+      )
+    );
+    await useCartStore.getState().refresh();
+    expect(localStorage.getItem("anuprerna-cart")).toBeNull();
   });
 });

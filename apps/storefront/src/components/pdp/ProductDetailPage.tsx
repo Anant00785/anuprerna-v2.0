@@ -4,6 +4,9 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCurrencyStore, SupportedCurrency } from "@/stores/currency.store";
+import { useAuthStore } from "@/stores/auth.store";
+import { useCartStore } from "@/stores/cart.store";
+import { cartRepository } from "@/lib/api/repositories/cart.repository";
 
 interface ProductDetailPageProps {
   slug: string;
@@ -185,6 +188,18 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const [swatchAdded, setSwatchAdded] = useState(false);
   const [showCustomizationOptions, setShowCustomizationOptions] = useState(true);
 
+  // Add to Cart state. Loom resolves the cart's owner from the bearer token, so
+  // the call only works signed in; `hydrated` gates the persist-backed auth store,
+  // which is empty during SSR and the first client render (same as the header).
+  const [cartStatus, setCartStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
+  const [cartError, setCartError] = useState<string | null>(null);
+  const storeLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const isLoggedIn = hydrated && storeLoggedIn;
+  const refreshCart = useCartStore((s) => s.refresh);
+  const openCart = useCartStore((s) => s.open);
+
   useEffect(() => {
     let isMounted = true;
     async function fetchProduct() {
@@ -294,6 +309,55 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
 
   const handleVariantClick = (variantSlug: string) => {
     router.push(`/product/fabric-product/${variantSlug}`);
+  };
+
+  // Loom's cart item points at the *preview* row, not the inner product: for a
+  // fabric that is `fabricProduct.id` (productData.id, 163523574) rather than
+  // `fabricProduct.product.id` (163523575). Sending the product id joins to the
+  // wrong row, so keep these distinct.
+  const previewId = Number(productData.id);
+  const productGroup: "fabric" | "finished" = p.productGroup === "finished" ? "finished" : "fabric";
+
+  // Only the finish ids that came from Loom's finishProfile are real; the
+  // FULL_NATURAL_DYE_LIST fallback is hardcoded UI data whose ids (1..22) belong
+  // to no Loom row, so they must never be persisted onto a cart item.
+  const selectedFinishId =
+    selectedDyeItem && apiDyeList && apiDyeList.some((d: any) => d.id === selectedDyeItem.id)
+      ? String(selectedDyeItem.id)
+      : "";
+
+  const handleAddToCart = async () => {
+    if (!isLoggedIn) {
+      router.push("/auth");
+      return;
+    }
+    setCartStatus("adding");
+    setCartError(null);
+    try {
+      await cartRepository.addToCart({
+        fabricProductId: productGroup === "fabric" ? previewId : undefined,
+        finishedProductId: productGroup === "finished" ? previewId : undefined,
+        quantity,
+        unit: p.unit || "METER",
+        // `price` already includes the selected dye's add-on, so makingCharge
+        // stays 0 — setting both would bill the customisation twice.
+        price,
+        sku: p.sku,
+        orderType: inStockQty > 0 ? "IN_STOCK" : "MADE_TO_ORDER",
+        productGroup,
+        selectedFinishId,
+      });
+      setCartStatus("added");
+      // Loom's add returns no cart, so re-read it, then slide the side tab out —
+      // the same post-add behaviour fabric ships in production.
+      await refreshCart();
+      openCart();
+      setTimeout(() => setCartStatus("idle"), 2500);
+    } catch (err: any) {
+      console.error("Add to cart failed:", err);
+      setCartError(err?.message || "Could not add this item to your cart.");
+      setCartStatus("error");
+    }
   };
 
   // Check if Customization is enabled for this product (matching Angular product.madeToOrderProfileEnabled / finishProfileEnabled 1:1)
@@ -768,11 +832,24 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
 
             <button
               type="button"
-              className="flex-[50%] bg-[#C79D6D] hover:bg-[#b0885a] text-white font-bold py-3 rounded text-sm transition-colors text-center"
+              onClick={handleAddToCart}
+              disabled={cartStatus === "adding"}
+              className={`flex-[50%] font-bold py-3 rounded text-sm transition-colors text-center text-white disabled:opacity-70 ${cartStatus === "added" ? "bg-emerald-600" : "bg-[#C79D6D] hover:bg-[#b0885a]"
+                }`}
             >
-              Add to Cart
+              {cartStatus === "adding"
+                ? "Adding..."
+                : cartStatus === "added"
+                  ? "✓ Added to Cart"
+                  : "Add to Cart"}
             </button>
           </div>
+
+          {cartStatus === "error" && cartError && (
+            <p role="alert" className="text-xs font-bold text-red-600 -mt-1">
+              {cartError}
+            </p>
+          )}
 
           {/* Swatch Kit Card */}
           <div className="p-3 border border-[#D1D4DB] rounded bg-white flex items-center justify-between mt-2">

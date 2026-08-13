@@ -1,19 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface ProfileSidebarProps {
+  /** Optional override; normally the signed-in tenant is used. */
   userName?: string;
   showWholesaleProgram?: boolean;
 }
 
 export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
-  userName = 'Ananya Sharma',
+  userName,
   showWholesaleProgram = true,
 }) => {
   const pathname = usePathname();
+
+  // The default here used to be the literal string 'Ananya Sharma', and the layout
+  // passed that same invented name explicitly — so every signed-in customer saw
+  // someone else's name beside their own orders.
+  const user = useAuthStore((s) => s.user);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const resolvedName =
+    userName ??
+    (hydrated
+      ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || user?.email || ''
+      : '');
 
   const navItems = [
     { name: 'Dashboard', href: '/profile/dashboard' },
@@ -37,9 +51,9 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   return (
     <div className="w-full lg:sticky lg:top-[100px]">
       {/* Desktop User Name Header */}
-      {userName && (
+      {resolvedName && (
         <div className="hidden lg:block px-5 py-2.5 bg-[#FFFCF7] text-gray-900 rounded-md shadow mb-4">
-          <span className="font-semibold text-lg">{userName}</span>
+          <span className="font-semibold text-lg">{resolvedName}</span>
         </div>
       )}
 

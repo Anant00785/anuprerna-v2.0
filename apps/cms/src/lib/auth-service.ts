@@ -103,7 +103,10 @@ export class AuthService {
   }
 
   public static async login(username: string, password: string): Promise<{ token: string; authority?: Authority }> {
-    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/auth/authenticate`;
+    // Loom's login route, same one the legacy Weave console uses
+    // (`weave/request-mapper.service.ts:89`). `/auth/authenticate` is an
+    // `apps/api` NestJS route and 404s on Loom — apps/api is not in this path.
+    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/authenticate/email`;
 
     try {
       const response = await axios.post(
@@ -151,7 +154,10 @@ export class AuthService {
       throw new Error('No JWT token available to resolve authority');
     }
 
-    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/auth/authority`;
+    // Loom returns `{authority: {superuser, admin, user, guest}, success}`
+    // (`NverseAuthenticationController.getAuthorityToken`); Weave reads the same
+    // `authority` key. The unwrap below already handles that shape.
+    const endpoint = `${ConfigurationService.SERVER_ENDPOINT}/get/authority/token`;
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${jwtToken}`,

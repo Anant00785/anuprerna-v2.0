@@ -2,33 +2,19 @@
 
 import React from "react";
 import Image from "next/image";
-import { useGoogleLogin } from "@react-oauth/google";
 
 interface AuthMethodsProps {
   onSelectMethod: (method: "BASIC" | "GOOGLE") => void;
-  onGoogleSuccess: (tokenResponse: any) => void;
-  onGoogleError?: () => void;
+  onGoogleSignIn: () => void;
 }
 
 export const AuthMethods: React.FC<AuthMethodsProps> = ({
   onSelectMethod,
-  onGoogleSuccess,
-  onGoogleError,
+  onGoogleSignIn,
 }) => {
-  const googleLogin = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      onGoogleSuccess(tokenResponse);
-    },
-    onError: () => {
-      if (onGoogleError) onGoogleError();
-    },
-  });
-
   const handleGoogleClick = () => {
     onSelectMethod("GOOGLE");
-    if (googleLogin) {
-      googleLogin();
-    }
+    onGoogleSignIn();
   };
 
   return (

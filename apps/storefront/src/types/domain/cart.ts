@@ -10,10 +10,22 @@ export interface CartItem {
   productId: string;
   product: Product;
   quantity: number;
+  /** Unit the quantity is expressed in, e.g. "METER" / "UNIT". */
+  unit?: string;
   unitPrice: number;
   totalPrice: number;
   selectedColor?: string;
   selectedVariantId?: string;
+  /**
+   * The backend row this item was mapped from, opaque to the UI.
+   *
+   * Loom's `PATCH /update/cart-item` re-binds the whole `CartItem` entity, so a
+   * quantity change has to echo back every field the row was created with —
+   * fields the domain type deliberately does not expose. Components pass the
+   * item straight back to `cartRepository.updateQuantity`, which is the only
+   * code that looks inside this.
+   */
+  source?: unknown;
 }
 
 export interface Cart {

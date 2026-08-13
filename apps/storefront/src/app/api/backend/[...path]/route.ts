@@ -50,9 +50,17 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
     );
   }
 
-  // Forward Auth token from cookie if available and header not set
+  // Forward Auth token from cookie if available and header not set.
+  //
+  // Never on the authentication/registration routes: a stale or expired
+  // `jwt_token` cookie would be attached to the login request itself, and Loom
+  // rejects the bad bearer before it ever checks the credentials — so a correct
+  // password comes back 401 and the only way out is clearing cookies by hand.
+  const isAuthEntryPoint = /^(authenticate|customer\/registration|check-email|validate\/provider|send\/password-reset|reset\/password)\b/.test(
+    targetPath
+  );
   const authCookie = request.cookies.get("jwt_token")?.value;
-  if (authCookie && !requestHeaders.has("authorization")) {
+  if (authCookie && !requestHeaders.has("authorization") && !isAuthEntryPoint) {
     requestHeaders.set("Authorization", `Bearer ${authCookie}`);
   }
 
@@ -70,6 +78,14 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
 
     const responseHeaders = new Headers(response.headers);
     responseHeaders.delete("transfer-encoding");
+    // Node's fetch has already decompressed the body, so forwarding Loom's
+    // `content-encoding: gzip` makes the browser try to gunzip plain JSON and
+    // fail the request with a bare "Failed to fetch" — no status, no body, so it
+    // surfaces as a network outage rather than an API error. `content-length`
+    // goes for the same reason: it describes the compressed bytes.
+    // The CMS proxy already does this; this one only dropped transfer-encoding.
+    responseHeaders.delete("content-encoding");
+    responseHeaders.delete("content-length");
 
     return new NextResponse(response.body, {
       status: response.status,

@@ -65,23 +65,48 @@ export interface LegacyNavigationResponseDto {
   promoBannerLink?: string;
 }
 
-export interface LegacyCartItemDto {
-  cartItemId?: string | number;
-  productId?: string | number;
-  productDetails?: LegacyFabricProductDto;
-  qty?: number;
-  unitPrice?: number;
-  totalPrice?: number;
-  selectedColorHex?: string;
-  variantId?: string;
+/**
+ * Loom's cart DTOs, as observed on `GET /get/cart-item/list` against live Loom.
+ * The response envelope is `{"cartItemList": [...], "success": true}` — there is
+ * no `payload`/`content`/`data` key and no cart-level totals object: Loom returns
+ * the `CartItem` JPA rows and nothing else, so every total is client-derived.
+ */
+export interface LegacyCartProductDto {
+  id?: number;
+  name?: string;
+  slug?: string;
+  sku?: string;
+  price?: number;
+  unit?: string;
+  quantity?: number;
+  totalQuantity?: number;
+  heroImage?: string;
 }
 
-export interface LegacyCartResponseDto {
-  cartId?: string;
-  items?: LegacyCartItemDto[];
-  totalCartValue?: number;
-  discountAmount?: number;
-  deliveryCharge?: number;
+/** A `FabricPreview` / `FinishedPreview` row. Its `id` is what `/add/cart-item` takes. */
+export interface LegacyCartPreviewDto {
+  id?: number;
+  gsm?: number;
+  product?: LegacyCartProductDto;
+}
+
+export interface LegacyCartItemDto {
+  id?: number;
+  quantity?: number;
+  unit?: string;
+  orderType?: string;
+  productGroup?: string;
+  /** Loom persists no unit price on the cart row; this is the only price-ish field. */
+  makingCharge?: number;
+  selectedFinishId?: string;
+  fabricProductPreview?: LegacyCartPreviewDto | null;
+  finishedProductPreview?: LegacyCartPreviewDto | null;
+}
+
+export interface LegacyCartListResponse {
+  cartItemList?: LegacyCartItemDto[];
+  success?: boolean;
+  message?: string;
 }
 
 export interface LegacySpringResponse<T> {

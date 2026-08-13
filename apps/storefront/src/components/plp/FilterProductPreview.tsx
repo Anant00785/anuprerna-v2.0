@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { PLPProduct } from "@/types/domain/plp";
 import { useCurrencyStore } from "@/stores/currency.store";
+import { useAuthStore } from "@/stores/auth.store";
 
 interface FilterProductPreviewProps {
   product: PLPProduct;
@@ -17,6 +18,13 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [inWishlist, setInWishlist] = useState(Boolean(product.inWishlist));
+
+  // Gated on `hydrated` for the same reason as the header: the auth store is
+  // persist-backed and is empty on the server and first client render.
+  const storeLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const isLoggedIn = hydrated && storeLoggedIn;
 
   const { selectedCurrency, convertPrice } = useCurrencyStore();
   const currencyCode = selectedCurrency.toUpperCase();
@@ -113,14 +121,18 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 
       {/* Card Action Buttons */}
       <div className="px-3 pb-3 w-full flex items-stretch gap-2 mt-auto">
+        {/* This prompted every visitor to log in, signed in or not — it had no
+            auth check at all. Signed-in customers get the enquiry action instead. */}
         <Link
-          href="/auth"
+          href={isLoggedIn ? productUrl : "/auth"}
           className="w-full bg-[#fffcf7] rounded md:rounded-lg border-2 border-[#8E7862] text-[#7D5B20] py-1.5 px-2 hover:border-[#6c5b48] hover:bg-[#fbf4e8] transition-colors flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold"
         >
           <span className="material-symbols-outlined text-[18px]">
             account_circle
           </span>
-          <span className="text-[11px] sm:text-xs text-center">Login to get bulk price</span>
+          <span className="text-[11px] sm:text-xs text-center">
+            {isLoggedIn ? "Enquire for bulk price" : "Login to get bulk price"}
+          </span>
         </Link>
 
         <button

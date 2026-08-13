@@ -10,7 +10,10 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
       <main className="flex-1 w-full max-w-[1350px] mx-auto px-4 py-6 md:py-10">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           <div className="w-full lg:w-[20%] flex-shrink-0">
-            <ProfileSidebar userName="Ananya Sharma" showWholesaleProgram={true} />
+            {/* No userName prop: the sidebar reads the signed-in tenant itself.
+                Passing a literal name here is what put "Ananya Sharma" beside
+                every customer's own orders. */}
+            <ProfileSidebar showWholesaleProgram={true} />
           </div>
           <div className="w-full lg:w-[80%] min-h-[400px]">
             {children}

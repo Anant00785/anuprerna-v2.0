@@ -45,7 +45,7 @@ what was wrong and where, since the history is useful.
 |---|---|---|
 | 1 | Delivery overcharge on free shipping — `dto.deliveryCharge \|\| (subtotal > 2000 ? 0 : 150)` treated an explicit `0` as falsy | `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.ts` |
 | 2 | Out-of-stock shown as in stock — `dto?.availableQuantity ? ... > 0 : true` | `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.ts` |
-| 3 | Profile repository returned the raw envelope instead of unwrapping it | `apps/storefront/src/lib/api/repositories/profile.repository.ts` |
+| 3 | Profile repository returned the raw envelope instead of unwrapping it | `apps/storefront/src/lib/api/repositories/profile.repository.ts` — **partially: this covered `getAddressList`/`getOrderList` only. `getCustomerProfile` was still reading the raw body and was fixed in the auth pass below** |
 | 4 | Free items (`unitPrice`/`totalPrice: 0`) got repriced by the same falsy-zero class of bug | storefront cart/catalog adapters |
 | 5 | CMS reported a failed settings save as successful | `apps/cms/src/services/settings-service.ts` |
 | 6 | CMS fabricated data on backend failure, including `createShipment` returning a fake success | `apps/cms/src/services/settings-service.ts`, `logistic-service.ts` |
@@ -153,6 +153,23 @@ otherwise, exercises the Google token-exchange flow end to end.
 | Status | Open — flagged, not yet worked |
 |---|---|
 | Redo when | Someone builds a way to test the OAuth flow against real or sandboxed Google credentials |
+
+**Update 2026-08-12.** The storefront's Google path was not merely unverified, it was
+structurally incapable of working, and has now been rebuilt. It used `@react-oauth/google` and
+posted a Google **access token** to `/authenticate/social` under the literal username
+`"google_user"`. Loom's `NverseAuthenticationController` calls
+`Auth0Service.validateToken(token, username)` — it wants the raw **Auth0 ID token** and the
+tenant's real email, exactly as fabric sends via `@auth0/auth0-angular`. No Google-issued token
+can ever satisfy that check, and no such tenant as `google_user` exists.
+`AuthContainer` now brokers through `@auth0/auth0-react`
+(`loginWithPopup({connection: 'google-oauth2'})` → `getIdTokenClaims().__raw`), verifies the
+tenant, registers it if new, then authenticates — fabric's flow.
+
+The gap this section describes is *narrowed, not closed*: the code is now the right shape, but
+still unexercised against a real Google account. The remaining prerequisite is environmental —
+the serving origin (`http://localhost:4200` for local dev) must be listed in the Auth0
+application's **Allowed Web Origins** and **Allowed Callback URLs**. Until someone confirms that,
+the popup will fail at Auth0 before it ever reaches Loom.
 
 ## Email encryption is deliberately a dummy
 
@@ -303,3 +320,35 @@ The only reference to `@anuprerna/config` anywhere is inside its own `eslint.bas
 No `package.json` depends on it; `apps/api/eslint.config.mjs` hand-mirrors its content instead of
 importing it. Still a candidate for deletion.
 
+
+## Storefront authentication: four defects, all verified against live Loom and fixed (2026-08-12)
+
+The reported symptom was "I can't log in locally, they changed a header". The header change was
+real but is **not** the cause: `X-Loom-Table-Explorer-Token` and
+`X-Loom-Tenant-Decrypt-Fingerprint` were already handled by
+`apps/storefront/src/app/api/backend/[...path]/route.ts`, the rotated token is already in
+`.env.local`, and none of `/check-email/tenant`, `/authenticate/email` or `/customer/registration/*`
+require the table-explorer token at all — verified by calling them with and without it.
+
+The real causes were four independent contract mismatches between the storefront and Loom, each
+confirmed by probing `https://loom-v2.anuprerna.com` through the local proxy, not by reading:
+
+| # | Defect | Evidence | Fix |
+|---|---|---|---|
+| 1 | `checkEmailTenant` read `registered` off the top level | Loom returns `{"entity":{"registered":true,"emailVerified":false},"success":true}` (`RainTree.postEntityCustomResponseUnauthorized`) | Unwrap `entity`. This was the login-blocker: `registered` was always `undefined`, so **every existing customer was routed to the signup form instead of the password form** |
+| 2 | `registerCustomer` POSTed a flat body to `/customer/registration` | That path 404s — Loom only maps `/customer/registration/email`. A flat body there returns 406 "A minion wasn't in the right place at the right time. [NPX]" because the controller binds a `Customer` whose tenant fields sit under `tenant` | Correct path, `{tenant:{name,email,password,emailVerified,provider,gender}}`, matching fabric's `_mapRegisterData`. Loom stores one `name`, not first/last |
+| 3 | Registration expected a JWT back and auto-logged the user in | The endpoint returns a RainTree ack (`{success,message}`) only; the customer must verify their email and then log in | Show the verify-your-email panel; do not fabricate a session |
+| 4 | `getCustomerProfile` read profile fields off the top level | Loom returns `{success,message,customer:{tenant:{uid,name,email,contactNumber,…}}}` | Flatten `customer.tenant`; split `name` into first/last. Previously the store held an all-`undefined` user after a *successful* login |
+
+Google is covered in "The Google OAuth path has never been verified" above — it was rebuilt onto
+Auth0 in the same pass, and its one remaining prerequisite is an Auth0 dashboard setting, not code.
+
+**Verification.** Registered, checked, authenticated and fetched the profile for a throwaway
+tenant end-to-end through `http://localhost:4200/api/backend` against live Loom, plus 164/164
+storefront unit tests and a clean `tsc --noEmit`. The repository tests previously *encoded* the
+wrong shapes — their MSW handlers asserted the invented envelopes rather than Loom's real ones,
+so they passed while production was broken. They now assert the observed responses.
+
+**Two throwaway tenants were created in the live Loom database during this verification:**
+`probe-x1@example.com` and `probe-x2@example.com` (password `Passw0rd!23`, unverified email,
+`BASIC` provider). Delete them when convenient.

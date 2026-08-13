@@ -4,17 +4,39 @@ import { profileRepository } from "./profile.repository";
 import { useHandlers, PROXY_BASE, envelope } from "@/test/msw";
 
 describe("profileRepository.getCustomerProfile", () => {
-  it("attaches an explicit Authorization header when a JWT is passed in", async () => {
+  // Loom answers `{success, message, customer: {tenant: {...}}}`; the fields were
+  // previously read off the top level, so the store held an all-undefined user.
+  const loomProfile = {
+    success: true,
+    message: "",
+    customer: {
+      wishlist: "",
+      tenant: {
+        uid: "ZF28OU6021",
+        name: "Ada Lovelace",
+        email: "ada@test.com",
+        contactNumber: "9999999999",
+        gender: "UNDEFINED",
+        dob: 0,
+      },
+    },
+  };
+
+  it("attaches an explicit Authorization header and flattens the nested tenant", async () => {
     let auth: string | null = null;
     useHandlers(
       http.get(`${PROXY_BASE}/get/customer/profile`, ({ request }) => {
         auth = request.headers.get("authorization");
-        return HttpResponse.json({ id: 1, firstName: "A" });
+        return HttpResponse.json(loomProfile);
       })
     );
     const profile = await profileRepository.getCustomerProfile("tok123");
     expect(auth).toBe("Bearer tok123");
-    expect(profile.firstName).toBe("A");
+    expect(profile.id).toBe("ZF28OU6021");
+    expect(profile.email).toBe("ada@test.com");
+    expect(profile.firstName).toBe("Ada");
+    expect(profile.lastName).toBe("Lovelace");
+    expect(profile.phone).toBe("9999999999");
   });
 
   it("sends no Authorization header when no JWT is supplied", async () => {
@@ -22,7 +44,7 @@ describe("profileRepository.getCustomerProfile", () => {
     useHandlers(
       http.get(`${PROXY_BASE}/get/customer/profile`, ({ request }) => {
         auth = request.headers.get("authorization");
-        return HttpResponse.json({ id: 1 });
+        return HttpResponse.json(loomProfile);
       })
     );
     await profileRepository.getCustomerProfile();
@@ -61,7 +83,19 @@ describe("profileRepository.getAddressList", () => {
 describe("profileRepository.addAddress", () => {
   it("POSTs the address body to add/address and returns the response", async () => {
     let capturedBody: unknown;
-    const address = { name: "A", city: "Kolkata", pincode: "700001" };
+    // Loom's real field names — the old fixture used `pincode`, which Loom does
+    // not bind, so this test passed while a live save silently did nothing.
+    const address = {
+      name: "A",
+      addressLineOne: "12 Loom Street",
+      postalCode: "700001",
+      city: "Kolkata",
+      state: "West Bengal",
+      country: "India",
+      primaryPhone: "9999999999",
+      contactEmail: "a@test.com",
+      addressType: "SHIPPING",
+    };
     useHandlers(
       http.post(`${PROXY_BASE}/add/address`, async ({ request }) => {
         capturedBody = await request.json();

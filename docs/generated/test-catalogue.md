@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**593 tests across 82 files.**
+**612 tests across 83 files.**
 
 - `apps/api` — 52 files, 335 tests
 - `apps/cms` — 15 files, 93 tests
-- `apps/storefront` — 14 files, 163 tests
+- `apps/storefront` — 15 files, 182 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -580,15 +580,15 @@
 ## apps/storefront
 
 ### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 9
-- maps a full cart item, deriving the product from productDetails
-- builds a placeholder product when productDetails is missing
-- defaults qty to 1 and derives totalPrice from unitPrice * quantity when totalPrice is absent
-- falls back to a random string id when both cartItemId and productId are missing
-- treats an explicit unitPrice/totalPrice of 0 (a free item) as real, not absent
-- aggregates item count and totals from the item list
-- returns an empty cart shape for an empty/missing items list
-- applies free shipping over 2000 subtotal, else a flat 150 charge, when deliveryCharge is absent
-- map a representative legacy and nest cart to the same domain shape
+- maps a fabric row, deriving the product from fabricProductPreview.product
+- exposes the PREVIEW id as productId, since that is what /add/cart-item binds to
+- recomputes the unit price from the preview product plus makingCharge, as Loom stores no price
+- falls back to finishedProductPreview when the row is a finished product
+- degrades to a placeholder product when neither preview is present
+- aggregates count and subtotal across the cartItemList
+- charges nothing on an empty cart rather than the flat shipping rate
+- defaults to an empty cart when called with no argument
+- applies flat 150 shipping under the 2000 threshold and free shipping over it
 
 ### `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.test.ts` — 16
 - returns the placeholder for a missing/empty path
@@ -635,22 +635,33 @@
 - throws an Error including the status and URL when the response is not OK
 - does not validate the response shape — a mismatched payload is returned as-is (cast, not parse)
 
-### `apps/storefront/src/lib/api/repositories/auth.repository.test.ts` — 7
+### `apps/storefront/src/lib/api/repositories/auth.repository.test.ts` — 11
 - POSTs credentials to authenticate/email and returns the JWT
 - throws on a 401 (bad credentials) rather than swallowing it
 - throws on a 500 error envelope
-- POSTs to check-email/tenant and returns the tenant status
+- unwraps the {entity} envelope Loom actually returns
 - swallows a failing request and falls back to { registered: false } instead of throwing
-- POSTs the full registration payload to customer/registration
+- reports a Google account as invalid for BASIC and names the real provider
+- reports a password account as valid
+- fails open to the password form rather than stranding the user on a network error
+- POSTs a tenant-wrapped payload to customer/registration/email
+- wraps the Auth0 ID token as the tenant password under 
 - POSTs the email and returns the success confirmation
 
-### `apps/storefront/src/lib/api/repositories/cart.repository.test.ts` — 6
-- fetches /get/cart-item/list and maps the payload envelope to a domain Cart
+### `apps/storefront/src/lib/api/repositories/cart.repository.test.ts` — 13
+- reads Loom
+- returns an empty cart — not a crash — when Loom sends the old payload key
 - swallows a fetch failure and returns an empty cart rather than throwing
 - also swallows a 401 the same way — getCart never surfaces auth failure to the caller
 - fetches /v1/cart and maps the NestApiResponse envelope to a domain Cart
-- POSTs productId/quantity to /add/cart-item and returns the updated cart
+- POSTs the flat Loom CartItem entity to /add/cart-item
+- omits zero/absent foreign keys rather than sending 0, which Loom cannot join
+- throws on Loom
 - propagates a server error instead of swallowing it, unlike getCart
+- PATCHes the whole row back with the new quantity, rebuilt from item.source
+- throws on Loom
+- DELETEs /delete/cart-item/{cartItemId} using the cart row id
+- throws on Loom
 
 ### `apps/storefront/src/lib/api/repositories/catalog.repository.test.ts` — 8
 - fetches /get/navigation and maps the payload envelope to HeaderNavigation
@@ -672,7 +683,7 @@
 - returns an empty array on a non-OK response instead of throwing
 
 ### `apps/storefront/src/lib/api/repositories/profile.repository.test.ts` — 8
-- attaches an explicit Authorization header when a JWT is passed in
+- attaches an explicit Authorization header and flattens the nested tenant
 - sends no Authorization header when no JWT is supplied
 - throws on a 401 rather than swallowing it (no try/catch in this repository)
 - unwraps the legacy {success,message,addressList} envelope into an Address[]
@@ -717,6 +728,16 @@
 - emits a sub chip for an active sub-category option
 - resets active options, sub-options, and range bounds back to defaults
 
+### `apps/storefront/src/lib/profile/adapters.test.ts` — 8
+- maps Loom
+- keeps a zero total instead of falling back (the falsy-zero bug class)
+- does not invent a status for an unknown value
+- reads 
+- yields empty collections rather than throwing when they are absent
+- returns null membership when the customer is not enrolled
+- maps the live loyaltyProgramInfo aggregates
+- zeroes the aggregates instead of inventing them when absent
+
 ### `apps/storefront/src/stores/auth.store.test.ts` — 9
 - should initialize with unauthenticated state
 - should set token and mark logged in
@@ -729,11 +750,11 @@
 - the jwt_token cookie carries no Secure or HttpOnly flag (documents a known gap, not desired behaviour)
 
 ### `apps/storefront/src/stores/cart.store.test.ts` — 5
-- adds and removes items
-- appends rather than merges when the same productId is added twice
-- remove() is a no-op when the productId is not in the cart
-- clear() empties the cart regardless of item count
-- persists items to localStorage under the anuprerna-cart key
+- starts empty so the header badge renders 0 on the server and first client render
+- refresh() loads the cart out of Loom
+- refresh() yields an empty cart (not a throw) when the backend fails
+- open()/close() drive the side tab
+- does NOT persist to localStorage — the cart belongs to the bearer token, not the browser
 
 ### `apps/storefront/src/stores/currency.store.test.ts` — 33
 - defaults to inr when nothing is stored

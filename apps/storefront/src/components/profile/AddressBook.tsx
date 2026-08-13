@@ -17,39 +17,16 @@ export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'SHIPPING' | 'BILLING'>('SHIPPING');
   const [editingAddress, setEditingAddress] = useState<AddressItem | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
+  // The page owns the fetch now. This component used to fetch again and re-map the
+  // result through invented field names — `addressLine1`, `pincode`, `phone`,
+  // `isDefault`, `type` — none of which Loom sends, so every live address rendered
+  // blank and then silently fell back to the mock list. Loom's payload already
+  // matches `AddressItem` exactly, so no mapping is needed at all.
   useEffect(() => {
-    async function loadLiveAddresses() {
-      setLoading(true);
-      try {
-        const liveList = await profileRepository.getAddressList(jwt || undefined);
-        if (Array.isArray(liveList) && liveList.length > 0) {
-          const mapped: AddressItem[] = liveList.map((item, idx) => ({
-            id: Number(item.id) || idx + 1,
-            name: item.name || "Default Contact",
-            addressType: (item.type?.toUpperCase() === 'BILLING' ? 'BILLING' : 'SHIPPING') as 'SHIPPING' | 'BILLING',
-            addressLineOne: item.addressLine1 || "",
-            addressLineTwo: item.addressLine2 || "",
-            city: item.city || "",
-            state: item.state || "",
-            country: item.country || "India",
-            postalCode: item.pincode || item.postalCode || "",
-            primaryPhone: item.phone || "",
-            contactEmail: "",
-            primaryShippingAddress: Boolean(item.isDefault && item.type !== 'BILLING'),
-            primaryBillingAddress: Boolean(item.isDefault && item.type === 'BILLING'),
-          }));
-          setAddresses(mapped);
-        }
-      } catch (err) {
-        // Fall back to initial addresses if backend endpoint returns empty/error
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadLiveAddresses();
-  }, [jwt]);
+    setAddresses(initialAddresses);
+  }, [initialAddresses]);
 
   const shippingAddresses = addresses.filter((a) => a.addressType === 'SHIPPING');
   const billingAddresses = addresses.filter((a) => a.addressType === 'BILLING');
@@ -69,7 +46,13 @@ export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] 
   const handleDelete = async (id: number) => {
     try {
       await profileRepository.deleteAddress(id, jwt || undefined);
-    } catch {}
+      setSaveError(null);
+    } catch (err: any) {
+      // Previously `catch {}` then removed it from the list anyway, so a failed
+      // delete looked successful until the customer reloaded and it reappeared.
+      setSaveError(err?.message || 'Could not delete this address. Please try again.');
+      return;
+    }
     setAddresses((prev) => prev.filter((a) => a.id !== id));
   };
 
@@ -89,26 +72,42 @@ export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] 
   };
 
   const handleSaveAddress = async (savedAddr: AddressItem) => {
-    try {
-      const payload = {
-        id: savedAddr.id,
-        name: savedAddr.name,
-        phone: savedAddr.primaryPhone,
-        addressLine1: savedAddr.addressLineOne,
-        addressLine2: savedAddr.addressLineTwo,
-        city: savedAddr.city,
-        state: savedAddr.state,
-        pincode: savedAddr.postalCode,
-        country: savedAddr.country,
-        type: savedAddr.addressType,
-      };
+    // Loom's own field names. This used to send `phone`/`addressLine1`/`pincode`/
+    // `type`, which Loom does not bind — so the save silently did nothing while the
+    // local list updated as though it had worked.
+    const payload = {
+      ...(savedAddr.id ? { id: savedAddr.id } : {}),
+      name: savedAddr.name,
+      addressLineOne: savedAddr.addressLineOne,
+      addressLineTwo: savedAddr.addressLineTwo,
+      city: savedAddr.city,
+      state: savedAddr.state,
+      postalCode: savedAddr.postalCode,
+      country: savedAddr.country,
+      companyName: savedAddr.companyName,
+      primaryPhone: savedAddr.primaryPhone,
+      secondaryPhone: savedAddr.secondaryPhone,
+      contactEmail: savedAddr.contactEmail,
+      vatgstNumber: savedAddr.vatgstNumber,
+      eoriNumber: savedAddr.eoriNumber,
+      addressType: savedAddr.addressType,
+      primaryShippingAddress: Boolean(savedAddr.primaryShippingAddress),
+      primaryBillingAddress: Boolean(savedAddr.primaryBillingAddress),
+    };
 
+    try {
       if (editingAddress) {
         await profileRepository.updateAddress(payload, jwt || undefined);
       } else {
         await profileRepository.addAddress(payload, jwt || undefined);
       }
-    } catch {}
+      setSaveError(null);
+    } catch (err: any) {
+      // Do not update the list on failure — that is what made a failed save look
+      // like a successful one until the next reload.
+      setSaveError(err?.message || 'Could not save this address. Please try again.');
+      return;
+    }
 
     setAddresses((prev) => {
       const exists = prev.some((a) => a.id === savedAddr.id);
@@ -130,6 +129,12 @@ export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] 
   return (
     <div className="w-full">
       <h3 className="text-2xl font-bold text-gray-900 mb-6">Address</h3>
+
+      {saveError && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700 break-words">
+          {saveError}
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-4 animate-pulse">

@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
+import { env } from "@/env";
 import { AuthMethods } from "./AuthMethods";
 import { AuthEmailForm } from "./AuthEmailForm";
 import { AuthLoginForm } from "./AuthLoginForm";
@@ -15,7 +16,7 @@ import { useAuthStore } from "@/stores/auth.store";
 
 type AuthStep = "CHOICE" | "EMAIL" | "LOGIN" | "REGISTER" | "FORGOT_PASSWORD";
 
-export const AuthContainer: React.FC = () => {
+const AuthFlow: React.FC = () => {
   const [step, setStep] = useState<AuthStep>("CHOICE");
   const [email, setEmail] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -26,56 +27,75 @@ export const AuthContainer: React.FC = () => {
   const returnUrl = searchParams.get("returnUrl") || "/profile/dashboard";
 
   const { setToken, setUser } = useAuthStore();
+  const { loginWithPopup, getIdTokenClaims, user: auth0User } = useAuth0();
 
   const handleAuthComplete = () => {
     router.push(returnUrl);
   };
 
-  const handleGoogleSuccess = async (tokenResponse: any) => {
+  /**
+   * Loom's `/authenticate/social` calls `Auth0Service.validateToken(token, username)`:
+   * it needs the raw Auth0 **ID token** and the tenant's real email as username.
+   * The previous implementation sent a Google OAuth access token with the literal
+   * username "google_user", which can never validate. Mirrors fabric's flow:
+   * verify the tenant, register it if new, then authenticate.
+   */
+  const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     setGoogleError(null);
 
-    const credential = tokenResponse?.access_token || tokenResponse?.credential;
-    if (!credential) {
-      setGoogleLoading(false);
-      setGoogleError("Unable to retrieve Google credentials.");
-      return;
-    }
-
     try {
-      let res;
-      try {
-        res = await authRepository.loginSocial("google_user", credential, "GOOGLE");
-      } catch (err: any) {
-        if (err?.message?.includes("401")) {
-          res = await authRepository.registerSocial("google_user@anuprerna.com", credential, "GOOGLE");
-        } else {
-          throw err;
-        }
+      await loginWithPopup({
+        authorizationParams: { connection: "google-oauth2", prompt: "login" },
+      });
+
+      const claims = await getIdTokenClaims();
+      const idToken = claims?.__raw;
+      const googleEmail = (claims?.email ?? auth0User?.email ?? "").trim().toLowerCase();
+
+      if (!idToken || !googleEmail) {
+        setGoogleError("Google sign in did not return a verified email address.");
+        return;
       }
 
-      if (res && res.jwt) {
-        setToken(res.jwt);
-        try {
-          const profile = await profileRepository.getCustomerProfile(res.jwt);
-          setUser(profile);
-        } catch {
-          setUser({ email: "google_user@anuprerna.com" });
-        }
-        setGoogleLoading(false);
-        handleAuthComplete();
-      } else {
-        setGoogleLoading(false);
-        setGoogleError("Google login succeeded, but no JWT token was returned.");
+      const status = await authRepository.checkEmailTenant(googleEmail);
+      if (!status.registered) {
+        await authRepository.registerSocial(googleEmail, idToken, "GOOGLE");
       }
+
+      const res = await authRepository.loginSocial(googleEmail, idToken, "GOOGLE");
+      if (!res?.jwt) {
+        setGoogleError("Google login succeeded, but no JWT token was returned.");
+        return;
+      }
+
+      setToken(res.jwt);
+      try {
+        setUser(await profileRepository.getCustomerProfile(res.jwt));
+      } catch {
+        setUser({ email: googleEmail });
+      }
+      handleAuthComplete();
     } catch (err: any) {
+      const raw = err?.message || "Google authentication failed.";
+      // A bare "Failed to fetch" from auth0-spa-js means the browser blocked the
+      // call to the Auth0 token endpoint — almost always because this origin is
+      // not in the Auth0 application's Allowed Web Origins. Say so, rather than
+      // leaving a two-word message that reads like a backend outage.
+      setGoogleError(
+        /failed to fetch/i.test(raw)
+          ? `Could not reach Auth0 (${raw}). This origin (${
+              typeof window === "undefined" ? "" : window.location.origin
+            }) is probably missing from the Auth0 application's Allowed Web Origins and Allowed Callback URLs.`
+          : raw
+      );
+    } finally {
       setGoogleLoading(false);
-      setGoogleError(err?.message || "Google authentication failed.");
     }
   };
 
   return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "dummy-google-client-id"}>
+    <>
       <section className="fb-login w-full flex justify-center items-center min-h-[90vh] bg-[#fffcf7]">
         <div className="w-full max-w-[956px] min-h-[67vh] bg-white rounded-2xl p-3 md:p-6 m-3 drop-shadow-xl flex flex-col md:flex-row justify-between items-stretch gap-3">
           
@@ -87,9 +107,12 @@ export const AuthContainer: React.FC = () => {
                 <p className="text-sm font-medium text-gray-700">Verifying Google Sign In...</p>
               </div>
             ) : (
-              <div className="w-full flex justify-center items-center">
+              // flex-col, not flex-row: as a row sibling the error banner was
+              // squeezed into a ~one-word column beside the form, which is how a
+              // full Auth0 message rendered as just "Failed to fetch".
+              <div className="w-full flex flex-col justify-center items-center">
                 {googleError && (
-                  <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200 w-full">
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200 w-full break-words">
                     {googleError}
                   </div>
                 )}
@@ -97,10 +120,12 @@ export const AuthContainer: React.FC = () => {
                 {step === "CHOICE" && (
                   <AuthMethods
                     onSelectMethod={(method) => {
+                      // Clear a stale Google error; it used to persist across every
+                      // later step and read as though the email login had failed.
+                      setGoogleError(null);
                       if (method === "BASIC") setStep("EMAIL");
                     }}
-                    onGoogleSuccess={handleGoogleSuccess}
-                    onGoogleError={() => setGoogleError("Google sign in failed.")}
+                    onGoogleSignIn={handleGoogleSignIn}
                   />
                 )}
 
@@ -108,12 +133,28 @@ export const AuthContainer: React.FC = () => {
                   <AuthEmailForm
                     email={email}
                     setEmail={setEmail}
-                    onSuccess={(isRegistered) => {
-                      if (isRegistered) {
-                        setStep("LOGIN");
-                      } else {
+                    onSuccess={async (isRegistered, checkedEmail) => {
+                      if (!isRegistered) {
                         setStep("REGISTER");
+                        return;
                       }
+                      // A registered account is not necessarily a password
+                      // account. Ask Loom which provider owns it before offering
+                      // a password box that could only ever 401.
+                      const { valid, actualProvider } =
+                        await authRepository.validateProvider(checkedEmail);
+                      if (valid) {
+                        setStep("LOGIN");
+                        return;
+                      }
+                      setStep("CHOICE");
+                      setGoogleError(
+                        actualProvider === "GOOGLE"
+                          ? "This account was created with Google. Use “Continue with Google” to sign in."
+                          : actualProvider === "FACEBOOK"
+                            ? "This account was created with Facebook, which this storefront does not support yet."
+                            : "This account cannot be signed into with a password. Try another sign-in option."
+                      );
                     }}
                     onBack={() => setStep("CHOICE")}
                   />
@@ -131,7 +172,6 @@ export const AuthContainer: React.FC = () => {
                 {step === "REGISTER" && (
                   <AuthRegisterForm
                     email={email}
-                    onSuccessRegister={handleAuthComplete}
                     onBack={() => setStep("EMAIL")}
                   />
                 )}
@@ -161,6 +201,18 @@ export const AuthContainer: React.FC = () => {
 
         </div>
       </section>
-    </GoogleOAuthProvider>
+    </>
   );
 };
+
+export const AuthContainer: React.FC = () => (
+  <Auth0Provider
+    domain={env.NEXT_PUBLIC_AUTH0_DOMAIN}
+    clientId={env.NEXT_PUBLIC_AUTH0_CLIENT_ID}
+    authorizationParams={{
+      redirect_uri: typeof window === "undefined" ? undefined : window.location.origin,
+    }}
+  >
+    <AuthFlow />
+  </Auth0Provider>
+);

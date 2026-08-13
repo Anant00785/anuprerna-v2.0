@@ -7,7 +7,9 @@ import { authRepository } from "@/lib/api/repositories/auth.repository";
 interface AuthEmailFormProps {
   email: string;
   setEmail: (email: string) => void;
-  onSuccess: (isRegistered: boolean) => void;
+  // `email` is passed explicitly: `setEmail` above has not flushed into the
+  // parent's state yet when this fires, so the parent's own `email` is stale here.
+  onSuccess: (isRegistered: boolean, email: string) => void | Promise<void>;
   onBack: () => void;
 }
 
@@ -34,7 +36,8 @@ export const AuthEmailForm: React.FC<AuthEmailFormProps> = ({
     try {
       const res = await authRepository.checkEmailTenant(cleanEmail);
       setEmail(cleanEmail);
-      onSuccess(res.registered);
+      // Awaited so the spinner also covers the provider lookup the container does.
+      await onSuccess(res.registered, cleanEmail);
     } catch (err: any) {
       setError(err?.message || "Failed to verify email. Please try again.");
     } finally {

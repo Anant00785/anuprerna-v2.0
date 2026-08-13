@@ -15,7 +15,7 @@ export const WholesaleProgramView: React.FC<WholesaleProgramViewProps> = ({
   membershipInfo,
   orderInfo,
   orders,
-  tenantName = 'Ananya Sharma',
+  tenantName = '',
 }) => {
   const formatDate = (epochMS: number) => {
     return new Date(epochMS).toLocaleDateString('en-US', {
