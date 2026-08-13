@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 /**
  * migrated/order/controller/order-feedback.controller.ts
  */
@@ -9,6 +9,7 @@ import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 
 @ApiBearerAuth()
+@ApiTags("Order")
 @Controller()
 @UseGuards(RolesGuard)
 export class OrderFeedbackController {

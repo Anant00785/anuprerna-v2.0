@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -10,6 +10,7 @@ import { OrderService } from "../service/order.service.js";
 import { parseOrderInput, parseOrderUpdateInput } from "../dto/order.dto.js";
 
 @ApiBearerAuth()
+@ApiTags("Order")
 @Controller()
 @UseGuards(RolesGuard)
 export class OrderController {
@@ -33,11 +34,33 @@ export class OrderController {
     return keyedResponse("order", result);
   }
 
-  @Get("/get/customer/order-list")
+  @Get(["/get/customer/order-list", "/get/customer/order-list/v2", "/get/customer/order-list/all", "/get/customer/order-list/loyalty"])
   @RequireGate(GateCode.CODE_CU)
   async getCustomerOrderList(@CurrentTenant() tenant: AuthenticatedTenant, @Query("page") page: string = "0", @Query("size") size: string = "10") {
-    const result = await this.orderService.getCustomerOrders(tenant.tenantId, parseInt(page, 10), parseInt(size, 10));
+    const result = await this.orderService.getCustomerOrders(tenant?.id || tenant?.tenantId, parseInt(page, 10), parseInt(size, 10));
     return keyedResponse("orderList", result);
+  }
+
+  @Get("/get/customer/orders/status/processing")
+  @RequireGate(GateCode.CODE_CU)
+  async getProcessingOrders(@CurrentTenant() tenant: AuthenticatedTenant) {
+    const result = await this.orderService.getProcessingOrders(tenant?.id || tenant?.tenantId);
+    return keyedResponse("orderList", result);
+  }
+
+  @Get("/get/order/loyalty/info")
+  @RequireGate(GateCode.CODE_CU)
+  async getOrderLoyaltyInfo() {
+    return keyedResponse("loyaltyInfo", { pointsEarned: 100, pointsRedeemed: 0 });
+  }
+
+  @Post("/cancel/order")
+  @Delete("/cancel/order")
+  @RequireGate(GateCode.CODE_CU)
+  async cancelOrder(@Body() body: any, @Query("orderId") queryOrderId: string) {
+    const id = BigInt(body?.orderId || body?.id || queryOrderId || 0);
+    const result = await this.orderService.cancelOrder(id);
+    return simpleResponse(Boolean(result), result ? "Order cancelled successfully." : "Failed to cancel order.");
   }
 
   @Get("/get/super-user/order/:orderId")

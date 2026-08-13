@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { ZohoAdapterService } from "./zoho_adapter.service.js";
 
-@ApiTags("zoho_adapter")
+@ApiTags("ZOHO Integration")
 @Controller()
 export class ZohoAdapterController {
   constructor(private readonly service: ZohoAdapterService) {}

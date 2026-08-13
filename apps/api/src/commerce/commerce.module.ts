@@ -1,15 +1,33 @@
-/**
- * apps/api/src/commerce/commerce.module.ts
- *
- * Root commerce module importing all LOOM-compatible domain feature modules.
- *
- * Deliberately does NOT import `RestApiControllers` from `./rest-api.module.js`.
- * That file holds ~50 auto-generated placeholder CRUD controllers that write
- * to nonexistent `commerce_*` blob tables and would shadow the real routes
- * registered below (see the header comment in `rest-api.module.ts` and
- * docs/KNOWN-GAPS.md). Verified 2026-08-12: it was never wired in to begin
- * with. Leave it unimported.
- */
+import { WishlistDomainController } from "./domain/wishlist.controller.js";
+import { FabricProductMigratedDomainController } from "./domain/fabric-product-migrated.controller.js";
+import { FinishedProductMigratedDomainController } from "./domain/finished-product-migrated.controller.js";
+import { CategoryMigratedDomainController } from "./domain/category-migrated.controller.js";
+import { ProductMigratedDomainController } from "./domain/product-migrated.controller.js";
+import { OrderMigratedDomainController } from "./domain/order-migrated.controller.js";
+import { CustomOrderMigratedDomainController } from "./domain/custom-order-migrated.controller.js";
+import { SubCategoryMigratedDomainController } from "./domain/sub-category-migrated.controller.js";
+import { CurrencyLocationDomainController } from "./domain/currency-location.controller.js";
+import { FilterMigratedDomainController } from "./domain/filter-migrated.controller.js";
+import { SegmentMigratedDomainController } from "./domain/segment-migrated.controller.js";
+import { AuthMigratedDomainController } from "./domain/auth-migrated.controller.js";
+import { PaymentMigratedDomainController } from "./domain/payment-migrated.controller.js";
+import { SuperUserDomainController } from "./domain/super-user.controller.js";
+import { CustomerDomainController } from "./domain/customer.controller.js";
+import { LoyaltyMigratedDomainController } from "./domain/loyalty-migrated.controller.js";
+import { NotificationsDomainController } from "./domain/notifications.controller.js";
+import { MiscMigratedDomainController } from "./domain/misc-migrated.controller.js";
+import { ProfilesDomainController } from "./domain/profiles.controller.js";
+import { DiscountMigratedDomainController } from "./domain/discount-migrated.controller.js";
+import { ArtisanMigratedDomainController } from "./domain/artisan-migrated.controller.js";
+import { CatalogMigratedDomainController } from "./domain/catalog-migrated.controller.js";
+import { WorkflowMigratedDomainController } from "./domain/workflow-migrated.controller.js";
+import { TableExplorerDomainController } from "./domain/table-explorer.controller.js";
+import { ContentAiMigratedDomainController } from "./domain/content-ai-migrated.controller.js";
+import { ImageOptimizationDomainController } from "./domain/image-optimization.controller.js";
+import { DiagnosticsDomainController } from "./domain/diagnostics.controller.js";
+import { ReportsDomainController } from "./domain/reports.controller.js";
+
+
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module.js";
 import { CartModule } from "./cart/cart.module.js";
@@ -42,7 +60,39 @@ import { ImpactModule } from "./impact/impact.module.js";
 import { AiModule } from "./ai/ai.module.js";
 
 @Module({
-  imports: [AuthModule, 
+  controllers: [
+    WishlistDomainController,
+    FabricProductMigratedDomainController,
+    FinishedProductMigratedDomainController,
+    CategoryMigratedDomainController,
+    ProductMigratedDomainController,
+    OrderMigratedDomainController,
+    CustomOrderMigratedDomainController,
+    SubCategoryMigratedDomainController,
+    CurrencyLocationDomainController,
+    FilterMigratedDomainController,
+    SegmentMigratedDomainController,
+    AuthMigratedDomainController,
+    PaymentMigratedDomainController,
+    SuperUserDomainController,
+    CustomerDomainController,
+    LoyaltyMigratedDomainController,
+    NotificationsDomainController,
+    MiscMigratedDomainController,
+    ProfilesDomainController,
+    DiscountMigratedDomainController,
+    ArtisanMigratedDomainController,
+    CatalogMigratedDomainController,
+    WorkflowMigratedDomainController,
+    TableExplorerDomainController,
+    ContentAiMigratedDomainController,
+    ImageOptimizationDomainController,
+    DiagnosticsDomainController,
+    ReportsDomainController,
+
+                                                                                                                ],
+  imports: [
+    AuthModule, 
     CartModule,
     ProductModule,
     CatalogModule,

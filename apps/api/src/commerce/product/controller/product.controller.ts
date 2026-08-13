@@ -121,7 +121,7 @@ export class ProductController {
   }
 
   /** ProductDAOController#retrieveProductGists() */
-  @Get("/get/product/gist/list")
+  @Get(["/get/product/gist/list", "/get/product-gist-list"])
   @ApiOperation({ summary: "List lightweight product gists (id/name/sku-style summary)." })
   @ApiResponse({ status: 200, description: "Full product gist list." })
   async getProductGists() {

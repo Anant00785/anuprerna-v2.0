@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { FaqService } from "./faq.service.js";
 
-@ApiTags("faq")
+@ApiTags("FAQ")
 @Controller()
 export class FaqController {
   constructor(private readonly service: FaqService) {}

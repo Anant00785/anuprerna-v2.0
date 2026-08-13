@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { MiscService } from "./misc.service.js";
 
-@ApiTags("misc")
+@ApiTags("Misc")
 @Controller()
 export class MiscController {
   constructor(private readonly service: MiscService) {}
@@ -14,6 +14,13 @@ export class MiscController {
     return this.service.getAll();
   }
 
+  @Post("send/contact-us")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Customer contact form submission" })
+  async sendContactUs(@Body() body: any) {
+    return { success: true, message: "Contact form submitted successfully" };
+  }
+
   @Post("create/misc")
   @HttpCode(200)
   @ApiOperation({ summary: "Create a misc record" })
@@ -22,4 +29,3 @@ export class MiscController {
     return this.service.create(body);
   }
 }
-

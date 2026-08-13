@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Delete, Param, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -7,30 +7,12 @@ import { simpleResponse, keyedResponse } from "../../../common/response/rain-res
 import { ZohoService } from "../service/zoho.service.js";
 
 @ApiBearerAuth()
+@ApiTags("ZOHO Integration")
 @Controller()
 @UseGuards(RolesGuard)
 export class ZohoController {
   constructor(private readonly zohoService: ZohoService) {}
 
-  @Post("/trigger/fabric-product/zoho-workflow")
-  @RequireGate(GateCode.CODE_SU)
-  async triggerFabricProductWorkflow(@Body() body: { productId?: number }) {
-    const success = await this.zohoService.triggerFabricProductWorkflow(body.productId ?? 0);
-    return simpleResponse(success, "Fabric product Zoho workflow triggered");
-  }
-
-  @Post("/trigger/finished-product/zoho-workflow")
-  @RequireGate(GateCode.CODE_SU)
-  async triggerFinishedProductWorkflow(@Body() body: { productId?: number }) {
-    const success = await this.zohoService.triggerFinishedProductWorkflow(body.productId ?? 0);
-    return simpleResponse(success, "Finished product Zoho workflow triggered");
-  }
-
-  @Delete("/delete/product-zoho-relation/:id")
-  @RequireGate(GateCode.CODE_SU)
-  async deleteProductZohoRelation(@Param("id") id: string) {
-    return simpleResponse(true, `Product Zoho relation ${id} deleted`);
-  }
 
   @Post("/zoho/sync/all-product")
   @RequireGate(GateCode.CODE_SU)

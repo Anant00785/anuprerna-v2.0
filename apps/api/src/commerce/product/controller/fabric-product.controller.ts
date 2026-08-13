@@ -108,7 +108,7 @@ export class FabricProductController {
   }
 
   /** FabricProductDAOController#retrieveFabricOverviews() */
-  @Get("/get/fabric-product/overview/list")
+  @Get(["/get/fabric-product/overview/list", "/get/fabric-overview-list"])
   @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List lightweight fabric product overviews." })
   @ApiResponse({ status: 200, description: "Full fabric overview list." })
@@ -118,7 +118,7 @@ export class FabricProductController {
   }
 
   /** FabricProductDAOController#retrieveFabricProductData(int page, int size) */
-  @Get("/get/table-explorer/data/fabric-product")
+  @Get(["/get/table-explorer/data/fabric-product", "/get/table-explorer/data/fabric-product-data"])
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of fabric products." })
   @ApiQuery({ name: "page", required: false, example: 0, description: "Page number (0-indexed)" })

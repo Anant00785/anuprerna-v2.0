@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { BehemothService } from "./behemoth.service.js";
 
-@ApiTags("behemoth")
+@ApiTags("Misc")
 @Controller()
 export class BehemothController {
   constructor(private readonly service: BehemothService) {}

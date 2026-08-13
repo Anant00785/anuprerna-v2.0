@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ProfileService } from '../service/profile.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -18,6 +18,7 @@ import {
 } from '../validators/profile.validator.js';
 
 @ApiBearerAuth()
+@ApiTags("Profiles")
 @Controller()
 @UseGuards(RolesGuard)
 export class MadeToOrderProfileController {

@@ -6,7 +6,7 @@ import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ArtisanPaymentService } from "../service/artisanpayment.service.js";
 
-@ApiTags("artisanpayment")
+@ApiTags("Artisan")
 @ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)

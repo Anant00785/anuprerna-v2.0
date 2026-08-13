@@ -75,6 +75,7 @@ async function bootstrap() {
   if (enableSwagger) {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup("docs", app, document, { jsonDocumentUrl: "docs-json" });
+    SwaggerModule.setup("swagger", app, document, { jsonDocumentUrl: "docs-json" });
   }
 
   await app.listen(appConfig.get("PORT", { infer: true }) ?? 3000);

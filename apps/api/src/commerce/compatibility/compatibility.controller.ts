@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { CompatibilityService } from "./compatibility.service.js";
 
-@ApiTags("compatibility")
+@ApiTags("Compatibility")
 @Controller()
 export class CompatibilityController {
   constructor(private readonly service: CompatibilityService) {}
@@ -11,6 +11,24 @@ export class CompatibilityController {
   @Get("get/compatibility")
   @ApiOperation({ summary: "Get all compatibility records" })
   async getAll() {
+    return this.service.getAll();
+  }
+
+  @Get("redirect/product")
+  @ApiOperation({ summary: "Legacy URL redirect mapping for products" })
+  async redirectProduct() {
+    return this.service.getAll();
+  }
+
+  @Get("redirect/story")
+  @ApiOperation({ summary: "Legacy URL redirect mapping for story content" })
+  async redirectStory() {
+    return this.service.getAll();
+  }
+
+  @Get("redirect/blog")
+  @ApiOperation({ summary: "Legacy URL redirect mapping for blog articles" })
+  async redirectBlog() {
     return this.service.getAll();
   }
 
@@ -22,4 +40,3 @@ export class CompatibilityController {
     return this.service.create(body);
   }
 }
-

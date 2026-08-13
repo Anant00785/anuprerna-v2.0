@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { WhatsappService } from "./whatsapp.service.js";
 
-@ApiTags("whatsapp")
+@ApiTags("Notifications")
 @Controller()
 export class WhatsappController {
   constructor(private readonly service: WhatsappService) {}

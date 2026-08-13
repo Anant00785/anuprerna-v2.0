@@ -6,7 +6,7 @@ import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ForexService } from "../service/forex.service.js";
 
-@ApiTags("forex")
+@ApiTags("Currency & Location")
 @ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)

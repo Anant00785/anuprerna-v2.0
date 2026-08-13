@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Patch, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { DiscountService } from "./discount.service.js";
 
-@ApiTags("discount")
+@ApiTags("Discount")
 @Controller()
 export class DiscountController {
   constructor(private readonly service: DiscountService) {}
@@ -11,6 +11,14 @@ export class DiscountController {
   @Get("get/discount")
   @ApiOperation({ summary: "Get all discount records" })
   async getAll() {
+    return this.service.getAll();
+  }
+
+  @Post("apply/voucher/discount")
+  @Patch("apply/voucher/discount")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Apply voucher coupon code to checkout cart" })
+  async applyVoucherDiscount(@Body() body: any) {
     return this.service.getAll();
   }
 
@@ -22,4 +30,3 @@ export class DiscountController {
     return this.service.create(body);
   }
 }
-

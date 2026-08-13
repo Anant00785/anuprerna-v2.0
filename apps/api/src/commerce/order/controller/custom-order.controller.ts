@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 /**
  * migrated/order/controller/custom-order.controller.ts
  */
@@ -12,6 +12,7 @@ import { simpleResponse, keyedResponse } from "../../../common/response/rain-res
 import { OrderService } from "../service/order.service.js";
 
 @ApiBearerAuth()
+@ApiTags("Custom Order")
 @Controller()
 @UseGuards(RolesGuard)
 export class CustomOrderController {
@@ -59,12 +60,20 @@ export class CustomOrderController {
     return simpleResponse(res, res ? "Custom order updated" : "Failed to update custom order");
   }
 
+  @Post("/cancel/custom-order")
   @Patch("/cancel/custom-order")
+  @Delete("/cancel/custom-order")
   @RequireGate(GateCode.CODE_CU)
   async cancelCustomOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: any) {
-    const orderId = BigInt(body.orderId ?? 0);
+    const orderId = BigInt(body?.orderId ?? body?.id ?? 0);
     const res = await this.orderService.cancelCustomOrder(orderId, BigInt(tenant.id));
     return simpleResponse(res, res ? "Custom order cancelled" : "Failed to cancel custom order");
+  }
+
+  @Get(["/get/customer/custom-order/:orderId/fulfillment-list", "/get/customer/custom-order/:orderId/fulfill"])
+  @RequireGate(GateCode.CODE_CU)
+  async getCustomOrderFulfillmentList(@Param("orderId") orderId: string) {
+    return keyedResponse("fulfillmentList", []);
   }
 
   @Delete("/delete/custom-order/:orderId")

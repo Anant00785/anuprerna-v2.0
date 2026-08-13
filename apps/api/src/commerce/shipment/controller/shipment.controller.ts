@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -8,6 +8,7 @@ import { ShipmentService } from "../service/shipment.service.js";
 import { parseShipmentInput } from "../dto/shipment.dto.js";
 
 @ApiBearerAuth()
+@ApiTags("Shipment")
 @Controller()
 @UseGuards(RolesGuard)
 export class ShipmentController {
