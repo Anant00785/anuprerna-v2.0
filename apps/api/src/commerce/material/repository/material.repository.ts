@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import * as schema from '../../../database/schema/schema.js';
 import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class MaterialRepository {
+  private readonly logger = new Logger(MaterialRepository.name);
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
   async findAll() {
@@ -13,7 +14,7 @@ export class MaterialRepository {
   }
 
   async findById(id: bigint) {
-    const result = await this.db.select().from(schema.material).where(eq(schema.material.id, id));
+    const result = await this.db.select().from(schema.material).where(eq(schema.material.id, BigInt(id)));
     return result[0];
   }
 
@@ -26,15 +27,20 @@ export class MaterialRepository {
   }
 
   async update(id: bigint, data: any) {
-    const result = await this.db.update(schema.material)
-      .set(data)
-      .where(eq(schema.material.id, id))
-      .returning();
-    return result[0];
+    try {
+      const result = await this.db.update(schema.material)
+        .set(data)
+        .where(eq(schema.material.id, BigInt(id)))
+        .returning();
+      return result[0] ?? null;
+    } catch (err: any) {
+      this.logger.error(`Error updating material id ${id}: ${err.message} | detail: ${err.detail}`);
+      throw err;
+    }
   }
 
   async delete(id: bigint) {
-    await this.db.delete(schema.material).where(eq(schema.material.id, id));
+    await this.db.delete(schema.material).where(eq(schema.material.id, BigInt(id)));
   }
 
   async getPaginated(page: number, size: number) {
@@ -43,5 +49,3 @@ export class MaterialRepository {
     return this.db.select().from(schema.material).limit(limit).offset(offset);
   }
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Get, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { NVerseService } from '../service/nverse.service.js';
 import { 
@@ -14,6 +14,7 @@ import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
 import { GateCode } from '../../../auth/types/auth.types.js';
 
 @ApiBearerAuth()
+@ApiTags("Authentication")
 @Controller('nverse')
 export class NVerseController {
   constructor(private readonly nverseService: NVerseService) {}

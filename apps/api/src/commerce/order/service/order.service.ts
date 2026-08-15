@@ -35,6 +35,14 @@ export class OrderService {
     return this.orderRepository.updateOrder(input.orderId, { status: input.status } as any);
   }
 
+  async cancelOrder(id: bigint) {
+    return this.orderRepository.updateOrder(id, { status: "CANCELLED" } as any);
+  }
+
+  async getProcessingOrders(customerId?: bigint) {
+    return this.orderRepository.findAllPaginated(0, 100);
+  }
+
   async deleteOrder(id: bigint) {
     return this.orderRepository.deleteOrder(id);
   }

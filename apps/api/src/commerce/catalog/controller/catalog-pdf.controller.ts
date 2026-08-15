@@ -25,14 +25,12 @@ export class CatalogPdfController {
   }
 
   @Get("/get/artisan/catalog-pdf-generation-list")
-  @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "List catalog PDF generation requests for artisan." })
   async getArtisanCatalogPdfGenerationList() {
     return keyedResponse("catalogPdfGenerationList", []);
   }
 
   @Get("/get/artisan/catalog-pdf-generation/:generationId")
-  @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "Get catalog PDF generation status for artisan." })
   @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
   async getArtisanCatalogPdfGeneration(@Param('generationId') id: string) {
@@ -40,7 +38,6 @@ export class CatalogPdfController {
   }
 
   @Get("/wait/artisan/catalog-pdf-generation/:generationId")
-  @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "Wait for catalog PDF generation for artisan." })
   @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
   async waitArtisanCatalogPdfGeneration(@Param('generationId') id: string) {
@@ -57,7 +54,6 @@ export class CatalogPdfController {
   }
 
   @Get("/get/catalog-pdf-generation-list/artisan/:artisanId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List catalog PDF generation requests for an artisan (super-user)." })
   @ApiParam({ name: "artisanId", description: "Artisan ID", example: 101, type: Number })
   async getCatalogPdfGenerationListByArtisan(@Param('artisanId') artisanId: string) {
@@ -65,7 +61,6 @@ export class CatalogPdfController {
   }
 
   @Get("/get/catalog-pdf-generation/:generationId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get catalog PDF generation status (super-user)." })
   @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
   async getCatalogPdfGeneration(@Param('generationId') id: string) {
@@ -73,7 +68,6 @@ export class CatalogPdfController {
   }
 
   @Get("/wait/catalog-pdf-generation/:generationId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Wait for catalog PDF generation (super-user)." })
   @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
   async waitCatalogPdfGeneration(@Param('generationId') id: string) {

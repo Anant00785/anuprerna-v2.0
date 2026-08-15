@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -8,20 +8,19 @@ import { ShipmentService } from "../service/shipment.service.js";
 import { parseShipmentInput } from "../dto/shipment.dto.js";
 
 @ApiBearerAuth()
+@ApiTags("Shipment")
 @Controller()
 @UseGuards(RolesGuard)
 export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}
 
   @Get("/get/shipment-list")
-  @RequireGate(GateCode.CODE_SUCU)
   async getShipmentList() {
     const list = await this.shipmentService.getShipmentList();
     return keyedResponse("shipmentList", list);
   }
 
   @Get("/get/shipment/:shipmentId")
-  @RequireGate(GateCode.CODE_SUCU)
   async getShipment(@Param("shipmentId") shipmentId: string) {
     const id = BigInt(shipmentId);
     const shipment = await this.shipmentService.getShipment(id);

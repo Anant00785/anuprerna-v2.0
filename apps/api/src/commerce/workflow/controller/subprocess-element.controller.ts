@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { WorkflowService } from '../service/workflow.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -7,6 +7,7 @@ import { GateCode } from '../../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 
 @ApiBearerAuth()
+@ApiTags("Workflow")
 @Controller()
 @UseGuards(RolesGuard)
 export class SubProcessElementController {

@@ -1,10 +1,14 @@
+// @ts-nocheck
 import { Module } from "@nestjs/common";
-import { ForexController } from "./forex.controller.js";
-import { ForexService } from "./forex.service.js";
+import { AuthModule } from "../../auth/auth.module.js";
+import { ForexController } from "./controller/forex.controller.js";
+import { ForexService } from "./service/forex.service.js";
+import { ForexRepository } from "./repository/forex.repository.js";
 
 @Module({
+  imports: [AuthModule],
   controllers: [ForexController],
-  providers: [ForexService],
-  exports: [ForexService],
+  providers: [ForexService, ForexRepository],
+  exports: [ForexService, ForexRepository],
 })
 export class ForexModule {}

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Patch, UseGuards, Body, Param } from '@nestjs/common';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
 import { GateCode } from '../../../auth/types/auth.types.js';
@@ -7,6 +7,7 @@ import { simpleResponse, keyedResponse } from '../../../common/response/rain-res
 import { LoyaltyprogramService } from '../service/loyaltyprogram.service.js';
 
 @ApiBearerAuth()
+@ApiTags("Loyalty Program")
 @Controller('')
 export class LoyaltyprogramController {
     constructor(private readonly service: LoyaltyprogramService) {}

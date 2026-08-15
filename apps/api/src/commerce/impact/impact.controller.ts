@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { ImpactService } from "./impact.service.js";
 
-@ApiTags("impact")
+@ApiTags("Impact")
 @Controller()
 export class ImpactController {
   constructor(private readonly service: ImpactService) {}

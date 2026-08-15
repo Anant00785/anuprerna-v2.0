@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from '../service/profile.service.js';
@@ -19,19 +19,18 @@ import {
 } from '../validators/profile.validator.js';
 
 @ApiBearerAuth()
+@ApiTags("Profiles")
 @Controller()
 @UseGuards(RolesGuard)
 export class SizeProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get('get/size-profile-list')
-  @RequireGate(GateCode.CODE_SU)
   async getSizeProfileList() {
     return this.profileService.getSizeProfileList();
   }
 
   @Get('get/size-profile/:profileId')
-  @RequireGate(GateCode.CODE_SU)
   async getSizeProfile(@Param('profileId') profileId: string) {
     return this.profileService.getSizeProfile(Number(profileId));
   }
@@ -64,25 +63,21 @@ export class SizeProfileController {
   }
 
   @Get('get/table-explorer/data/size-profile')
-  @RequireGate(GateCode.CODE_SU)
   async exploreSizeProfile(@Query('page') page: string, @Query('size') size: string) {
     return this.profileService.exploreSizeProfile(Number(page) || 0, Number(size) || 10);
   }
 
   @Get('get/table-explorer/data/size-profile/:id')
-  @RequireGate(GateCode.CODE_SU)
   async exploreSizeProfileById(@Param('id') id: string) {
     return this.profileService.exploreSizeProfileById(Number(id));
   }
 
   @Get('get/table-explorer/data/size-profile-guide')
-  @RequireGate(GateCode.CODE_SU)
   async exploreSizeProfileGuide(@Query('page') page: string, @Query('size') size: string) {
     return this.profileService.exploreSizeProfileGuide(Number(page) || 0, Number(size) || 10);
   }
 
   @Get('get/table-explorer/data/size-profile-option')
-  @RequireGate(GateCode.CODE_SU)
   async exploreSizeProfileOption(@Query('page') page: string, @Query('size') size: string) {
     return this.profileService.exploreSizeProfileOption(Number(page) || 0, Number(size) || 10);
   }

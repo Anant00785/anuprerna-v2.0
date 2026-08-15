@@ -42,6 +42,7 @@
  * and the Zoho/cron logging infra get migrated.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
 import { CustomProductService } from "./service/custom-product.service.js";
 import { CustomProductRepository } from "./repository/custom-product.repository.js";
 import {
@@ -60,6 +61,7 @@ const syncErrorLoggerDummy: SyncErrorLoggerPort = {
 };
 
 @Module({
+  imports: [AuthModule],
   providers: [
     CustomProductService,
     CustomProductRepository,

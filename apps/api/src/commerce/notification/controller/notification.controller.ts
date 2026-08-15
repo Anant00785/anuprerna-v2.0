@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { NotificationService } from '../service/notification.service.js';
 import { parsePaginationInput } from '../dto/notification.dto.js';
@@ -8,6 +8,7 @@ import { GateCode } from '../../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 
 @ApiBearerAuth()
+@ApiTags("Notifications")
 @Controller()
 @UseGuards(RolesGuard)
 export class NotificationController {
@@ -24,7 +25,6 @@ export class NotificationController {
     }
 
     @Get('get/table-explorer/data/email-notification-history')
-    @RequireGate(GateCode.CODE_SU)
     async getHistoryData(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.notificationService.getHistory(page, size);
@@ -32,7 +32,6 @@ export class NotificationController {
     }
 
     @Get('get/table-explorer/data/email-notification-history/:id')
-    @RequireGate(GateCode.CODE_SU)
     async getHistoryDataById(@Param('id') id: string) {
         const recordId = parseInt(id, 10);
         if (isNaN(recordId)) throw new Error('Invalid ID');

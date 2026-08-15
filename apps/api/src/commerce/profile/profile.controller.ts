@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { ProfileService } from "./profile.service.js";
 
-@ApiTags("profile")
+@ApiTags("Profiles")
 @Controller()
 export class ProfileController {
   constructor(private readonly service: ProfileService) {}

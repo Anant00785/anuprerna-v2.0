@@ -1,9 +1,11 @@
+import { ApiTags } from "@nestjs/swagger";
 // @ts-nocheck
 import { Controller, Post, Body } from '@nestjs/common';
 import { MiscService } from '../service/misc.service.js';
 import { parseContactUsData } from '../types/misc.types.js';
 import { simpleResponse } from '../../../common/response/rain-response.js';
 
+@ApiTags("Misc")
 @Controller('submit')
 export class MiscController {
   constructor(private readonly miscService: MiscService) {}

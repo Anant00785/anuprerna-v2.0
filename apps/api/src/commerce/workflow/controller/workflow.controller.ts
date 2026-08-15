@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { WorkflowService } from '../service/workflow.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -9,6 +9,7 @@ import { parseWorkflowTemplateInput, parseWorkflowInput } from '../dto/workflow.
 import { CurrentTenant } from '../../../common/auth/current-tenant.decorator.js';
 
 @ApiBearerAuth()
+@ApiTags("Workflow")
 @Controller()
 @UseGuards(RolesGuard)
 export class WorkflowController {
@@ -16,14 +17,12 @@ export class WorkflowController {
 
   // --- Workflow Template ---
   @Get('get/workflow-template-list')
-  @RequireGate(GateCode.CODE_SU)
   async getWorkflowTemplateList() {
     const templates = await this.workflowService.getWorkflowTemplates();
     return keyedResponse('data', templates);
   }
 
   @Get('get/workflow-template/:templateId')
-  @RequireGate(GateCode.CODE_SU)
   async getWorkflowTemplate(@Param('templateId') templateId: number) {
     const template = await this.workflowService.getWorkflowTemplateById(templateId);
     return keyedResponse('data', template);
@@ -53,7 +52,6 @@ export class WorkflowController {
   }
 
   @Get('get/table-explorer/data/workflow-template')
-  @RequireGate(GateCode.CODE_SU)
   async exploreWorkflowTemplates(@Query('page') page: number, @Query('size') size: number) {
     const data = await this.workflowService.getTableExplorerWorkflowTemplates(page, size);
     return keyedResponse('data', data);
@@ -61,7 +59,6 @@ export class WorkflowController {
 
   // --- Workflow ---
   @Get('get/workflow-list/:status')
-  @RequireGate(GateCode.CODE_SU)
   async getWorkflowList(@Param('status') status: string) {
     const workflows = await this.workflowService.getWorkflowsByStatus(status);
     return keyedResponse('data', workflows);
@@ -77,7 +74,6 @@ export class WorkflowController {
   }
 
   @Get('get/workflow/:workflowId')
-  @RequireGate(GateCode.CODE_SU)
   async getWorkflow(@Param('workflowId') workflowId: number) {
     const workflow = await this.workflowService.getWorkflowById(workflowId);
     return keyedResponse('data', workflow);

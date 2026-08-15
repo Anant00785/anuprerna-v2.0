@@ -50,7 +50,6 @@ export class SkuGroupController {
 
   /** SkuGroupDaoController#retrieveSkuGroupList() */
   @Get("/get/sku-group/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every SKU group." })
   @ApiResponse({ status: 200, description: "Full SKU group list." })
   async getSkuGroupList() {

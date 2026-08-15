@@ -18,7 +18,6 @@ export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
   @Get('get/super-user/profile')
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get super-user profile." })
   async getSuperUserProfile(@CurrentTenant() tenant: any) {
     const profile = await this.tenantService.getSuperUserProfile(tenant.id);
@@ -26,7 +25,6 @@ export class TenantController {
   }
 
   @Get('get/tenant/profile/:uId')
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get tenant profile by UID (super-user)." })
   @ApiParam({ name: 'uId', description: 'Tenant User UID', example: 'e4d9ea92-78f6-4ce9-9d99-ce843f7e2fe4', type: String })
   async getTenantProfile(@Param('uId') uId: string) {
@@ -35,7 +33,6 @@ export class TenantController {
   }
 
   @Get('get/customer/profile')
-  @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Get customer profile." })
   async getCustomerProfile(@CurrentTenant() tenant: any) {
     const profile = await this.tenantService.getCustomerProfile(tenant.id);
@@ -56,7 +53,6 @@ export class TenantController {
   }
 
   @Get('get/table-explorer/data/user-role')
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated user roles list." })
   async getUserRoles(@Query() query: any) {
     const filter = parseUserRoleFilterInput(query);
@@ -66,7 +62,6 @@ export class TenantController {
   }
 
   @Get('get/table-explorer/data/user-role/:id')
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get user role by ID." })
   @ApiParam({ name: 'id', description: 'User Role ID', example: 1, type: Number })
   async getUserRoleById(@Param('id') id: string) {

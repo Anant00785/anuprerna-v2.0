@@ -112,6 +112,10 @@ export class StoryRepository {
   }
 
   // Story Content Section
+  async getAllStoryContentSections() {
+    return this.db.select().from(schema.storyContentSection).orderBy(desc(schema.storyContentSection.id));
+  }
+
   async getStoryContentSections(storyContentId: bigint) {
     return this.db.select().from(schema.storyContentSection).where(eq(schema.storyContentSection.storyContentId, storyContentId));
   }

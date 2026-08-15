@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Param, Query, Body, UseGuards, Req, Headers, BadRequestException } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -31,6 +31,7 @@ import {
 } from "../validators/payment.sanitizer.js";
 
 @ApiBearerAuth()
+@ApiTags("Payment")
 @Controller()
 @UseGuards(RolesGuard)
 export class PaymentController {
@@ -135,7 +136,7 @@ export class PaymentController {
     }
 
     @Get("/get/table-explorer/data/razorpay-transaction")
-    @RequireGate(GateCode.CODE_SU)
+  @RequireGate(GateCode.CODE_SU)
     async getRazorpayTransactionData(
         @Query("page") page: string = "0",
         @Query("size") size: string = "10"
@@ -145,14 +146,14 @@ export class PaymentController {
     }
 
     @Get("/get/table-explorer/data/razorpay-transaction/:id")
-    @RequireGate(GateCode.CODE_SU)
+  @RequireGate(GateCode.CODE_SU)
     async getRazorpayTransactionById(@Param("id") id: string) {
         const data = await this.razorpayService.getTransactionById(BigInt(id));
         return keyedResponse("entity", data);
     }
 
     @Get("/get/table-explorer/data/stripe-transaction")
-    @RequireGate(GateCode.CODE_SU)
+  @RequireGate(GateCode.CODE_SU)
     async getStripeTransactionData(
         @Query("page") page: string = "0",
         @Query("size") size: string = "10"
@@ -162,7 +163,7 @@ export class PaymentController {
     }
 
     @Get("/get/table-explorer/data/stripe-transaction/:id")
-    @RequireGate(GateCode.CODE_SU)
+  @RequireGate(GateCode.CODE_SU)
     async getStripeTransactionById(@Param("id") id: string) {
         const data = await this.stripeService.getTransactionById(BigInt(id));
         return keyedResponse("entity", data);

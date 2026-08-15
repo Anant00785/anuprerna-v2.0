@@ -17,7 +17,6 @@ export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
   @Get("/get/catalog/:catalogId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a catalog by ID (super-user)." })
   @ApiParam({ name: "catalogId", description: "Catalog ID", example: 1, type: Number })
   async getCatalog(@Param('catalogId') catalogId: string) {
@@ -25,14 +24,12 @@ export class CatalogController {
   }
 
   @Get("/get/catalog-list")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List all catalogs." })
   async getCatalogList() {
     return keyedResponse("catalogList", await this.catalogService.findAll());
   }
 
   @Get("/get/catalog-list/artisan/:artisanId")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List catalogs by artisan ID." })
   @ApiParam({ name: "artisanId", description: "Artisan ID", example: 101, type: Number })
   async getCatalogListByArtisan(@Param('artisanId') artisanId: string) {
@@ -40,7 +37,6 @@ export class CatalogController {
   }
 
   @Get("/get/artisan/catalog/:catalogId")
-  @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "Retrieve an artisan catalog by ID." })
   @ApiParam({ name: "catalogId", description: "Catalog ID", example: 1, type: Number })
   async getArtisanCatalog(@Param('catalogId') catalogId: string) {
@@ -48,14 +44,12 @@ export class CatalogController {
   }
 
   @Get("/get/artisan/catalog-list")
-  @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "List authenticated artisan's catalogs." })
   async getArtisanCatalogList(@CurrentTenant() tenant: AuthenticatedTenant) {
     return keyedResponse("catalogList", await this.catalogService.findByArtisan(tenant.id));
   }
 
   @Get("/get/recent-catalog-list/:limit")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Get recent catalogs list." })
   @ApiParam({ name: "limit", description: "Limit count", example: 10, type: Number })
   async getRecentCatalogList(@Param('limit') limit: number) {

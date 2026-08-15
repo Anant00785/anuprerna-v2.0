@@ -18,7 +18,6 @@ export class StoryController {
   constructor(private readonly storyService: StoryService) {}
 
   @Get("/get/story-content-category-list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List story content categories." })
   async getStoryContentCategoryList() {
     const list = await this.storyService.getStoryContentCategories();
@@ -50,7 +49,6 @@ export class StoryController {
   }
 
   @Get("/get/story-content-list")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List all story contents." })
   async getStoryContentList() {
     const list = await this.storyService.getStoryContentList();
@@ -58,7 +56,6 @@ export class StoryController {
   }
 
   @Get("/get/story-content/:storyContentId")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Get story content by ID." })
   @ApiParam({ name: "storyContentId", description: "Story Content ID", example: 100, type: Number })
   async getStoryContent(@Param("storyContentId") storyContentId: string) {
@@ -183,7 +180,6 @@ export class StoryController {
   }
 
   @Get("/get/story/products/:storyContentId")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Get products for story." })
   @ApiParam({ name: "storyContentId", description: "Story Content ID", example: 100, type: Number })
   async getStoryProducts(@Param("storyContentId") storyContentId: string) {
@@ -225,23 +221,28 @@ export class StoryController {
 
   // Table Explorer Data Endpoints
   @Get("/get/table-explorer/data/story-content")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryContent() {
     const list = await this.storyService.getStoryContentList();
     return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/story-content-section")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryContentSection() {
-    return keyedResponse("records", []);
+    const list = await this.storyService.getAllStoryContentSections();
+    return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/story-content-category")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryContentCategory() {
     const list = await this.storyService.getStoryContentCategories();
     return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/story-product-mapping")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryProductMapping() {
     return keyedResponse("records", []);
   }

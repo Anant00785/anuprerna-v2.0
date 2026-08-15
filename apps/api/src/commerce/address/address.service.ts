@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { address } from "../../database/schema/index.js";
 
@@ -43,6 +43,25 @@ export class AddressService {
       const input = this.parseCreateInput(payload);
       const [created] = await this.db.insert(address).values(input).returning();
       return { success: true, data: [created], message: "ok" };
+    } catch (error) {
+      return { success: false, error: this.errorMessage(error) };
+    }
+  }
+
+  async update(id: number | bigint, payload: unknown) {
+    try {
+      const input = this.parseCreateInput(payload);
+      const [updated] = await this.db.update(address).set(input).where(eq(address.id, BigInt(id))).returning();
+      return { success: true, data: updated ? [updated] : [], message: "ok" };
+    } catch (error) {
+      return { success: false, error: this.errorMessage(error) };
+    }
+  }
+
+  async deleteById(id: number | bigint) {
+    try {
+      const [deleted] = await this.db.delete(address).where(eq(address.id, BigInt(id))).returning();
+      return { success: true, data: deleted ? [deleted] : [], message: "ok" };
     } catch (error) {
       return { success: false, error: this.errorMessage(error) };
     }

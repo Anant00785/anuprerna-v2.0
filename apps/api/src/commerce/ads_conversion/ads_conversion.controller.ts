@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { AdsConversionService } from "./ads_conversion.service.js";
 
-@ApiTags("ads_conversion")
+@ApiTags("Analytics & Ads")
 @Controller()
 export class AdsConversionController {
   constructor(private readonly service: AdsConversionService) {}

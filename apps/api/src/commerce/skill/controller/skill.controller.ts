@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { SkillService } from '../service/skill.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -10,20 +10,19 @@ import { validateCreateSkill, validateUpdateSkill } from '../validators/skill.va
 import { sanitizeCreateSkill, sanitizeUpdateSkill } from '../validators/skill.sanitizer.js';
 
 @ApiBearerAuth()
+@ApiTags("Skill")
 @Controller()
 @UseGuards(RolesGuard)
 export class SkillController {
   constructor(private readonly skillService: SkillService) {}
 
   @Get('get/skill-list')
-  @RequireGate(GateCode.CODE_SU)
   async getSkillList() {
     const skills = await this.skillService.getSkillList();
     return keyedResponse('skills', skills);
   }
 
   @Get('get/skill/:skillId')
-  @RequireGate(GateCode.CODE_SU)
   async getSkillById(@Param('skillId') skillId: string) {
     const skill = await this.skillService.getSkillById(skillId);
     return keyedResponse('skill', skill);
@@ -60,7 +59,6 @@ export class SkillController {
   }
 
   @Get('get/table-explorer/data/artisan-skill-mapping')
-  @RequireGate(GateCode.CODE_SU)
   async getArtisanSkillMappings(@Query() query: any) {
     const filter = parseArtisanSkillMappingFilterInput(query);
     const offset = (filter.page! - 1) * filter.limit!;

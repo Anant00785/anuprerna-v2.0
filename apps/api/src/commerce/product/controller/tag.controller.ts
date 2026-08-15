@@ -52,7 +52,6 @@ export class TagController {
 
   /** TagDAOController#retrieveTagList() */
   @Get("/get/tag/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every tag." })
   @ApiResponse({ status: 200, description: "Full tag list." })
   async getTagList() {
@@ -65,7 +64,6 @@ export class TagController {
    * SOURCE-VERIFIED query-param shape, see file header.
    */
   @Get("/get/tag/by-ids")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve multiple tags by id (comma-separated ?ids=1,2,3)." })
   @ApiResponse({ status: 200, description: "Matching tags." })
   async getTagsByIds(@Query("ids") ids: string) {
@@ -80,7 +78,6 @@ export class TagController {
 
   /** TagDAOController#retrieveTagById(Long id) */
   @Get("/get/tag/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single tag by id." })
   @ApiResponse({ status: 200, description: "Tag or null." })
   async getTagById(@Param("id") id: string) {

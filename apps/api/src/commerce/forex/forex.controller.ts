@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { ForexService } from "./forex.service.js";
 
-@ApiTags("forex")
+@ApiTags("Currency & Location")
 @Controller()
 export class ForexController {
   constructor(private readonly service: ForexService) {}

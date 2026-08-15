@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 /**
  * migrated/order/controller/order-feedback.controller.ts
  */
@@ -9,6 +9,7 @@ import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 
 @ApiBearerAuth()
+@ApiTags("Order")
 @Controller()
 @UseGuards(RolesGuard)
 export class OrderFeedbackController {
@@ -38,7 +39,6 @@ export class OrderFeedbackController {
   }
 
   @Get("/get/order/feedback/:orderId")
-  @RequireGate(GateCode.CODE_CU)
   async getFeedbackByOrder(@Param("orderId") orderId: string) {
     return keyedResponse("feedback", null);
   }
@@ -50,7 +50,6 @@ export class OrderFeedbackController {
   }
 
   @Get("/get/order/feedback-list")
-  @RequireGate(GateCode.CODE_SU)
   async getFeedbackList() {
     return keyedResponse("feedbackList", []);
   }

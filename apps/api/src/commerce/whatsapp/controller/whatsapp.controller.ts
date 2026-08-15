@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Get, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { WhatsappService } from '../service/whatsapp.service.js';
 import { parseWhatsappOptInInput, parsePaginationInput } from '../dto/whatsapp.dto.js';
@@ -8,6 +8,7 @@ import { GateCode } from '../../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 
 @ApiBearerAuth()
+@ApiTags("Notifications")
 @Controller()
 @UseGuards(RolesGuard)
 export class WhatsappController {
@@ -38,7 +39,6 @@ export class WhatsappController {
     }
 
     @Get('get/customers/whatsapp-status')
-    @RequireGate(GateCode.CODE_SU)
     async getStatus(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.whatsappService.getHistory(page, size);
@@ -46,7 +46,6 @@ export class WhatsappController {
     }
 
     @Get('get/table-explorer/data/whatsapp-notification-history')
-    @RequireGate(GateCode.CODE_SU)
     async getHistoryData(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.whatsappService.getHistory(page, size);
@@ -54,7 +53,6 @@ export class WhatsappController {
     }
 
     @Get('get/table-explorer/data/whatsapp-notification-history/:id')
-    @RequireGate(GateCode.CODE_SU)
     async getHistoryDataById(@Param('id') id: string) {
         const recordId = parseInt(id, 10);
         if (isNaN(recordId)) throw new Error('Invalid ID');

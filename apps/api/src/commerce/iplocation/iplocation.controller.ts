@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { IPLocationService } from "./iplocation.service.js";
 
-@ApiTags("iplocation")
+@ApiTags("Currency & Location")
 @Controller()
 export class IPLocationController {
   constructor(private readonly service: IPLocationService) {}
