@@ -1,23 +1,4 @@
 // @ts-nocheck
-/**
- * apps/api/src/commerce/product/segment/dto/segment.dto.ts
- *
- * Request DTOs, one per Segment endpoint that isn't gated behind
- * RequestMapper (controller generation deferred until RequestMapper.java
- * is available). Field sets mirror the corresponding SegmentController
- * handler parameters exactly:
- *  - getSegment(segmentId)
- *  - getSegmentList()
- *  - createNewSegment(segment: Segment)               [multipart]
- *  - updateSegment(updatedSegment: Segment, segmentId) [multipart]
- *  - getSegmentData(page, size)
- *  - getFilterSegmentList(category?)
- *  - getSegmentById(id)
- *  - deleteSegment(segmentId)
- *
- * No validation library installed yet, same constraint as Cart/Category —
- * parsing is done by hand rather than depending on a missing package.
- */
 import { BadRequestException } from "@nestjs/common";
 import { SegmentInput, UploadedFile } from "../types/segment.types.js";
 
@@ -54,11 +35,9 @@ export interface TableExplorerPageQuery {
 
 export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQuery {
   const q = (query ?? {}) as Record<string, unknown>;
-  const page = q.page !== undefined && q.page !== "" ? requireInt(q.page, "page") : 1;
-  const size = q.size !== undefined && q.size !== "" ? requireInt(q.size, "size") : 10;
-  if (page < 0) throw new BadRequestException("page must be >= 0.");
-  if (size < 1) throw new BadRequestException("size must be >= 1.");
-  return { page, size };
+  const page = q.page !== undefined && q.page !== "" ? Number(q.page) : 0;
+  const size = q.size !== undefined && q.size !== "" ? Number(q.size) : 20;
+  return { page: Math.max(0, isNaN(page) ? 0 : page), size: Math.max(1, isNaN(size) ? 20 : size) };
 }
 
 export function parseSegmentIdParam(segmentId: unknown): number {
@@ -69,16 +48,11 @@ export function parseIdParam(id: unknown): number {
   return requireInt(id, "id");
 }
 
-/**
- * getFilterSegmentList(@RequestParam(required = false) String category) —
- * genuinely optional, no default, absent means "all categories".
- */
 export function parseCategoryFilterQuery(query: unknown): string | undefined {
   const q = (query ?? {}) as Record<string, unknown>;
   return parseOptionalString(q.category, "category");
 }
 
-/** Shared multipart-body parsing for both create and update — the request shape is identical (Segment). */
 function parseSegmentInput(body: unknown, files: unknown): SegmentInput {
   const b = (body ?? {}) as Record<string, unknown>;
   const f = (files ?? {}) as Record<string, unknown>;

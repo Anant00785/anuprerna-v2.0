@@ -52,11 +52,9 @@ export interface TableExplorerPageQuery {
 
 export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQuery {
   const q = (query ?? {}) as Record<string, unknown>;
-  const page = q.page !== undefined && q.page !== "" ? requireInt(q.page, "page") : 1;
-  const size = q.size !== undefined && q.size !== "" ? requireInt(q.size, "size") : 10;
-  if (page < 0) throw new BadRequestException("page must be >= 0.");
-  if (size < 1) throw new BadRequestException("size must be >= 1.");
-  return { page, size };
+  const page = q.page !== undefined && q.page !== "" ? Number(q.page) : 0;
+  const size = q.size !== undefined && q.size !== "" ? Number(q.size) : 20;
+  return { page: Math.max(0, isNaN(page) ? 0 : page), size: Math.max(1, isNaN(size) ? 20 : size) };
 }
 
 export function parseCategoryIdParam(categoryId: unknown): number {
