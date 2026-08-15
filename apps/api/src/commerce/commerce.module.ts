@@ -58,6 +58,8 @@ import { WhatsappModule } from "./whatsapp/whatsapp.module.js";
 import { SeoModule } from "./seo/seo.module.js";
 import { ImpactModule } from "./impact/impact.module.js";
 import { AiModule } from "./ai/ai.module.js";
+import { CompatibilityModule } from "./compatibility/compatibility.module.js";
+import { MiscModule } from "./misc/misc.module.js";
 
 @Module({
   controllers: [
@@ -121,6 +123,8 @@ import { AiModule } from "./ai/ai.module.js";
     SeoModule,
     ImpactModule,
     AiModule,
+    CompatibilityModule,
+    MiscModule,
   ],
   exports: [
     CartModule,
@@ -151,6 +155,8 @@ import { AiModule } from "./ai/ai.module.js";
     SeoModule,
     ImpactModule,
     AiModule,
+    CompatibilityModule,
+    MiscModule,
   ],
 })
 export class CommerceModule {}

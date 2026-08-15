@@ -72,18 +72,6 @@ async function bootstrap() {
       },
       "bearer",
     )
-    // Tag definitions with descriptions for organization
-    .addTag("Health", "API health and status checks")
-    .addTag("Authentication", "User login, registration, and auth token management")
-    .addTag("Cart", "Shopping cart operations and management")
-    .addTag("Product", "Product catalog and details")
-    .addTag("Inventory", "Inventory and stock management")
-    .addTag("Order", "Order processing and management")
-    .addTag("Payment", "Payment gateway integration")
-    .addTag("User", "User profile and account management")
-    .addTag("Content", "Blog posts, stories, and content management")
-    .addTag("Search", "Search and filtering operations")
-    .addTag("Admin", "Administrative operations (protected)")
     .build();
 
   // Swagger UI is on unless SWAGGER=false.

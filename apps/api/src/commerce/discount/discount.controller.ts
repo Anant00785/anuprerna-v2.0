@@ -15,10 +15,16 @@ export class DiscountController {
   }
 
   @Post("apply/voucher/discount")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Apply voucher coupon code to checkout cart (POST)" })
+  async applyVoucherDiscountPost(@Body() body: any) {
+    return this.service.getAll();
+  }
+
   @Patch("apply/voucher/discount")
   @HttpCode(200)
-  @ApiOperation({ summary: "Apply voucher coupon code to checkout cart" })
-  async applyVoucherDiscount(@Body() body: any) {
+  @ApiOperation({ summary: "Apply voucher coupon code to checkout cart (PATCH)" })
+  async applyVoucherDiscountPatch(@Body() body: any) {
     return this.service.getAll();
   }
 

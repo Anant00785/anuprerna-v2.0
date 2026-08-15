@@ -1,15 +1,25 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Patch, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req, UnauthorizedException } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { GatekeeperService } from "../service/gatekeeper.service.js";
 import { TenantLookupRepository } from "../repository/tenant-lookup.repository.js";
-import { AUTH0_VALIDATION_PORT, Auth0ValidationPort, AuthenticatedTenant, Authority, GateCode } from "../types/auth.types.js";
-import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
-import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
+import { AUTH0_VALIDATION_PORT, Auth0ValidationPort, AuthenticatedTenant } from "../types/auth.types.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { AuthErrorCode } from "../../common/errors/error-code.js";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
-import { loomTenant, verificationToken } from "../../database/schema/index.js";
-import { eq } from "drizzle-orm";
+import {
+  CheckEmailTenantDto,
+  ConfirmVerificationEmailDto,
+  LoomAuthenticateEmailDto,
+  LoomAuthenticateSocialDto,
+  RegisterEmailRequestDto,
+  RegisterSocialRequestDto,
+  ResetPasswordDto,
+  SendOtpDto,
+  SendPasswordResetEmailDto,
+  SendVerificationEmailDto,
+  ValidateProviderRequestDto,
+  VerifyOtpDto,
+} from "../dto/auth.dto.js";
 
 @ApiTags("Authentication")
 @Controller()
@@ -18,16 +28,19 @@ export class LoomLegacyAuthController {
     private readonly gatekeeper: GatekeeperService,
     private readonly tenantLookup: TenantLookupRepository,
     @Inject(AUTH0_VALIDATION_PORT) private readonly auth0: Auth0ValidationPort,
-    @Inject(DATABASE_CONNECTION) private readonly db: Database
+    @Inject(DATABASE_CONNECTION) private readonly db: Database,
   ) {}
 
   @Post("authenticate/email")
   @HttpCode(200)
   @ApiOperation({ summary: "Authenticate with email and password (LOOM route)" })
-  async authenticateEmail(@Body() body: any) {
-    const username = body.email || body.username;
-    const password = body.password;
-    if (!username || !password) throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+  @ApiBody({ type: LoomAuthenticateEmailDto })
+  async authenticateEmail(@Body() body: LoomAuthenticateEmailDto) {
+    const username = body?.email || body?.username;
+    const password = body?.password;
+    if (!username || !password) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    }
 
     const tenant = await this.tenantLookup.findByEmail(username);
     if (!tenant || tenant.banned || tenant.suspended || tenant.deleted) {
@@ -35,7 +48,9 @@ export class LoomLegacyAuthController {
     }
 
     const passwordOk = await this.gatekeeper.verifyPassword(password, tenant.userPassword);
-    if (!passwordOk) throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    if (!passwordOk) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    }
 
     const authenticatedTenant: AuthenticatedTenant = {
       id: tenant.id,
@@ -50,11 +65,16 @@ export class LoomLegacyAuthController {
   @Post("authenticate/social")
   @HttpCode(200)
   @ApiOperation({ summary: "Authenticate via social provider (LOOM route)" })
-  async authenticateSocial(@Body() body: any) {
-    const { email, username, auth0Token, provider } = body;
-    const userEmail = email || username;
+  @ApiBody({ type: LoomAuthenticateSocialDto })
+  async authenticateSocial(@Body() body: LoomAuthenticateSocialDto) {
+    const userEmail = body?.email || body?.username;
+    if (!userEmail) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    }
     const tenant = await this.tenantLookup.findByEmail(userEmail);
-    if (!tenant) throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    if (!tenant) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    }
 
     const authenticatedTenant: AuthenticatedTenant = {
       id: tenant.id,
@@ -66,27 +86,98 @@ export class LoomLegacyAuthController {
     return keyedResponse("token", token);
   }
 
-  @Get(["get/authority/token", "authority/token"])
-  @Post(["get/authority/token", "authority/token"])
+  @Get("get/authority/token")
   @HttpCode(200)
-  @ApiOperation({ summary: "Fetch tenant authority token and roles (LOOM route)" })
-  async getAuthorityToken(@Req() req: any) {
-    return simpleResponse(true, "Authority token valid");
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Fetch tenant authority token and roles (GET)" })
+  async getAuthorityTokenGet(@Req() req: any) {
+    return this.handleAuthorityToken(req);
+  }
+
+  @Get("authority/token")
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Fetch tenant authority token and roles alias (GET)" })
+  async authorityTokenGet(@Req() req: any) {
+    return this.handleAuthorityToken(req);
+  }
+
+  @Post("get/authority/token")
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Fetch tenant authority token and roles (POST)" })
+  async getAuthorityTokenPost(@Req() req: any) {
+    return this.handleAuthorityToken(req);
+  }
+
+  @Post("authority/token")
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Fetch tenant authority token and roles alias (POST)" })
+  async authorityTokenPost(@Req() req: any) {
+    return this.handleAuthorityToken(req);
+  }
+
+  private handleAuthorityToken(req: any) {
+    const header: string | undefined = req?.headers?.authorization;
+    let roles: string[] = ["ROLE_CUSTOMER"];
+    let superUser = false;
+    let customer = true;
+
+    if (header) {
+      let token = header.trim();
+      while (token.toLowerCase().startsWith("bearer ")) {
+        token = token.slice(7).trim();
+      }
+      if (token) {
+        try {
+          const tenant = this.gatekeeper.verifyToken(token);
+          if (tenant && Array.isArray(tenant.roles)) {
+            roles = tenant.roles;
+            superUser = roles.includes("ROLE_SUPER_USER");
+            customer = roles.includes("ROLE_CUSTOMER") || !superUser;
+          }
+        } catch {
+          // Fallback to default customer
+        }
+      }
+    }
+
+    return {
+      success: true,
+      authority: { superUser, customer },
+      roles,
+      message: "Authority token valid",
+    };
   }
 
   @Post("validate/provider")
   @HttpCode(200)
   @ApiOperation({ summary: "Validate identity provider" })
-  async validateProvider(@Body() body: any) {
+  @ApiBody({ type: ValidateProviderRequestDto })
+  async validateProvider(@Body() body: ValidateProviderRequestDto) {
     return simpleResponse(true, "Provider valid");
   }
 
-  @Post(["customer/registration/email", "register/email"])
+  @Post("register/email")
   @HttpCode(200)
   @ApiOperation({ summary: "Register new customer via email" })
-  async registerEmail(@Body() body: any) {
-    const email = body.email;
-    const password = body.password || "Password123!";
+  @ApiBody({ type: RegisterEmailRequestDto })
+  async registerEmail(@Body() body: RegisterEmailRequestDto) {
+    return this.handleRegisterEmail(body);
+  }
+
+  @Post("customer/registration/email")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Register new customer via email (customer route)" })
+  @ApiBody({ type: RegisterEmailRequestDto })
+  async customerRegisterEmail(@Body() body: RegisterEmailRequestDto) {
+    return this.handleRegisterEmail(body);
+  }
+
+  private async handleRegisterEmail(body: RegisterEmailRequestDto) {
+    const email = body?.email;
+    const password = body?.password || "Password123!";
     if (!email) return simpleResponse(false, "Email is required");
 
     const existing = await this.tenantLookup.findByEmail(email);
@@ -96,7 +187,7 @@ export class LoomLegacyAuthController {
     const tenant = await this.tenantLookup.createTenant({
       email,
       hashedPassword,
-      userName: body.userName || body.name || email.split("@")[0],
+      userName: body.userName || email.split("@")[0],
       contactNumber: body.contactNumber || "",
       role: "ROLE_CUSTOMER",
     });
@@ -111,77 +202,101 @@ export class LoomLegacyAuthController {
     return keyedResponse("token", token);
   }
 
-  @Post(["customer/registration/social", "register/social"])
+  @Post("register/social")
   @HttpCode(200)
   @ApiOperation({ summary: "Register new customer via social" })
-  async registerSocial(@Body() body: any) {
-    return this.registerEmail(body);
+  @ApiBody({ type: RegisterSocialRequestDto })
+  async registerSocial(@Body() body: RegisterSocialRequestDto) {
+    return this.handleRegisterEmail(body as any);
+  }
+
+  @Post("customer/registration/social")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Register new customer via social (customer route)" })
+  @ApiBody({ type: RegisterSocialRequestDto })
+  async customerRegisterSocial(@Body() body: RegisterSocialRequestDto) {
+    return this.handleRegisterEmail(body as any);
   }
 
   @Post("otp/send")
   @HttpCode(200)
   @ApiOperation({ summary: "Send OTP to contact number/email" })
-  async sendOtp(@Body() body: any) {
+  @ApiBody({ type: SendOtpDto })
+  async sendOtp(@Body() body: SendOtpDto) {
     return simpleResponse(true, "OTP dispatched successfully");
   }
 
   @Post("otp/verify")
   @HttpCode(200)
   @ApiOperation({ summary: "Verify OTP code" })
-  async verifyOtp(@Body() body: any) {
+  @ApiBody({ type: VerifyOtpDto })
+  async verifyOtp(@Body() body: VerifyOtpDto) {
     return simpleResponse(true, "OTP verified successfully");
   }
 
   @Post("otp/resend")
   @HttpCode(200)
   @ApiOperation({ summary: "Resend OTP code" })
-  async resendOtp(@Body() body: any) {
+  @ApiBody({ type: SendOtpDto })
+  async resendOtp(@Body() body: SendOtpDto) {
     return simpleResponse(true, "OTP resent successfully");
   }
 
   @Post("verification/token")
   @HttpCode(200)
   @ApiOperation({ summary: "Generate verification token" })
-  async verificationToken(@Body() body: any) {
+  async verificationToken() {
     return keyedResponse("verificationToken", "tok_" + Date.now());
   }
 
   @Post("send/verification/email")
   @HttpCode(200)
   @ApiOperation({ summary: "Send email account verification link" })
-  async sendVerificationEmail(@Body() body: any) {
+  @ApiBody({ type: SendVerificationEmailDto })
+  async sendVerificationEmail(@Body() body: SendVerificationEmailDto) {
     return simpleResponse(true, "Verification email dispatched");
   }
 
   @Post("confirm/verification/email")
   @HttpCode(200)
   @ApiOperation({ summary: "Confirm customer email verification token" })
-  async confirmVerificationEmail(@Body() body: any) {
+  @ApiBody({ type: ConfirmVerificationEmailDto })
+  async confirmVerificationEmail(@Body() body: ConfirmVerificationEmailDto) {
     return simpleResponse(true, "Email verification confirmed");
   }
 
   @Post("send/password-reset/email")
   @HttpCode(200)
   @ApiOperation({ summary: "Send password reset request email" })
-  async sendPasswordResetEmail(@Body() body: any) {
+  @ApiBody({ type: SendPasswordResetEmailDto })
+  async sendPasswordResetEmail(@Body() body: SendPasswordResetEmailDto) {
     return simpleResponse(true, "Password reset link sent");
   }
 
   @Post("reset/password")
   @HttpCode(200)
   @ApiOperation({ summary: "Reset password with token" })
-  async resetPassword(@Body() body: any) {
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(@Body() body: ResetPasswordDto) {
     return simpleResponse(true, "Password updated successfully");
   }
 
   @Get("check-email/tenant")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Check if tenant email is registered (GET)" })
+  async checkEmailTenantGet(@Query("email") email: string) {
+    if (!email) return simpleResponse(false, "Email is required");
+    const tenant = await this.tenantLookup.findByEmail(email);
+    return keyedResponse("isRegistered", Boolean(tenant));
+  }
+
   @Post("check-email/tenant")
   @HttpCode(200)
-  @ApiOperation({ summary: "Check if tenant email is registered" })
-  async checkEmailTenant(@Query("email") queryEmail: string, @Body("email") bodyEmail: string) {
-    const targetEmail = queryEmail || bodyEmail;
-    if (!targetEmail) return simpleResponse(false, "Email is required");
-    const tenant = await this.tenantLookup.findByEmail(targetEmail);
+  @ApiOperation({ summary: "Check if tenant email is registered (POST)" })
+  @ApiBody({ type: CheckEmailTenantDto })
+  async checkEmailTenantPost(@Body() body: CheckEmailTenantDto) {
+    if (!body?.email) return simpleResponse(false, "Email is required");
+    const tenant = await this.tenantLookup.findByEmail(body.email);
     return keyedResponse("isRegistered", Boolean(tenant));
   }
 }
