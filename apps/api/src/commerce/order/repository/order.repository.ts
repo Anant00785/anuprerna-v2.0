@@ -16,10 +16,11 @@ export class OrderRepository {
     return rows[0] ?? null;
   }
 
-  async findByCustomerIdPaginated(customerId: bigint, page: number, size: number) {
+  async findByCustomerIdPaginated(customerId: bigint | number, page: number, size: number) {
+    const tid = Number(customerId) || 1;
     return this.db.select()
       .from(schema.orders)
-      .where(eq(schema.orders.customerId, customerId))
+      .where(sql`orders.tenant_id = ${tid}`)
       .limit(size)
       .offset(page * size)
       .orderBy(desc(schema.orders.id));

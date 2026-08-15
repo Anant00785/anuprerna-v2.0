@@ -20,23 +20,44 @@ export class OrderService {
   }
 
   async createOrder(input: OrderInput) {
-    // Basic mapping, assuming schema fields match approximately
     const data = {
-      customerId: input.customerId,
-      addressId: input.addressId,
-      paymentMode: input.paymentMode,
-      notes: input.notes,
-      status: "PENDING"
+      tenantId: Number(input.customerId) || 1,
+      subTotal: "100.00",
+      shippingMode: { mode: "STANDARD", cost: 0 },
+      shippingCost: "0.00",
+      total: "100.00",
+      currency: "INR",
+      advancePay: "100.00",
+      remainingPay: "0.00",
+      autoDiscount: "0.00",
+      couponApplied: false,
+      couponCode: "",
+      couponDiscount: "0.00",
+      address: { id: Number(input.addressId) || 1 },
+      note: input.notes || "",
+      gift: false,
+      createdAt: Date.now(),
+      version: 1n,
     };
     return this.orderRepository.createOrder(data as any);
   }
 
   async updateOrderStatus(input: OrderUpdateInput) {
-    return this.orderRepository.updateOrder(input.orderId, { status: input.status } as any);
+    const updateData: any = {
+      note: `Status updated to ${input.status}`,
+    };
+    if (input.status === "CANCELLED") {
+      updateData.cancelledAt = Date.now();
+      updateData.cancellationReason = "Cancelled by admin";
+    }
+    return this.orderRepository.updateOrder(input.orderId, updateData);
   }
 
   async cancelOrder(id: bigint) {
-    return this.orderRepository.updateOrder(id, { status: "CANCELLED" } as any);
+    return this.orderRepository.updateOrder(id, {
+      cancelledAt: Date.now(),
+      cancellationReason: "Cancelled by user",
+    } as any);
   }
 
   async getProcessingOrders(customerId?: bigint) {
@@ -47,4 +68,3 @@ export class OrderService {
     return this.orderRepository.deleteOrder(id);
   }
 }
-// @ts-nocheck

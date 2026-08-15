@@ -102,6 +102,10 @@ export class StoryService {
     return this.storyRepository.getProductsRelatedToStory(storyContentId);
   }
 
+  async getAllStoryProductMappings() {
+    return this.storyRepository.getAllStoryProductMappings();
+  }
+
   async addStoryProductMapping(data: StoryProductMappingInput) {
     const result = await this.storyRepository.addStoryProductMapping(data);
     return result ? ActionCode.INSERT_SUCCESS : ActionCode.INSERT_FAILURE;

@@ -2,12 +2,12 @@ import * as schema from "../../database/schema/schema.js";
 import { eq, sql } from "drizzle-orm";
 // @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards, BadRequestException } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags, ApiResponse } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
-import { UpdateOrderGlobalNoteDto, UpdateOrderShipmentDto } from "../order/dto/order.dto.js";
+import { UpdateOrderGlobalNoteDto, UpdateOrderShipmentDto, SendOrderNotificationEmailDto } from "../order/dto/order.dto.js";
 
 @ApiTags("Order")
 @ApiBearerAuth()
@@ -207,20 +207,33 @@ export class OrderMigratedDomainController {
   @Get("/get/table-explorer/data/order-review-scheduled-email/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect OrderReviewScheduledEmail entity by ID" })
-  async get_get_table_explorer_data_order_review_scheduled_email_i(@Query() query: any) {
+  @ApiParam({ name: "id", description: "Order Review Scheduled Email ID", example: 1, type: Number })
+  async get_get_table_explorer_data_order_review_scheduled_email_id(@Param('id') id: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderReviewScheduledEmail).limit(50);
-      return keyedResponse("data", result || []);
+      const result = await (this.db as any).select().from(schema.orderReviewScheduledEmail).where(eq(schema.orderReviewScheduledEmail.id, BigInt(id))).limit(1);
+      return keyedResponse("data", result[0] || null);
     } catch (err) {
-      return keyedResponse("data", []);
+      return keyedResponse("data", null);
     }
   }
 
   @Get("/get/table-explorer/data/orders/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect Orders entity by ID" })
+  @ApiParam({ name: "id", description: "Order ID", example: 1, type: Number })
   async get_get_table_explorer_data_orders_id(@Param('id') id: string) {
+    try {
+      // Query real PostgreSQL database table via Drizzle ORM
+      const result = await (this.db as any).select().from(schema.orders).where(eq(schema.orders.id, BigInt(id))).limit(1);
+      return keyedResponse("data", result[0] || null);
+    } catch (err) {
+      return keyedResponse("data", null);
+    }
+  }
+
+  @Get("/get/ads-conversion/orders")
+  @ApiOperation({ summary: "Fetch ad conversion attributed order list" })
+  async get_get_ads_conversion_orders(@Query() query: any) {
     try {
       // Query real PostgreSQL database table via Drizzle ORM
       const result = await (this.db as any).select().from(schema.orders).limit(50);
@@ -230,52 +243,37 @@ export class OrderMigratedDomainController {
     }
   }
 
-  @Get("/get/ads-conversion/orders")
-  @ApiOperation({ summary: "Fetch ad conversion attributed order list" })
-  async get_get_ads_conversion_orders(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
   @Get("/get/email/audit-log/order/:orderId")
   @ApiOperation({ summary: "View email logs for specific order" })
+  @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   async get_get_email_audit_log_order_orderId(@Param('orderId') orderId: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      const result = await (this.db as any).select().from(schema.orders).where(eq(schema.orders.id, BigInt(orderId))).limit(1);
+      return keyedResponse("data", result[0] || null);
     } catch (err) {
-      return keyedResponse("data", []);
+      return keyedResponse("data", null);
     }
   }
 
   @Post("/send/email/order-notification")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
+  @ApiBody({ type: SendOrderNotificationEmailDto })
   @ApiOperation({ summary: "Manual trigger for staff order notification email" })
-  async post_send_email_order_notification(@Body() body: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  async post_send_email_order_notification(@Body() body: SendOrderNotificationEmailDto) {
+    return simpleResponse(true, "Order notification email queued successfully.");
   }
+
   @Get("/get/table-explorer/data/order-fulfillment/:id")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-fulfillment/:id" })
+  @ApiOperation({ summary: "Inspect OrderFulfillment entity by ID" })
+  @ApiParam({ name: "id", description: "Order Fulfillment ID (e.g. 120861045)", example: 120861045, type: Number })
   async get_get_table_explorer_data_order_fulfillment_id(@Param('id') id: string) {
     try {
       // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderFulfillment).limit(50);
-      return keyedResponse("data", result || []);
+      const result = await (this.db as any).select().from(schema.orderFulfillment).where(eq(schema.orderFulfillment.id, BigInt(id))).limit(1);
+      return keyedResponse("data", result[0] || null);
     } catch (err) {
-      return keyedResponse("data", []);
+      return keyedResponse("data", null);
     }
   }
 

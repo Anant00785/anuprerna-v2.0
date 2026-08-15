@@ -204,6 +204,10 @@ export class StoryRepository {
     return this.db.select().from(schema.storyProductMapping).where(eq(schema.storyProductMapping.storyContentId, storyContentId));
   }
 
+  async getAllStoryProductMappings() {
+    return this.db.select().from(schema.storyProductMapping).orderBy(desc(schema.storyProductMapping.id));
+  }
+
   async addStoryProductMapping(data: StoryProductMappingInput) {
     const rows = await this.db.insert(schema.storyProductMapping).values({
       storyContentId: data.storyContentId,

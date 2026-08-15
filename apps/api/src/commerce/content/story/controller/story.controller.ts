@@ -243,7 +243,9 @@ export class StoryController {
 
   @Get("/get/table-explorer/data/story-product-mapping")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Paginated table-explorer projection of story product mappings." })
   async getTableExplorerStoryProductMapping() {
-    return keyedResponse("records", []);
+    const list = await this.storyService.getAllStoryProductMappings();
+    return keyedResponse("records", list);
   }
 }

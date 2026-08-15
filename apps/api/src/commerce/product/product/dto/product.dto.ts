@@ -113,11 +113,9 @@ export interface PageQuery {
 
 export function parsePageQuery(query: unknown): PageQuery {
   const q = (query ?? {}) as Record<string, unknown>;
-  const page = requireInt(q.page, "page");
-  const size = requireInt(q.size, "size");
-  if (page < 0) throw new BadRequestException("page must be >= 0.");
-  if (size < 1) throw new BadRequestException("size must be >= 1.");
-  return { page, size };
+  const page = q.page !== undefined && q.page !== "" ? Number(q.page) : 0;
+  const size = q.size !== undefined && q.size !== "" ? Number(q.size) : 20;
+  return { page: Math.max(0, isNaN(page) ? 0 : page), size: Math.max(1, isNaN(size) ? 20 : size) };
 }
 
 export function parseIdParam(id: unknown): number {
@@ -270,22 +268,22 @@ export function parseUpdateProductRequest(body: unknown): UpdateProductRequest {
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateProductDto {
-  @ApiProperty({ example: "SAMPLE-SKU-101", description: "Product SKU" })
+  @ApiProperty({ example: "KAK0660N12", description: "Product SKU" })
   sku!: string;
 
-  @ApiProperty({ example: "Handloom Cotton Fabric", description: "Product name" })
+  @ApiProperty({ example: "Chambray Teal Khadi Cotton 115 GSM Handwoven Fabric", description: "Product name" })
   name!: string;
 
   @ApiProperty({ example: 450, description: "Product price" })
   price!: number;
 
-  @ApiProperty({ example: "METER", description: "Product unit ('METER', 'PIECE', 'YARD')" })
+  @ApiProperty({ example: "METER", description: "Product unit ('METER', 'UNIT')" })
   unit!: Unit;
 
   @ApiProperty({ example: 100, description: "Stock quantity" })
   quantity!: number;
 
-  @ApiProperty({ example: 1, required: false, description: "Sub-category ID" })
+  @ApiProperty({ example: 3521, required: false, description: "Sub-category ID (e.g. 3521, 3527)" })
   subCategoryId?: number;
 
   @ApiProperty({ example: "High quality handwoven cotton fabric.", description: "Product overview" })
@@ -294,21 +292,21 @@ export class CreateProductDto {
   @ApiProperty({ example: "Hand wash gently in cold water.", description: "Product care instructions" })
   productCare!: string;
 
-  @ApiProperty({ example: "0", description: "Material ID" })
+  @ApiProperty({ example: "2570", description: "Material ID" })
   materialId!: string;
 
-  @ApiProperty({ example: "0", description: "Color ID" })
+  @ApiProperty({ example: "2703", description: "Color ID" })
   colorId!: string;
 
   @ApiProperty({ example: "fabric", description: "Product group ('fabric' or 'finished')" })
   productGroup!: ProductGroup;
 
-  @ApiProperty({ example: "", description: "Product video URL" })
+  @ApiProperty({ example: "https://example.com/videos/product-video.mp4", description: "Product video URL or S3 link" })
   productVideo!: string;
 }
 
 export class UpdateProductDto extends CreateProductDto {
-  @ApiProperty({ example: 156298615, description: "Product ID to update" })
+  @ApiProperty({ example: 52336, description: "Product ID to update (e.g. 52336, 2728, 94504)" })
   id!: number;
 }
 // @ts-nocheck

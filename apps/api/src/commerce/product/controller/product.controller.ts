@@ -188,7 +188,7 @@ export class ProductController {
   /** ProductDAOController#retrieveProduct(Long id) */
   @Get("/get/product/:id")
   @ApiOperation({ summary: "Retrieve a single product by id." })
-  @ApiParam({ name: "id", description: "Product ID", example: 156298615, type: Number })
+  @ApiParam({ name: "id", description: "Product ID (e.g. 52336, 2728, 94504)", example: 52336, type: Number })
   @ApiResponse({ status: 200, description: "Product or null." })
   async getProduct(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
