@@ -20,28 +20,30 @@ export class CatalogPdfController {
   @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "Generate catalog PDF for artisan." })
   @ApiBody({ type: GenerateCatalogPdfDto })
-  async addArtisanCatalogPdfGeneration(@Body() body: unknown) {
-    return simpleResponse(true, "Created successfully.");
+  async addArtisanCatalogPdfGeneration(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: GenerateCatalogPdfDto) {
+    const result = await this.catalogPdfService.create(tenant.id, body);
+    return keyedResponse("catalogPdfGeneration", result);
   }
 
   @Get("/get/artisan/catalog-pdf-generation-list")
   @ApiOperation({ summary: "List catalog PDF generation requests for artisan." })
-  async getArtisanCatalogPdfGenerationList() {
-    return keyedResponse("catalogPdfGenerationList", []);
+  async getArtisanCatalogPdfGenerationList(@CurrentTenant() tenant: AuthenticatedTenant) {
+    const list = await this.catalogPdfService.findByArtisan(tenant.id);
+    return keyedResponse("catalogPdfGenerationList", list);
   }
 
   @Get("/get/artisan/catalog-pdf-generation/:generationId")
   @ApiOperation({ summary: "Get catalog PDF generation status for artisan." })
-  @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
+  @ApiParam({ name: "generationId", description: "Generation ID", example: 123615651, type: Number })
   async getArtisanCatalogPdfGeneration(@Param('generationId') id: string) {
-    return keyedResponse("catalogPdfGeneration", {});
+    return keyedResponse("catalogPdfGeneration", await this.catalogPdfService.findById(BigInt(id)));
   }
 
   @Get("/wait/artisan/catalog-pdf-generation/:generationId")
   @ApiOperation({ summary: "Wait for catalog PDF generation for artisan." })
-  @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
+  @ApiParam({ name: "generationId", description: "Generation ID", example: 123615651, type: Number })
   async waitArtisanCatalogPdfGeneration(@Param('generationId') id: string) {
-    return keyedResponse("catalogPdfGeneration", {});
+    return keyedResponse("catalogPdfGeneration", await this.catalogPdfService.findById(BigInt(id)));
   }
 
   @Post("/add/catalog-pdf-generation/artisan/:artisanId")
@@ -49,28 +51,30 @@ export class CatalogPdfController {
   @ApiOperation({ summary: "Generate catalog PDF by artisan ID (super-user)." })
   @ApiParam({ name: "artisanId", description: "Artisan ID", example: 101, type: Number })
   @ApiBody({ type: GenerateCatalogPdfDto })
-  async addCatalogPdfGenerationByArtisan(@Param('artisanId') artisanId: string, @Body() body: unknown) {
-    return simpleResponse(true, "Created successfully.");
+  async addCatalogPdfGenerationByArtisan(@Param('artisanId') artisanId: string, @Body() body: GenerateCatalogPdfDto) {
+    const result = await this.catalogPdfService.create(BigInt(artisanId), body);
+    return keyedResponse("catalogPdfGeneration", result);
   }
 
   @Get("/get/catalog-pdf-generation-list/artisan/:artisanId")
   @ApiOperation({ summary: "List catalog PDF generation requests for an artisan (super-user)." })
   @ApiParam({ name: "artisanId", description: "Artisan ID", example: 101, type: Number })
   async getCatalogPdfGenerationListByArtisan(@Param('artisanId') artisanId: string) {
-    return keyedResponse("catalogPdfGenerationList", []);
+    const list = await this.catalogPdfService.findByArtisan(BigInt(artisanId));
+    return keyedResponse("catalogPdfGenerationList", list);
   }
 
   @Get("/get/catalog-pdf-generation/:generationId")
   @ApiOperation({ summary: "Get catalog PDF generation status (super-user)." })
-  @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
+  @ApiParam({ name: "generationId", description: "Generation ID", example: 123615651, type: Number })
   async getCatalogPdfGeneration(@Param('generationId') id: string) {
-    return keyedResponse("catalogPdfGeneration", {});
+    return keyedResponse("catalogPdfGeneration", await this.catalogPdfService.findById(BigInt(id)));
   }
 
   @Get("/wait/catalog-pdf-generation/:generationId")
   @ApiOperation({ summary: "Wait for catalog PDF generation (super-user)." })
-  @ApiParam({ name: "generationId", description: "Generation ID", example: 1, type: Number })
+  @ApiParam({ name: "generationId", description: "Generation ID", example: 123615651, type: Number })
   async waitCatalogPdfGeneration(@Param('generationId') id: string) {
-    return keyedResponse("catalogPdfGeneration", {});
+    return keyedResponse("catalogPdfGeneration", await this.catalogPdfService.findById(BigInt(id)));
   }
 }

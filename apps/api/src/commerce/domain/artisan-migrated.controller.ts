@@ -331,12 +331,41 @@ export class ArtisanMigratedDomainController {
     }
   }
 
+  @Get("/get/artisan/catalog-list")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "List authenticated artisan's catalogs" })
+  @ApiResponse({ status: 200, description: "Artisan catalogs list" })
+  async get_get_artisan_catalog_list() {
+    try {
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.catalog)
+        .orderBy(desc(schema.catalog.id))
+        .limit(20);
+      return keyedResponse("data", (rows || []).map((r: any) => ({
+        id: String(r.id),
+        version: Number(r.version || 1),
+        name: r.name,
+        description: r.description ?? "",
+        artisanId: r.artisanId ? String(r.artisanId) : null,
+        defaultCatalog: Boolean(r.defaultCatalog),
+        createdAt: Number(r.createdAt || 0),
+        updatedAt: Number(r.updatedAt || 0),
+      })));
+    } catch (err) {
+      return keyedResponse("data", []);
+    }
+  }
+
   @Get("/get/artisan/:artisanId")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch single artisan by ID" })
   @ApiParam({ name: "artisanId", example: 47916439, type: Number })
   @ApiResponse({ status: 200, description: "Single artisan record" })
   async get_get_artisan_artisanId(@Param("artisanId") artisanId: string) {
+    if (!/^\d+$/.test(artisanId)) {
+      return keyedResponse("data", []);
+    }
     try {
       const rows = await (this.db as any)
         .select()

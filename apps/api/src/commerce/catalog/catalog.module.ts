@@ -6,7 +6,8 @@
  */
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../auth/auth.module.js";
-import { CatalogController } from "./controller/catalog.controller.js";
+import { DatabaseModule } from "../../database/database.module.js";
+import { CatalogApiController } from "./controller/catalog.controller.js";
 import { CatalogItemController } from "./controller/catalog-item.controller.js";
 import { CatalogPdfController } from "./controller/catalog-pdf.controller.js";
 import { CatalogItemMediaController } from "./controller/catalog-item-media.controller.js";
@@ -21,9 +22,9 @@ import { CatalogItemMediaService } from "./service/catalog-item-media.service.js
 import { CatalogItemMediaRepository } from "./repository/catalog-item-media.repository.js";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, DatabaseModule],
   controllers: [
-    CatalogController,
+    CatalogApiController,
     CatalogItemController,
     CatalogPdfController,
     CatalogItemMediaController,

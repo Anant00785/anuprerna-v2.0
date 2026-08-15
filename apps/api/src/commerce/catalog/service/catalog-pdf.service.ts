@@ -17,5 +17,12 @@ export class CatalogPdfService {
   async findAll() {
     return await this.catalogPdfRepository.findAll();
   }
+
+  async findByArtisan(artisanId: bigint | number) {
+    return await this.catalogPdfRepository.findByArtisan(BigInt(artisanId || 0));
+  }
+
+  async create(artisanId: bigint | number, body?: unknown) {
+    return await this.catalogPdfRepository.create(BigInt(artisanId || 0), body);
+  }
 }
-// @ts-nocheck
