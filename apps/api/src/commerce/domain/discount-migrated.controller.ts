@@ -1,12 +1,180 @@
-import * as schema from "../../database/schema/schema.js";
-import { eq } from "drizzle-orm";
 // @ts-nocheck
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  Inject,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiProperty,
+  ApiPropertyOptional,
+} from "@nestjs/swagger";
+import { IsNotEmpty, IsOptional, IsString, IsNumber } from "class-validator";
+import { Type } from "class-transformer";
+import * as schema from "../../database/schema/schema.js";
+import { eq, desc } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
+
+export class CreateVolumeDiscountProfileDto {
+  @ApiProperty({ example: "Wholesale Tier Discount", description: "Profile Name" })
+  @IsNotEmpty()
+  @IsString()
+  profileName!: string;
+
+  @ApiPropertyOptional({ example: "Volume discounts for bulk orders over 50 meters.", description: "Disclaimer" })
+  @IsOptional()
+  @IsString()
+  disclaimer?: string;
+}
+
+export class UpdateVolumeDiscountProfileDto {
+  @ApiProperty({ example: 2605, description: "Volume Discount Profile ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  id!: number;
+
+  @ApiPropertyOptional({ example: "Custom Products Tier Discount", description: "Profile Name" })
+  @IsOptional()
+  @IsString()
+  profileName?: string;
+
+  @ApiPropertyOptional({ example: "Updated volume discount terms and conditions.", description: "Disclaimer" })
+  @IsOptional()
+  @IsString()
+  disclaimer?: string;
+}
+
+export class CreateDiscountCouponDto {
+  @ApiProperty({ example: "FESTIVE20", description: "Coupon Code" })
+  @IsNotEmpty()
+  @IsString()
+  couponCode!: string;
+
+  @ApiProperty({ example: 20.0, description: "Discount percentage" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  discountPercentage!: number;
+
+  @ApiPropertyOptional({ example: 2000, description: "Minimum order value in INR" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  minimumOrderValue?: number;
+
+  @ApiPropertyOptional({ example: "PERCENTAGE_OFF", enum: ["PERCENTAGE_OFF", "FREE_SHIPPING"] })
+  @IsOptional()
+  @IsString()
+  discountType?: string;
+
+  @ApiPropertyOptional({ example: "MANUAL", enum: ["AUTOMATIC", "MANUAL"] })
+  @IsOptional()
+  @IsString()
+  discountMethod?: string;
+
+  @ApiPropertyOptional({ example: "DOMESTIC", enum: ["DOMESTIC", "INTERNATIONAL"] })
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @ApiPropertyOptional({ example: "MULTIPLE", enum: ["SINGLE", "MULTIPLE"] })
+  @IsOptional()
+  @IsString()
+  usageType?: string;
+
+  @ApiPropertyOptional({ example: true, description: "Active status" })
+  @IsOptional()
+  active?: boolean;
+}
+
+export class UpdateDiscountCouponDto {
+  @ApiProperty({ example: 1, description: "Discount ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  id!: number;
+
+  @ApiPropertyOptional({ example: "FESTIVE25", description: "Coupon Code" })
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
+
+  @ApiPropertyOptional({ example: 25.0, description: "Discount percentage" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  discountPercentage?: number;
+
+  @ApiPropertyOptional({ example: 2500, description: "Minimum order value in INR" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  minimumOrderValue?: number;
+
+  @ApiPropertyOptional({ example: true, description: "Active status" })
+  @IsOptional()
+  active?: boolean;
+}
+
+function formatVolumeDiscountProfile(r: any) {
+  if (!r) return null;
+  return {
+    id: r.id ? String(r.id) : null,
+    version: r.version ? Number(r.version) : 0,
+    profileName: r.profileName,
+    disclaimer: r.disclaimer,
+    timeOfCreation: r.timeOfCreation ? Number(r.timeOfCreation) : null,
+  };
+}
+
+function formatVolumeDiscountProfileItem(r: any) {
+  if (!r) return null;
+  return {
+    id: r.id ? String(r.id) : null,
+    version: r.version ? Number(r.version) : 0,
+    profileId: r.profileId ? String(r.profileId) : null,
+    minimumOrderQuantity: r.minimumOrderQuantity ? Number(r.minimumOrderQuantity) : 0,
+    discount: r.discount ? String(r.discount) : "0",
+    preOrder: Boolean(r.preOrder),
+    advancePayment: r.advancePayment ? String(r.advancePayment) : "0",
+    deliveryFromDays: r.deliveryFromDays ? Number(r.deliveryFromDays) : 0,
+    deliveryToDays: r.deliveryToDays ? Number(r.deliveryToDays) : 0,
+  };
+}
+
+function formatDiscount(r: any) {
+  if (!r) return null;
+  return {
+    id: r.id ? String(r.id) : null,
+    version: r.version ? Number(r.version) : 0,
+    discountType: r.discountType,
+    discountMethod: r.discountMethod,
+    discountPercentage: r.discountPercentage ? Number(r.discountPercentage) : 0,
+    minimumOrderValue: r.minimumOrderValue ? Number(r.minimumOrderValue) : 0,
+    location: r.location,
+    startDate: r.startDate ? Number(r.startDate) : null,
+    endDate: r.endDate ? Number(r.endDate) : null,
+    couponCode: r.couponCode,
+    usageType: r.usageType,
+    active: Boolean(r.active),
+  };
+}
 
 @ApiTags("Discount")
 @ApiBearerAuth()
@@ -16,137 +184,212 @@ export class DiscountMigratedDomainController {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
 
   @Get("/get/volume-discount-profile-list")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch tier volume discount profiles" })
-  async get_get_volume_discount_profile_list(@Query() query: any) {
+  @ApiResponse({ status: 200, description: "Volume discount profiles list" })
+  async get_get_volume_discount_profile_list() {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.volumeDiscountProfile).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.volumeDiscountProfile)
+        .limit(50);
+      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Get("/get/volume-discount-profile/:profileId")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch volume discount profile detail" })
-  async get_get_volume_discount_profile_profileId(@Param('profileId') profileId: string) {
+  @ApiParam({ name: "profileId", example: 2605, type: Number })
+  @ApiResponse({ status: 200, description: "Volume discount profile detail" })
+  async get_get_volume_discount_profile_profileId(@Param("profileId") profileId: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.volumeDiscountProfile).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.volumeDiscountProfile)
+        .where(eq(schema.volumeDiscountProfile.id, BigInt(profileId)));
+      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Post("/add/volume-discount-profile")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Create volume discount profile" })
-  async post_add_volume_discount_profile(@Body() body: any) {
+  @ApiBody({ type: CreateVolumeDiscountProfileDto })
+  @ApiResponse({ status: 201, description: "Volume discount profile created" })
+  async post_add_volume_discount_profile(@Body() body: CreateVolumeDiscountProfileDto) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      const [inserted] = await (this.db as any)
+        .insert(schema.volumeDiscountProfile)
+        .values({
+          profileName: body.profileName || "Wholesale Tier Discount",
+          disclaimer: body.disclaimer || "Volume discount terms apply.",
+          timeOfCreation: BigInt(Date.now()),
+        })
+        .returning();
+      return keyedResponse("data", inserted ? [formatVolumeDiscountProfile(inserted)] : []);
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Patch("/update/volume-discount-profile")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update volume discount profile" })
-  async patch_update_volume_discount_profile(@Body() body: any) {
+  @ApiBody({ type: UpdateVolumeDiscountProfileDto })
+  @ApiResponse({ status: 200, description: "Volume discount profile updated" })
+  async patch_update_volume_discount_profile(@Body() body: UpdateVolumeDiscountProfileDto) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      const updateSet: any = {};
+      if (body.profileName) updateSet.profileName = body.profileName;
+      if (body.disclaimer) updateSet.disclaimer = body.disclaimer;
+
+      const [updated] = await (this.db as any)
+        .update(schema.volumeDiscountProfile)
+        .set(updateSet)
+        .where(eq(schema.volumeDiscountProfile.id, BigInt(body.id)))
+        .returning();
+
+      return keyedResponse("data", updated ? [formatVolumeDiscountProfile(updated)] : []);
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Delete("/delete/volume-discount-profile/:profileId")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Delete volume discount profile" })
-  async delete_delete_volume_discount_profile_profileId(@Param('profileId') profileId: string) {
+  @ApiParam({ name: "profileId", example: 2605, type: Number })
+  @ApiResponse({ status: 200, description: "Volume discount profile deleted" })
+  async delete_delete_volume_discount_profile_profileId(@Param("profileId") profileId: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      await (this.db as any)
+        .delete(schema.volumeDiscountProfile)
+        .where(eq(schema.volumeDiscountProfile.id, BigInt(profileId)));
+      return simpleResponse(true, "Volume discount profile deleted successfully.");
     } catch (err) {
-      return keyedResponse("data", []);
+      return simpleResponse(false, "Failed to delete volume discount profile.");
     }
   }
 
   @Get("/get/discount-list")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch coupon discounts list" })
-  async get_get_discount_list(@Query() query: any) {
+  @ApiResponse({ status: 200, description: "Discount coupons list" })
+  async get_get_discount_list() {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.discount).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.discount)
+        .orderBy(desc(schema.discount.id))
+        .limit(50);
+      return keyedResponse("data", (rows || []).map(formatDiscount));
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Get("/get/discount/:discountId")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch discount coupon detail" })
-  async get_get_discount_discountId(@Param('discountId') discountId: string) {
+  @ApiParam({ name: "discountId", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Discount coupon detail" })
+  async get_get_discount_discountId(@Param("discountId") discountId: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.discount).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.discount)
+        .where(eq(schema.discount.id, BigInt(discountId)));
+      return keyedResponse("data", (rows || []).map(formatDiscount));
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Post("/add/discount")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Create discount coupon" })
-  async post_add_discount(@Body() body: any) {
+  @ApiBody({ type: CreateDiscountCouponDto })
+  @ApiResponse({ status: 201, description: "Discount coupon created" })
+  async post_add_discount(@Body() body: CreateDiscountCouponDto) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      const [inserted] = await (this.db as any)
+        .insert(schema.discount)
+        .values({
+          couponCode: body.couponCode || "FESTIVE20",
+          discountPercentage: body.discountPercentage || 20.0,
+          minimumOrderValue: body.minimumOrderValue || 1000,
+          discountType: body.discountType || "PERCENTAGE_OFF",
+          discountMethod: body.discountMethod || "MANUAL",
+          location: body.location || "DOMESTIC",
+          usageType: body.usageType || "MULTIPLE",
+          startDate: BigInt(Date.now()),
+          endDate: BigInt(Date.now() + 30 * 86400000),
+          active: body.active !== undefined ? body.active : true,
+        })
+        .returning();
+      return keyedResponse("data", inserted ? [formatDiscount(inserted)] : []);
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Patch("/update/discount")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update discount coupon" })
-  async patch_update_discount(@Body() body: any) {
+  @ApiBody({ type: UpdateDiscountCouponDto })
+  @ApiResponse({ status: 200, description: "Discount coupon updated" })
+  async patch_update_discount(@Body() body: UpdateDiscountCouponDto) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      const updateSet: any = {};
+      if (body.couponCode) updateSet.couponCode = body.couponCode;
+      if (body.discountPercentage !== undefined) updateSet.discountPercentage = body.discountPercentage;
+      if (body.minimumOrderValue !== undefined) updateSet.minimumOrderValue = body.minimumOrderValue;
+      if (body.active !== undefined) updateSet.active = body.active;
+
+      const [updated] = await (this.db as any)
+        .update(schema.discount)
+        .set(updateSet)
+        .where(eq(schema.discount.id, BigInt(body.id)))
+        .returning();
+
+      return keyedResponse("data", updated ? [formatDiscount(updated)] : []);
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
 
   @Delete("/delete/discount/:discountId")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Delete discount coupon" })
-  async delete_delete_discount_discountId(@Param('discountId') discountId: string) {
+  @ApiParam({ name: "discountId", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Discount coupon deleted" })
+  async delete_delete_discount_discountId(@Param("discountId") discountId: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      await (this.db as any)
+        .delete(schema.discount)
+        .where(eq(schema.discount.id, BigInt(discountId)));
+      return simpleResponse(true, "Discount coupon deleted successfully.");
     } catch (err) {
-      return keyedResponse("data", []);
+      return simpleResponse(false, "Failed to delete discount coupon.");
     }
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile-item/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect VolumeDiscountProfileItem entity by ID" })
-  async get_get_table_explorer_data_volume_discount_profile_item_id(@Param('id') id: string) {
+  @ApiParam({ name: "id", example: 54485942, type: Number })
+  async get_get_table_explorer_data_volume_discount_profile_item_id(@Param("id") id: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.volumeDiscountProfileItem).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.volumeDiscountProfileItem)
+        .where(eq(schema.volumeDiscountProfileItem.id, BigInt(id)));
+      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfileItem));
     } catch (err) {
       return keyedResponse("data", []);
     }
@@ -155,23 +398,29 @@ export class DiscountMigratedDomainController {
   @Get("/get/table-explorer/data/volume-discount-profile/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect VolumeDiscountProfile entity by ID" })
-  async get_get_table_explorer_data_volume_discount_profile_id(@Param('id') id: string) {
+  @ApiParam({ name: "id", example: 2605, type: Number })
+  async get_get_table_explorer_data_volume_discount_profile_id(@Param("id") id: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.volumeDiscountProfile).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.volumeDiscountProfile)
+        .where(eq(schema.volumeDiscountProfile.id, BigInt(id)));
+      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
+
   @Get("/get/table-explorer/data/discount")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/discount" })
-  async get_get_table_explorer_data_discount(@Query() query: any) {
+  @ApiOperation({ summary: "Table explorer data for discount coupons" })
+  async get_get_table_explorer_data_discount() {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.discount).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.discount)
+        .limit(50);
+      return keyedResponse("data", (rows || []).map(formatDiscount));
     } catch (err) {
       return keyedResponse("data", []);
     }
@@ -179,12 +428,14 @@ export class DiscountMigratedDomainController {
 
   @Get("/get/table-explorer/data/volume-discount-profile-item")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/volume-discount-profile-item" })
-  async get_get_table_explorer_data_volume_discount_profile_item(@Query() query: any) {
+  @ApiOperation({ summary: "Table explorer data for volume discount profile items" })
+  async get_get_table_explorer_data_volume_discount_profile_item() {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.volumeDiscountProfileItem).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.volumeDiscountProfileItem)
+        .limit(50);
+      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfileItem));
     } catch (err) {
       return keyedResponse("data", []);
     }
@@ -192,15 +443,16 @@ export class DiscountMigratedDomainController {
 
   @Get("/get/table-explorer/data/volume-discount-profile")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/volume-discount-profile" })
-  async get_get_table_explorer_data_volume_discount_profile(@Query() query: any) {
+  @ApiOperation({ summary: "Table explorer data for volume discount profiles" })
+  async get_get_table_explorer_data_volume_discount_profile() {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.volumeDiscountProfile).limit(50);
-      return keyedResponse("data", result || []);
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.volumeDiscountProfile)
+        .limit(50);
+      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
-
 }
