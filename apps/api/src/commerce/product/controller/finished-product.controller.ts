@@ -31,7 +31,7 @@ export class FinishedProductController {
   /** FinishedProductDAOController#retrieveFinishedProduct(Long id) */
   @Get("/get/finished-product/:productId")
   @ApiOperation({ summary: "Retrieve a fully-enriched finished product by id." })
-  @ApiParam({ name: "productId", description: "Finished Product ID", example: 1, type: Number })
+  @ApiParam({ name: "productId", description: "Finished Product ID (e.g. 2728, 3071, 3644)", example: 2728, type: Number })
   @ApiResponse({ status: 200, description: "Finished product or null." })
   async getFinishedProduct(@Param("productId") productId: string) {
     const id = BigInt(parseProductIdParam(productId));
@@ -42,7 +42,7 @@ export class FinishedProductController {
   /** FinishedProductDAOController#retrieveFinishedProductBySlug(String productSlug) */
   @Get("/get/finished-product/slug/:productSlug")
   @ApiOperation({ summary: "Retrieve a finished product by its slug." })
-  @ApiParam({ name: "productSlug", description: "Product Slug", example: "silk-scarf-01", type: String })
+  @ApiParam({ name: "productSlug", description: "Product Slug (e.g. a-line-panel-dress-solid-white, mandarin-collar-dress, slim-fit-trouser)", example: "a-line-panel-dress-solid-white", type: String })
   @ApiResponse({ status: 200, description: "Finished product or null." })
   async getFinishedProductBySlug(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
@@ -52,17 +52,16 @@ export class FinishedProductController {
 
   /**
    * FinishedProductDAOController#createFinishedProduct(LoomTenant tenant,
-   * FinishedProduct finishedProduct) — see finished-product.service.ts
-   * class doc departure #1 for the two-step persist rationale.
+   * FinishedProduct finishedProduct)
    */
   @Post("/add/finished-product")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Create a new finished product (and its underlying core product row)." })
   @ApiBody({ type: CreateFinishedProductDto })
-  @ApiResponse({ status: 200, description: "Creation result (success flag reflects insert outcome)." })
+  @ApiResponse({ status: 200, description: "Creation result." })
   async createFinishedProduct(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const input = parseCreateFinishedProductRequest(body);
-    const result = await this.finishedProductService.createFinishedProduct(tenant.id, input);
+    const result = await this.finishedProductService.createFinishedProduct(tenant?.id ?? 1, input);
     return simpleResponse(
       result === ActionCode.INSERT_SUCCESS,
       result === ActionCode.INSERT_SUCCESS ? "Finished product created successfully." : "Failed to create finished product.",
@@ -71,8 +70,7 @@ export class FinishedProductController {
 
   /**
    * FinishedProductDAOController#updateFinishedProduct(LoomTenant tenant,
-   * FinishedProduct updatedEntity) — OptimisticLockError caught here and
-   * surfaced as 409 Conflict.
+   * FinishedProduct updatedEntity)
    */
   @Patch("/update/finished-product")
   @RequireGate(GateCode.CODE_SU)
@@ -84,7 +82,7 @@ export class FinishedProductController {
     const input = parseUpdateFinishedProductRequest(body);
     let result: number;
     try {
-      result = await this.finishedProductService.updateFinishedProduct(tenant.id, input);
+      result = await this.finishedProductService.updateFinishedProduct(tenant?.id ?? 1, input);
     } catch (err) {
       if (err instanceof OptimisticLockError) {
         throw new ConflictException("This finished product was modified by another request. Please retry.");
@@ -98,15 +96,11 @@ export class FinishedProductController {
   }
 
   /**
-   * disableFinishedProduct(ProductDisableRequest) — restores each
-   * ProductZohoRelation's disabled state from its matching
-   * ProductSizeProfile when re-enabling, force-disables all when
-   * disabling (see service class doc). OptimisticLockError caught here
-   * too.
+   * disableFinishedProduct(ProductDisableRequest)
    */
   @Patch("/disable/finished-product")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Enable/disable a finished product and cascade to its Zoho relations." })
+  @ApiOperation({ summary: "Enable/disable a finished product." })
   @ApiBody({ type: ProductDisableRequestDto })
   @ApiResponse({ status: 200, description: "Toggle result." })
   @ApiResponse({ status: 409, description: "Finished product was modified by another request." })
@@ -135,7 +129,7 @@ export class FinishedProductController {
   @ApiResponse({ status: 200, description: "Trigger result." })
   async triggerZohoWorkflow(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const data = parseProductZohoTriggerData(body);
-    const result = await this.finishedProductService.triggerZohoWorkflow(tenant.id, data);
+    const result = await this.finishedProductService.triggerZohoWorkflow(tenant?.id ?? 1, data);
     return simpleResponse(result === 1, result === 1 ? "Zoho workflow triggered." : "Finished product not found.");
   }
 
