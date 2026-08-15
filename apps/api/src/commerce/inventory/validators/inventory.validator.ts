@@ -34,5 +34,10 @@ export function validateUpdateRestockRequestQuantity(input: UpdateRestockRequest
 export function validateUpdateRestockRequestStatus(input: UpdateRestockRequestStatusInput): string | null {
   if (!input.requestId) return 'Request ID is required.';
   if (!input.status) return 'Status is required.';
+  
+  const validStatuses = ['PENDING', 'PARTIALLY_FULFUILLED', 'FULFILLED', 'CONVERTED'];
+  if (!validStatuses.includes(input.status.toUpperCase())) {
+    return `Invalid status. Must be one of: ${validStatuses.join(', ')}`;
+  }
   return null;
 }

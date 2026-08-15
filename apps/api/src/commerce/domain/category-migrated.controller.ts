@@ -40,6 +40,7 @@ export class CategoryMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/blog-content-category/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect BlogContentCategory entity by ID" })
   async get_get_table_explorer_data_blog_content_category_id(@Param('id') id: string) {
     try {
@@ -52,6 +53,7 @@ export class CategoryMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/story-content-category/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StoryContentCategory entity by ID" })
   async get_get_table_explorer_data_story_content_category_id(@Param('id') id: string) {
     try {

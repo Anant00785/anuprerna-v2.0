@@ -15,6 +15,7 @@ import { GateCode } from "../../auth/types/auth.types.js";
 export class AddressMigratedDomainController {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
   @Get("/get/table-explorer/data/address/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/address/:id" })
   async get_get_table_explorer_data_address_id(@Param('id') id: string) {
     try {
@@ -27,6 +28,7 @@ export class AddressMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/address")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/address" })
   async get_get_table_explorer_data_address(@Query() query: any) {
     try {

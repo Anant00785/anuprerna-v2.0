@@ -14,7 +14,6 @@ export class ArtisanPaymentController {
   constructor(private readonly service: ArtisanPaymentService) {}
 
   @Get("/get/artisan-payment/record/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get all artisan payment records" })
   async getPaymentRecords(
     @Query("page") page = "0",
@@ -25,7 +24,6 @@ export class ArtisanPaymentController {
   }
 
   @Get("/get/artisan-payment/record/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get artisan payment record by id" })
   async getPaymentRecordById(@Param("id") id: string) {
     const record = await this.service.getRecordById(BigInt(id));
@@ -33,7 +31,6 @@ export class ArtisanPaymentController {
   }
 
   @Get("/get/artisan-payment/record/artisan/:artisanId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get payment records for specific artisan" })
   async getRecordsByArtisan(
     @Param("artisanId") artisanId: string,
@@ -61,7 +58,6 @@ export class ArtisanPaymentController {
   }
 
   @Get("/get/artisan-payment/incentive-config/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get artisan incentive configurations" })
   async getIncentiveConfigs() {
     const configs = await this.service.getIncentiveConfigs();

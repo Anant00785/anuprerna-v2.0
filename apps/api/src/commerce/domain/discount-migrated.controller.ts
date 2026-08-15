@@ -140,6 +140,7 @@ export class DiscountMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile-item/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect VolumeDiscountProfileItem entity by ID" })
   async get_get_table_explorer_data_volume_discount_profile_item_id(@Param('id') id: string) {
     try {
@@ -152,6 +153,7 @@ export class DiscountMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect VolumeDiscountProfile entity by ID" })
   async get_get_table_explorer_data_volume_discount_profile_id(@Param('id') id: string) {
     try {
@@ -163,6 +165,7 @@ export class DiscountMigratedDomainController {
     }
   }
   @Get("/get/table-explorer/data/discount")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/discount" })
   async get_get_table_explorer_data_discount(@Query() query: any) {
     try {
@@ -175,6 +178,7 @@ export class DiscountMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile-item")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/volume-discount-profile-item" })
   async get_get_table_explorer_data_volume_discount_profile_item(@Query() query: any) {
     try {
@@ -187,6 +191,7 @@ export class DiscountMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/volume-discount-profile" })
   async get_get_table_explorer_data_volume_discount_profile(@Query() query: any) {
     try {

@@ -30,7 +30,6 @@ export class FinishedProductController {
 
   /** FinishedProductDAOController#retrieveFinishedProduct(Long id) */
   @Get("/get/finished-product/:productId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a fully-enriched finished product by id." })
   @ApiParam({ name: "productId", description: "Finished Product ID", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Finished product or null." })
@@ -42,7 +41,6 @@ export class FinishedProductController {
 
   /** FinishedProductDAOController#retrieveFinishedProductBySlug(String productSlug) */
   @Get("/get/finished-product/slug/:productSlug")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a finished product by its slug." })
   @ApiParam({ name: "productSlug", description: "Product Slug", example: "silk-scarf-01", type: String })
   @ApiResponse({ status: 200, description: "Finished product or null." })
@@ -143,7 +141,6 @@ export class FinishedProductController {
 
   /** FinishedProductDAOController#retrieveFinishedProductData(int page, int size) */
   @Get(["/get/table-explorer/data/finished-product", "/get/finished-preview-list"])
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Paginated projection of finished products." })
   @ApiResponse({ status: 200, description: "Page of finished product data." })
   async getFinishedProductData(@Query() query: unknown) {

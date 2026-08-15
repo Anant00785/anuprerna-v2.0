@@ -52,6 +52,7 @@ export class CustomerDomainController {
   }
 
   @Get("/get/customer/loyalty/info")
+  @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Retrieve customer loyalty membership data" })
   async get_get_customer_loyalty_info(@Query() query: any) {
     try {
@@ -67,8 +68,7 @@ export class CustomerDomainController {
   @ApiOperation({ summary: "Export JSON data dump of customer directory" })
   async get_get_data_dump_customer(@Query() query: any) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
+      const result = await (this.db as any).select().from(schema.customer);
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -76,6 +76,7 @@ export class CustomerDomainController {
   }
 
   @Get("/get/table-explorer/data/customer/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect Customer entity by ID" })
   async get_get_table_explorer_data_customer_id(@Param('id') id: string) {
     try {
@@ -87,6 +88,7 @@ export class CustomerDomainController {
     }
   }
   @Get("/get/table-explorer/data/customer")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/customer" })
   async get_get_table_explorer_data_customer(@Query() query: any) {
     try {

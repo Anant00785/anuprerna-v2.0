@@ -16,6 +16,7 @@ export class ContentAiMigratedDomainController {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
 
   @Get("/get/table-explorer/data/blog-content-type/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect BlogContentType entity by ID" })
   async get_get_table_explorer_data_blog_content_type_id(@Param('id') id: string) {
     try {
@@ -28,6 +29,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/blog-content-section/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect BlogContentSection entity by ID" })
   async get_get_table_explorer_data_blog_content_section_id(@Param('id') id: string) {
     try {
@@ -40,6 +42,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/blog-vector/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect BlogVector entity by ID" })
   async get_get_table_explorer_data_blog_vector_id(@Param('id') id: string) {
     try {
@@ -52,6 +55,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/story-content-section/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StoryContentSection entity by ID" })
   async get_get_table_explorer_data_story_content_section_id(@Param('id') id: string) {
     try {
@@ -64,6 +68,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/story-vector/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StoryVector entity by ID" })
   async get_get_table_explorer_data_story_vector_id(@Param('id') id: string) {
     try {
@@ -76,6 +81,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/story-content/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StoryContent entity by ID" })
   async get_get_table_explorer_data_story_content_id(@Param('id') id: string) {
     try {
@@ -112,6 +118,7 @@ export class ContentAiMigratedDomainController {
     }
   }
   @Get("/get/table-explorer/data/blog-content/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/blog-content/:id" })
   async get_get_table_explorer_data_blog_content_id(@Param('id') id: string) {
     try {
@@ -124,6 +131,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/blog-vector")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/blog-vector" })
   async get_get_table_explorer_data_blog_vector(@Query() query: any) {
     try {
@@ -136,6 +144,7 @@ export class ContentAiMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/story-vector")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/story-vector" })
   async get_get_table_explorer_data_story_vector(@Query() query: any) {
     try {

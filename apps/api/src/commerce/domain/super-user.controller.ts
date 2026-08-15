@@ -29,6 +29,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/super-user/order-list/search")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Search superuser order directory" })
   async get_get_super_user_order_list_search(@Query() query: any) {
     try {
@@ -41,6 +42,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/super-user/custom-order-list/search")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Search custom orders directory" })
   async get_get_super_user_custom_order_list_search(@Query() query: any) {
     try {
@@ -53,6 +55,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/super-user/custom-order/:orderId/fulfillment-list")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch custom order fulfillment status" })
   async get_get_super_user_custom_order_orderId_fulfillment_list(@Param('orderId') orderId: string) {
     try {
@@ -65,6 +68,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/super-user/custom-order/:orderId/ready-list")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch custom order ready status" })
   async get_get_super_user_custom_order_orderId_ready_list(@Param('orderId') orderId: string) {
     try {
@@ -77,6 +81,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/table-explorer/data/super-user/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect SuperUser entity by ID" })
   async get_get_table_explorer_data_super_user_id(@Param('id') id: string) {
     try {
@@ -88,6 +93,7 @@ export class SuperUserDomainController {
     }
   }
   @Get("/get/super-user/ads-conversion/abandoned-carts")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/super-user/ads-conversion/abandoned-carts" })
   async get_get_super_user_ads_conversion_abandoned_carts(@Query() query: any) {
     try {
@@ -100,6 +106,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/super-user/ads-conversion/orders")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/super-user/ads-conversion/orders" })
   async get_get_super_user_ads_conversion_orders(@Query() query: any) {
     try {
@@ -112,6 +119,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/super-user/ads-conversion/summary")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/super-user/ads-conversion/summary" })
   async get_get_super_user_ads_conversion_summary(@Query() query: any) {
     try {
@@ -124,6 +132,7 @@ export class SuperUserDomainController {
   }
 
   @Get("/get/table-explorer/data/super-user")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/super-user" })
   async get_get_table_explorer_data_super_user(@Query() query: any) {
     try {

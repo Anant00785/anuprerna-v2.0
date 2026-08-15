@@ -69,6 +69,10 @@ export class StoryService {
     return ActionCode.DELETE_SUCCESS;
   }
 
+  async getAllStoryContentSections() {
+    return this.storyRepository.getAllStoryContentSections();
+  }
+
   async addStoryContentSection(data: StoryContentSectionInput) {
     const result = await this.storyRepository.addStoryContentSection(data);
     return result ? ActionCode.INSERT_SUCCESS : ActionCode.INSERT_FAILURE;

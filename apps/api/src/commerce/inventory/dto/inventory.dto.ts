@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsArray, ValidateNested } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsArray, ValidateNested, IsIn } from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreateWarehouseDto {
@@ -148,9 +148,14 @@ export class UpdateRestockRequestStatusDto {
   @IsNumber()
   requestId!: number;
 
-  @ApiProperty({ example: "APPROVED", description: "Restock request status (e.g. APPROVED, REJECTED, FULFILLED)" })
+  @ApiProperty({ 
+    example: "FULFILLED", 
+    enum: ["PENDING", "PARTIALLY_FULFUILLED", "FULFILLED", "CONVERTED"],
+    description: "Restock request status (PENDING, PARTIALLY_FULFUILLED, FULFILLED, CONVERTED)" 
+  })
   @IsNotEmpty()
   @IsString()
+  @IsIn(["PENDING", "PARTIALLY_FULFUILLED", "FULFILLED", "CONVERTED"])
   status!: string;
 }
 

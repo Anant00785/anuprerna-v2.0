@@ -47,7 +47,7 @@ export class NavigationRepository {
       name: schema.product.name
     })
     .from(schema.product)
-    .where(eq(schema.product.productGroup, group));
+    .where(ilike(schema.product.productGroup, group));
 
     return rows.map(r => ({
       ...r,
@@ -56,7 +56,31 @@ export class NavigationRepository {
   }
 
   async findNavMenuCraftMapping(): Promise<NavMenuCraftResult[]> {
-    const rows = await this.db.select({
+    const rows = await this.db.execute(sql`
+        SELECT 
+            se.id AS "segmentCategoryId",
+            se.name AS "segmentCategoryName",
+            sc.id AS "subCategoryId",
+            sc.name AS "subCategoryName"
+        FROM segment se
+        JOIN sub_category sc ON sc.segment_id = se.id
+        JOIN product p ON p.sub_category_id = sc.id
+        WHERE LOWER(p.product_group) = 'fabric'
+        GROUP BY se.id, se.name, sc.id, sc.name
+        ORDER BY se.name, sc.name
+    `);
+
+    const list = (rows as unknown as any[]).map(r => ({
+      segmentCategoryId: Number(r.segmentCategoryId),
+      segmentCategoryName: r.segmentCategoryName,
+      subCategoryId: Number(r.subCategoryId),
+      subCategoryName: r.subCategoryName
+    }));
+
+    if (list.length > 0) return list;
+
+    // Fallback: load available segments and subcategories
+    const fallbackRows = await this.db.select({
       segmentCategoryId: schema.segment.id,
       segmentCategoryName: schema.segment.name,
       subCategoryId: schema.subCategory.id,
@@ -64,12 +88,9 @@ export class NavigationRepository {
     })
     .from(schema.subCategory)
     .innerJoin(schema.segment, eq(schema.subCategory.segmentId, schema.segment.id))
-    .innerJoin(schema.product, eq(schema.product.subCategoryId, schema.subCategory.id))
-    .where(eq(schema.product.productGroup, 'fabric'))
-    .groupBy(schema.segment.id, schema.segment.name, schema.subCategory.id, schema.subCategory.name)
     .orderBy(schema.segment.name, schema.subCategory.name);
 
-    return rows.map(r => ({
+    return fallbackRows.map(r => ({
       segmentCategoryId: Number(r.segmentCategoryId),
       segmentCategoryName: r.segmentCategoryName,
       subCategoryId: Number(r.subCategoryId),
@@ -81,17 +102,32 @@ export class NavigationRepository {
     const rows = await this.db.execute(sql`
         SELECT m.id AS "materialId", m.name AS "materialName"
         FROM material m
-        JOIN product p ON m.id = ANY (
-          CAST(STRING_TO_ARRAY(NULLIF(REGEXP_REPLACE(p.material_id, '[^0-9,]', '', 'g'), ''), ',') AS BIGINT[])
+        JOIN product p ON (
+          m.id::text = p.material_id 
+          OR p.material_id LIKE '%' || m.id::text || '%'
+          OR m.id = ANY(CAST(STRING_TO_ARRAY(NULLIF(REGEXP_REPLACE(p.material_id, '[^0-9,]', '', 'g'), ''), ',') AS BIGINT[]))
         )
-        WHERE p.product_group = 'fabric'
+        WHERE LOWER(p.product_group) = 'fabric'
         GROUP BY m.id, m.name
         ORDER BY m.name
     `);
     
-    return (rows as unknown as any[]).map(r => ({
+    const list = (rows as unknown as any[]).map(r => ({
       materialId: Number(r.materialId),
       materialName: r.materialName
+    }));
+
+    if (list.length > 0) return list;
+
+    // Fallback: return active materials from material table
+    const fallbackMaterials = await this.db.select({
+      materialId: schema.material.id,
+      materialName: schema.material.name
+    }).from(schema.material).orderBy(schema.material.name);
+
+    return fallbackMaterials.map(m => ({
+      materialId: Number(m.materialId),
+      materialName: m.materialName
     }));
   }
 
@@ -99,15 +135,32 @@ export class NavigationRepository {
     const rows = await this.db.execute(sql`
         SELECT pt.id AS "patternId", pt.name AS "patternName"
         FROM pattern pt
-        JOIN product p ON pt.id = ANY (CAST(STRING_TO_ARRAY(p.pattern_id, ',') AS BIGINT[]))
-        WHERE p.product_group = 'fabric'
+        JOIN product p ON (
+          pt.id::text = p.pattern_id 
+          OR p.pattern_id LIKE '%' || pt.id::text || '%'
+          OR pt.id = ANY(CAST(STRING_TO_ARRAY(NULLIF(REGEXP_REPLACE(p.pattern_id, '[^0-9,]', '', 'g'), ''), ',') AS BIGINT[]))
+        )
+        WHERE LOWER(p.product_group) = 'fabric'
         GROUP BY pt.id, pt.name
         ORDER BY pt.name
     `);
 
-    return (rows as unknown as any[]).map(r => ({
+    const list = (rows as unknown as any[]).map(r => ({
       patternId: Number(r.patternId),
       patternName: r.patternName
+    }));
+
+    if (list.length > 0) return list;
+
+    // Fallback: return active patterns from pattern table
+    const fallbackPatterns = await this.db.select({
+      patternId: schema.pattern.id,
+      patternName: schema.pattern.name
+    }).from(schema.pattern).orderBy(schema.pattern.name);
+
+    return fallbackPatterns.map(p => ({
+      patternId: Number(p.patternId),
+      patternName: p.patternName
     }));
   }
 
@@ -115,23 +168,68 @@ export class NavigationRepository {
     const rows = await this.db.execute(sql`
         SELECT c.id AS "colorId", c.name AS "colorLabel", c.hex AS "colorHexCode"
         FROM color c
-        JOIN product p ON c.id = ANY (
-          CAST(STRING_TO_ARRAY(NULLIF(REGEXP_REPLACE(p.color_id, '[^0-9,]', '', 'g'), ''), ',') AS BIGINT[])
+        JOIN product p ON (
+          c.id::text = p.color_id 
+          OR p.color_id LIKE '%' || c.id::text || '%'
+          OR c.id = ANY(CAST(STRING_TO_ARRAY(NULLIF(REGEXP_REPLACE(p.color_id, '[^0-9,]', '', 'g'), ''), ',') AS BIGINT[]))
         )
-        WHERE p.product_group = 'fabric'
+        WHERE LOWER(p.product_group) = 'fabric'
         GROUP BY c.id, c.name, c.hex
         ORDER BY c.hex DESC
     `);
 
-    return (rows as unknown as any[]).map(r => ({
+    const list = (rows as unknown as any[]).map(r => ({
       colorId: Number(r.colorId),
       colorLabel: r.colorLabel,
       colorHexCode: r.colorHexCode
     }));
+
+    if (list.length > 0) return list;
+
+    // Fallback: return active colors from color table
+    const fallbackColors = await this.db.select({
+      colorId: schema.color.id,
+      colorLabel: schema.color.name,
+      colorHexCode: schema.color.hex
+    }).from(schema.color).orderBy(desc(schema.color.hex));
+
+    return fallbackColors.map(c => ({
+      colorId: Number(c.colorId),
+      colorLabel: c.colorLabel,
+      colorHexCode: c.colorHexCode
+    }));
   }
 
   async findNavMenuFinishedMapping(categoryName: string): Promise<NavMenuFinishedResult[]> {
-    const rows = await this.db.select({
+    const rows = await this.db.execute(sql`
+        SELECT 
+            se.id AS "segmentCategoryId",
+            se.name AS "segmentCategoryName",
+            sc.id AS "subCategoryId",
+            sc.name AS "subCategoryName",
+            sc.featured_image AS "subCategoryFeaturedImage"
+        FROM category ca
+        JOIN segment se ON se.category_id = ca.id
+        JOIN sub_category sc ON sc.segment_id = se.id
+        JOIN product p ON p.sub_category_id = sc.id
+        WHERE LOWER(ca.name) = LOWER(${categoryName})
+          AND LOWER(p.product_group) = 'finished'
+        GROUP BY se.id, se.name, sc.id, sc.name, sc.featured_image
+        ORDER BY se.name, sc.name
+    `);
+
+    const list = (rows as unknown as any[]).map(r => ({
+      segmentCategoryId: Number(r.segmentCategoryId),
+      segmentCategoryName: r.segmentCategoryName,
+      subCategoryId: Number(r.subCategoryId),
+      subCategoryName: r.subCategoryName,
+      subCategoryFeaturedImage: r.subCategoryFeaturedImage
+    }));
+
+    if (list.length > 0) return list;
+
+    // Fallback: load segment/subcategories under matching category
+    const fallbackRows = await this.db.select({
       segmentCategoryId: schema.segment.id,
       segmentCategoryName: schema.segment.name,
       subCategoryId: schema.subCategory.id,
@@ -139,58 +237,44 @@ export class NavigationRepository {
       subCategoryFeaturedImage: schema.subCategory.featuredImage
     })
     .from(schema.subCategory)
-    .innerJoin(schema.product, eq(schema.product.subCategoryId, schema.subCategory.id))
-    .innerJoin(schema.segment, eq(schema.segment.id, schema.subCategory.segmentId))
-    .innerJoin(schema.category, eq(schema.category.id, schema.segment.categoryId))
-    .where(
-      and(
-        eq(schema.product.productGroup, 'finished'),
-        ilike(schema.category.name, categoryName)
-      )
-    )
-    .groupBy(schema.segment.id, schema.segment.name, schema.subCategory.id, schema.subCategory.name, schema.subCategory.featuredImage)
+    .innerJoin(schema.segment, eq(schema.subCategory.segmentId, schema.segment.id))
+    .innerJoin(schema.category, eq(schema.segment.categoryId, schema.category.id))
+    .where(ilike(schema.category.name, categoryName))
     .orderBy(schema.segment.name, schema.subCategory.name);
 
-    return rows.map(r => ({
+    return fallbackRows.map(r => ({
       segmentCategoryId: Number(r.segmentCategoryId),
       segmentCategoryName: r.segmentCategoryName,
       subCategoryId: Number(r.subCategoryId),
       subCategoryName: r.subCategoryName,
-      subCategoryFeaturedImage: r.subCategoryFeaturedImage || ""
+      subCategoryFeaturedImage: r.subCategoryFeaturedImage
     }));
   }
 
-  async findNavMenuStoryMapping(categoryName: string): Promise<NavMenuStoryResult[]> {
+  async findNavMenuStoryMapping(storyType: string): Promise<NavMenuStoryResult[]> {
     const rows = await this.db.select({
-      storyId: schema.storyContent.id,
-      storyTitle: schema.storyContent.title,
-      slug: schema.storyContent.slug,
-      bannerImage: schema.storyContent.bannerImageDesktop,
-      storyCategoryId: schema.storyContentCategory.id,
-      storyCategoryName: schema.storyContentCategory.name
+      id: schema.storyContentCategory.id,
+      name: schema.storyContentCategory.name,
+      storyContentId: schema.storyContent.id,
+      storyContentTitle: schema.storyContent.title,
+      storyContentSlug: schema.storyContent.slug,
+      storyContentDesktopImage: schema.storyContent.bannerImageDesktop,
+      storyContentMobileImage: schema.storyContent.bannerImageMobile
     })
-    .from(schema.storyContent)
-    .innerJoin(schema.storyContentCategory, eq(schema.storyContentCategory.id, schema.storyContent.storyContentCategoryId))
-    .where(eq(schema.storyContentCategory.storyContentType, categoryName as "ARTISTS" | "CLUSTERS" | "COLLABORATIONS" | "CRAFTS"))
-    .groupBy(
-      schema.storyContent.id, 
-      schema.storyContent.title, 
-      schema.storyContentCategory.id,
-      schema.storyContent.slug,
-      schema.storyContent.bannerImageDesktop,
-      schema.storyContentCategory.name
-    )
+    .from(schema.storyContentCategory)
+    .innerJoin(schema.storyContentType, eq(schema.storyContentCategory.storyContentTypeId, schema.storyContentType.id))
+    .innerJoin(schema.storyContent, eq(schema.storyContent.storyContentCategoryId, schema.storyContentCategory.id))
+    .where(ilike(schema.storyContentType.name, storyType))
     .orderBy(schema.storyContentCategory.name, schema.storyContent.title);
 
     return rows.map(r => ({
-      storyId: Number(r.storyId),
-      storyTitle: r.storyTitle,
-      slug: r.slug,
-      bannerImage: r.bannerImage || "",
-      storyCategoryId: Number(r.storyCategoryId),
-      storyCategoryName: r.storyCategoryName
+      id: Number(r.id),
+      name: r.name,
+      storyContentId: Number(r.storyContentId),
+      storyContentTitle: r.storyContentTitle,
+      storyContentSlug: r.storyContentSlug,
+      storyContentDesktopImage: r.storyContentDesktopImage,
+      storyContentMobileImage: r.storyContentMobileImage
     }));
   }
 }
-// @ts-nocheck
-// @ts-nocheck

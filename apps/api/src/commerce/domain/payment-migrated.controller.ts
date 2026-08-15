@@ -156,8 +156,7 @@ export class PaymentMigratedDomainController {
   @ApiOperation({ summary: "Export JSON data dump of financial transactions" })
   async get_get_data_dump_transaction(@Query() query: any) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
+      const result = await (this.db as any).select().from(schema.razorpayTransaction);
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);

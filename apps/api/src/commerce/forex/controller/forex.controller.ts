@@ -36,7 +36,6 @@ export class ForexController {
   }
 
   @Get("/get/forex/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get all forex records" })
   async getForexList() {
     const records = await this.service.getAllForexRecords();

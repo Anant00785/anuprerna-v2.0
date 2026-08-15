@@ -213,6 +213,7 @@ export class ArtisanMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/artisan/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect Artisan entity by ID" })
   async get_get_table_explorer_data_artisan_id(@Param('id') id: string) {
     try {
@@ -298,6 +299,7 @@ export class ArtisanMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/artisan")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/artisan" })
   async get_get_table_explorer_data_artisan(@Query() query: any) {
     try {
@@ -310,6 +312,7 @@ export class ArtisanMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/step-element-artisan-mapping")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/step-element-artisan-mapping" })
   async get_get_table_explorer_data_step_element_artisan_mapping(@Query() query: any) {
     try {
@@ -322,6 +325,7 @@ export class ArtisanMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/subprocess-element-artisan-mapping")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/subprocess-element-artisan-mapping" })
   async get_get_table_explorer_data_subprocess_element_artisan_mapping(@Query() query: any) {
     try {
@@ -334,6 +338,7 @@ export class ArtisanMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow-artisan-mapping")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/workflow-artisan-mapping" })
   async get_get_table_explorer_data_workflow_artisan_mapping(@Query() query: any) {
     try {

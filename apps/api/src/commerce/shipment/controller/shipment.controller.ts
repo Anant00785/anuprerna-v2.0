@@ -15,14 +15,12 @@ export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}
 
   @Get("/get/shipment-list")
-  @RequireGate(GateCode.CODE_SUCU)
   async getShipmentList() {
     const list = await this.shipmentService.getShipmentList();
     return keyedResponse("shipmentList", list);
   }
 
   @Get("/get/shipment/:shipmentId")
-  @RequireGate(GateCode.CODE_SUCU)
   async getShipment(@Param("shipmentId") shipmentId: string) {
     const id = BigInt(shipmentId);
     const shipment = await this.shipmentService.getShipment(id);

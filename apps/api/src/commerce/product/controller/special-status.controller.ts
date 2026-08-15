@@ -54,7 +54,6 @@ export class SpecialStatusController {
 
   /** SpecialStatusDaoController#retrieveSpecialStatusList() */
   @Get("/get/special-status/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every special status." })
   @ApiResponse({ status: 200, description: "Full special status list." })
   async getSpecialStatusList() {

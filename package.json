@@ -14,7 +14,13 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test -- --coverage",
     "test:int": "turbo run test:int",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "swagger:share": "node scripts/swagger-share.mjs",
+    "swagger:export": "node scripts/export-swagger.mjs",
+    "swagger:export:prod": "node scripts/export-swagger.mjs --host=api.anuprerna.com",
+    "swagger:docs": "open apps/api/SWAGGER.md || xdg-open apps/api/SWAGGER.md",
+    "tunnel:share": "node scripts/cloudflare-share.mjs",
+    "tunnel:info": "echo 'Cloudflare Tunnel URLs:' && node scripts/cloudflare-share.mjs"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",

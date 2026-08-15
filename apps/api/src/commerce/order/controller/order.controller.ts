@@ -35,7 +35,6 @@ export class OrderController {
   }
 
   @Get(["/get/customer/order-list", "/get/customer/order-list/v2", "/get/customer/order-list/all", "/get/customer/order-list/loyalty"])
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerOrderList(@CurrentTenant() tenant: AuthenticatedTenant, @Query("page") page: string = "0", @Query("size") size: string = "10") {
     const result = await this.orderService.getCustomerOrders(tenant?.id || tenant?.tenantId, parseInt(page, 10), parseInt(size, 10));
     return keyedResponse("orderList", result);
@@ -49,7 +48,6 @@ export class OrderController {
   }
 
   @Get("/get/order/loyalty/info")
-  @RequireGate(GateCode.CODE_CU)
   async getOrderLoyaltyInfo() {
     return keyedResponse("loyaltyInfo", { pointsEarned: 100, pointsRedeemed: 0 });
   }

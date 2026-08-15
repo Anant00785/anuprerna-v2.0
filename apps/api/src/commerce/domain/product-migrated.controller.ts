@@ -139,6 +139,7 @@ export class ProductMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/product-vector/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect ProductVector entity by ID" })
   async get_get_table_explorer_data_product_vector_id(@Param('id') id: string) {
     try {
@@ -151,6 +152,7 @@ export class ProductMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/story-product-mapping/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StoryProductMapping entity by ID" })
   async get_get_table_explorer_data_story_product_mapping_id(@Param('id') id: string) {
     try {
@@ -219,6 +221,7 @@ export class ProductMigratedDomainController {
     }
   }
   @Get("/get/table-explorer/data/product-fabric")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/product-fabric" })
   async get_get_table_explorer_data_product_fabric(@Query() query: any) {
     try {
@@ -231,6 +234,7 @@ export class ProductMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/product-finished")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/product-finished" })
   async get_get_table_explorer_data_product_finished(@Query() query: any) {
     try {
@@ -243,6 +247,7 @@ export class ProductMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/product-vector")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/product-vector" })
   async get_get_table_explorer_data_product_vector(@Query() query: any) {
     try {

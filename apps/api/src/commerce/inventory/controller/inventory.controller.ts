@@ -48,7 +48,6 @@ export class InventoryController {
   // --- Warehouse ---
 
   @Get("/get/warehouse/:warehouseId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get warehouse by ID." })
   @ApiParam({ name: "warehouseId", type: Number, description: "Warehouse unique identifier", example: 1 })
   @ApiResponse({ status: 200, description: "Warehouse details." })
@@ -58,7 +57,6 @@ export class InventoryController {
   }
 
   @Get("/get/warehouse")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get all warehouses paginated." })
   @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page number" })
   @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })
@@ -101,7 +99,6 @@ export class InventoryController {
   // --- Inventory Adjustment Reason ---
 
   @Get("/get/inventory-adjustment-reason/:reasonId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get inventory adjustment reason by ID." })
   @ApiParam({ name: "reasonId", type: Number, description: "Adjustment reason identifier", example: 1 })
   @ApiResponse({ status: 200, description: "Reason details." })
@@ -111,7 +108,6 @@ export class InventoryController {
   }
 
   @Get("/get/inventory-adjustment-reason")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get all inventory adjustment reasons paginated." })
   @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page number" })
   @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })
@@ -139,7 +135,6 @@ export class InventoryController {
   // --- Inventory Adjustment ---
 
   @Get("/get/inventory-adjustment")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get all inventory adjustments paginated." })
   @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page number" })
   @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })
@@ -150,7 +145,6 @@ export class InventoryController {
   }
 
   @Get("/get/inventory-adjustment/:adjustmentId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get inventory adjustment by ID." })
   @ApiParam({ name: "adjustmentId", type: Number, description: "Adjustment identifier", example: 1 })
   @ApiResponse({ status: 200, description: "Adjustment details." })
@@ -178,7 +172,6 @@ export class InventoryController {
   // --- Inventory Restock Request ---
 
   @Get("/get/inventory-restock-request")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get all inventory restock requests paginated." })
   @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page number" })
   @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })

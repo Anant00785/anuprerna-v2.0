@@ -76,7 +76,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricProduct(Long id) */
   @Get("/get/fabric-product/:productId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a fully-enriched fabric product by id." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
   async getFabricProduct(@Param("productId") productId: string) {
@@ -87,7 +86,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricProductBySlug(String slug) — @Deprecated in source, ported for parity. */
   @Get("/get/fabric-product/slug/:productSlug")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Retrieve a fabric product by slug." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
   async getFabricProductBySlug(@Param("productSlug") productSlug: string) {
@@ -98,7 +96,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricProductBySlugV2(String slug) — functionally identical to V1 in source. */
   @Get(["/get/fabric-product/slug-v2/:productSlug", "/get/v2/fabric-product/slug/:productSlug"])
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Retrieve a fabric product by slug (v2, functionally identical to v1)." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
   async getFabricProductBySlugV2(@Param("productSlug") productSlug: string) {
@@ -109,7 +106,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricOverviews() */
   @Get(["/get/fabric-product/overview/list", "/get/fabric-overview-list"])
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List lightweight fabric product overviews." })
   @ApiResponse({ status: 200, description: "Full fabric overview list." })
   async getFabricOverviews() {
@@ -119,7 +115,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#retrieveFabricProductData(int page, int size) */
   @Get(["/get/table-explorer/data/fabric-product", "/get/table-explorer/data/fabric-product-data"])
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of fabric products." })
   @ApiQuery({ name: "page", required: false, example: 0, description: "Page number (0-indexed)" })
   @ApiQuery({ name: "size", required: false, example: 20, description: "Page size" })
@@ -132,7 +127,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#findFabricFilterPreview(categoryName, segmentCategoryName) */
   @Get("/get/fabric-product/filter-preview")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Fabric filter-preview list, optionally scoped by category/segment-category name." })
   @ApiQuery({ name: "categoryName", required: false, description: "Category name" })
   @ApiQuery({ name: "segmentCategoryName", required: false, description: "Segment category name" })
@@ -145,7 +139,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#findFabricFilterPreviewPage(categoryName, segmentCategoryName, limit, offset) */
   @Get("/get/fabric-product/filter-preview/page")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated fabric filter-preview list." })
   @ApiQuery({ name: "categoryName", required: false, description: "Category name" })
   @ApiQuery({ name: "segmentCategoryName", required: false, description: "Segment category name" })
@@ -160,7 +153,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#findFabricFilterPreviewByIDs(ids) */
   @Get("/get/fabric-product/filter-preview/by-ids")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fabric filter previews for a comma-separated list of ids." })
   @ApiResponse({ status: 200, description: "Matching fabric filter previews." })
   async getFabricFilterPreviewByIds(@Query("ids") ids: string) {
@@ -171,7 +163,6 @@ export class FabricProductController {
 
   /** FabricProductDAOController#findFabricFilterPreviewFiltered(...) */
   @Get("/get/fabric-product/filter-preview/filtered")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fabric filter previews matching a full facet filter (colors/materials/patterns/price/GSM/segments/sub-categories)." })
   @ApiResponse({ status: 200, description: "Matching fabric filter previews." })
   async getFabricFilterPreviewFiltered(@Query() query: unknown) {

@@ -140,7 +140,6 @@ export class SubCategoryController {
   }
 
   @Get(["/get/sub-category/featured/:categoryName", "/get/featured/:categoryName/sub-category"])
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List sub-categories marked featured within a category." })
   async getFeaturedSubCategories(@Param("categoryName") categoryName: string) {
     const name = parseCategoryNameParam(categoryName);

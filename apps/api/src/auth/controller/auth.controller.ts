@@ -177,9 +177,8 @@ export class AuthController {
     return keyedResponse("token", token);
   }
 
-  /** getAuthorityToken(NVerseHttpRequestWrapper) — CODE_SUCU, source-verified 1:1. */
+  /** getAuthorityToken(NVerseHttpRequestWrapper) — public, no @RequireGate. */
   @Get("authority")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Resolve the caller's role flags (superUser/customer) from a valid bearer token." })
   @ApiResponse({ status: 200, description: "Authority flags for the authenticated tenant." })

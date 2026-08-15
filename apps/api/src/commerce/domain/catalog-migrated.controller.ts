@@ -28,6 +28,7 @@ export class CatalogMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/catalog-item-media/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect CatalogItemMedia entity by ID" })
   async get_get_table_explorer_data_catalog_item_media_id(@Param('id') id: string) {
     try {
@@ -39,6 +40,7 @@ export class CatalogMigratedDomainController {
     }
   }
   @Get("/get/table-explorer/data/catalog-item-media")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/catalog-item-media" })
   async get_get_table_explorer_data_catalog_item_media(@Query() query: any) {
     try {
@@ -51,6 +53,7 @@ export class CatalogMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/catalog-item")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/catalog-item" })
   async get_get_table_explorer_data_catalog_item(@Query() query: any) {
     try {
@@ -63,6 +66,7 @@ export class CatalogMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/catalog-pdf")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/catalog-pdf" })
   async get_get_table_explorer_data_catalog_pdf(@Query() query: any) {
     try {
@@ -75,6 +79,7 @@ export class CatalogMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/catalog")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/catalog" })
   async get_get_table_explorer_data_catalog(@Query() query: any) {
     try {

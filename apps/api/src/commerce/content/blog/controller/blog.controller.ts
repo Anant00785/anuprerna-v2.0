@@ -8,7 +8,16 @@ import { BlogService } from "../service/blog.service.js";
 import { parseBlogContentTypeInput, parseBlogContentCategoryInput, parseBlogContentInput, parseBlogContentSectionInput } from "../types/blog.types.js";
 import { validateBlogContentType, validateBlogContentCategory, validateBlogContent, validateBlogContentSection, sanitizeBlogContentType, sanitizeBlogContentCategory, sanitizeBlogContent, sanitizeBlogContentSection } from "../validator/blog.validator.js";
 import { ActionCode } from "../../../../common/errors/action-code.js";
-import { CreateBlogTypeDto, CreateBlogCategoryDto, CreateBlogContentDto, UpdateBlogContentDto, CreateBlogSectionDto } from "../dto/blog.dto.js";
+import { 
+  CreateBlogTypeDto, 
+  UpdateBlogTypeDto, 
+  CreateBlogCategoryDto, 
+  UpdateBlogCategoryDto, 
+  CreateBlogContentDto, 
+  UpdateBlogContentDto, 
+  CreateBlogSectionDto, 
+  UpdateBlogSectionDto 
+} from "../dto/blog.dto.js";
 
 @Controller()
 @ApiTags("Blog")
@@ -18,8 +27,8 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Get("/get/blog-content-types")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get blog content types." })
+  @ApiOperation({ summary: "Get all blog content types." })
+  @ApiResponse({ status: 200, description: "List of blog content types." })
   async getBlogContentTypes() {
     const list = await this.blogService.getBlogContentTypes();
     return keyedResponse("blogContentTypes", list);
@@ -27,9 +36,10 @@ export class BlogController {
 
   @Post("/add/blog-content-type")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Add blog content type." })
+  @ApiOperation({ summary: "Add a new blog content type." })
   @ApiBody({ type: CreateBlogTypeDto })
-  async addBlogContentType(@Body() raw: unknown) {
+  @ApiResponse({ status: 201, description: "Blog content type created." })
+  async addBlogContentType(@Body() raw: CreateBlogTypeDto) {
     const input = sanitizeBlogContentType(parseBlogContentTypeInput(raw));
     const error = validateBlogContentType(input);
     if (error) return simpleResponse(false, error);
@@ -39,9 +49,10 @@ export class BlogController {
 
   @Patch("/update/blog-content-type")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Update blog content type." })
-  @ApiBody({ type: CreateBlogTypeDto })
-  async updateBlogContentType(@Body() raw: unknown) {
+  @ApiOperation({ summary: "Update blog content type details." })
+  @ApiBody({ type: UpdateBlogTypeDto })
+  @ApiResponse({ status: 200, description: "Blog content type updated." })
+  async updateBlogContentType(@Body() raw: UpdateBlogTypeDto) {
     const input = sanitizeBlogContentType(parseBlogContentTypeInput(raw));
     const error = validateBlogContentType(input);
     if (error) return simpleResponse(false, error);
@@ -50,8 +61,8 @@ export class BlogController {
   }
 
   @Get("/get/blog-content-category-list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get blog content category list." })
+  @ApiResponse({ status: 200, description: "List of blog categories." })
   async getBlogContentCategoryList() {
     const list = await this.blogService.getBlogContentCategories();
     return keyedResponse("blogContentCategories", list);
@@ -59,10 +70,11 @@ export class BlogController {
 
   @Post("/add/blog-content-category/:blogContentTypeId")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Add blog content category." })
-  @ApiParam({ name: "blogContentTypeId", description: "Content Type ID", example: 1, type: Number })
+  @ApiOperation({ summary: "Add a new blog content category." })
+  @ApiParam({ name: "blogContentTypeId", description: "Content Type unique identifier", example: 1, type: Number })
   @ApiBody({ type: CreateBlogCategoryDto })
-  async addBlogContentCategory(@Param("blogContentTypeId") blogContentTypeId: string, @Body() raw: unknown) {
+  @ApiResponse({ status: 201, description: "Blog category created." })
+  async addBlogContentCategory(@Param("blogContentTypeId") blogContentTypeId: string, @Body() raw: CreateBlogCategoryDto) {
     const input = sanitizeBlogContentCategory(parseBlogContentCategoryInput(raw));
     const error = validateBlogContentCategory(input);
     if (error) return simpleResponse(false, error);
@@ -73,8 +85,9 @@ export class BlogController {
   @Patch("/update/blog-content-category")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update blog content category." })
-  @ApiBody({ type: CreateBlogCategoryDto })
-  async updateBlogContentCategory(@Body() raw: unknown) {
+  @ApiBody({ type: UpdateBlogCategoryDto })
+  @ApiResponse({ status: 200, description: "Blog category updated." })
+  async updateBlogContentCategory(@Body() raw: UpdateBlogCategoryDto) {
     const input = sanitizeBlogContentCategory(parseBlogContentCategoryInput(raw));
     const error = validateBlogContentCategory(input);
     if (error) return simpleResponse(false, error);
@@ -83,8 +96,8 @@ export class BlogController {
   }
 
   @Get("/get/blog-content-list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get blog content list (admin)." })
+  @ApiResponse({ status: 200, description: "List of blog contents." })
   async getBlogContentList() {
     const list = await this.blogService.getBlogContentList();
     return keyedResponse("blogContents", list);
@@ -92,14 +105,16 @@ export class BlogController {
 
   @Get("/get/blog-content-list/customer")
   @ApiOperation({ summary: "Get blog content list for customer." })
+  @ApiResponse({ status: 200, description: "List of public blog contents." })
   async getCustomerBlogContentList() {
     const list = await this.blogService.getBlogContentList();
     return keyedResponse("blogContents", list);
   }
 
   @Get("/get/blogs/:blogId/recommended")
-  @ApiOperation({ summary: "Get recommended blogs." })
+  @ApiOperation({ summary: "Get recommended blogs for a specific blog." })
   @ApiParam({ name: "blogId", description: "Blog ID", example: 100, type: Number })
+  @ApiResponse({ status: 200, description: "List of recommended blogs." })
   async getRecommendedBlogs(@Param("blogId") blogId: string) {
     const list = await this.blogService.getRecommendedBlogs(BigInt(blogId));
     return keyedResponse("blogContents", list);
@@ -108,6 +123,7 @@ export class BlogController {
   @Get("/get/blogs/category/:blogCategoryId")
   @ApiOperation({ summary: "Get blogs by category ID." })
   @ApiParam({ name: "blogCategoryId", description: "Category ID", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "List of blogs in category." })
   async getBlogsByCategory(@Param("blogCategoryId") blogCategoryId: string) {
     const list = await this.blogService.getBlogsByCategory(BigInt(blogCategoryId));
     return keyedResponse("blogContents", list);
@@ -116,6 +132,7 @@ export class BlogController {
   @Get("/get/blog-content/:blogContentId")
   @ApiOperation({ summary: "Get blog content by ID." })
   @ApiParam({ name: "blogContentId", description: "Blog Content ID", example: 100, type: Number })
+  @ApiResponse({ status: 200, description: "Blog content details." })
   async getBlogContent(@Param("blogContentId") blogContentId: string) {
     const blog = await this.blogService.getBlogContentById(BigInt(blogContentId));
     return keyedResponse("blogContent", blog);
@@ -124,6 +141,7 @@ export class BlogController {
   @Get("/get/blog-content/slug/:slug")
   @ApiOperation({ summary: "Get blog content by slug." })
   @ApiParam({ name: "slug", description: "SEO Slug", example: "10-reasons-organic-cotton-is-better", type: String })
+  @ApiResponse({ status: 200, description: "Blog content by slug." })
   async getBlogContentBySlug(@Param("slug") slug: string) {
     const blog = await this.blogService.getBlogContentBySlug(slug);
     return keyedResponse("blogContent", blog);
@@ -132,6 +150,7 @@ export class BlogController {
   @Get("/get/blog-content-list/csv/:commaSeparatedIDList")
   @ApiOperation({ summary: "Get blog content list by CSV ID string." })
   @ApiParam({ name: "commaSeparatedIDList", description: "CSV IDs", example: "1,2,3", type: String })
+  @ApiResponse({ status: 200, description: "List of blog contents matching IDs." })
   async getBlogContentListCsv(@Param("commaSeparatedIDList") commaSeparatedIDList: string) {
     const list = await this.blogService.getBlogContentListByCsv(commaSeparatedIDList);
     return keyedResponse("blogContents", list);
@@ -139,9 +158,10 @@ export class BlogController {
 
   @Post("/add/blog-content")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Add blog content." })
+  @ApiOperation({ summary: "Add new blog content." })
   @ApiBody({ type: CreateBlogContentDto })
-  async addBlogContent(@Body() raw: unknown) {
+  @ApiResponse({ status: 201, description: "Blog content created." })
+  async addBlogContent(@Body() raw: CreateBlogContentDto) {
     const input = sanitizeBlogContent(parseBlogContentInput(raw));
     const error = validateBlogContent(input);
     if (error) return simpleResponse(false, error);
@@ -154,7 +174,8 @@ export class BlogController {
   @ApiOperation({ summary: "Update blog content." })
   @ApiParam({ name: "blogContentId", description: "Blog Content ID", example: 100, type: Number })
   @ApiBody({ type: UpdateBlogContentDto })
-  async updateBlogContent(@Param("blogContentId") blogContentId: string, @Body() raw: unknown) {
+  @ApiResponse({ status: 200, description: "Blog content updated." })
+  async updateBlogContent(@Param("blogContentId") blogContentId: string, @Body() raw: UpdateBlogContentDto) {
     const input = sanitizeBlogContent(parseBlogContentInput(raw));
     const error = validateBlogContent(input);
     if (error) return simpleResponse(false, error);
@@ -166,6 +187,7 @@ export class BlogController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Delete blog content." })
   @ApiParam({ name: "blogContentId", description: "Blog Content ID", example: 100, type: Number })
+  @ApiResponse({ status: 200, description: "Blog content deleted." })
   async deleteBlogContent(@Param("blogContentId") blogContentId: string) {
     const code = await this.blogService.deleteBlogContent(BigInt(blogContentId));
     return simpleResponse(code === ActionCode.DELETE_SUCCESS, "Deleted successfully");
@@ -175,7 +197,8 @@ export class BlogController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Add blog content section." })
   @ApiBody({ type: CreateBlogSectionDto })
-  async addBlogContentSection(@Body() raw: unknown) {
+  @ApiResponse({ status: 201, description: "Blog section created." })
+  async addBlogContentSection(@Body() raw: CreateBlogSectionDto) {
     const input = sanitizeBlogContentSection(parseBlogContentSectionInput(raw));
     const error = validateBlogContentSection(input);
     if (error) return simpleResponse(false, error);
@@ -187,8 +210,9 @@ export class BlogController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Update blog content section." })
   @ApiParam({ name: "blogContentSectionId", description: "Section ID", example: 1, type: Number })
-  @ApiBody({ type: CreateBlogSectionDto })
-  async updateBlogContentSection(@Param("blogContentSectionId") blogContentSectionId: string, @Body() raw: unknown) {
+  @ApiBody({ type: UpdateBlogSectionDto })
+  @ApiResponse({ status: 200, description: "Blog section updated." })
+  async updateBlogContentSection(@Param("blogContentSectionId") blogContentSectionId: string, @Body() raw: UpdateBlogSectionDto) {
     const input = sanitizeBlogContentSection(parseBlogContentSectionInput(raw));
     const error = validateBlogContentSection(input);
     if (error) return simpleResponse(false, error);
@@ -200,6 +224,7 @@ export class BlogController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Delete blog content section." })
   @ApiParam({ name: "blogContentSectionId", description: "Section ID", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Blog section deleted." })
   async deleteBlogContentSection(@Param("blogContentSectionId") blogContentSectionId: string) {
     const code = await this.blogService.deleteBlogContentSection(BigInt(blogContentSectionId));
     return simpleResponse(code === ActionCode.DELETE_SUCCESS, "Deleted successfully");
@@ -207,23 +232,31 @@ export class BlogController {
 
   // Table Explorer Data Endpoints
   @Get("/get/table-explorer/data/blog-content")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Get blog content table explorer data." })
   async getTableExplorerBlogContent() {
     const list = await this.blogService.getBlogContentList();
     return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/blog-content-section")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Get blog content section table explorer data." })
   async getTableExplorerBlogContentSection() {
     return keyedResponse("records", []);
   }
 
   @Get("/get/table-explorer/data/blog-content-category")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Get blog content category table explorer data." })
   async getTableExplorerBlogContentCategory() {
     const list = await this.blogService.getBlogContentCategories();
     return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/blog-content-type")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Get blog content type table explorer data." })
   async getTableExplorerBlogContentType() {
     const list = await this.blogService.getBlogContentTypes();
     return keyedResponse("records", list);

@@ -215,6 +215,7 @@ export class ProfilesDomainController {
   }
 
   @Get("/get/table-explorer/data/finish-profile-item/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect FinishProfileItem entity by ID" })
   async get_get_table_explorer_data_finish_profile_item_id(@Param('id') id: string) {
     try {
@@ -227,6 +228,7 @@ export class ProfilesDomainController {
   }
 
   @Get("/get/table-explorer/data/size-profile-guide/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect SizeProfileGuide entity by ID" })
   async get_get_table_explorer_data_size_profile_guide_id(@Param('id') id: string) {
     try {
@@ -239,6 +241,7 @@ export class ProfilesDomainController {
   }
 
   @Get("/get/table-explorer/data/size-profile-option/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect SizeProfileOption entity by ID" })
   async get_get_table_explorer_data_size_profile_option_id(@Param('id') id: string) {
     try {
@@ -251,6 +254,7 @@ export class ProfilesDomainController {
   }
 
   @Get("/get/table-explorer/data/badge-profile-item/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect BadgeProfileItem entity by ID" })
   async get_get_table_explorer_data_badge_profile_item_id(@Param('id') id: string) {
     try {
@@ -263,6 +267,7 @@ export class ProfilesDomainController {
   }
 
   @Get("/get/table-explorer/data/finish-profile/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect FinishProfile entity by ID" })
   async get_get_table_explorer_data_finish_profile_id(@Param('id') id: string) {
     try {
@@ -274,6 +279,7 @@ export class ProfilesDomainController {
     }
   }
   @Get("/get/table-explorer/data/finish-profile-item")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/finish-profile-item" })
   async get_get_table_explorer_data_finish_profile_item(@Query() query: any) {
     try {
@@ -286,6 +292,7 @@ export class ProfilesDomainController {
   }
 
   @Get("/get/table-explorer/data/finish-profile")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/finish-profile" })
   async get_get_table_explorer_data_finish_profile(@Query() query: any) {
     try {

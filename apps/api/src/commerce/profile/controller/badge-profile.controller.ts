@@ -25,13 +25,11 @@ export class BadgeProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get('get/badge-profile-list')
-  @RequireGate(GateCode.CODE_SU)
   async getBadgeProfileList() {
     return this.profileService.getBadgeProfileList();
   }
 
   @Get('get/badge-profile/:profileId')
-  @RequireGate(GateCode.CODE_SU)
   async getBadgeProfile(@Param('profileId') profileId: string) {
     return this.profileService.getBadgeProfile(Number(profileId));
   }
@@ -63,19 +61,16 @@ export class BadgeProfileController {
   }
 
   @Get('get/table-explorer/data/badge-profile')
-  @RequireGate(GateCode.CODE_SU)
   async exploreBadgeProfile(@Query('page') page: string, @Query('size') size: string) {
     return this.profileService.exploreBadgeProfile(Number(page) || 0, Number(size) || 10);
   }
 
   @Get('get/table-explorer/data/badge-profile/:id')
-  @RequireGate(GateCode.CODE_SU)
   async exploreBadgeProfileById(@Param('id') id: string) {
     return this.profileService.getBadgeProfile(Number(id));
   }
 
   @Get('get/table-explorer/data/badge-profile-item')
-  @RequireGate(GateCode.CODE_SU)
   async exploreBadgeProfileItem(@Query('page') page: string, @Query('size') size: string) {
     return this.profileService.exploreBadgeProfileItem(Number(page) || 0, Number(size) || 10);
   }

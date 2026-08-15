@@ -117,6 +117,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/element-template/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect ElementTemplate entity by ID" })
   async get_get_table_explorer_data_element_template_id(@Param('id') id: string) {
     try {
@@ -129,6 +130,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/step-element/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StepElement entity by ID" })
   async get_get_table_explorer_data_step_element_id(@Param('id') id: string) {
     try {
@@ -141,6 +143,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/step-element-template/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StepElementTemplate entity by ID" })
   async get_get_table_explorer_data_step_element_template_id(@Param('id') id: string) {
     try {
@@ -153,6 +156,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/element-feedback/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect ElementFeedback entity by ID" })
   async get_get_table_explorer_data_element_feedback_id(@Param('id') id: string) {
     try {
@@ -165,6 +169,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect Workflow entity by ID" })
   async get_get_table_explorer_data_workflow_id(@Param('id') id: string) {
     try {
@@ -177,6 +182,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow-custom-order-mappin")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect WorkflowCustomOrderMapping entity by ID" })
   async get_get_table_explorer_data_workflow_custom_order_mappin(@Query() query: any) {
     try {
@@ -189,6 +195,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow-template/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect WorkflowTemplate entity by ID" })
   async get_get_table_explorer_data_workflow_template_id(@Param('id') id: string) {
     try {
@@ -200,6 +207,7 @@ export class WorkflowMigratedDomainController {
     }
   }
   @Get("/get/table-explorer/data/element-feedback")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/element-feedback" })
   async get_get_table_explorer_data_element_feedback(@Query() query: any) {
     try {
@@ -212,6 +220,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/element-template")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/element-template" })
   async get_get_table_explorer_data_element_template(@Query() query: any) {
     try {
@@ -224,6 +233,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/step-element-template")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/step-element-template" })
   async get_get_table_explorer_data_step_element_template(@Query() query: any) {
     try {
@@ -236,6 +246,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/step-element")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/step-element" })
   async get_get_table_explorer_data_step_element(@Query() query: any) {
     try {
@@ -248,6 +259,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/subprocess-element-template")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/subprocess-element-template" })
   async get_get_table_explorer_data_subprocess_element_template(@Query() query: any) {
     try {
@@ -260,6 +272,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow-custom-order-mapping/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/workflow-custom-order-mapping/:id" })
   async get_get_table_explorer_data_workflow_custom_order_mapping_id(@Param('id') id: string) {
     try {
@@ -272,6 +285,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow-custom-order-mapping")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/workflow-custom-order-mapping" })
   async get_get_table_explorer_data_workflow_custom_order_mapping(@Query() query: any) {
     try {
@@ -284,6 +298,7 @@ export class WorkflowMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/workflow")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/workflow" })
   async get_get_table_explorer_data_workflow(@Query() query: any) {
     try {

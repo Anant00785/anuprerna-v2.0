@@ -61,7 +61,6 @@ export class ProductSizeProfileController {
 
   /** retrieveProductSizeProfileById(Long id) — enriched with sizeProfileOption. */
   @Get("/get/product-size-profile/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single product size profile by id, enriched with its size profile option." })
   @ApiResponse({ status: 200, description: "Product size profile or null." })
   async getProductSizeProfile(@Param("id") id: string) {
@@ -123,7 +122,6 @@ export class ProductSizeProfileController {
 
   /** getProductSizeProfileBySizeOption(SizeProfileOption option) */
   @Get("/get/product-size-profile/by-size-option/:sizeProfileOptionId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List product size profile rows for a given size profile option." })
   @ApiResponse({ status: 200, description: "Matching product size profile rows." })
   async getProductSizeProfileBySizeOption(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
@@ -152,7 +150,6 @@ export class ProductSizeProfileController {
    * product-specific override is set (see service doc).
    */
   @Get("/get/product-size-profile/consumed-fabric-for-impact")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Resolve the consumed-fabric value used for impact calculations, for a product/size-option pair." })
   @ApiResponse({ status: 200, description: "Consumed fabric value, or null if unresolved." })
   async getConsumedFabricForImpact(@Query() query: unknown) {

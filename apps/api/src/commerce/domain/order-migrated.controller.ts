@@ -1,12 +1,13 @@
 import * as schema from "../../database/schema/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 // @ts-nocheck
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards, BadRequestException } from "@nestjs/common";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
+import { UpdateOrderGlobalNoteDto, UpdateOrderShipmentDto } from "../order/dto/order.dto.js";
 
 @ApiTags("Order")
 @ApiBearerAuth()
@@ -60,28 +61,50 @@ export class OrderMigratedDomainController {
   }
 
   @Patch("/update/order/global-note")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Overwrite staff internal global note on order" })
-  async patch_update_order_global_note(@Body() body: any) {
+  @ApiBody({ type: UpdateOrderGlobalNoteDto })
+  @ApiResponse({ status: 200, description: "Internal global note updated" })
+  async patch_update_order_global_note(@Body() body: UpdateOrderGlobalNoteDto) {
+    if (!body || !body.orderId) {
+      throw new BadRequestException("Order ID is required");
+    }
+
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
+      await (this.db as any).execute(sql`
+        UPDATE orders 
+        SET global_note = ${body.globalNote ?? ""}
+        WHERE id = ${Number(body.orderId)}
+      `);
+      return simpleResponse(true, "Order global note updated successfully.");
+    } catch (err: any) {
+      return simpleResponse(false, `Failed to update order global note: ${err.message || err}`);
     }
   }
 
   @Patch("/update/order/shipment")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Attach shipment tracking to order" })
-  async patch_update_order_shipment(@Body() body: any) {
+  @ApiBody({ type: UpdateOrderShipmentDto })
+  @ApiResponse({ status: 200, description: "Shipment tracking attached to order" })
+  async patch_update_order_shipment(@Body() body: UpdateOrderShipmentDto) {
+    if (!body || !body.orderId) {
+      throw new BadRequestException("Order ID is required");
+    }
+
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
+      if (body.shipmentId) {
+        await (this.db as any).execute(sql`
+          UPDATE shipment 
+          SET tracking_number = ${body.shippingCode ?? ""},
+              provider = ${body.serviceProvider ?? ""},
+              tracking_url = ${body.trackingUrl ?? ""}
+          WHERE id = ${Number(body.shipmentId)}
+        `);
+      }
+      return simpleResponse(true, "Order shipment updated successfully.");
+    } catch (err: any) {
+      return simpleResponse(false, `Failed to update order shipment: ${err.message || err}`);
     }
   }
 
@@ -150,8 +173,7 @@ export class OrderMigratedDomainController {
   @ApiOperation({ summary: "Export JSON data dump of standard orders" })
   async get_get_data_dump_order(@Query() query: any) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
+      const result = await (this.db as any).select().from(schema.orders);
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -162,8 +184,7 @@ export class OrderMigratedDomainController {
   @ApiOperation({ summary: "Export JSON data dump of order line items" })
   async get_get_data_dump_order_item(@Query() query: any) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
+      const result = await (this.db as any).select().from(schema.orderItem);
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -171,6 +192,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/order-item/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect OrderItem entity by ID" })
   async get_get_table_explorer_data_order_item_id(@Param('id') id: string) {
     try {
@@ -183,6 +205,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/order-review-scheduled-email/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect OrderReviewScheduledEmail entity by ID" })
   async get_get_table_explorer_data_order_review_scheduled_email_i(@Query() query: any) {
     try {
@@ -195,6 +218,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/orders/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect Orders entity by ID" })
   async get_get_table_explorer_data_orders_id(@Param('id') id: string) {
     try {
@@ -243,6 +267,7 @@ export class OrderMigratedDomainController {
     }
   }
   @Get("/get/table-explorer/data/order-fulfillment/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-fulfillment/:id" })
   async get_get_table_explorer_data_order_fulfillment_id(@Param('id') id: string) {
     try {
@@ -255,6 +280,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/order-fulfillment")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-fulfillment" })
   async get_get_table_explorer_data_order_fulfillment(@Query() query: any) {
     try {
@@ -267,6 +293,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/order-item-fulfillment")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-item-fulfillment" })
   async get_get_table_explorer_data_order_item_fulfillment(@Query() query: any) {
     try {
@@ -279,6 +306,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/order-item")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-item" })
   async get_get_table_explorer_data_order_item(@Query() query: any) {
     try {
@@ -291,6 +319,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/order-review-scheduled-email")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-review-scheduled-email" })
   async get_get_table_explorer_data_order_review_scheduled_email(@Query() query: any) {
     try {
@@ -303,6 +332,7 @@ export class OrderMigratedDomainController {
   }
 
   @Get("/get/table-explorer/data/orders")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/orders" })
   async get_get_table_explorer_data_orders(@Query() query: any) {
     try {

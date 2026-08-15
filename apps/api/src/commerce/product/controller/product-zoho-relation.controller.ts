@@ -72,7 +72,6 @@ export class ProductZohoRelationController {
 
   /** retrieveProductZohoRelationById(Long id) */
   @Get("/get/product-zoho-relation/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a single product Zoho relation by id." })
   @ApiResponse({ status: 200, description: "Product Zoho relation or null." })
   async getProductZohoRelation(@Param("id") id: string) {
@@ -135,7 +134,6 @@ export class ProductZohoRelationController {
 
   /** findProductZohoRelationByProductAndSku(Product product, String sku) */
   @Get("/get/product-zoho-relation/by-product-and-sku")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a product Zoho relation by product id and SKU." })
   @ApiResponse({ status: 200, description: "Product Zoho relation or null." })
   async getByProductAndSku(@Query() query: unknown) {
@@ -146,7 +144,6 @@ export class ProductZohoRelationController {
 
   /** findProductZohoRelationByZohoItemIdAndSku(String zohoItemId, String sku) */
   @Get("/get/product-zoho-relation/by-zoho-item-and-sku")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a product Zoho relation by Zoho item id and SKU." })
   @ApiResponse({ status: 200, description: "Product Zoho relation or null." })
   async getByZohoItemIdAndSku(@Query() query: unknown) {
@@ -157,7 +154,6 @@ export class ProductZohoRelationController {
 
   /** findProductZohoRelationByZohoItemId(String zohoItemId) */
   @Get("/get/product-zoho-relation/by-zoho-item/:zohoItemId")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Retrieve a product Zoho relation by Zoho item id." })
   @ApiResponse({ status: 200, description: "Product Zoho relation or null." })
   async getByZohoItemId(@Param("zohoItemId") zohoItemId: string) {
@@ -168,7 +164,6 @@ export class ProductZohoRelationController {
 
   /** findAllByDisabledFalse() — active Zoho relations where the parent product is also active. */
   @Get("/get/product-zoho-relation/active-with-active-product")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List active product Zoho relations whose parent product is also active." })
   @ApiResponse({ status: 200, description: "Matching product Zoho relations." })
   async getActiveWithActiveProduct() {
@@ -178,7 +173,6 @@ export class ProductZohoRelationController {
 
   /** streamAllByFinishedProduct(boolean includeDisabled) — see service.ts STREAMING NOTE. */
   @Get("/get/product-zoho-relation/stream/finished-product")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Bulk list of product Zoho relations joined to finished products." })
   @ApiResponse({ status: 200, description: "Matching product Zoho relations." })
   async getStreamAllByFinishedProduct(@Query("includeDisabled") includeDisabled?: string) {
@@ -189,7 +183,6 @@ export class ProductZohoRelationController {
 
   /** streamAllByFabricProduct(boolean includeDisabled) — see service.ts STREAMING NOTE. */
   @Get("/get/product-zoho-relation/stream/fabric-product")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Bulk list of product Zoho relations joined to fabric products." })
   @ApiResponse({ status: 200, description: "Matching product Zoho relations." })
   async getStreamAllByFabricProduct(@Query("includeDisabled") includeDisabled?: string) {
