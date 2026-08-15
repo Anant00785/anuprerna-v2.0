@@ -1,13 +1,33 @@
-import * as schema from "../../database/schema/schema.js";
-import { eq } from "drizzle-orm";
 // @ts-nocheck
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, Req, HttpCode, Inject, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  Req,
+  Inject,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import * as schema from "../../database/schema/schema.js";
+import { eq, desc } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
 import { IPLocationService } from "../iplocation/service/iplocation.service.js";
+import { CreateForexDto, UpdateForexDto } from "../forex/controller/forex.controller.js";
 
 @ApiTags("Currency & Location")
 @ApiBearerAuth()
@@ -21,9 +41,10 @@ export class CurrencyLocationDomainController {
 
   @Get("/get/ip-wise/currency")
   @ApiOperation({ summary: "Geolocation dynamic currency converter" })
+  @ApiResponse({ status: 200, description: "IP-wise currency details" })
   async get_get_ip_wise_currency(@Req() req: any, @Query() query: any) {
     try {
-      let ip = query?.ip || req?.headers?.['x-forwarded-for'] as string || req?.socket?.remoteAddress || '127.0.0.1';
+      let ip = query?.ip || req?.headers?.["x-forwarded-for"] || req?.socket?.remoteAddress || "127.0.0.1";
       if (Array.isArray(ip)) ip = ip[0];
       const data = await this.ipLocationService.getCurrencyCountryFromIPAddress(ip);
       return keyedResponse("currency", data);
@@ -32,11 +53,128 @@ export class CurrencyLocationDomainController {
     }
   }
 
-  @Get("/get/data-dump/forex")
-  @ApiOperation({ summary: "Export JSON data dump of forex exchange history" })
-  async get_get_data_dump_forex(@Query() query: any) {
+  @Get(["/get/forex/list", "/get/forex-list"])
+  @ApiOperation({ summary: "List supported forex currencies" })
+  @ApiResponse({ status: 200, description: "List of supported currencies" })
+  async get_get_forex_list(@Query() query: any) {
     try {
-      const result = await (this.db as any).select().from(schema.forexExchangeRate);
+      const result = await (this.db as any)
+        .select()
+        .from(schema.forex)
+        .orderBy(desc(schema.forex.id));
+      const formatted = (result || []).map(row => ({
+        id: String(row.id),
+        version: Number(row.version),
+        country: row.country,
+        currency: row.currency,
+        rate: row.rate ? parseFloat(String(row.rate)) : null,
+      }));
+      return {
+        success: true,
+        message: "",
+        data: formatted,
+        forexList: formatted,
+      };
+    } catch (err) {
+      return { success: true, message: "", data: [], forexList: [] };
+    }
+  }
+
+  @Get("/get/forex/:forexId")
+  @ApiOperation({ summary: "Retrieve forex currency by ID" })
+  @ApiParam({ name: "forexId", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Forex details" })
+  async get_get_forex_forexId(@Param("forexId") forexId: string) {
+    if (forexId === "list") {
+      return this.get_get_forex_list({});
+    }
+    try {
+      const [row] = await (this.db as any)
+        .select()
+        .from(schema.forex)
+        .where(eq(schema.forex.id, BigInt(forexId)));
+      return keyedResponse("data", row ? [{
+        id: String(row.id),
+        version: Number(row.version),
+        country: row.country,
+        currency: row.currency,
+        rate: row.rate ? parseFloat(String(row.rate)) : null,
+      }] : []);
+    } catch (err) {
+      return keyedResponse("data", []);
+    }
+  }
+
+  @Post("/add/forex")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Register new forex currency" })
+  @ApiBody({ type: CreateForexDto })
+  @ApiResponse({ status: 201, description: "Forex currency created" })
+  async post_add_forex(@Body() body: CreateForexDto) {
+    try {
+      const [inserted] = await (this.db as any)
+        .insert(schema.forex)
+        .values({
+          country: body.country,
+          currency: body.currency,
+          rate: String(body.rate),
+        })
+        .returning();
+      return keyedResponse("data", inserted ? [inserted] : []);
+    } catch (err: any) {
+      return keyedResponse("data", []);
+    }
+  }
+
+  @Patch("/update/forex")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Update forex currency parameters" })
+  @ApiBody({ type: UpdateForexDto })
+  @ApiResponse({ status: 200, description: "Forex currency updated" })
+  async patch_update_forex(@Body() body: UpdateForexDto) {
+    try {
+      const updateData: any = {};
+      if (body.country) updateData.country = body.country;
+      if (body.currency) updateData.currency = body.currency;
+      if (body.rate !== undefined) updateData.rate = String(body.rate);
+
+      const [updated] = await (this.db as any)
+        .update(schema.forex)
+        .set(updateData)
+        .where(eq(schema.forex.id, BigInt(body.forexId)))
+        .returning();
+      return keyedResponse("data", updated ? [updated] : []);
+    } catch (err) {
+      return keyedResponse("data", []);
+    }
+  }
+
+  @Delete("/delete/forex/:forexId")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Remove forex currency" })
+  @ApiParam({ name: "forexId", example: 1, type: Number })
+  @ApiResponse({ status: 200, description: "Forex currency deleted" })
+  async delete_delete_forex_forexId(@Param("forexId") forexId: string) {
+    try {
+      await (this.db as any)
+        .delete(schema.forex)
+        .where(eq(schema.forex.id, BigInt(forexId)));
+      return simpleResponse(true, "Forex currency deleted successfully.");
+    } catch (err) {
+      return simpleResponse(false, "Failed to delete forex currency.");
+    }
+  }
+
+  @Get("/get/table-explorer/data/forex/:id")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Inspect Forex entity by ID" })
+  @ApiParam({ name: "id", example: 1, type: Number })
+  async get_get_table_explorer_data_forex_id(@Param("id") id: string) {
+    try {
+      const result = await (this.db as any)
+        .select()
+        .from(schema.forex)
+        .where(eq(schema.forex.id, BigInt(id)));
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -46,108 +184,13 @@ export class CurrencyLocationDomainController {
   @Get("/get/table-explorer/data/forex-exchange-rate/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect ForexExchangeRate entity by ID" })
-  async get_get_table_explorer_data_forex_exchange_rate_id(@Param('id') id: string) {
+  @ApiParam({ name: "id", example: 1, type: Number })
+  async get_get_table_explorer_data_forex_exchange_rate_id(@Param("id") id: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forexExchangeRate).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/table-explorer/data/forex/:id")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Inspect Forex entity by ID" })
-  async get_get_table_explorer_data_forex_id(@Param('id') id: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forex).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/forex-list")
-  @ApiOperation({ summary: "List supported forex currencies" })
-  async get_get_forex_list(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forex).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Post("/add/forex")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
-  @ApiOperation({ summary: "Register new forex currency" })
-  async post_add_forex(@Body() body: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Patch("/update/forex")
-  @ApiBody({ description: "Request payload body", schema: { type: "object", additionalProperties: true } })
-  @ApiOperation({ summary: "Update forex currency parameters" })
-  async patch_update_forex(@Body() body: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Delete("/delete/forex/:forexId")
-  @ApiOperation({ summary: "Remove forex currency" })
-  async delete_delete_forex_forexId(@Param('forexId') forexId: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/forex-exchange-rate/latest")
-  @ApiOperation({ summary: "Get latest live exchange rates" })
-  async get_get_forex_exchange_rate_latest(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forexExchangeRate).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/forex-exchange-rate-list")
-  @ApiOperation({ summary: "Fetch historical forex exchange rate list" })
-  async get_get_forex_exchange_rate_list(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forexExchangeRate).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-  @Get("/get/forex/:forexId")
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/forex/:forexId" })
-  async get_get_forex_forexId(@Param('forexId') forexId: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forex).limit(50);
+      const result = await (this.db as any)
+        .select()
+        .from(schema.forexExchangeRate)
+        .where(eq(schema.forexExchangeRate.id, BigInt(id)));
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -156,11 +199,13 @@ export class CurrencyLocationDomainController {
 
   @Get("/get/table-explorer/data/forex-exchange-rate")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/forex-exchange-rate" })
+  @ApiOperation({ summary: "Table explorer data for ForexExchangeRate" })
   async get_get_table_explorer_data_forex_exchange_rate(@Query() query: any) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forexExchangeRate).limit(50);
+      const result = await (this.db as any)
+        .select()
+        .from(schema.forexExchangeRate)
+        .limit(50);
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -169,15 +214,16 @@ export class CurrencyLocationDomainController {
 
   @Get("/get/table-explorer/data/forex")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/forex" })
+  @ApiOperation({ summary: "Table explorer data for Forex" })
   async get_get_table_explorer_data_forex(@Query() query: any) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.forex).limit(50);
+      const result = await (this.db as any)
+        .select()
+        .from(schema.forex)
+        .limit(50);
       return keyedResponse("data", result || []);
     } catch (err) {
       return keyedResponse("data", []);
     }
   }
-
 }

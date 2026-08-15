@@ -299,7 +299,7 @@ export class UpdateCustomOrderInfoDto {
 }
 
 export class CustomOrderItemFulfillmentInputDto {
-  @ApiProperty({ example: 1, description: "Custom Order Item ID" })
+  @ApiProperty({ example: 4, description: "Custom Order Item ID" })
   @IsNotEmpty()
   @IsNumber()
   customOrderItemId!: number;
@@ -311,12 +311,12 @@ export class CustomOrderItemFulfillmentInputDto {
 }
 
 export class AddCustomOrderFulfillmentDto {
-  @ApiProperty({ example: 1, description: "Custom Order ID" })
+  @ApiProperty({ example: 2440968, description: "Custom Order ID" })
   @IsNotEmpty()
   @IsNumber()
   customOrderId!: number;
 
-  @ApiPropertyOptional({ example: 1, description: "Shipment ID" })
+  @ApiPropertyOptional({ example: 62591603, description: "Shipment ID (optional)" })
   @IsOptional()
   @IsNumber()
   shipmentId?: number;
@@ -345,7 +345,7 @@ export class AddCustomOrderFulfillmentDto {
 }
 
 export class UpdateCustomOrderFulfillmentDto {
-  @ApiProperty({ example: 1, description: "Custom Order Fulfillment ID" })
+  @ApiProperty({ example: 122434554, description: "Custom Order Fulfillment ID" })
   @IsNotEmpty()
   @IsNumber()
   customOrderFulfillmentId!: number;
@@ -379,7 +379,7 @@ export class CustomOrderItemReadyInputDto {
 }
 
 export class AddCustomOrderReadyDto {
-  @ApiProperty({ example: 1, description: "Custom Order ID" })
+  @ApiProperty({ example: 2440968, description: "Custom Order ID" })
   @IsNotEmpty()
   @IsNumber()
   customOrderId!: number;
@@ -403,7 +403,7 @@ export class AddCustomOrderReadyDto {
 }
 
 export class UpdateCustomOrderReadyDto {
-  @ApiProperty({ example: 1, description: "Custom Order Ready ID" })
+  @ApiProperty({ example: 125526857, description: "Custom Order Ready ID" })
   @IsNotEmpty()
   @IsNumber()
   customOrderReadyId!: number;
@@ -420,7 +420,7 @@ export class UpdateCustomOrderReadyDto {
 }
 
 export class AddCustomOrderAdjustmentDto {
-  @ApiProperty({ example: 1, description: "Custom Order ID" })
+  @ApiProperty({ example: 2440968, description: "Custom Order ID" })
   @IsNotEmpty()
   @IsNumber()
   customOrderId!: number;
@@ -434,10 +434,15 @@ export class AddCustomOrderAdjustmentDto {
   @IsNotEmpty()
   @IsNumber()
   amount!: number;
+
+  @ApiPropertyOptional({ example: "INR", description: "Currency code" })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }
 
 export class UpdateCustomOrderAdjustmentDto {
-  @ApiProperty({ example: 1, description: "Adjustment ID" })
+  @ApiProperty({ example: 2652871, description: "Adjustment ID" })
   @IsNotEmpty()
   @IsNumber()
   adjustmentId!: number;

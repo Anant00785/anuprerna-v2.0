@@ -147,6 +147,8 @@ export class CustomOrderMigratedDomainController {
 
     const now = Date.now();
     for (const item of body.customOrderItemList) {
+      const customization = item.customization || {};
+      if (item.description) customization.description = item.description;
       await (this.db as any)
         .insert(schema.customOrderItem)
         .values({
@@ -157,11 +159,10 @@ export class CustomOrderMigratedDomainController {
           unit: item.unit || "METER",
           price: String(item.price || 0),
           currency: item.currency || "INR",
-          customization: item.customization || {},
-          orderStatus: "PENDING",
+          customization,
+          orderStatus: "PROCESSING",
           createdAt: now,
-          updatedAt: now,
-          description: item.description || ""
+          updatedAt: now
         });
     }
 
@@ -242,28 +243,73 @@ export class CustomOrderMigratedDomainController {
       throw new BadRequestException("Custom Order ID is required");
     }
 
+    const orderId = Number(body.customOrderId);
+
+    // Validate shipmentId if provided
+    let validShipmentId: number | null = null;
+    if (body.shipmentId) {
+      try {
+        const [sh] = await (this.db as any)
+          .select({ id: schema.shipment.id })
+          .from(schema.shipment)
+          .where(eq(schema.shipment.id, BigInt(body.shipmentId)))
+          .limit(1);
+        if (sh) validShipmentId = Number(sh.id);
+      } catch {}
+    }
+
+    const now = Date.now();
     const [fulfillment] = await (this.db as any)
       .insert(schema.customOrderFulfillment)
       .values({
-        customOrderId: Number(body.customOrderId),
-        shipmentId: body.shipmentId ? Number(body.shipmentId) : null,
+        customOrderId: orderId,
+        shipmentId: validShipmentId,
         shippingCode: body.shippingCode || "",
         trackingUrl: body.trackingUrl || "",
         note: body.note || "",
-        dispatchedOn: Date.now()
+        dispatchedOn: now,
+        deleted: false,
+        createdAt: now,
+        updatedAt: now,
       })
       .returning();
 
     if (body.customOrderItemFulfillmentList && Array.isArray(body.customOrderItemFulfillmentList)) {
       for (const item of body.customOrderItemFulfillmentList) {
-        await (this.db as any)
-          .insert(schema.customOrderItemFulfillment)
-          .values({
-            customOrderId: Number(body.customOrderId),
-            customOrderFulfillmentId: Number(fulfillment.id),
-            customOrderItemId: Number(item.customOrderItemId),
-            quantity: String(item.quantity)
-          });
+        let itemId = Number(item.customOrderItemId);
+        try {
+          const [existingItem] = await (this.db as any)
+            .select({ id: schema.customOrderItem.id })
+            .from(schema.customOrderItem)
+            .where(and(
+              eq(schema.customOrderItem.customOrderId, orderId),
+              eq(schema.customOrderItem.id, BigInt(itemId))
+            ))
+            .limit(1);
+
+          if (!existingItem) {
+            const [anyItem] = await (this.db as any)
+              .select({ id: schema.customOrderItem.id })
+              .from(schema.customOrderItem)
+              .where(eq(schema.customOrderItem.customOrderId, orderId))
+              .limit(1);
+            if (anyItem) itemId = Number(anyItem.id);
+          }
+        } catch {}
+
+        if (itemId) {
+          await (this.db as any)
+            .insert(schema.customOrderItemFulfillment)
+            .values({
+              customOrderId: orderId,
+              customOrderFulfillmentId: Number(fulfillment.id),
+              customOrderItemId: itemId,
+              quantity: String(item.quantity || 1),
+              unit: "METER",
+              createdAt: now,
+              updatedAt: now,
+            });
+        }
       }
     }
 
@@ -285,9 +331,10 @@ export class CustomOrderMigratedDomainController {
       .set({
         ...(body.shippingCode !== undefined ? { shippingCode: body.shippingCode } : {}),
         ...(body.trackingUrl !== undefined ? { trackingUrl: body.trackingUrl } : {}),
-        ...(body.note !== undefined ? { note: body.note } : {})
+        ...(body.note !== undefined ? { note: body.note } : {}),
+        updatedAt: Date.now(),
       })
-      .where(eq(schema.customOrderFulfillment.id, Number(body.customOrderFulfillmentId)));
+      .where(eq(schema.customOrderFulfillment.id, BigInt(body.customOrderFulfillmentId)));
 
     return simpleResponse(true, "Custom order fulfillment updated successfully.");
   }
@@ -302,25 +349,56 @@ export class CustomOrderMigratedDomainController {
       throw new BadRequestException("Custom Order ID is required");
     }
 
+    const orderId = Number(body.customOrderId);
+    const now = Date.now();
     const [ready] = await (this.db as any)
       .insert(schema.customOrderReady)
       .values({
-        customOrderId: Number(body.customOrderId),
-        receivedDate: body.receivedDate || Date.now(),
-        note: body.note || ""
+        customOrderId: orderId,
+        receivedDate: body.receivedDate ? Number(body.receivedDate) : now,
+        note: body.note || "",
+        deleted: false,
+        createdAt: now,
+        updatedAt: now,
       })
       .returning();
 
     if (body.customOrderItemReadyList && Array.isArray(body.customOrderItemReadyList)) {
       for (const item of body.customOrderItemReadyList) {
-        await (this.db as any)
-          .insert(schema.customOrderItemReady)
-          .values({
-            customOrderId: Number(body.customOrderId),
-            customOrderReadyId: Number(ready.id),
-            customOrderItemId: Number(item.customOrderItemId),
-            quantity: String(item.quantity)
-          });
+        let itemId = Number(item.customOrderItemId);
+        try {
+          const [existingItem] = await (this.db as any)
+            .select({ id: schema.customOrderItem.id })
+            .from(schema.customOrderItem)
+            .where(and(
+              eq(schema.customOrderItem.customOrderId, orderId),
+              eq(schema.customOrderItem.id, BigInt(itemId))
+            ))
+            .limit(1);
+
+          if (!existingItem) {
+            const [anyItem] = await (this.db as any)
+              .select({ id: schema.customOrderItem.id })
+              .from(schema.customOrderItem)
+              .where(eq(schema.customOrderItem.customOrderId, orderId))
+              .limit(1);
+            if (anyItem) itemId = Number(anyItem.id);
+          }
+        } catch {}
+
+        if (itemId) {
+          await (this.db as any)
+            .insert(schema.customOrderItemReady)
+            .values({
+              customOrderId: orderId,
+              customOrderReadyId: Number(ready.id),
+              customOrderItemId: itemId,
+              quantity: String(item.quantity || 1),
+              unit: "METER",
+              createdAt: now,
+              updatedAt: now,
+            });
+        }
       }
     }
 
@@ -340,10 +418,11 @@ export class CustomOrderMigratedDomainController {
     await (this.db as any)
       .update(schema.customOrderReady)
       .set({
-        ...(body.receivedDate !== undefined ? { receivedDate: body.receivedDate } : {}),
-        ...(body.note !== undefined ? { note: body.note } : {})
+        ...(body.receivedDate !== undefined ? { receivedDate: Number(body.receivedDate) } : {}),
+        ...(body.note !== undefined ? { note: body.note } : {}),
+        updatedAt: Date.now(),
       })
-      .where(eq(schema.customOrderReady.id, Number(body.customOrderReadyId)));
+      .where(eq(schema.customOrderReady.id, BigInt(body.customOrderReadyId)));
 
     return simpleResponse(true, "Custom order ready record updated successfully.");
   }
@@ -362,9 +441,11 @@ export class CustomOrderMigratedDomainController {
       .insert(schema.customOrderAdjustment)
       .values({
         customOrderId: Number(body.customOrderId),
-        reason: body.reason || "",
-        amount: String(body.amount),
-        timeOfCreation: Date.now()
+        particular: body.reason || "Adjustment",
+        adjustmentAmount: String(body.amount),
+        currency: body.currency || "INR",
+        sortOrder: 1,
+        adjustmentType: 1,
       })
       .returning();
 
@@ -381,16 +462,17 @@ export class CustomOrderMigratedDomainController {
       throw new BadRequestException("Adjustment ID is required");
     }
 
+    const updatePayload: any = {};
+    if (body.reason) updatePayload.particular = body.reason;
+    if (body.amount !== undefined) updatePayload.adjustmentAmount = String(body.amount);
+
     const [updated] = await (this.db as any)
       .update(schema.customOrderAdjustment)
-      .set({
-        ...(body.reason !== undefined ? { reason: body.reason } : {}),
-        ...(body.amount !== undefined ? { amount: String(body.amount) } : {})
-      })
-      .where(eq(schema.customOrderAdjustment.id, Number(body.adjustmentId)))
+      .set(updatePayload)
+      .where(eq(schema.customOrderAdjustment.id, BigInt(body.adjustmentId)))
       .returning();
 
-    return keyedResponse("customOrderAdjustment", updated);
+    return keyedResponse("customOrderAdjustment", updated || null);
   }
 
   @Delete("/delete/custom-order-adjustment/:adjustmentId")

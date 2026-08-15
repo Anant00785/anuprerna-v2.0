@@ -1949,7 +1949,7 @@ export const customOrderItem = pgTable("custom_order_item", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	createdAt: bigint("created_at", { mode: "number" }).notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+	updatedAt: bigint("updated_at", { mode: "number" }).default(0).notNull(),
 	description: text().default('').notNull(),
 }, (table) => [
 	foreignKey({

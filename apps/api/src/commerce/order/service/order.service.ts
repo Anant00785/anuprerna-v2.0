@@ -11,7 +11,7 @@ export class OrderService {
     return this.orderRepository.findById(id);
   }
 
-  async getCustomerOrders(customerId: bigint, page: number, size: number) {
+  async getCustomerOrders(customerId: bigint | number, page: number, size: number) {
     return this.orderRepository.findByCustomerIdPaginated(customerId, page, size);
   }
 
@@ -66,5 +66,35 @@ export class OrderService {
 
   async deleteOrder(id: bigint) {
     return this.orderRepository.deleteOrder(id);
+  }
+
+  // ─── Custom Order Service Methods ──────────────────────────────────────────
+
+  async getCustomOrderById(id: bigint) {
+    return this.orderRepository.findCustomOrderById(id);
+  }
+
+  async getCustomOrdersByTenant(tenantId: bigint | number) {
+    return this.orderRepository.findCustomOrdersByTenant(tenantId);
+  }
+
+  async getAllCustomOrders() {
+    return this.orderRepository.findAllCustomOrders();
+  }
+
+  async createCustomOrder(tenantId: bigint | number, data: any) {
+    return this.orderRepository.createCustomOrder(tenantId, data);
+  }
+
+  async updateCustomOrder(data: any) {
+    return this.orderRepository.updateCustomOrder(data);
+  }
+
+  async cancelCustomOrder(id: bigint, tenantId: bigint | number) {
+    return this.orderRepository.cancelCustomOrder(id, tenantId);
+  }
+
+  async deleteCustomOrder(id: bigint) {
+    return this.orderRepository.deleteCustomOrder(id);
   }
 }
