@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Post, Query } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { CompatibilityService } from "./compatibility.service.js";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
@@ -19,13 +19,15 @@ export class CompatibilityController {
 
   @Get("get/compatibility")
   @ApiOperation({ summary: "Get all compatibility records" })
+  @ApiResponse({ status: 200, description: "List of compatibility configurations." })
   async getAll() {
     return this.service.getAll();
   }
 
   @Get("redirect/product")
   @ApiOperation({ summary: "Legacy URL redirect mapping for products" })
-  @ApiQuery({ name: "slug", required: true, description: "Legacy backwards-compatible product slug" })
+  @ApiQuery({ name: "slug", required: true, example: "test-zoho-product", description: "Legacy backwards-compatible product slug" })
+  @ApiResponse({ status: 200, description: "Redirect target URL" })
   async redirectProduct(@Query("slug") slug?: string) {
     if (!slug) {
       return { success: true, response: `${BASE_REDIRECT_URL}/product/fabric-product` };
@@ -64,7 +66,8 @@ export class CompatibilityController {
 
   @Get("redirect/story")
   @ApiOperation({ summary: "Legacy URL redirect mapping for story content" })
-  @ApiQuery({ name: "slug", required: true, description: "Legacy backwards-compatible story slug" })
+  @ApiQuery({ name: "slug", required: true, example: "kantha-embroidery", description: "Legacy backwards-compatible story slug (e.g. kantha-embroidery, ikat-cluster)" })
+  @ApiResponse({ status: 200, description: "Redirect target URL" })
   async redirectStory(@Query("slug") slug?: string) {
     if (!slug) {
       return { success: true, response: `${BASE_REDIRECT_URL}/404` };
@@ -99,7 +102,8 @@ export class CompatibilityController {
 
   @Get("redirect/blog")
   @ApiOperation({ summary: "Legacy URL redirect mapping for blog articles" })
-  @ApiQuery({ name: "slug", required: true, description: "Legacy backwards-compatible blog slug" })
+  @ApiQuery({ name: "slug", required: true, example: "brocade-fabric-weaving-the-threads-of-history-and-elegance", description: "Legacy backwards-compatible blog slug (e.g. brocade-fabric-weaving-the-threads-of-history-and-elegance, calico-fabric-a-versatile-textile)" })
+  @ApiResponse({ status: 200, description: "Redirect target URL" })
   async redirectBlog(@Query("slug") slug?: string) {
     if (!slug) {
       return { success: true, response: `${BASE_REDIRECT_URL}/404` };

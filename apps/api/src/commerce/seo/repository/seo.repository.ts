@@ -28,11 +28,11 @@ export class SeoRepository {
             slug: schema.product.slug,
             sku: schema.product.sku,
             productGroup: schema.product.productGroup
-        }).from(schema.product);
+        }).from(schema.product).limit(500);
 
         return rows.map(r => ({
-            id: r.id,
-            name: r.name,
+            id: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
+            name: r.name || '',
             metaTitle: r.metaTitle || '',
             metaDescription: r.metaDescription || '',
             slug: r.slug || '',
@@ -58,7 +58,7 @@ export class SeoRepository {
         
         for (const b of blogRows) {
             articles.push({
-                id: b.id,
+                id: typeof b.id === "bigint" ? Number(b.id) : (b.id ? Number(b.id) : null),
                 slug: b.slug || '',
                 articleType: "BLOG"
             });
@@ -66,7 +66,7 @@ export class SeoRepository {
         
         for (const s of storyRows) {
             articles.push({
-                id: s.id,
+                id: typeof s.id === "bigint" ? Number(s.id) : (s.id ? Number(s.id) : null),
                 slug: s.slug || '',
                 articleType: "STORY"
             });
@@ -110,9 +110,9 @@ export class SeoRepository {
             .offset(offset);
             
         return rows.map(r => ({
-            id: r.id,
-            version: r.version,
-            productId: r.productId,
+            id: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
+            version: typeof r.version === "bigint" ? Number(r.version) : (r.version ? Number(r.version) : 0),
+            productId: typeof r.productId === "bigint" ? Number(r.productId) : (r.productId ? Number(r.productId) : null),
             image: r.image || '',
             altText: r.altText || ''
         }));
@@ -128,19 +128,25 @@ export class SeoRepository {
             .where(eq(schema.productImageGallerySeo.id, id));
     }
 
-    async insertProductImageGallerySEO(productId: bigint, image: string, altText: string): Promise<void> {
+    async insertProductImageGallerySEO(productId: bigint | number, image: string, altText: string): Promise<void> {
+        const prodId = typeof productId === "bigint" ? Number(productId) : Number(productId);
         await this.db.insert(schema.productImageGallerySeo)
             .values({
-                productId,
+                productId: prodId as any,
                 image,
                 altText
+            })
+            .onConflictDoUpdate({
+                target: [schema.productImageGallerySeo.productId, schema.productImageGallerySeo.image],
+                set: { altText }
             });
     }
 
-    async checkProductExists(productId: bigint): Promise<boolean> {
+    async checkProductExists(productId: bigint | number): Promise<boolean> {
+        const prodId = typeof productId === "bigint" ? productId : BigInt(productId);
         const rows = await this.db.select({ id: schema.product.id })
             .from(schema.product)
-            .where(eq(schema.product.id, productId))
+            .where(eq(schema.product.id, prodId))
             .limit(1);
         return rows.length > 0;
     }
@@ -150,14 +156,14 @@ export class SeoRepository {
             id: schema.product.id,
             slug: schema.product.slug,
             heroImage: schema.product.heroImage,
-            additionalImages: schema.product.additionalImages
-        }).from(schema.product);
+            galleryImages: schema.product.galleryImages
+        }).from(schema.product).limit(500);
 
         return rows.map(r => ({
-            productId: r.id,
+            productId: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
             slug: r.slug || '',
             heroImage: r.heroImage || '',
-            additionalImages: r.additionalImages || ''
+            galleryImages: r.galleryImages || ''
         }));
     }
 
@@ -166,18 +172,17 @@ export class SeoRepository {
             id: schema.product.id,
             slug: schema.product.slug,
             heroImage: schema.product.heroImage,
-            additionalImages: schema.product.additionalImages
+            galleryImages: schema.product.galleryImages
         })
         .from(schema.product)
-        .where(eq(schema.product.active, true));
+        .where(eq(schema.product.disabled, false))
+        .limit(500);
 
         return rows.map(r => ({
-            productId: r.id,
+            productId: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
             slug: r.slug || '',
             heroImage: r.heroImage || '',
-            additionalImages: r.additionalImages || ''
+            galleryImages: r.galleryImages || ''
         }));
     }
 }
-// @ts-nocheck
-// @ts-nocheck

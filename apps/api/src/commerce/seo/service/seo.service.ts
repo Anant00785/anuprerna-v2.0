@@ -6,7 +6,7 @@ import {
     ProductSEO, 
     ArticleSEO, 
     FilterSEO, 
-    ProductImageGallerySEOData,
+    ProductImageGallerySEOData, 
     ProductImageData
 } from "../types/seo.types.js";
 import { ProductImageGallerySEOPayload } from "../dto/seo.dto.js";
@@ -32,26 +32,31 @@ export class SeoService {
     }
 
     async updateGalleryImages(payload: ProductImageGallerySEOPayload): Promise<number> {
-        const productExists = await this.seoRepository.checkProductExists(payload.productId);
-        if (!productExists) {
-            return ActionCode.INCORRECT_INFORMATION;
-        }
+        try {
+            const productExists = await this.seoRepository.checkProductExists(payload.productId);
+            if (!productExists) {
+                return ActionCode.INCORRECT_INFORMATION;
+            }
 
-        for (const image of payload.gallerySEOList) {
-            if (image.deleted) {
-                if (image.id) {
-                    await this.seoRepository.deleteProductImageGallerySEO(image.id);
-                }
-            } else {
-                if (image.id) {
-                    await this.seoRepository.updateProductImageGallerySEO(image.id, image.image, image.altText);
+            for (const image of payload.gallerySEOList) {
+                if (image.deleted) {
+                    if (image.id && Number(image.id) > 0) {
+                        await this.seoRepository.deleteProductImageGallerySEO(BigInt(image.id));
+                    }
                 } else {
-                    await this.seoRepository.insertProductImageGallerySEO(payload.productId, image.image, image.altText);
+                    if (image.id && Number(image.id) > 0) {
+                        await this.seoRepository.updateProductImageGallerySEO(BigInt(image.id), image.image, image.altText);
+                    } else {
+                        await this.seoRepository.insertProductImageGallerySEO(payload.productId, image.image, image.altText);
+                    }
                 }
             }
-        }
 
-        return ActionCode.UPDATE_SUCCESS;
+            return ActionCode.UPDATE_SUCCESS;
+        } catch (err) {
+            console.error("updateGalleryImages error:", err);
+            return ActionCode.NO_ACTION;
+        }
     }
 
     async getProductImageSitemapData(): Promise<ProductImageData[]> {
@@ -62,4 +67,3 @@ export class SeoService {
         return this.seoRepository.retrieveEnabledProductImageData();
     }
 }
-// @ts-nocheck

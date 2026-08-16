@@ -51,7 +51,7 @@ export class ReviewController {
 
   @Get("/get/product/review/:productId")
   @ApiOperation({ summary: "Get approved reviews for a specific product." })
-  @ApiParam({ name: "productId", type: Number, description: "Product identifier", example: 2590 })
+  @ApiParam({ name: "productId", type: Number, description: "Product identifier", example: 94504 })
   @ApiQuery({ name: "pageNumber", required: false, type: Number, example: 0, description: "Page number" })
   @ApiQuery({ name: "pageSize", required: false, type: Number, example: 100, description: "Page size" })
   @ApiResponse({ status: 200, description: "List of product reviews." })
@@ -60,8 +60,16 @@ export class ReviewController {
     @Query("pageNumber") pageNumber = "0",
     @Query("pageSize") pageSize = "100"
   ) {
-    const reviews = await this.reviewService.findProductReviews(parseInt(productId), parseInt(pageNumber), parseInt(pageSize));
-    return keyedResponse("reviewList", reviews);
+    try {
+      const pId = parseInt(productId, 10) || 0;
+      const page = parseInt(pageNumber, 10) || 0;
+      const size = parseInt(pageSize, 10) || 100;
+      const reviews = await this.reviewService.findProductReviews(pId, page, size);
+      return keyedResponse("reviewList", reviews || []);
+    } catch (err) {
+      console.error("[retrieveProductReviewsForCustomer error]:", err);
+      return keyedResponse("reviewList", []);
+    }
   }
 
   @Get("/get/super-user/review")

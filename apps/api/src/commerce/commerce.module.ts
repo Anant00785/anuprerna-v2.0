@@ -95,6 +95,7 @@ import { MiscModule } from "./misc/misc.module.js";
                                                                                                                 ],
   imports: [
     AuthModule, 
+    SeoModule,
     CartModule,
     ProductModule,
     CatalogModule,
@@ -120,7 +121,6 @@ import { MiscModule } from "./misc/misc.module.js";
     ShipmentModule,
     SettingsModule,
     WhatsappModule,
-    SeoModule,
     ImpactModule,
     AiModule,
     CompatibilityModule,

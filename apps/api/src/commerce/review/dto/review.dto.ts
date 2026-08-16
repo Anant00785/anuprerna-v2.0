@@ -54,7 +54,7 @@ export class CreateReviewDto {
 }
 
 export class UpdateCustomerReviewDto {
-  @ApiProperty({ example: 1, description: "Review unique identifier to update" })
+  @ApiProperty({ example: 424997, description: "Review unique identifier to update" })
   @IsNotEmpty()
   @IsNumber()
   id!: number;

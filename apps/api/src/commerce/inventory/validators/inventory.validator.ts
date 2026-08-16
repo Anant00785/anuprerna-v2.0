@@ -21,7 +21,7 @@ export function validateInventoryRestockRequest(input: InventoryRestockRequestIn
   if (!input.tenantId) return 'Tenant ID is required.';
   if (!input.productId) return 'Product ID is required.';
   if (!input.productGroup) return 'Product group is required.';
-  if (input.requestedQuantity <= 0) return 'Requested quantity must be greater than 0.';
+  if (Number(input.requestedQuantity) <= 0) return 'Requested quantity must be greater than 0.';
   return null;
 }
 

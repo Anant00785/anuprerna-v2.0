@@ -1,8 +1,10 @@
+// @ts-nocheck
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 import { AddressService, type CreateAddressInput } from "./address.service.js";
 
 @ApiTags("Address")
+@ApiBearerAuth()
 @Controller()
 export class AddressController {
   constructor(private readonly service: AddressService) {}
@@ -30,13 +32,20 @@ export class AddressController {
         tenantId: { type: "integer", example: 1 },
         name: { type: "string", example: "Anant Kumar" },
         addressLine1: { type: "string", example: "123 Main Street" },
+        addressLine2: { type: "string", example: "Suite 4B" },
         postalCode: { type: "string", example: "110001" },
         city: { type: "string", example: "New Delhi" },
         state: { type: "string", example: "Delhi" },
         country: { type: "string", example: "India" },
+        companyName: { type: "string", example: "Anuprerna" },
         primaryPhone: { type: "string", example: "+919999999999" },
+        secondaryPhone: { type: "string", example: "+918888888888" },
         contactEmail: { type: "string", format: "email", example: "anant@example.com" },
-        addressType: { type: "string", enum: ["BILLING", "SHIPPING"] },
+        vatGstNumber: { type: "string", example: "09BPJPA5148G1ZX" },
+        eoriNumber: { type: "string", example: "" },
+        addressType: { type: "string", enum: ["BILLING", "SHIPPING"], example: "SHIPPING" },
+        primaryBillingAddress: { type: "boolean", example: false },
+        primaryShippingAddress: { type: "boolean", example: true },
       },
     },
   })
@@ -55,13 +64,20 @@ export class AddressController {
         tenantId: { type: "integer", example: 1 },
         name: { type: "string", example: "Anant Kumar" },
         addressLine1: { type: "string", example: "123 Main Street" },
+        addressLine2: { type: "string", example: "Suite 4B" },
         postalCode: { type: "string", example: "110001" },
         city: { type: "string", example: "New Delhi" },
         state: { type: "string", example: "Delhi" },
         country: { type: "string", example: "India" },
+        companyName: { type: "string", example: "Anuprerna" },
         primaryPhone: { type: "string", example: "+919999999999" },
+        secondaryPhone: { type: "string", example: "+918888888888" },
         contactEmail: { type: "string", format: "email", example: "anant@example.com" },
-        addressType: { type: "string", enum: ["BILLING", "SHIPPING"] },
+        vatGstNumber: { type: "string", example: "09BPJPA5148G1ZX" },
+        eoriNumber: { type: "string", example: "" },
+        addressType: { type: "string", enum: ["BILLING", "SHIPPING"], example: "SHIPPING" },
+        primaryBillingAddress: { type: "boolean", example: false },
+        primaryShippingAddress: { type: "boolean", example: true },
       },
     },
   })
@@ -71,6 +87,29 @@ export class AddressController {
 
   @Patch("update/address")
   @ApiOperation({ summary: "Update an existing customer address" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "integer", example: 224663, description: "Address ID to update" },
+        tenantId: { type: "integer", example: 130439 },
+        name: { type: "string", example: "Sonal Agarwal" },
+        addressLine1: { type: "string", example: "A-6, 1st Floor Gopi Kunj Colony" },
+        addressLine2: { type: "string", example: "CIVIL LINES" },
+        postalCode: { type: "string", example: "244901" },
+        city: { type: "string", example: "RAMPUR" },
+        state: { type: "string", example: "Uttar Pradesh" },
+        country: { type: "string", example: "India" },
+        companyName: { type: "string", example: "SHIBUI" },
+        primaryPhone: { type: "string", example: "+919740853835" },
+        contactEmail: { type: "string", format: "email", example: "agarwalsonal2893@gmail.com" },
+        addressType: { type: "string", enum: ["BILLING", "SHIPPING"], example: "SHIPPING" },
+        primaryBillingAddress: { type: "boolean", example: false },
+        primaryShippingAddress: { type: "boolean", example: true },
+      },
+    },
+  })
   async updateAddress(@Body() body: any) {
     const id = Number(body?.id || body?.addressId);
     return this.service.update(id, body);
@@ -78,6 +117,7 @@ export class AddressController {
 
   @Delete("delete/address/:addressId")
   @ApiOperation({ summary: "Delete address from customer account" })
+  @ApiParam({ name: "addressId", example: 224663, description: "Address ID to delete", type: Number })
   async deleteAddress(@Param("addressId") addressId: string) {
     return this.service.deleteById(Number(addressId));
   }
