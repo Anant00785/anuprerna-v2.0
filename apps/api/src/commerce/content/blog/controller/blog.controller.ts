@@ -71,11 +71,11 @@ export class BlogController {
   @Post("/add/blog-content-category/:blogContentTypeId")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Add a new blog content category." })
-  @ApiParam({ name: "blogContentTypeId", description: "Content Type unique identifier", example: 1, type: Number })
+  @ApiParam({ name: "blogContentTypeId", description: "Content Type unique identifier", example: 107236, type: Number })
   @ApiBody({ type: CreateBlogCategoryDto })
   @ApiResponse({ status: 201, description: "Blog category created." })
   async addBlogContentCategory(@Param("blogContentTypeId") blogContentTypeId: string, @Body() raw: CreateBlogCategoryDto) {
-    const input = sanitizeBlogContentCategory(parseBlogContentCategoryInput(raw));
+    const input = sanitizeBlogContentCategory(parseBlogContentCategoryInput({ ...raw, blogContentTypeId }));
     const error = validateBlogContentCategory(input);
     if (error) return simpleResponse(false, error);
     const code = await this.blogService.addBlogContentCategory(BigInt(blogContentTypeId), input);
@@ -243,7 +243,8 @@ export class BlogController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get blog content section table explorer data." })
   async getTableExplorerBlogContentSection() {
-    return keyedResponse("records", []);
+    const list = await this.blogService.getAllBlogContentSections();
+    return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/blog-content-category")

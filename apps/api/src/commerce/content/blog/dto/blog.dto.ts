@@ -28,17 +28,17 @@ export class CreateBlogCategoryDto {
 }
 
 export class UpdateBlogCategoryDto {
-  @ApiProperty({ example: 1, description: "Blog category identifier" })
+  @ApiProperty({ example: 53, description: "Blog category identifier" })
   @IsNotEmpty()
   @IsNumber()
   id!: number;
 
-  @ApiProperty({ example: 1, description: "Associated blog content type identifier" })
+  @ApiProperty({ example: 51, description: "Associated blog content type identifier" })
   @IsNotEmpty()
   @IsNumber()
   blogContentTypeId!: number;
 
-  @ApiProperty({ example: "Natural Dyeing Techniques", description: "Updated category name" })
+  @ApiProperty({ example: "Supply Chain & Heritage", description: "Updated category name" })
   @IsNotEmpty()
   @IsString()
   name!: string;

@@ -54,4 +54,59 @@ export class SearchRepository {
       unit: row.unit,
     }));
   }
+
+  async searchBlogs(keyword: string) {
+    const term = `%${keyword}%`;
+    const rows = await this.db.select({
+      id: schema.blogContent.id,
+      title: schema.blogContent.title,
+      description: schema.blogContent.description,
+      slug: schema.blogContent.slug,
+      bannerImageDesktop: schema.blogContent.bannerImageDesktop,
+      readingTime: schema.blogContent.readingTime,
+      timeOfCreation: schema.blogContent.timeOfCreation,
+    })
+    .from(schema.blogContent)
+    .where(
+      or(
+        ilike(schema.blogContent.title, term),
+        ilike(schema.blogContent.description, term),
+        ilike(schema.blogContent.slug, term)
+      )
+    )
+    .limit(50);
+
+    return rows.map(r => ({
+      ...r,
+      id: String(r.id),
+      timeOfCreation: typeof r.timeOfCreation === "bigint" ? Number(r.timeOfCreation) : r.timeOfCreation,
+    }));
+  }
+
+  async searchStories(keyword: string) {
+    const term = `%${keyword}%`;
+    const rows = await this.db.select({
+      id: schema.storyContent.id,
+      title: schema.storyContent.title,
+      description: schema.storyContent.description,
+      slug: schema.storyContent.slug,
+      bannerImageDesktop: schema.storyContent.bannerImageDesktop,
+      timeOfCreation: schema.storyContent.timeOfCreation,
+    })
+    .from(schema.storyContent)
+    .where(
+      or(
+        ilike(schema.storyContent.title, term),
+        ilike(schema.storyContent.description, term),
+        ilike(schema.storyContent.slug, term)
+      )
+    )
+    .limit(50);
+
+    return rows.map(r => ({
+      ...r,
+      id: String(r.id),
+      timeOfCreation: typeof r.timeOfCreation === "bigint" ? Number(r.timeOfCreation) : r.timeOfCreation,
+    }));
+  }
 }

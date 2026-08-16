@@ -48,8 +48,11 @@ export class BlogRepository {
   }
 
   async updateBlogContentCategory(id: bigint, data: BlogContentCategoryInput) {
+    const updatePayload: any = {};
+    if (data.name) updatePayload.name = data.name;
+    if (data.blogContentTypeId && data.blogContentTypeId > 0n) updatePayload.blogContentTypeId = data.blogContentTypeId;
     const rows = await this.db.update(schema.blogContentCategory)
-      .set({ name: data.name })
+      .set(updatePayload)
       .where(eq(schema.blogContentCategory.id, id))
       .returning();
     return rows[0] ?? null;
@@ -159,6 +162,10 @@ export class BlogRepository {
   }
 
   // Blog Content Section
+  async getAllBlogContentSections() {
+    return this.db.select().from(schema.blogContentSection).limit(50);
+  }
+
   async getBlogContentSections(blogContentId: bigint) {
     return this.db.select().from(schema.blogContentSection).where(eq(schema.blogContentSection.blogContentId, blogContentId));
   }
