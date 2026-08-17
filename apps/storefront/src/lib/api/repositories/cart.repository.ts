@@ -32,6 +32,7 @@ export interface AddCartItemInput {
   selectedFinishId?: string;
   makingCharge?: number;
   customSize?: Record<string, unknown>;
+  minOrderQuantity?: number;
 }
 
 /**
@@ -56,6 +57,7 @@ function toLegacyCartItem(input: AddCartItemInput): Record<string, unknown> {
   if (input.fabricProductId) body.fabricProductId = input.fabricProductId;
   if (input.finishedProductId) body.finishedProductId = input.finishedProductId;
   if (input.selectedFabricId) body.selectedFabricId = input.selectedFabricId;
+  if (input.minOrderQuantity) body.minOrderQuantity = input.minOrderQuantity;
   return body;
 }
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PLPProduct } from "@/types/domain/plp";
 import { FilterProductPreview } from "@/components/plp/FilterProductPreview";
 import { FilterProductSkeleton } from "@/components/plp/FilterProductSkeleton";
+import { calculateProductPrice } from "@/lib/plp/filter-engine";
 
 const MOST_SEARCHED = ["Khadi", "Jamdani", "Denim", "Silk"];
 
@@ -82,7 +83,8 @@ function SearchPageInner() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
       if (!res.ok) throw new Error(`Search HTTP ${res.status}`);
       const data = await res.json();
-      setProducts(data.products || []);
+      const mappedProducts = (data.products || []).map(calculateProductPrice);
+      setProducts(mappedProducts);
       setStories(data.stories || []);
       setBlogs(data.blogs || []);
     } catch (err) {
@@ -92,6 +94,15 @@ function SearchPageInner() {
       setIsLoading(false);
     }
   }, []);
+
+  // Re-sync activeQuery with URL parameter when searchParams change
+  useEffect(() => {
+    const queryFromUrl = searchParams.get("search") || searchParams.get("q") || "";
+    if (queryFromUrl && queryFromUrl !== activeQuery) {
+      setSearchTerm(queryFromUrl);
+      setActiveQuery(queryFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (activeQuery) {

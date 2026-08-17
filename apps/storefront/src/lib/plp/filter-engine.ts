@@ -32,20 +32,83 @@ export const FINISHED_FILTER_KEYS: FilterKey[] = [
 ];
 
 /**
- * Calculate product price and price with discount
+ * Calculate product price matching legacy Angular _calculateProductPrice / ProductListPriceCalculationService
  */
 export function calculateProductPrice(product: PLPProduct): PLPProduct {
-  const calcPrice = product.price || 0;
+  const productBasePrice = Number(product.price || 0);
+  const isFinished =
+    product.product_group === "finished" ||
+    (product.category && ["accessories", "home", "apparel"].includes(String(product.category).toLowerCase()));
+
+  let calcPrice = productBasePrice;
+
+  if (isFinished) {
+    // 1. Selected Fabric Price (per meter):
+    // Angular _calculateProductPrice line 206:
+    //   selectedMadeToOrderFabricPrice = product.made_to_order_fabric_price
+    //     ? product.made_to_order_fabric_price : product.price;
+    // Falls back to product.price when no MTO fabric price exists.
+    const rawFabricPrice =
+      product.made_to_order_fabric_price ??
+      (product as any).madeToOrderFabric?.price ??
+      (product as any).made_to_order_fabric?.price;
+
+    const selectedFabricPrice =
+      rawFabricPrice !== undefined && rawFabricPrice !== null && !isNaN(Number(rawFabricPrice)) && Number(rawFabricPrice) > 0
+        ? Number(rawFabricPrice)
+        : productBasePrice;
+
+    // 2. Consumed Fabric (matching FilterSortService.getConsumedFabric)
+    let consumedFabric = 1;
+    if (
+      (product as any).product_size_profile_option_list &&
+      (product as any).product_size_profile_option_list.length > 0 &&
+      (product as any).product_size_profile_option_list[0].consumed_fabric
+    ) {
+      consumedFabric = Number((product as any).product_size_profile_option_list[0].consumed_fabric);
+    } else if (
+      product.size_profile_option_list &&
+      product.size_profile_option_list.length > 0
+    ) {
+      const firstOption = product.size_profile_option_list[0] as any;
+      if (firstOption.size_profile_option_consumed_fabric) {
+        consumedFabric = Number(firstOption.size_profile_option_consumed_fabric);
+      } else if (firstOption.consumed_fabric) {
+        consumedFabric = Number(firstOption.consumed_fabric);
+      } else if (firstOption.consumedFabric) {
+        consumedFabric = Number(firstOption.consumedFabric);
+      }
+    } else if ((product as any).made_to_order_profile_consumed_fabric) {
+      consumedFabric = Number((product as any).made_to_order_profile_consumed_fabric);
+    } else if ((product as any).madeToOrderProfile?.consumedFabric) {
+      consumedFabric = Number((product as any).madeToOrderProfile.consumedFabric);
+    } else if (product.consumed_fabric !== undefined && product.consumed_fabric !== null) {
+      consumedFabric = Number(product.consumed_fabric);
+    }
+
+    if (!consumedFabric || consumedFabric <= 0) consumedFabric = 1;
+
+    // 3. Angular: product.calculatedPrice = product.price + fabricPrice;
+    //    where fabricPrice = selectedFabricPrice * consumedFabric
+    const fabricTotal = selectedFabricPrice * consumedFabric;
+    calcPrice = productBasePrice + fabricTotal;
+  }
+
+  // Use API-provided calculatedPrice when available, else our computed value
+  const roundedPrice = product.calculatedPrice ? Number(product.calculatedPrice) : Math.round(calcPrice * 100) / 100;
+
+  // Angular PLP only sets calculatedDiscountedPrice from wholesale program percentileDiscount
+  // (which requires login + wholesale membership). The max_discount fields are NOT used here.
+  // We preserve whatever the API sends but don't compute our own.
+  let calculatedDiscountedPrice: number | undefined = undefined;
+  if (product.calculatedDiscountedPrice) {
+    calculatedDiscountedPrice = Number(product.calculatedDiscountedPrice);
+  }
+
   return {
     ...product,
-    calculatedPrice: calcPrice,
-    // Restored 2026-08-12. Commit 9361c3b had replaced this with a literal
-    // `undefined`, which meant no discount could ever render on the PLP even
-    // though max_discount_* still populate and FilterProductPreview still has
-    // the branch to display one. Covered by filter-engine.test.ts.
-    calculatedDiscountedPrice: product.max_discount_product_price
-      ? Math.round(calcPrice * (1 - (product.max_discount_product_discount || 0) / 100))
-      : undefined,
+    calculatedPrice: roundedPrice,
+    calculatedDiscountedPrice,
   };
 }
 

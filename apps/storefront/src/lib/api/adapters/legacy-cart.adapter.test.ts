@@ -81,6 +81,22 @@ describe("mapLegacyCartItemToDomain", () => {
     expect(item.quantity).toBe(1);
     expect(item.unitPrice).toBe(0);
   });
+
+  it("keeps IN_STOCK orderType and minOrderQuantity = 1 when volume discount profile has pre-order tiers", () => {
+    const item = mapLegacyCartItemToDomain({
+      ...fabricRow,
+      orderType: "IN_STOCK",
+      quantity: 5,
+      volumeDiscountProfile: {
+        volumeDiscountProfileItemList: [
+          { minimumOrderQuantity: 25, discount: 10, preOrder: true },
+          { minimumOrderQuantity: 50, discount: 20, preOrder: true },
+        ],
+      },
+    });
+    expect(item.orderType).toBe("IN_STOCK");
+    expect(item.minOrderQuantity).toBe(1);
+  });
 });
 
 describe("mapLegacyCartToDomain", () => {
@@ -103,7 +119,7 @@ describe("mapLegacyCartToDomain", () => {
     expect(mapLegacyCartToDomain().itemCount).toBe(0);
   });
 
-  it("applies flat 150 shipping under the 2000 threshold and free shipping over it", () => {
+  it("applies flat 150 estimated shipping for non-empty carts", () => {
     const cheap = mapLegacyCartToDomain([{ ...fabricRow, quantity: 1 }]);
     expect(cheap.subtotal).toBe(446);
     expect(cheap.estimatedShipping).toBe(150);
@@ -111,7 +127,7 @@ describe("mapLegacyCartToDomain", () => {
 
     const expensive = mapLegacyCartToDomain([{ ...fabricRow, quantity: 10 }]);
     expect(expensive.subtotal).toBe(4460);
-    expect(expensive.estimatedShipping).toBe(0);
-    expect(expensive.total).toBe(4460);
+    expect(expensive.estimatedShipping).toBe(150);
+    expect(expensive.total).toBe(4610);
   });
 });

@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { useCurrencyStore, SupportedCurrency } from "@/stores/currency.store";
 import { useAuthStore } from "@/stores/auth.store";
 import { useCartStore } from "@/stores/cart.store";
+import { useWishlistStore } from "@/stores/wishlist.store";
 import { cartRepository } from "@/lib/api/repositories/cart.repository";
+import { ProductLightGallery, LightGalleryItem } from "./ProductLightGallery";
+import { ProductCustomFabricProfile, FabricProfileItem } from "./ProductCustomFabricProfile";
+import { ProductFinishProfile, FinishProfileItem } from "./ProductFinishProfile";
+import { ProductSizeProfile, SizeProfileOption, ProductSizeItem } from "./ProductSizeProfile";
+import { ProductPreOrderDialog } from "./ProductPreOrderDialog";
+import { ProductVolumeDiscountDialog } from "./ProductVolumeDiscountDialog";
+import { calculateVDProductPrice } from "@/lib/pdp/pricing-engine";
 
 interface ProductDetailPageProps {
   slug: string;
@@ -160,6 +168,7 @@ const CUSTOMER_REVIEWS = [
 export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const router = useRouter();
   const { selectedCurrency, setCurrency, convertPrice } = useCurrencyStore();
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
   const [productData, setProductData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -167,7 +176,6 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
-  const [isWishlist, setIsWishlist] = useState(false);
 
   // Price Details Popover State
   const [showPriceSummary, setShowPriceSummary] = useState(false);
@@ -178,6 +186,12 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const [pantoneNotes, setPantoneNotes] = useState("");
   const [pantoneSubmitted, setPantoneSubmitted] = useState(false);
   const [selectedDyeItem, setSelectedDyeItem] = useState<any>(null);
+
+  // Customization States (1:1 with legacy Angular)
+  const [selectedFabric, setSelectedFabric] = useState<FabricProfileItem | null>(null);
+  const [selectedFinishes, setSelectedFinishes] = useState<FinishProfileItem[]>([]);
+  const [selectedSize, setSelectedSize] = useState<SizeProfileOption | null>(null);
+  const [customSizeData, setCustomSizeData] = useState<Record<string, string> | null>(null);
 
   // Modals & Sidebar State
   const [showDyeModal, setShowDyeModal] = useState(false);
@@ -205,14 +219,14 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
     async function fetchProduct() {
       try {
         const res = await fetch(`/api/product?slug=${encodeURIComponent(slug)}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (isMounted && json.data) {
-          const raw = json.data;
-          setProductData(raw);
+        if (res.ok) {
+          const json = await res.json();
+          if (isMounted && json.data) {
+            setProductData(json.data);
+          }
         }
-      } catch (err) {
-        console.error("Failed to load product detail:", err);
+      } catch {
+        // Handled silently
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -249,14 +263,235 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const p = productData.product;
   const gsm = productData.gsm || p.gsm || 130;
   const width = productData.width || '45" (115 cms)';
-  const unit = p.unit || "Meter";
-  const inStockQty = p.quantity ?? p.totalQuantity ?? 9;
-  const basePrice = p.price || 727;
-  const price = selectedDyeItem ? basePrice + selectedDyeItem.price : basePrice;
-  const bulkPrice = Math.round((price * 0.825) * 100) / 100;
+
+  const productGroup: "fabric" | "finished" =
+    p.productGroup === "finished" || p.product_group === "finished" || productData.productType === "finished"
+      ? "finished"
+      : "fabric";
+
+  const unit = p.unit || (productGroup === "finished" ? "Piece" : "Meter");
+
+  // Raw sizes list from all possible API structures
+  const rawSizeList =
+    (p.productSizeProfileList && p.productSizeProfileList.length > 0 ? p.productSizeProfileList : null) ||
+    (productData.productSizeProfileList && productData.productSizeProfileList.length > 0 ? productData.productSizeProfileList : null) ||
+    (p.product_size_profile_option_list && p.product_size_profile_option_list.length > 0 ? p.product_size_profile_option_list : null) ||
+    (p.sizeProfile?.sizeProfileOptionList && p.sizeProfile.sizeProfileOptionList.length > 0 ? p.sizeProfile.sizeProfileOptionList : null) ||
+    [];
+
+  const defaultInStockSizeItem =
+    rawSizeList.find((it: any) => !it.disabled && Number(it.quantity ?? it.totalQuantity ?? it.availableQuantity ?? 0) > 0) ||
+    rawSizeList.find((it: any) => !it.disabled) ||
+    rawSizeList[0];
+
+  const defaultSizeOption = defaultInStockSizeItem
+    ? (defaultInStockSizeItem.sizeProfileOption || defaultInStockSizeItem.size_profile_option || defaultInStockSizeItem)
+    : (p.sizeProfile?.sizeProfileOptionList?.[0] || productData.sizeProfile?.sizeProfileOptionList?.[0] || null);
+
+  const activeSizeOption = selectedSize || defaultSizeOption;
+
+  // Resolve matching size item for the active size option
+  let matchingSizeItem: any = null;
+  if (rawSizeList.length > 0 && activeSizeOption) {
+    const activeLabel = String(activeSizeOption.label || activeSizeOption.name || "").toLowerCase().trim();
+    const activeId = activeSizeOption.id ? String(activeSizeOption.id) : null;
+
+    matchingSizeItem = rawSizeList.find((it: any) => {
+      const opt = it.sizeProfileOption || it.size_profile_option || it;
+      const itLabel = String(opt?.label || opt?.name || it.label || it.name || "").toLowerCase().trim();
+      const itId = opt?.id ? String(opt.id) : it.id ? String(it.id) : null;
+      return (activeId && itId === activeId) || (activeLabel && itLabel === activeLabel);
+    });
+  }
+
+  const rawMakingCharge = Number(p.price || 0);
+
+  // Calculate Total Finish Surcharge
+  const totalFinishPrice =
+    selectedFinishes.reduce((sum, f) => sum + Number(f.price || 0), 0) +
+    (selectedDyeItem ? Number(selectedDyeItem.price || 0) : 0);
+
+  // Calculate Custom Size Surcharge
+  const customSizePrice =
+    customSizeData && p.customSizeProfile?.price ? Number(p.customSizeProfile.price) : 0;
+
+  // Check if any customization has been selected by user (must be before price calc)
+  const isCustomOptionActive = Boolean(
+    selectedFabric ||
+    selectedFinishes.length > 0 ||
+    selectedDyeItem ||
+    customSizeData ||
+    (selectedDyeType === "custom" && pantoneSubmitted)
+  );
+
+  let calculatedPdpPrice = rawMakingCharge;
+  let activeFabricCost = 0;
+  let pdpConsumedFabric = 1;
+
+  if (productGroup === "finished") {
+    // Angular PDP price logic:
+    // setProductData (initial): selectedFabricPrice = madeToOrderFabric?.price || 0
+    // reCalculatePrice (after customization):
+    //   selectedFabricPrice = selectedFabric?.fabricPreview.price
+    //     || madeToOrderFabric?.price || product.price
+    const customFabricPrice = selectedFabric?.fabricPreview?.price ?? (selectedFabric as any)?.price;
+    const mtoFabricPrice = p.madeToOrderFabric?.price ?? p.made_to_order_fabric_price ?? p.made_to_order_fabric?.price;
+
+    let selectedFabricPrice: number;
+    if (customFabricPrice !== undefined && customFabricPrice !== null && !isNaN(Number(customFabricPrice)) && Number(customFabricPrice) > 0) {
+      // User explicitly selected a custom fabric
+      selectedFabricPrice = Number(customFabricPrice);
+    } else if (isCustomOptionActive) {
+      // Customization active but no explicit fabric → Angular reCalculatePrice fallback
+      selectedFabricPrice = mtoFabricPrice !== undefined && mtoFabricPrice !== null && !isNaN(Number(mtoFabricPrice)) && Number(mtoFabricPrice) > 0
+        ? Number(mtoFabricPrice)
+        : rawMakingCharge; // falls back to product.price
+    } else {
+      // Initial load, no customization → Angular setProductData uses madeToOrderFabric.price || 0
+      selectedFabricPrice = mtoFabricPrice !== undefined && mtoFabricPrice !== null && !isNaN(Number(mtoFabricPrice)) && Number(mtoFabricPrice) > 0
+        ? Number(mtoFabricPrice)
+        : 0;
+    }
+
+    let consumedFabric = 0;
+    if (matchingSizeItem) {
+      consumedFabric = Number(matchingSizeItem.consumedFabric ?? matchingSizeItem.consumed_fabric ?? 0);
+    }
+    if (consumedFabric <= 0 && activeSizeOption) {
+      consumedFabric = Number((activeSizeOption as any).consumedFabric ?? (activeSizeOption as any).consumed_fabric ?? 0);
+    }
+    if (consumedFabric <= 0) {
+      consumedFabric = Number(
+        p.madeToOrderProfile?.consumedFabric ??
+        p.made_to_order_profile_consumed_fabric ??
+        p.consumed_fabric ??
+        1
+      );
+    }
+    if (consumedFabric <= 0) consumedFabric = 1;
+    pdpConsumedFabric = consumedFabric;
+
+    // Angular: calculatedPrice = product.price + (selectedFabricPrice * consumedFabric) + finishPrice + sizePrice
+    activeFabricCost = selectedFabricPrice * consumedFabric;
+    calculatedPdpPrice = Math.round((rawMakingCharge + activeFabricCost + totalFinishPrice + customSizePrice) * 100) / 100;
+  } else {
+    const customFabricPrice = selectedFabric?.fabricPreview?.price ?? (selectedFabric as any)?.price;
+    const activeBasePrice =
+      customFabricPrice !== undefined && customFabricPrice !== null && !isNaN(Number(customFabricPrice))
+        ? Number(customFabricPrice)
+        : rawMakingCharge;
+    calculatedPdpPrice = Math.round((activeBasePrice + totalFinishPrice + customSizePrice) * 100) / 100;
+  }
+
+  // Dynamically calculate ready in-stock inventory vs MTO capacity matching legacy Angular 1:1
+  let readyInStockQty = 0;
+  if (productGroup === "finished") {
+    if (!customSizeData && matchingSizeItem) {
+      if (matchingSizeItem && !matchingSizeItem.disabled) {
+        readyInStockQty = Number(
+          matchingSizeItem.quantity ??
+          matchingSizeItem.totalQuantity ??
+          matchingSizeItem.availableQuantity ??
+          0
+        );
+      }
+    } else if (!customSizeData) {
+      readyInStockQty = Number(p.quantity ?? p.totalQuantity ?? p.availableQuantity ?? productData.totalQuantity ?? 0);
+    }
+  } else {
+    readyInStockQty = Number(p.quantity ?? p.totalQuantity ?? p.availableQuantity ?? productData.totalQuantity ?? 0);
+  }
+
+  // Calculate Made-To-Order capacity from available fabric inventory
+  let mtoInStockQty = 0;
+  const isMtoEnabled = Boolean(
+    p.madeToOrderProfileEnabled ||
+    p.made_to_order_profile_enabled ||
+    productData.madeToOrderProfileEnabled ||
+    p.madeToOrderProfile
+  );
+
+  if (isMtoEnabled) {
+    let consumed = 0;
+    if (matchingSizeItem) {
+      consumed = Number(matchingSizeItem.consumedFabric ?? matchingSizeItem.consumed_fabric ?? 0);
+    }
+    if (consumed <= 0 && activeSizeOption) {
+      consumed = Number((activeSizeOption as any).consumedFabric ?? (activeSizeOption as any).consumed_fabric ?? 0);
+    }
+    if (consumed <= 0) {
+      consumed = Number(
+        p.madeToOrderProfile?.consumedFabric ??
+        p.made_to_order_profile_consumed_fabric ??
+        p.consumed_fabric ??
+        1
+      );
+    }
+    if (consumed <= 0) consumed = 1;
+
+    const fabricQty = Number(
+      selectedFabric?.fabricPreview?.totalQuantity ??
+      (selectedFabric as any)?.totalQuantity ??
+      p.madeToOrderFabric?.totalQuantity ??
+      p.madeToOrderFabric?.quantity ??
+      p.made_to_order_fabric?.totalQuantity ??
+      p.totalQuantity ??
+      0
+    );
+
+    mtoInStockQty = fabricQty > 0 ? Math.floor(fabricQty / consumed) : 0;
+  }
+
+  const isReadyInStock = readyInStockQty > 0 && !isCustomOptionActive;
+  const inStockQty = isReadyInStock ? readyInStockQty : (mtoInStockQty > 0 ? mtoInStockQty : readyInStockQty);
+
+  const basePrice = rawMakingCharge;
+  const price = calculatedPdpPrice;
+
+  // Dynamic Bulk Price calculation matching Angular ProductBulkDiscountComponent 1:1
+  const vdProfile = p.volumeDiscountProfile || productData.volumeDiscountProfile;
+  const vdList: any[] = vdProfile?.volumeDiscountProfileItemList
+    ? [...vdProfile.volumeDiscountProfileItemList].sort(
+        (a: any, b: any) => b.minimumOrderQuantity - a.minimumOrderQuantity
+      )
+    : [];
+
+  const activeVDTier = vdList.find((tier: any) => tier.minimumOrderQuantity <= quantity);
+
+  let finalPdpUnitPrice = calculatedPdpPrice;
+  if (activeVDTier) {
+    finalPdpUnitPrice = calculateVDProductPrice({
+      product: p,
+      selectedFabric,
+      selectFinishPrice: totalFinishPrice,
+      customSizePrice,
+      selectedVDProfile: activeVDTier,
+      quantity,
+      consumedFabric: pdpConsumedFabric,
+    });
+  }
+
+  let bulkPrice = price;
+  if (vdList.length > 0) {
+    // Angular picks the tier with the maximum discount for the bulk price pill button
+    const maxDiscountTier = [...vdList].sort(
+      (a: any, b: any) => b.discount - a.discount
+    )[0];
+
+    bulkPrice = calculateVDProductPrice({
+      product: p,
+      selectedFabric,
+      selectFinishPrice: totalFinishPrice,
+      customSizePrice,
+      selectedVDProfile: maxDiscountTier,
+      quantity: maxDiscountTier.minimumOrderQuantity,
+      consumedFabric: pdpConsumedFabric,
+    });
+  }
 
   const convertedBasePrice = convertPrice(basePrice);
   const convertedPrice = convertPrice(price);
+  const convertedFinalPdpUnitPrice = convertPrice(finalPdpUnitPrice);
   const convertedBulkPrice = convertPrice(bulkPrice);
 
   // Dynamically uses API finishProfile items if available, with full spectrum fallback
@@ -268,30 +503,56 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
 
   const dynamicGuideImage = p.sizeProfile?.image || p.customSizeProfile?.image || finishProfile?.guideImage || finishProfile?.image;
 
-  // Build Media Gallery List
-  const mediaGallery: Array<{ type: "image" | "video"; url: string; poster?: string }> = [];
+  // Build Media Gallery List matching legacy Angular _prepareProductGallery 1:1
+  const productGallery: LightGalleryItem[] = [];
 
-  if (p.heroImage) mediaGallery.push({ type: "image", url: p.heroImage });
-  if (p.productVideo) {
-    mediaGallery.push({
-      type: "video",
-      url: p.productVideo,
-      poster: p.hoverImage || p.heroImage,
+  if (p.heroImage) {
+    productGallery.push({
+      src: p.heroImage,
+      thumb: p.heroImage,
+      subHtml: `<h4>${p.heroImageAlt || p.name}</h4>`,
+      type: "image",
+      alt: p.heroImageAlt || p.name,
     });
   }
+
+  if (p.productVideo) {
+    productGallery.push({
+      src: p.productVideo,
+      poster: p.hoverImage || p.heroImage || "",
+      type: "youtube",
+      height: "80vh",
+      autoplay: true,
+      alt: p.name || "",
+      subHtml: "",
+    });
+  }
+
   if (p.hoverImage && p.hoverImage !== p.heroImage) {
-    mediaGallery.push({ type: "image", url: p.hoverImage });
+    productGallery.push({
+      src: p.hoverImage,
+      thumb: p.hoverImage,
+      subHtml: `<h4>${p.hoverImageAlt || p.name}</h4>`,
+      type: "image",
+      alt: p.hoverImageAlt || p.name,
+    });
   }
 
   if (p.imageGallerySEOList && Array.isArray(p.imageGallerySEOList)) {
-    p.imageGallerySEOList.forEach((item: any) => {
-      if (item.image && !mediaGallery.some((m) => m.url === item.image)) {
-        mediaGallery.push({ type: "image", url: item.image });
-      }
-    });
+    p.imageGallerySEOList
+      .filter((item: any) => !item.deleted)
+      .forEach((item: any) => {
+        if (item.image && !productGallery.some((g) => g.src === item.image)) {
+          productGallery.push({
+            src: item.image,
+            thumb: item.image,
+            type: "image",
+            alt: item.altText || p.name,
+            subHtml: "",
+          });
+        }
+      });
   }
-
-  const activeMedia = mediaGallery[selectedImageIndex] || mediaGallery[0] || { type: "image", url: p.heroImage };
 
   const craftName = p.subCategory?.name || p.segment?.name || "Handloom Jacquard";
   const materialName = p.materials?.[0]?.name || "Cotton";
@@ -315,8 +576,7 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   // fabric that is `fabricProduct.id` (productData.id, 163523574) rather than
   // `fabricProduct.product.id` (163523575). Sending the product id joins to the
   // wrong row, so keep these distinct.
-  const previewId = Number(productData.id);
-  const productGroup: "fabric" | "finished" = p.productGroup === "finished" ? "finished" : "fabric";
+  const previewId = Number(productData?.id || productData?.previewId || productData?.fabricProduct?.id || productData?.finishedProduct?.id || p.id || 0);
 
   // Only the finish ids that came from Loom's finishProfile are real; the
   // FULL_NATURAL_DYE_LIST fallback is hardcoded UI data whose ids (1..22) belong
@@ -333,19 +593,27 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
     }
     setCartStatus("adding");
     setCartError(null);
+    const finishIdToUse =
+      selectedFinishes.length > 0
+        ? String(selectedFinishes[0].id)
+        : selectedFinishId;
+
     try {
       await cartRepository.addToCart({
         fabricProductId: productGroup === "fabric" ? previewId : undefined,
         finishedProductId: productGroup === "finished" ? previewId : undefined,
+        selectedFabricId: selectedFabric?.fabricPreview?.id ? Number(selectedFabric.fabricPreview.id) : undefined,
+        selectedSizeOptionId: selectedSize?.id ? Number(selectedSize.id) : (activeSizeOption?.id ? Number(activeSizeOption.id) : undefined),
+        customSize: customSizeData || undefined,
         quantity,
         unit: p.unit || "METER",
-        // `price` already includes the selected dye's add-on, so makingCharge
-        // stays 0 — setting both would bill the customisation twice.
-        price,
-        sku: p.sku,
-        orderType: inStockQty > 0 ? "IN_STOCK" : "MADE_TO_ORDER",
+        // `finalPdpUnitPrice` includes volume discount tier (if quantity threshold met) as well as finish/size surcharges
+        price: finalPdpUnitPrice,
+        makingCharge: productGroup === "finished" ? (rawMakingCharge || 0) : 0,
+        sku: p.sku || "",
+        orderType: isCustomOptionActive || inStockQty <= 0 ? "MADE_TO_ORDER" : "IN_STOCK",
         productGroup,
-        selectedFinishId,
+        selectedFinishId: finishIdToUse || undefined,
       });
       setCartStatus("added");
       // Loom's add returns no cart, so re-read it, then slide the side tab out —
@@ -386,85 +654,16 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
             <Link href="/products/fabric" className="hover:text-black">{craftName.toLowerCase()}</Link>
           </div>
 
-          {/* Large Main Viewport */}
-          <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-[#f7f5f0] border border-[#efeee9] group">
-            {activeMedia.type === "video" || isVideoActive ? (
-              <div className="w-full h-full bg-black flex justify-center items-center relative">
-                <iframe
-                  src={`https://www.youtube.com/embed/${activeMedia.url.includes("shorts/")
-                    ? activeMedia.url.split("shorts/")[1]?.split("?")[0]
-                    : activeMedia.url.split("v=")[1]?.split("&")[0] || ""
-                    }?autoplay=1`}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                />
-              </div>
-            ) : (
-              <img
-                src={activeMedia.url}
-                alt={p.name}
-                className="w-full h-full object-cover transition-all duration-300"
-              />
-            )}
-
-            {/* Bottom Video Icon Overlay (Left) */}
-            {p.productVideo && !isVideoActive && (
-              <button
-                type="button"
-                onClick={() => setIsVideoActive(true)}
-                className="absolute bottom-4 left-4 w-10 h-10 rounded-full bg-white/90 shadow-md backdrop-blur flex justify-center items-center hover:bg-white transition-transform hover:scale-110"
-              >
-                <span className="material-symbols-outlined text-gray-900 text-xl">
-                  videocam
-                </span>
-              </button>
-            )}
-
-            {/* Bottom Right "View Gallery" Pill */}
-            <button
-              type="button"
-              onClick={() => setIsVideoActive(false)}
-              className="absolute bottom-4 right-4 bg-white/90 text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-full shadow-md backdrop-blur flex items-center gap-1 hover:bg-white transition-colors"
-            >
-              <span className="material-symbols-outlined text-sm">search</span>
-              <span>View Gallery</span>
-            </button>
-          </div>
-
-          {/* Thumbnail Horizontal Strip */}
-          {mediaGallery.length > 1 && (
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
-              {mediaGallery.map((med, idx) => {
-                const isSelected = selectedImageIndex === idx;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setSelectedImageIndex(idx);
-                      setIsVideoActive(med.type === "video");
-                    }}
-                    className={`relative w-20 h-20 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${isSelected ? "border-[#C79D6D] ring-1 ring-[#C79D6D]" : "border-gray-200 opacity-80 hover:opacity-100"
-                      }`}
-                  >
-                    <img
-                      src={med.poster || med.url}
-                      alt={`Thumbnail ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {med.type === "video" && (
-                      <div className="absolute inset-0 bg-black/30 flex justify-center items-center">
-                        <span className="material-symbols-outlined text-white text-xl">
-                          play_circle
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* Product Light Gallery Component (matching legacy Angular 1:1) */}
+          <ProductLightGallery
+            galleryItems={productGallery}
+            hasVideo={Boolean(p.productVideo)}
+            productFinish={productGroup === "finished"}
+            selectedFabric={selectedFabric}
+            productName={p.name}
+            urlCategory={productGroup === "finished" ? "finished-product" : "fabric-product"}
+            urlSlug={p.slug}
+          />
 
           {/* Desktop Product Information (Key Features, Overview, Material Table) */}
           <div className="hidden md:flex flex-col gap-6 mt-4">
@@ -585,13 +784,18 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setIsWishlist(!isWishlist)}
-                className={`p-1.5 rounded-full transition-colors ${isWishlist ? "text-red-500 bg-red-50" : "hover:bg-gray-100"
+                onClick={() => {
+                  const productSku = p.sku || String(p.id || previewId || "");
+                  if (productSku) {
+                    toggleWishlist(p.name || "Fabric Product", productSku);
+                  }
+                }}
+                className={`p-1.5 rounded-full transition-colors ${isInWishlist(p.sku || String(p.id || previewId || "")) ? "text-red-500 bg-red-50" : "hover:bg-gray-100"
                   }`}
-                title="Wishlist"
+                title={isInWishlist(p.sku || String(p.id || previewId || "")) ? "Remove from wishlist" : "Add to wishlist"}
               >
                 <span className="material-symbols-outlined text-lg">
-                  {isWishlist ? "favorite" : "favorite_border"}
+                  {isInWishlist(p.sku || String(p.id || previewId || "")) ? "favorite" : "favorite_border"}
                 </span>
               </button>
             </div>
@@ -635,12 +839,29 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
                 </select>
-                <span className="font-bold text-2xl text-[#1f1f1f]">
-                  {convertedPrice.toLocaleString("en-US", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
+                {finalPdpUnitPrice < calculatedPdpPrice ? (
+                  <div className="flex items-baseline gap-2">
+                    <span className="line-through text-sm text-[#898E9A]">
+                      {convertedPrice.toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                    <span className="font-bold text-2xl text-[#1f1f1f]">
+                      {convertedFinalPdpUnitPrice.toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="font-bold text-2xl text-[#1f1f1f]">
+                    {convertedPrice.toLocaleString("en-US", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                )}
                 <span className="text-sm text-[#6B7280]">/ {unit}</span>
               </div>
 
@@ -656,32 +877,92 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
                   View Price Details
                 </button>
 
-                {/* Price Breakdown Popover Tooltip Box (Matching Angular 1:1) */}
+                {/* Price Breakdown Popover Tooltip Box (Matching Angular product-price.component.html 1:1) */}
                 {showPriceSummary && (
                   <div className="absolute top-6 right-0 z-30 bg-white border border-[#D1D4DB] shadow-lg rounded-lg p-3 w-[260px] text-xs text-[#3c3c3c] flex flex-col gap-1.5 animate-in fade-in duration-150">
                     <div className="font-bold text-sm text-black border-b border-gray-100 pb-1">
                       Price Summary
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Base Fabric Cost:</span>
-                      <span className="font-medium">
-                        {currentCurrencyCode} {convertedBasePrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    {selectedDyeItem && (
-                      <div className="flex justify-between items-center text-emerald-700 font-medium">
-                        <span>Custom Dye Cost:</span>
-                        <span>
-                          + {currentCurrencyCode} {convertPrice(selectedDyeItem.price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                        </span>
+
+                    {productGroup === "finished" ? (
+                      /* Angular finished product price summary */
+                      <div className="flex flex-col gap-1">
+                        {pdpConsumedFabric > 0 && activeFabricCost > 0 && (
+                          <div className="flex justify-between">
+                            <span>Fabric Consumption:</span>
+                            <span>{pdpConsumedFabric} meter(s)</span>
+                          </div>
+                        )}
+                        {activeFabricCost > 0 && (
+                          <div className="flex justify-between">
+                            <span>Fabric Cost:</span>
+                            <span>
+                              {currentCurrencyCode} {convertPrice(activeFabricCost).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Making Cost:</span>
+                          <span>
+                            {currentCurrencyCode} {convertedBasePrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        {totalFinishPrice > 0 && (
+                          <div className="flex justify-between">
+                            <span>Finishing Cost:</span>
+                            <span>
+                              {currentCurrencyCode} {convertPrice(totalFinishPrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        {customSizePrice > 0 && (
+                          <div className="flex justify-between">
+                            <span>Custom Size Cost:</span>
+                            <span>
+                              {currentCurrencyCode} {convertPrice(customSizePrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between border-t pt-1 border-gray-300 font-semibold">
+                          <span>Total:</span>
+                          <span>
+                            {currentCurrencyCode} {convertedPrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Angular fabric product price summary */
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between">
+                          <span>Base Fabric Cost:</span>
+                          <span>
+                            {currentCurrencyCode} {convertedBasePrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        {totalFinishPrice > 0 && (
+                          <div className="flex justify-between">
+                            <span>Finishing Cost:</span>
+                            <span>
+                              {currentCurrencyCode} {convertPrice(totalFinishPrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        {customSizePrice > 0 && (
+                          <div className="flex justify-between">
+                            <span>Custom Dye Cost:</span>
+                            <span>
+                              {currentCurrencyCode} {convertPrice(customSizePrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between border-t pt-1 border-gray-300 font-semibold">
+                          <span>Total:</span>
+                          <span>
+                            {currentCurrencyCode} {convertedPrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
                       </div>
                     )}
-                    <div className="flex justify-between items-center border-t border-gray-200 pt-1 font-bold text-black text-sm">
-                      <span>Total:</span>
-                      <span>
-                        {currentCurrencyCode} {convertedPrice.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
                   </div>
                 )}
               </div>
@@ -709,27 +990,29 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
             </button>
           </div>
 
-          {/* Specifications Cards Row (Weight & Width) */}
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="p-3 rounded bg-[#F9F8F6] border border-[#EFEEE9] flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#3c3c3c]">
-                <span className="material-symbols-outlined text-base text-[#7D5A20]">work</span>
-                <span>Weight</span>
+          {/* Specifications Cards Row (Weight & Width - Only for Fabrics) */}
+          {productGroup !== "finished" && (
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="p-3 rounded bg-[#F9F8F6] border border-[#EFEEE9] flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#3c3c3c]">
+                  <span className="material-symbols-outlined text-base text-[#7D5A20]">work</span>
+                  <span>Weight</span>
+                </div>
+                <span className="text-xs font-bold text-[#1f1f1f]">{gsm} GSM</span>
               </div>
-              <span className="text-xs font-bold text-[#1f1f1f]">{gsm} GSM</span>
-            </div>
 
-            <div className="p-3 rounded bg-[#F9F8F6] border border-[#EFEEE9] flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#3c3c3c]">
-                <span className="material-symbols-outlined text-base text-[#7D5A20]">straighten</span>
-                <span>Width</span>
+              <div className="p-3 rounded bg-[#F9F8F6] border border-[#EFEEE9] flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#3c3c3c]">
+                  <span className="material-symbols-outlined text-base text-[#7D5A20]">straighten</span>
+                  <span>Width</span>
+                </div>
+                <span className="text-xs font-bold text-[#1f1f1f]">{width}</span>
               </div>
-              <span className="text-xs font-bold text-[#1f1f1f]">{width}</span>
             </div>
-          </div>
+          )}
 
-          {/* Choose Variant Swatches */}
-          {p.relatedProductList && p.relatedProductList.length > 0 && (
+          {/* Choose Variant Swatches (Only rendered when there are multiple related variants) */}
+          {p.relatedProductList && p.relatedProductList.length > 1 && (
             <div className="flex flex-col gap-2 mt-2">
               <span className="text-xs font-bold text-[#3c3c3c]">Choose Variant</span>
               <div className="flex items-center gap-3 flex-wrap">
@@ -761,44 +1044,87 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
             </div>
           )}
 
+          {/* Size Profile For Finished Goods (Rendered above Quantity) */}
+          {productGroup === "finished" && (p.sizeProfileEnabled || p.productSizeProfileList?.length > 0 || p.sizeProfile) && (
+            <div className="mt-2">
+              <ProductSizeProfile
+                product={p}
+                sizeProfile={p.sizeProfile || productData.sizeProfile}
+                productSizeProfileList={p.productSizeProfileList || p.product_size_profile_option_list || []}
+                selectedSize={selectedSize}
+                onSizeSelect={(size) => setSelectedSize(size)}
+                customSizeSubmittedData={customSizeData}
+                onCustomSizeSubmit={(data) => setCustomSizeData(data)}
+              />
+            </div>
+          )}
+
           {/* Quantity Counter & Stock Message */}
           <div className="flex flex-col gap-1.5 mt-2">
             <span className="text-xs font-bold text-[#3c3c3c]">Quantity ({unit})</span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center border border-[#D1D4DB] rounded bg-white overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 font-bold transition-colors"
+                  className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 font-bold transition-colors cursor-pointer"
                 >
                   -
                 </button>
                 <input
                   type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    const maxAllowed = !isCustomOptionActive && inStockQty > 0 ? inStockQty : 9999;
+                    setQuantity(Math.min(maxAllowed, Math.max(1, val)));
+                  }}
                   className="w-12 text-center text-sm font-bold focus:outline-none"
                   min={1}
+                  max={!isCustomOptionActive && inStockQty > 0 ? inStockQty : undefined}
                 />
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 font-bold transition-colors"
+                  onClick={() => {
+                    if (!isCustomOptionActive && inStockQty > 0 && quantity >= inStockQty) return;
+                    setQuantity((q) => q + 1);
+                  }}
+                  disabled={!isCustomOptionActive && inStockQty > 0 && quantity >= inStockQty}
+                  className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 font-bold transition-colors disabled:opacity-30 cursor-pointer"
                 >
                   +
                 </button>
               </div>
 
-              <div className="flex items-center gap-1 text-xs text-red-600 font-bold">
-                <span className="material-symbols-outlined text-base">shopping_cart</span>
-                <span>Only {inStockQty} {unit} In Stock!</span>
-              </div>
+              {isReadyInStock ? (
+                <div className="flex items-center gap-1 text-xs text-red-600 font-bold">
+                  <span className="material-symbols-outlined text-base">shopping_cart</span>
+                  <span>
+                    {quantity >= inStockQty
+                      ? `Max in-stock limit (${inStockQty} ${unit.toLowerCase()}${inStockQty > 1 ? "s" : ""})`
+                      : inStockQty < 10
+                        ? `Only ${inStockQty} ${unit.toLowerCase()}${inStockQty > 1 ? "s" : ""} in stock!`
+                        : `${inStockQty} ${unit.toLowerCase()}${inStockQty > 1 ? "s" : ""} in stock!`}
+                  </span>
+                </div>
+              ) : inStockQty > 0 ? (
+                <div className="flex items-center gap-1 text-xs text-[#7D5A20] font-semibold">
+                  <span className="text-light text-red-700">
+                    {inStockQty} {unit.toLowerCase()}{inStockQty > 1 ? "s" : ""} in stock.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-xs text-red-600 font-bold">
+                  <span className="material-symbols-outlined text-base">priority_high</span>
+                  <span>Out of stock</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Customization Available Box (Only displayed when customization is enabled for this product) */}
+          {/* Customization Available Box */}
           {isCustomizationAvailable && (
-            <div className="fb-customization-card flex flex-col gap-2 mt-2 mb-2">
+            <div id="customization" className="fb-customization-card flex flex-col gap-2 mt-2 mb-2 p-3.5 bg-[#F6FAF8] border border-[#275E49]/20 rounded-xl">
               <div className="flex gap-2 items-center">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3.49704 14.044L10.519 7.023C10.9863 6.56242 11.3573 6.01347 11.6104 5.40812C11.8634 4.80277 11.9935 4.15312 11.993 3.497C11.9931 2.18896 11.4796 0.933188 10.563 0L3.54004 7.024C3.07302 7.48451 2.70227 8.03333 2.44938 8.63851C2.1965 9.24368 2.06653 9.89311 2.06704 10.549C2.06704 11.922 2.61704 13.149 3.49704 14.045V14.044ZM20.504 9.941L13.481 16.963C13.0141 17.4235 12.6433 17.9724 12.3905 18.5775C12.1376 19.1827 12.0076 19.8321 12.008 20.488C12.008 21.848 12.558 23.089 13.438 23.985L20.46 16.963C20.9275 16.5025 21.2985 15.9536 21.5516 15.3482C21.8047 14.7428 21.9347 14.0931 21.934 13.437C21.934 12.064 21.384 10.837 20.504 9.941ZM20.46 7.037C20.9273 6.5766 21.2983 6.02783 21.5513 5.42264C21.8044 4.81746 21.9345 4.16796 21.934 3.512C21.934 2.152 21.384 0.912 20.504 0.015L3.54004 16.965C2.60422 17.8937 2.07431 19.1552 2.06626 20.4736C2.0582 21.792 2.57264 23.0599 3.49704 24L20.46 7.037Z" fill="#275E49" />
@@ -807,15 +1133,28 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
               </div>
               <div className="flex flex-col gap-2 justify-center items-start">
                 <p className="text-[#3c3c3c] text-sm">
-                  This product is available with customized fabrics, natural custom dyeing at low MOQ
+                  {productGroup === "finished"
+                    ? "This product is customisable in different fabric options and sizes"
+                    : "This product is available with customized fabrics, natural custom dyeing at low MOQ"}
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowCustomizationOptions(!showCustomizationOptions)}
-                  className="text-[#275E49] bg-white rounded border border-[#D1D4DB] px-4 py-1 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="text-[#275E49] bg-white rounded-lg border border-[#D1D4DB] px-4 py-1.5 text-xs font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   {showCustomizationOptions ? "Hide Customization Options ^" : "Show Customization Options >"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Made To Order Delivery Estimate Banner */}
+          {isCustomOptionActive && (
+            <div className="p-3 bg-[#FFFBF7] border border-[#C79D6D]/40 rounded-xl flex items-center gap-3 text-xs text-[#7D5A20] animate-in fade-in duration-200">
+              <span className="material-symbols-outlined text-lg shrink-0">local_shipping</span>
+              <div>
+                <strong className="block text-gray-900 font-bold">Made To Order Item</strong>
+                <span>Custom production will take approx. 15 to 25 business days.</span>
               </div>
             </div>
           )}
@@ -825,7 +1164,7 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
             <button
               type="button"
               onClick={() => setShowPreOrderModal(true)}
-              className="flex-[50%] bg-white border border-[#C79D6D] text-[#C79D6D] font-bold py-3 rounded text-sm hover:bg-[#FFFBF7] transition-colors text-center"
+              className="flex-[50%] bg-white border border-[#C79D6D] text-[#C79D6D] font-bold py-3 rounded-lg text-sm hover:bg-[#FFFBF7] transition-colors text-center"
             >
               Bulk Pre-Order
             </button>
@@ -833,15 +1172,18 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={cartStatus === "adding"}
-              className={`flex-[50%] font-bold py-3 rounded text-sm transition-colors text-center text-white disabled:opacity-70 ${cartStatus === "added" ? "bg-emerald-600" : "bg-[#C79D6D] hover:bg-[#b0885a]"
-                }`}
+              disabled={cartStatus === "adding" || (!isCustomOptionActive && inStockQty <= 0)}
+              className={`flex-[50%] font-bold py-3 rounded-lg text-sm transition-colors text-center text-white disabled:opacity-70 ${
+                cartStatus === "added" ? "bg-emerald-600" : (!isCustomOptionActive && inStockQty <= 0) ? "bg-gray-400 cursor-not-allowed" : "bg-[#C79D6D] hover:bg-[#b0885a]"
+              }`}
             >
               {cartStatus === "adding"
                 ? "Adding..."
                 : cartStatus === "added"
                   ? "✓ Added to Cart"
-                  : "Add to Cart"}
+                  : (!isCustomOptionActive && inStockQty <= 0)
+                    ? "Out of Stock"
+                    : "Add to Cart"}
             </button>
           </div>
 
@@ -851,40 +1193,42 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
             </p>
           )}
 
-          {/* Swatch Kit Card */}
-          <div className="p-3 border border-[#D1D4DB] rounded bg-white flex items-center justify-between mt-2">
-            <div className="flex items-center gap-3">
-              <img
-                src={p.heroImage}
-                alt="Swatch"
-                className="w-12 h-12 rounded object-cover border border-gray-200"
-              />
-              <div>
-                <span className="block font-bold text-xs text-[#1f1f1f]">Order a Swatch</span>
-                <span className="text-xs text-[#6B7280] font-semibold">
-                  {currentCurrencyCode} {convertPrice(21.81).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                </span>
+          {/* Swatch Kit Card (For Fabrics with addToSwatch enabled when no customization is selected) */}
+          {productGroup === "fabric" && (p.addToSwatch ?? productData.addToSwatch ?? true) && !isCustomOptionActive && (
+            <div className="p-3 border border-[#D1D4DB] rounded-xl bg-white flex items-center justify-between mt-2">
+              <div className="flex items-center gap-3">
+                <img
+                  src={p.heroImage}
+                  alt="Swatch"
+                  className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                />
+                <div>
+                  <span className="block font-bold text-xs text-[#1f1f1f]">Order a Swatch</span>
+                  <span className="text-xs text-[#6B7280] font-semibold">
+                    {currentCurrencyCode} {convertPrice(21.81).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSwatchAdded(true);
+                  setTimeout(() => setSwatchAdded(false), 2500);
+                }}
+                className={`text-xs font-bold px-3.5 py-1.5 rounded-lg transition-colors ${swatchAdded
+                  ? "bg-emerald-600 text-white"
+                  : "text-[#7D5A20] bg-[#FFF8D0] border border-[#C79D6D]/40 hover:bg-[#F9EFA4]"
+                  }`}
+              >
+                {swatchAdded ? "✓ Added Swatch" : "+ Add Swatch"}
+              </button>
             </div>
+          )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setSwatchAdded(true);
-                setTimeout(() => setSwatchAdded(false), 2500);
-              }}
-              className={`text-xs font-bold px-3.5 py-1.5 rounded transition-colors ${swatchAdded
-                ? "bg-emerald-600 text-white"
-                : "text-[#7D5A20] bg-[#FFF8D0] border border-[#C79D6D]/40 hover:bg-[#F9EFA4]"
-                }`}
-            >
-              {swatchAdded ? "✓ Added Swatch" : "+ Add Swatch"}
-            </button>
-          </div>
-
-          {/* Expanded Customization Options Section (Only when isCustomizationAvailable is true) */}
+          {/* Expanded Customization Options Section */}
           {isCustomizationAvailable && showCustomizationOptions && (
-            <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-[#EFEEE9]">
+            <div className="flex flex-col gap-6 mt-4 pt-4 border-t border-[#EFEEE9]">
               <div className="flex items-center gap-2">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3.49704 14.044L10.519 7.023C10.9863 6.56242 11.3573 6.01347 11.6104 5.40812C11.8634 4.80277 11.9935 4.15312 11.993 3.497C11.9931 2.18896 11.4796 0.933188 10.563 0L3.54004 7.024C3.07302 7.48451 2.70227 8.03333 2.44938 8.63851C2.1965 9.24368 2.06653 9.89311 2.06704 10.549C2.06704 11.922 2.61704 13.149 3.49704 14.045V14.044ZM20.504 9.941L13.481 16.963C13.0141 17.4235 12.6433 17.9724 12.3905 18.5775C12.1376 19.1827 12.0076 19.8321 12.008 20.488C12.008 21.848 12.558 23.089 13.438 23.985L20.46 16.963C20.9275 16.5025 21.2985 15.9536 21.5516 15.3482C21.8047 14.7428 21.9347 14.0931 21.934 13.437C21.934 12.064 21.384 10.837 20.504 9.941ZM20.46 7.037C20.9273 6.5766 21.2983 6.02783 21.5513 5.42264C21.8044 4.81746 21.9345 4.16796 21.934 3.512C21.934 2.152 21.384 0.912 20.504 0.015L3.54004 16.965C2.60422 17.8937 2.07431 19.1552 2.06626 20.4736C2.0582 21.792 2.57264 23.0599 3.49704 24L20.46 7.037Z" fill="#275E49" />
@@ -892,194 +1236,37 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
                 <h3 className="fb-font-dm text-lg font-medium text-[#1f1f1f]">Customization Options</h3>
               </div>
 
-              {/* 1. Custom Organic Dye */}
-              <div className="flex flex-col gap-2">
-                <div className="font-bold text-[#3c3c3c] text-sm">Custom Organic Dye</div>
-                <span className="text-[11px] text-[#6B7280]">Original Fabric Color As Displayed</span>
+              {/* 1. Choose Fabric (When Fabric Profile is Enabled) */}
+              {p.fabricProfileEnabled && (p.fabricProfile || productData.fabricProfile) && (
+                <ProductCustomFabricProfile
+                  product={p}
+                  fabricProfile={p.fabricProfile || productData.fabricProfile || {}}
+                  selectedFabric={selectedFabric}
+                  onSelectFabric={(fab) => setSelectedFabric(fab)}
+                />
+              )}
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedDyeType("original");
-                      setSelectedDyeItem(null);
-                      setPantoneSubmitted(false);
-                    }}
-                    className={`text-xs px-3.5 py-1.5 rounded border font-medium transition-colors ${selectedDyeType === "original"
-                      ? "border-[#C79D6D] bg-[#FFFBF7] text-[#7D5A20]"
-                      : "border-[#D1D4DB] text-[#3c3c3c] bg-white hover:bg-gray-50"
-                      }`}
-                  >
-                    As per Original
-                  </button>
+              {/* 2. Size Profile for Fabrics (When Size Profile is Enabled) */}
+              {productGroup === "fabric" && p.sizeProfileEnabled && (p.sizeProfile || productData.sizeProfile) && (
+                <ProductSizeProfile
+                  product={p}
+                  sizeProfile={p.sizeProfile || productData.sizeProfile}
+                  productSizeProfileList={p.productSizeProfileList || []}
+                  selectedSize={selectedSize}
+                  onSizeSelect={(size) => setSelectedSize(size)}
+                  customSizeSubmittedData={customSizeData}
+                  onCustomSizeSubmit={(data) => setCustomSizeData(data)}
+                />
+              )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedDyeType("custom");
-                      setSelectedDyeItem(null);
-                    }}
-                    className={`text-xs px-3.5 py-1.5 rounded border font-medium transition-colors ${selectedDyeType === "custom"
-                      ? "border-[#C79D6D] bg-[#FFFBF7] text-[#7D5A20]"
-                      : "border-[#D1D4DB] text-[#3c3c3c] bg-white hover:bg-gray-50"
-                      }`}
-                  >
-                    Custom Dye
-                  </button>
-
-                  {/* Guide Button Opens Pantone Guide Sidebar Drawer */}
-                  <button
-                    type="button"
-                    onClick={() => setShowPantoneGuide(true)}
-                    className="text-xs px-3 py-1.5 rounded border border-[#D1D4DB] text-[#3c3c3c] bg-white hover:bg-gray-50 flex items-center gap-1 font-medium cursor-pointer"
-                  >
-                    <span>Guide</span>
-                    <span className="material-symbols-outlined text-xs text-gray-500">info</span>
-                  </button>
-                </div>
-
-                {/* When Custom Dye is Selected: Yellow Pantone Alert Box + Form Inputs */}
-                {selectedDyeType === "custom" && (
-                  <div className="flex flex-col gap-3 mt-2 animate-in fade-in duration-200">
-                    <div className="p-3 bg-[#FFF8D0] border border-[#FFEBAA] rounded-lg text-xs text-[#6B5A10] leading-relaxed flex items-start gap-2">
-                      <span className="material-symbols-outlined text-base text-[#7D5A20] shrink-0 mt-0.5">info</span>
-                      <div>
-                        Please enter the exact Pantone code (19-1537 TCX Winery) or share as per the Guide (Pantone 100 or refer -{" "}
-                        <a href="http://www.pantone-colours.com/" target="_blank" rel="noreferrer" className="underline font-medium hover:text-black">
-                          http://www.pantone-colours.com/
-                        </a>
-                        ). Provide color code along with names as per Pantone reference for better understanding to avoid confusion.
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                      <div className="sm:col-span-5 flex flex-col gap-1">
-                        <label className="text-xs font-bold text-[#3c3c3c]">
-                          Pantone Shade <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={pantoneShade}
-                          onChange={(e) => setPantoneShade(e.target.value)}
-                          placeholder="19-1537 TCX Winery or Pan"
-                          className="w-full border border-[#D1D4DB] rounded px-3 py-2 text-xs focus:outline-none focus:border-[#C79D6D]"
-                        />
-                      </div>
-
-                      <div className="sm:col-span-4 flex flex-col gap-1">
-                        <label className="text-xs font-bold text-[#3c3c3c]">Notes</label>
-                        <input
-                          type="text"
-                          value={pantoneNotes}
-                          onChange={(e) => setPantoneNotes(e.target.value)}
-                          placeholder="Additional Comments"
-                          className="w-full border border-[#D1D4DB] rounded px-3 py-2 text-xs focus:outline-none focus:border-[#C79D6D]"
-                        />
-                      </div>
-
-                      <div className="sm:col-span-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (pantoneShade.trim()) {
-                              setPantoneSubmitted(true);
-                            }
-                          }}
-                          className="w-full bg-[#C79D6D] hover:bg-[#b0885a] text-white font-semibold py-2.5 px-3 rounded text-xs transition-colors whitespace-nowrap"
-                        >
-                          {pantoneSubmitted ? "✓ Submitted" : "Submit Custom Dye"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {pantoneSubmitted && (
-                      <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2 flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">check_circle</span>
-                        <span>Custom Dye Pantone &quot;{pantoneShade}&quot; submitted!</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 2. Custom Natural Vegetable Dye */}
-              <div className="flex flex-col gap-3 mt-3">
-                <div className="font-bold text-[#3c3c3c] text-sm">
-                  {finishProfile?.displayName || "Custom Natural Vegetable Dye"}
-                </div>
-
-                {/* Selected Finish Chip Tags Above Swatches */}
-                {selectedDyeItem && (
-                  <div className="fb-selected-finishes flex flex-wrap items-center gap-1.5">
-                    <div
-                      onClick={() => {
-                        setSelectedDyeItem(null);
-                        setSelectedDyeType("original");
-                      }}
-                      className="fb-finish-chip text-[11px] font-semibold border border-[#C79D6D] text-[#3c3c3c] bg-[#FFFBF7] rounded px-2.5 py-1 flex items-center gap-1.5 cursor-pointer capitalize"
-                    >
-                      <span>{selectedDyeItem.label?.toLowerCase()}</span>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7.99999 8.00002L4.66666 4.66669M7.99999 8.00002L11.3333 11.3334M7.99999 8.00002L11.3333 4.66669M7.99999 8.00002L4.66666 11.3334" stroke="black" strokeWidth="1.3333" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-
-                {/* Inline Swatches Strip */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {naturalDyeList.slice(0, 6).map((finish: any, i: number) => {
-                    const isSelected = selectedDyeItem?.id === finish.id;
-                    return (
-                      <div
-                        key={finish.id || i}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedDyeItem(null);
-                            setSelectedDyeType("original");
-                          } else {
-                            setSelectedDyeItem(finish);
-                            setSelectedDyeType("natural");
-                          }
-                        }}
-                        className={`fb-finish-icon rounded cursor-pointer relative ${isSelected ? "ring-2 ring-[#C79D6D]" : ""
-                          }`}
-                      >
-                        <img
-                          src={finish.image}
-                          alt={finish.label}
-                          className="w-16 h-16 object-cover object-bottom rounded m-[1px]"
-                        />
-
-                        {/* Circular Botanical Inset on Bottom Right */}
-                        <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full overflow-hidden border border-white shadow">
-                          <img src={getBotanicalInset(finish.label)} alt="" className="w-full h-full object-cover" />
-                        </div>
-
-                        {/* Top-Left SVG Checkmark Badge when active */}
-                        {isSelected && (
-                          <svg
-                            className="absolute -top-2 -left-2"
-                            width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <circle cx="10.5" cy="10.5" r="9.19" fill="white" />
-                            <path d="M10.5 1.3125C8.68289 1.3125 6.90658 1.85134 5.3957 2.86087C3.88483 3.87041 2.70724 5.3053 2.01186 6.9841C1.31648 8.66289 1.13454 10.5102 1.48904 12.2924C1.84354 14.0746 2.71857 15.7116 4.00346 16.9965C5.28836 18.2814 6.92541 19.1565 8.70761 19.511C10.4898 19.8655 12.3371 19.6835 14.0159 18.9881C15.6947 18.2928 17.1296 17.1152 18.1391 15.6043C19.1487 14.0934 19.6875 12.3171 19.6875 10.5C19.6875 8.06332 18.7195 5.72645 16.9965 4.00346C15.2736 2.28047 12.9367 1.3125 10.5 1.3125ZM9.1875 14.169L5.90625 10.8877L6.95009 9.84375L9.1875 12.081L14.0503 7.21875L15.0975 8.2595L9.1875 14.169Z" fill="#C79D6D" />
-                          </svg>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {naturalDyeList.length > 6 && (
-                    <div
-                      onClick={() => setShowDyeModal(true)}
-                      className="cursor-pointer w-16 h-16 rounded border border-gray-300 text-gray-700 font-semibold flex justify-center items-center text-center text-xs"
-                    >
-                      <span>+ {naturalDyeList.length - 6} More</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* 3. Choose Finish / Organic Dye (When Finish Profile is Enabled) */}
+              {p.finishProfileEnabled && (p.finishProfile || productData.finishProfile) && (
+                <ProductFinishProfile
+                  finishProfile={p.finishProfile || productData.finishProfile || {}}
+                  selectedFinishes={selectedFinishes}
+                  onFinishChange={(finishes) => setSelectedFinishes(finishes)}
+                />
+              )}
             </div>
           )}
 
@@ -1379,52 +1566,20 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
         </div>
       )}
 
-      {/* 3. Bulk Pricing Modal */}
+      {/* 3. Volume Bulk Discount Profile Modal Dialog */}
       {showBulkModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-center items-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 flex flex-col gap-4 relative">
-            <button
-              type="button"
-              onClick={() => setShowBulkModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 text-xl font-bold"
-            >
-              ✕
-            </button>
-
-            <h3 className="fb-font-dm font-medium text-xl text-[#1f1f1f]">Volume Bulk Pricing</h3>
-            <p className="text-xs text-[#6B7280] leading-relaxed">
-              With higher volume, the price reduces proportionately. Pre-order with precise color and design accuracy.
-            </p>
-
-            <div className="flex flex-col gap-2 my-2 max-h-[300px] overflow-y-auto">
-              {[
-                { qty: "25+ Meters", discount: "3% OFF", price: Math.round(price * 0.97) },
-                { qty: "50+ Meters", discount: "5% OFF", price: Math.round(price * 0.95) },
-                { qty: "75+ Meters", discount: "7.5% OFF", price: Math.round(price * 0.925) },
-                { qty: "100+ Meters", discount: "10% OFF", price: Math.round(price * 0.9) },
-                { qty: "300+ Meters", discount: "12% OFF", price: Math.round(price * 0.88) },
-                { qty: "500+ Meters", discount: "15% OFF", price: Math.round(price * 0.85) },
-                { qty: "1000+ Meters", discount: "17.5% OFF", price: Math.round(price * 0.825) },
-              ].map((tier, idx) => (
-                <div key={idx} className="flex justify-between items-center p-3 rounded bg-[#F9F8F6] border border-[#EFEEE9] text-xs font-semibold">
-                  <span className="text-[#3c3c3c]">{tier.qty}</span>
-                  <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">{tier.discount}</span>
-                  <span className="text-[#7D5A20] font-bold text-sm">
-                    {currentCurrencyCode} {convertPrice(tier.price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} / {unit}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowBulkModal(false)}
-              className="w-full bg-[#C79D6D] text-white font-bold py-2.5 rounded hover:bg-[#b0885a] transition-colors text-sm"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <ProductVolumeDiscountDialog
+          isOpen={showBulkModal}
+          onClose={() => setShowBulkModal(false)}
+          product={p}
+          basePrice={calculatedPdpPrice}
+          selectFinishPrice={totalFinishPrice}
+          customSizePrice={customSizePrice}
+          selectedFabric={selectedFabric}
+          unit={unit}
+          volumeDiscountProfile={p.volumeDiscountProfile || productData.volumeDiscountProfile}
+          consumedFabric={pdpConsumedFabric}
+        />
       )}
 
       {/* 4. How It Works Modal */}
@@ -1477,61 +1632,18 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
         </div>
       )}
 
-      {/* 5. Pre-Order Modal */}
+      {/* 5. Pre-Order Slide-Over Drawer Modal */}
       {showPreOrderModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-center items-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 flex flex-col gap-4 relative">
-            <button
-              type="button"
-              onClick={() => setShowPreOrderModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 text-xl font-bold"
-            >
-              ✕
-            </button>
-
-            <h3 className="fb-font-dm font-medium text-xl text-[#1f1f1f]">Pre-Order Bulk Production</h3>
-
-            <div className="p-3 bg-[#FFF8D0] border border-[#8f780f]/30 rounded text-xs text-[#8f780f] flex items-center gap-2">
-              <span className="material-symbols-outlined text-base">info</span>
-              <span>An advance payment of 50% is required at checkout for pre-orders.</span>
-            </div>
-
-            <div className="flex flex-col gap-2 my-2 text-xs text-[#3c3c3c]">
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-[#6B7280]">Product Name</span>
-                <span className="font-bold text-black text-right max-w-[200px] truncate">{p.name}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-[#6B7280]">SKU</span>
-                <span className="font-mono font-bold text-[#7D5A20]">{p.sku}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-[#6B7280]">Estimated Delivery</span>
-                <span className="font-bold text-black">45 to 60 Days</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-[#6B7280]">Pre-Order Quantity ({unit})</span>
-                <input
-                  type="number"
-                  defaultValue={25}
-                  min={15}
-                  className="w-20 px-2 py-1 text-center font-bold border border-gray-300 rounded text-sm"
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowPreOrderModal(false)}
-              className="w-full bg-[#C79D6D] text-white font-bold py-3 rounded hover:bg-[#b0885a] transition-colors text-sm uppercase"
-            >
-              Confirm Pre-Order
-            </button>
-          </div>
-        </div>
+        <ProductPreOrderDialog
+          isOpen={showPreOrderModal}
+          onClose={() => setShowPreOrderModal(false)}
+          product={p}
+          productData={productData}
+          initialSelectedFabric={selectedFabric}
+          initialSelectedFinishes={selectedFinishes}
+          initialSelectedSize={activeSizeOption}
+          initialCustomSizeData={customSizeData}
+        />
       )}
     </section>
   );

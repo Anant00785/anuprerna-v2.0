@@ -106,6 +106,19 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
     };
   }, [group, categoryParam]);
 
+  // 1b. Re-sync controls, sort, and page when searchParams change (e.g. Header navigation)
+  useEffect(() => {
+    if (!products.length) return;
+
+    const keys = group === "finished" ? FINISHED_FILTER_KEYS : FABRIC_FILTER_KEYS;
+    const freshControls = prepareFilterControls(keys, products, metadata);
+    applyUrlParamsToControls(freshControls, searchParams);
+
+    setControls(freshControls);
+    setSelectedSortOption(searchParams.get("sort-by") || "availability");
+    setCurrentPage(parseInt(searchParams.get("page") || "1", 10));
+  }, [searchParams, products, metadata, group]);
+
   // Decode searchParams into control state
   const applyUrlParamsToControls = (filterCtrl: FilterControls, params: ReturnType<typeof useSearchParams>) => {
     filterCtrl.cohorts.forEach((cohortGroup) => {
@@ -118,8 +131,8 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
         }
       } else if (key.type === "sub" && cohortGroup.cohort) {
         cohortGroup.cohort.options.forEach((parentOpt) => {
-          const segKey = parentOpt.value.toLowerCase().replace(/\s+/g, "-");
-          const paramVal = params.get(segKey);
+          const segKey = parentOpt.value.toLowerCase().replace(/[\s-]+/g, "-");
+          const paramVal = params.get(segKey) || params.get(parentOpt.value.toLowerCase().replace(/\s+/g, "-"));
           if (paramVal) {
             const activeSubs = paramVal.split(",").map((s) => s.trim().toLowerCase());
             if (paramVal === "all" && parentOpt.subOptions) {
@@ -127,20 +140,24 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
               parentOpt.active = true;
             } else if (parentOpt.subOptions) {
               parentOpt.subOptions.forEach((sub) => {
-                const subKey = sub.value.toLowerCase().replace(/\s+/g, "");
-                sub.active = activeSubs.some((a) => a.replace(/-/g, "") === subKey || a === sub.value.toLowerCase());
+                const normSub = sub.value.toLowerCase().replace(/[\s-]+/g, "");
+                sub.active = activeSubs.some((a) => {
+                  const normA = a.replace(/[\s-]+/g, "");
+                  return normA === normSub;
+                });
               });
-              parentOpt.active = parentOpt.subOptions.every((s) => s.active);
+              parentOpt.active = parentOpt.subOptions.length > 0 && parentOpt.subOptions.every((s) => s.active);
             }
           }
         });
       } else if (key.type === "csv" && cohortGroup.cohort) {
         const paramVal = params.get(key.key);
         if (paramVal) {
-          const activeVals = paramVal.split(",").map((v) => v.trim().toLowerCase());
+          const activeVals = paramVal.split(",").map((v) => v.trim().toLowerCase().replace(/[\s-]+/g, ""));
           cohortGroup.cohort.options.forEach((opt) => {
-            const optName = (opt.displayName || opt.value).toLowerCase();
-            if (activeVals.includes(optName) || activeVals.includes(String(opt.value))) {
+            const optName = (opt.displayName || opt.value).toLowerCase().replace(/[\s-]+/g, "");
+            const optVal = String(opt.value).toLowerCase().replace(/[\s-]+/g, "");
+            if (activeVals.includes(optName) || activeVals.includes(optVal)) {
               opt.active = true;
             }
           });

@@ -6,6 +6,7 @@ import { ForexDropdown } from "./ForexDropdown";
 import { CustomerDropdown } from "./CustomerDropdown";
 import { useAuthStore } from "@/stores/auth.store";
 import { useCartStore } from "@/stores/cart.store";
+import { useWishlistStore } from "@/stores/wishlist.store";
 import { CartDrawer } from "./CartDrawer";
 import { MobileMenu } from "./MobileMenu";
 import {
@@ -31,10 +32,7 @@ import {
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // TODO: wishlistCount has the same defect cartCount had — local state with no
-  // setter call site anywhere, so the badge can never appear. Left as-is because
-  // the storefront has no wishlist repository to read from yet.
-  const [wishlistCount] = useState(0);
+  const wishlistSkus = useWishlistStore((s) => s.skus);
   // Was `useState(false)` / `useState("Guest")` with no setter ever called, so the
   // header read "Sign In" even while the profile pages showed the signed-in user.
   // `hydrated` gates it: the auth store is `persist`-backed, so on the server and
@@ -44,6 +42,7 @@ export function Header() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   const isLoggedIn = hydrated && storeLoggedIn;
+  const wishlistCount = hydrated ? wishlistSkus.length : 0;
   const tenantName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
     user?.email ||
@@ -844,7 +843,7 @@ export function Header() {
             <span className="material-symbols-outlined">search</span>
           </Link>
 
-          <Link href="/products/fabric?wishlist=true" onClick={() => setIsMobileMenuOpen(false)} className="flex justify-between items-center relative">
+          <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex justify-between items-center relative" title="Wishlist">
             {wishlistCount > 0 && (
               <strong className="absolute top-[-10px] -right-2 count">
                 {wishlistCount}
