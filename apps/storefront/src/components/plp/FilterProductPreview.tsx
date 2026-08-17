@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PLPProduct } from "@/types/domain/plp";
 import { useCurrencyStore } from "@/stores/currency.store";
 import { useAuthStore } from "@/stores/auth.store";
+import { useWishlistStore } from "@/stores/wishlist.store";
 
 interface FilterProductPreviewProps {
   product: PLPProduct;
@@ -17,7 +18,8 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
   relatedProducts = [],
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [inWishlist, setInWishlist] = useState(Boolean(product.inWishlist));
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
+  const isInWishlistStore = useWishlistStore((s) => s.isInWishlist);
 
   // Gated on `hydrated` for the same reason as the header: the auth store is
   // persist-backed and is empty on the server and first client render.
@@ -34,6 +36,67 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
   const convertedDiscountedPrice = product.calculatedDiscountedPrice
     ? convertPrice(Number(product.calculatedDiscountedPrice))
     : null;
+
+  // Calculate bulk price matching Angular filter-product-preview.component.ts ngOnInit 1:1
+  let rawBulkPrice = rawBasePrice;
+  if (product.product_group === "finished") {
+    // Angular: selectedMadeToOrderFabricPrice = product.made_to_order_fabric_price
+    //   ? product.made_to_order_fabric_price : product.price;
+    const rawFabricPrice =
+      product.made_to_order_fabric_price ??
+      (product as any).madeToOrderFabric?.price ??
+      0;
+    const selectedFabricPrice = Number(rawFabricPrice) > 0 ? Number(rawFabricPrice) : Number(product.price || 0);
+
+    // getConsumedFabric matching Angular 1:1
+    let consumedFabric = 1;
+    if ((product as any).product_size_profile_option_list?.[0]?.consumed_fabric) {
+      consumedFabric = Number((product as any).product_size_profile_option_list[0].consumed_fabric);
+    } else if (product.size_profile_option_list?.[0]) {
+      const opt = product.size_profile_option_list[0] as any;
+      consumedFabric = Number(opt.size_profile_option_consumed_fabric || opt.consumed_fabric || 1);
+    } else if ((product as any).made_to_order_profile_consumed_fabric) {
+      consumedFabric = Number((product as any).made_to_order_profile_consumed_fabric);
+    }
+
+    const fabricPrice = selectedFabricPrice * consumedFabric;
+
+    if (product.volume_discount) {
+      // Angular: productVD = product.price - (product.price * (volume_discount / 100))
+      const productVD = Number(product.price || 0) - (Number(product.price || 0) * (product.volume_discount / 100));
+
+      // Angular: fabricVD = made_to_order_fabric_discount
+      //   ? fabricPrice - (fabricPrice * (_calculateDiscountSlab(consumedFabric) / 100)) : 0
+      let fabricVD = 0;
+      const mtoFabricDiscount = (product as any).made_to_order_fabric_discount;
+      if (mtoFabricDiscount && Array.isArray(mtoFabricDiscount) && mtoFabricDiscount.length > 0) {
+        // _calculateDiscountSlab: find highest discount slab where min order qty <= volume_discount_minimum_order_quantity * consumedFabric
+        const minOrderQty = (product as any).volume_discount_minimum_order_quantity
+          ? (product as any).volume_discount_minimum_order_quantity * consumedFabric
+          : 0;
+        let discountSlab = 0;
+        const sorted = [...mtoFabricDiscount].sort((a: any, b: any) => a.discount - b.discount);
+        sorted.forEach((item: any) => {
+          if (item.minimum_order_quantity <= minOrderQty) {
+            discountSlab = item.discount;
+          }
+        });
+        fabricVD = fabricPrice - (fabricPrice * (discountSlab / 100));
+      }
+      rawBulkPrice = productVD + fabricVD;
+    } else {
+      // Angular: this.bulkPrice = this.product.calculatedPrice;
+      rawBulkPrice = rawBasePrice;
+    }
+  } else {
+    if (product.volume_discount) {
+      rawBulkPrice = Number(product.price || 0) - (Number(product.price || 0) * (product.volume_discount / 100));
+    } else {
+      rawBulkPrice = Number(product.price || 0);
+    }
+  }
+  const convertedBulkPrice = convertPrice(rawBulkPrice);
+  const hasMultipleSizes = Boolean(product.size_profile_option_list && product.size_profile_option_list.length > 1);
 
   // Determine badge text
   const isStockAvailable =
@@ -89,16 +152,12 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 
         {/* Price Display */}
         <div className="flex justify-start items-center mb-3 text-lg md:text-xl font-medium px-3 text-[#2E2E2E] flex-wrap sm:flex-nowrap">
+          {hasMultipleSizes && (
+            <span className="text-xs mr-1 text-[#75787F]">Starting from </span>
+          )}
           <span className="text-xs mr-1 text-[#75787F]">{currencyCode}</span>
 
-          {!convertedDiscountedPrice ? (
-            <span>
-              {convertedBasePrice.toLocaleString("en-US", {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-          ) : (
+          {convertedDiscountedPrice ? (
             <span className="flex items-center gap-1.5">
               <span className="line-through text-xs sm:text-sm text-[#898E9A]">
                 {convertedBasePrice.toLocaleString("en-US", {
@@ -106,12 +165,19 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
                   maximumFractionDigits: 2,
                 })}
               </span>
-              <span className="text-base sm:text-lg text-emerald-700 font-semibold">
+              <span className="text-base sm:text-lg text-[#2E2E2E] font-bold">
                 {convertedDiscountedPrice.toLocaleString("en-US", {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 2,
                 })}
               </span>
+            </span>
+          ) : (
+            <span>
+              {convertedBasePrice.toLocaleString("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })}
             </span>
           )}
 
@@ -121,33 +187,48 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 
       {/* Card Action Buttons */}
       <div className="px-3 pb-3 w-full flex items-stretch gap-2 mt-auto">
-        {/* This prompted every visitor to log in, signed in or not — it had no
-            auth check at all. Signed-in customers get the enquiry action instead. */}
         <Link
           href={isLoggedIn ? productUrl : "/auth"}
           className="w-full bg-[#fffcf7] rounded md:rounded-lg border-2 border-[#8E7862] text-[#7D5B20] py-1.5 px-2 hover:border-[#6c5b48] hover:bg-[#fbf4e8] transition-colors flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold"
         >
           <span className="material-symbols-outlined text-[18px]">
-            account_circle
+            {isLoggedIn ? "shoppingmode" : "account_circle"}
           </span>
           <span className="text-[11px] sm:text-xs text-center">
-            {isLoggedIn ? "Enquire for bulk price" : "Login to get bulk price"}
+            {isLoggedIn
+              ? `Bulk Order @ ${currencyCode} ${convertedBulkPrice.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}`
+              : "Login to get bulk price"}
           </span>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => setInWishlist(!inWishlist)}
-          className="w-max bg-[#fffcf7] rounded md:rounded-lg text-[#7D5B20] py-1.5 px-2.5 cursor-pointer flex justify-center items-center border border-[#75787F]/20 hover:bg-[#fcf4e8] transition-colors"
-          title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={inWishlist ? "/assets/img/favourite.svg" : "/assets/img/non-favourite.svg"}
-            alt="Wishlist"
-            className="w-5 h-5"
-          />
-        </button>
+        {(() => {
+          const productSku = product.sku || String(product.id || "");
+          const inWishlist = hydrated && (isInWishlistStore(productSku) || Boolean(product.inWishlist));
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (productSku) {
+                  toggleWishlist(product.name, productSku);
+                }
+              }}
+              className="w-max bg-[#fffcf7] rounded md:rounded-lg text-[#7D5B20] py-1.5 px-2.5 cursor-pointer flex justify-center items-center border border-[#75787F]/20 hover:bg-[#fcf4e8] transition-colors"
+              title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={inWishlist ? "/assets/img/favourite.svg" : "/assets/img/non-favourite.svg"}
+                alt="Wishlist"
+                className="w-5 h-5"
+              />
+            </button>
+          );
+        })()}
       </div>
 
       {/* Related Products Swatch Preview Circles */}

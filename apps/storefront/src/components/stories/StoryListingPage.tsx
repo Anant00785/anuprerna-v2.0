@@ -1,12 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
-export function StoryListingPage() {
+function StoryListingContent() {
+  const searchParams = useSearchParams();
   const [stories, setStories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+
+  // Sync activeTab with URL category query param
+  useEffect(() => {
+    const cat = searchParams.get("category") || searchParams.get("storyCategoryName") || "all";
+    const lower = cat.toLowerCase().trim();
+    if (lower.includes("craft")) {
+      setActiveTab("craft");
+    } else if (lower.includes("collab") || lower.includes("designer")) {
+      setActiveTab("collaboration");
+    } else if (lower.includes("cluster") || lower.includes("print") || lower.includes("embroidery")) {
+      setActiveTab("cluster");
+    } else if (lower === "all") {
+      setActiveTab("all");
+    } else {
+      setActiveTab(lower);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -138,5 +157,19 @@ export function StoryListingPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export function StoryListingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full min-h-[400px] flex justify-center items-center">
+          <div className="w-10 h-10 border-4 border-[#8E7862] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <StoryListingContent />
+    </Suspense>
   );
 }

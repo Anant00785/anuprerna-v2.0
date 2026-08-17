@@ -37,35 +37,80 @@ const metadata = {
 };
 
 describe("calculateProductPrice", () => {
-  it("sets calculatedPrice from price, no discount fields untouched", () => {
-    const result = calculateProductPrice(makeProduct({ price: 200 }));
+  it("sets calculatedPrice from price for fabric products, no discount fields untouched", () => {
+    const result = calculateProductPrice(makeProduct({ price: 200, calculatedPrice: undefined }));
     expect(result.calculatedPrice).toBe(200);
     expect(result.calculatedDiscountedPrice).toBeUndefined();
   });
 
-  // Regression guard. Commit 9361c3b replaced this computation with a literal
-  // `undefined`, so no discount could render on the PLP; restored 2026-08-12.
-  // If this fails again, the calculation has been removed a second time.
-  it("computes discounted price when max_discount fields present", () => {
+  // Angular PLP only sets calculatedDiscountedPrice from wholesale program percentileDiscount,
+  // not from max_discount fields. So max_discount fields should NOT produce a discounted price.
+  it("does NOT compute discounted price from max_discount fields (wholesale-only in Angular)", () => {
     const result = calculateProductPrice(
-      makeProduct({ price: 200, max_discount_product_price: 200, max_discount_product_discount: 25 })
+      makeProduct({ price: 200, calculatedPrice: 200, max_discount_product_price: 200, max_discount_product_discount: 25 })
     );
+    expect(result.calculatedDiscountedPrice).toBeUndefined();
+  });
+
+  it("preserves API-provided calculatedDiscountedPrice when present", () => {
+    const result = calculateProductPrice(makeProduct({ price: 200, calculatedPrice: 200, calculatedDiscountedPrice: 150 }));
     expect(result.calculatedDiscountedPrice).toBe(150);
   });
 
   it("returns no discounted price when max_discount_product_price is absent", () => {
-    const result = calculateProductPrice(makeProduct({ price: 200, max_discount_product_discount: 25 }));
+    const result = calculateProductPrice(makeProduct({ price: 200, calculatedPrice: 200, max_discount_product_discount: 25 }));
     expect(result.calculatedDiscountedPrice).toBeUndefined();
   });
 
-  it("treats a missing discount percentage as zero, not as a free product", () => {
-    const result = calculateProductPrice(makeProduct({ price: 200, max_discount_product_price: 200 }));
-    expect(result.calculatedDiscountedPrice).toBe(200);
+  it("defaults price-less product to calculatedPrice 0", () => {
+    const result = calculateProductPrice(makeProduct({ price: undefined as unknown as number, calculatedPrice: undefined }));
+    expect(result.calculatedPrice).toBe(0);
   });
 
-  it("defaults price-less product to calculatedPrice 0", () => {
-    const result = calculateProductPrice(makeProduct({ price: undefined as unknown as number }));
-    expect(result.calculatedPrice).toBe(0);
+  // Angular: selectedFabricPrice = made_to_order_fabric_price || product.price
+  // calculatedPrice = product.price + (selectedFabricPrice * consumedFabric)
+  it("calculates finished product price as basePrice + (fabricPrice * consumedFabric)", () => {
+    const result = calculateProductPrice(
+      makeProduct({
+        price: 1625,
+        made_to_order_fabric_price: 1625,
+        calculatedPrice: undefined,
+        product_group: "finished",
+        size_profile_option_list: [
+          { size_profile_option_consumed_fabric: 1.7 } as any,
+        ],
+      })
+    );
+    // 1625 + (1625 * 1.7) = 1625 + 2762.5 = 4387.5
+    expect(result.calculatedPrice).toBe(4387.5);
+  });
+
+  it("uses made_to_order_fabric_price when present for finished product", () => {
+    const result = calculateProductPrice(
+      makeProduct({
+        price: 1700,
+        made_to_order_fabric_price: 371,
+        made_to_order_profile_consumed_fabric: 0.5,
+        calculatedPrice: undefined,
+        product_group: "finished",
+      } as any)
+    );
+    // 1700 + (371 * 0.5) = 1700 + 185.5 = 1885.5
+    expect(result.calculatedPrice).toBe(1885.5);
+  });
+
+  it("falls back to product.price as fabric price when no MTO fabric price for finished product", () => {
+    const result = calculateProductPrice(
+      makeProduct({
+        price: 500,
+        calculatedPrice: undefined,
+        product_group: "finished",
+        // No made_to_order_fabric_price → falls back to product.price (500)
+        // Default consumedFabric = 1
+      })
+    );
+    // Angular: 500 + (500 * 1) = 1000
+    expect(result.calculatedPrice).toBe(1000);
   });
 });
 

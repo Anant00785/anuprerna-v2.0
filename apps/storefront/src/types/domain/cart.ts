@@ -14,6 +14,21 @@ export interface CartItem {
   unit?: string;
   unitPrice: number;
   totalPrice: number;
+  discountedUnitPrice?: number;
+  orderType?: "IN_STOCK" | "MADE_TO_ORDER" | "PRE_ORDER" | string;
+  productGroup?: string;
+  fabricProductId?: number | string;
+  sizeDisplayName?: string;
+  finishDisplayName?: string;
+  customSize?: string;
+  selectedSizeLabel?: string;
+  selectedFabricName?: string;
+  customSizeLabel?: string;
+  selectedFinishNames?: string[];
+  availableStock?: number;
+  minOrderQuantity?: number;
+  deliveryFromDays?: number;
+  deliveryToDays?: number;
   selectedColor?: string;
   selectedVariantId?: string;
   /**

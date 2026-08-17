@@ -37,6 +37,7 @@ export interface UserProfileData {
   dob?: string;
   companyName?: string;
   gstin?: string;
+  wishlist?: string;
 }
 
 export interface OrderItem {
