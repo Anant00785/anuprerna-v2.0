@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// The CMS talks to the live legacy Java backend, not `apps/api` — see apps/cms/CLAUDE.md
-// ("How data flows"). The old `localhost:3000` default pointed at the NestJS app, which
-// nothing in this app calls, so every proxied request 502'd whenever it wasn't running.
-const TARGET_HOST = process.env.BACKEND_URL || 'https://loom-v2.anuprerna.com';
+const BACKEND_URL = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+const FALLBACK_URL = 'https://loom-v2.anuprerna.com';
 
 async function handleProxy(request: NextRequest, params: { path?: string[] }) {
   const pathArray = params?.path || [];
   const targetPath = pathArray.join('/');
   const search = request.nextUrl.search;
 
-  const springBase = 'https://loom-v2.anuprerna.com';
-  const nestBase = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-
+  // Handle auth route mapping: NestJS uses /auth/authenticate
   const isAuth = targetPath === 'authenticate/email' || targetPath === 'authenticate';
+  const nestPath = isAuth ? 'auth/authenticate' : targetPath;
 
-  // Build target URLs
-  const primaryUrl = isAuth
-    ? `${springBase}/authenticate/email${search}`
-    : `${springBase}/${targetPath}${search}`;
+  const targetUrl = `${BACKEND_URL}/${nestPath}${search}`;
+  const fallbackUrl = isAuth ? `${FALLBACK_URL}/authenticate/email${search}` : `${FALLBACK_URL}/${targetPath}${search}`;
 
   const headers = new Headers(request.headers);
   headers.delete('host');
@@ -48,24 +43,31 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
   try {
     let backendResponse: Response;
     try {
-      backendResponse = await fetch(primaryUrl, {
+      // 1. Primary: Migrated NestJS Backend API
+      backendResponse = await fetch(targetUrl, {
         method: request.method,
         headers: headers,
         body: body,
         redirect: 'follow',
       });
-    } catch (primaryErr) {
-      // If primary (SpringBoot) fails and is auth, try NestJS fallback
-      if (isAuth) {
-        backendResponse = await fetch(`${nestBase}/auth/authenticate${search}`, {
+
+      // If 404 on primary, attempt fallback
+      if (backendResponse.status === 404 && BACKEND_URL !== FALLBACK_URL) {
+        backendResponse = await fetch(fallbackUrl, {
           method: request.method,
           headers: headers,
           body: body,
           redirect: 'follow',
         });
-      } else {
-        throw primaryErr;
       }
+    } catch (primaryErr) {
+      // Fallback to legacy backend if primary server connection fails
+      backendResponse = await fetch(fallbackUrl, {
+        method: request.method,
+        headers: headers,
+        body: body,
+        redirect: 'follow',
+      });
     }
 
     const responseHeaders = new Headers(backendResponse.headers);
