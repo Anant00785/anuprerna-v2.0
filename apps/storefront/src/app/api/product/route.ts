@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
-const BASE_URL = env.NEXT_PUBLIC_SPRINGBOOT_API_URL.replace(/\/$/, "");
+const BASE_URL = (
+  env.NEXT_PUBLIC_API_MODE === "nest"
+    ? env.NEXT_PUBLIC_NEST_API_URL
+    : env.NEXT_PUBLIC_SPRINGBOOT_API_URL
+).replace(/\/$/, "");
 const DEFAULT_HEADERS = {
   Accept: "application/json",
   Origin: "https://anuprerna.com",
@@ -28,10 +32,13 @@ export async function GET(request: Request) {
         const fabricJson = await fabricV2Res.json();
         const productData = fabricJson.fabricProduct || fabricJson.product || fabricJson.payload || fabricJson;
         if (productData && (productData.product || productData.name || productData.slug)) {
+          const finalData = productData.product
+            ? productData
+            : { product: productData, ...productData };
           return NextResponse.json({
             success: true,
             productType: "fabric",
-            data: productData,
+            data: finalData,
           });
         }
       }
@@ -51,10 +58,13 @@ export async function GET(request: Request) {
         const fabricJson = await fabricV1Res.json();
         const productData = fabricJson.fabricProduct || fabricJson.product || fabricJson.payload || fabricJson;
         if (productData && (productData.product || productData.name || productData.slug)) {
+          const finalData = productData.product
+            ? productData
+            : { product: productData, ...productData };
           return NextResponse.json({
             success: true,
             productType: "fabric",
-            data: productData,
+            data: finalData,
           });
         }
       }
@@ -74,10 +84,13 @@ export async function GET(request: Request) {
         const finishedJson = await finishedRes.json();
         const productData = finishedJson.finishedProduct || finishedJson.product || finishedJson.payload || finishedJson;
         if (productData && (productData.product || productData.name || productData.slug)) {
+          const finalData = productData.product
+            ? productData
+            : { product: productData, ...productData };
           return NextResponse.json({
             success: true,
             productType: "finished",
-            data: productData,
+            data: finalData,
           });
         }
       }

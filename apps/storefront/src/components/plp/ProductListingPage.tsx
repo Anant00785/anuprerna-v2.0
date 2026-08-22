@@ -344,7 +344,7 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
       {/* Main Filter Body */}
       <div className="fb-filter-body flex flex-col md:flex-row justify-center items-start mt-6 mb-5 gap-6">
         {/* Desktop Sidebar (25% width) */}
-        <div className="w-full hidden md:block md:w-1/4 sticky top-[100px] bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div className="w-full hidden md:flex md:w-1/4 flex-col sticky top-[80px] max-h-[calc(100vh-100px)] bg-white p-4 rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="w-full flex flex-col gap-3">
               {Array.from({ length: 8 }).map((_, i) => (

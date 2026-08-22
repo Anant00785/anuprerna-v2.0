@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ForexDropdown } from "./ForexDropdown";
 import { CustomerDropdown } from "./CustomerDropdown";
 import { useAuthStore } from "@/stores/auth.store";
@@ -62,6 +63,9 @@ export function Header() {
   useEffect(() => {
     if (isLoggedIn) refreshCart();
   }, [isLoggedIn, refreshCart]);
+
+  const pathname = usePathname();
+  const isContactPage = pathname === "/contact";
 
   // Dynamic finished product navigation states
   const [accessoriesList, setAccessoriesList] = useState<NavigationCraft[]>(INITIAL_NAVIGATION_ACCESSORIES);
@@ -247,24 +251,47 @@ export function Header() {
   };
 
   return (
-    <header className="desk_nav w-full sticky top-0 z-50 bg-white border-b border-[#efeee9] shadow-xs">
+    <header className="desk_nav w-full sticky top-0 z-50 bg-white border-b border-[#efeee9] shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
       <nav ref={navRef} className="fb-s-navigation w-full container mx-auto flex justify-between items-center gap-2">
 
         {/* Logo Section */}
         <div className="xl:flex-[12%] flex justify-start items-center gap-2">
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="hamburger xl:hidden"
-            aria-label="Toggle menu"
-          >
-            <span className="material-symbols-outlined">
-              {isMobileMenuOpen ? "close" : "menu"}
-            </span>
-          </button>
+          {isContactPage ? (
+            <Link
+              href="/"
+              className="flex items-center justify-center p-1 text-gray-850 hover:text-black"
+              aria-label="Close contact"
+            >
+              <span className="material-symbols-outlined text-2xl font-light">close</span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="w-6 h-6 flex items-center justify-center text-black hover:opacity-75 transition-opacity cursor-pointer select-none focus:outline-none flex-shrink-0"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-[16px] h-[16px]" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2 2L14 14M2 14L14 2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg className="w-[18px] h-[12px]" viewBox="0 0 18 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="0" y1="1" x2="18" y2="1" />
+                  <line x1="0" y1="6" x2="18" y2="6" />
+                  <line x1="0" y1="11" x2="18" y2="11" />
+                </svg>
+              )}
+            </button>
+          )}
 
-          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex justify-start items-center">
+          <Link
+            href="/"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex justify-start items-center outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 border-0 select-none"
+          >
             <img
-              className="fb-logo-svg"
+              className="fb-logo-svg select-none"
               src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/logo_black.svg"
               alt="Anuprerna"
             />
@@ -447,11 +474,14 @@ export function Header() {
                   ))}
                 </div>
 
-                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center">
+                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center bg-[#F7F7F7]">
                   <img
                     className="w-full h-full object-cover rounded-md"
                     src={selectedAccessory.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/O7L4ELP8YKCSPRNBYUH5KUD9I9SP00509.jpg"}
-                    alt={selectedAccessory.subCategoryName}
+                    alt={selectedAccessory.subCategoryName || "Accessories"}
+                    onError={(e) => {
+                      e.currentTarget.src = "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/O7L4ELP8YKCSPRNBYUH5KUD9I9SP00509.jpg";
+                    }}
                   />
                 </div>
               </div>
@@ -500,11 +530,14 @@ export function Header() {
                   ))}
                 </div>
 
-                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center">
+                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center bg-[#F7F2EC]">
                   <img
                     className="w-full h-full object-cover rounded-md"
-                    src={selectedHomeware.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FPU5QM1S5EYUZUKJSGDCIYN9QFZ000082.png"}
-                    alt={selectedHomeware.subCategoryName}
+                    src={selectedHomeware.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/VBMCHG7919BHDT3QO5KVOSUTUR4B09493.jpg"}
+                    alt={selectedHomeware.subCategoryName || "Homeware"}
+                    onError={(e) => {
+                      e.currentTarget.src = "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/VBMCHG7919BHDT3QO5KVOSUTUR4B09493.jpg";
+                    }}
                   />
                 </div>
               </div>
@@ -553,11 +586,14 @@ export function Header() {
                   ))}
                 </div>
 
-                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center">
+                <div className="flex-[45%] w-full min-w-[300px] max-w-[400px] h-[440px] shrink-0 overflow-hidden rounded-md flex justify-center items-center bg-[#ECF4EE]">
                   <img
                     className="w-full h-full object-cover rounded-md"
                     src={selectedApparel.subCategoryFeaturedImage || "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OWC16EOEXJ8PKUFI09181FK7H1FK02986.png"}
-                    alt={selectedApparel.subCategoryName}
+                    alt={selectedApparel.subCategoryName || "Apparel"}
+                    onError={(e) => {
+                      e.currentTarget.src = "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OWC16EOEXJ8PKUFI09181FK7H1FK02986.png";
+                    }}
                   />
                 </div>
               </div>
@@ -614,7 +650,10 @@ export function Header() {
                       <img
                         className="h-full object-cover rounded-md"
                         src={selectedCraftsStory.bannerImage || "https://images.unsplash.com/photo-1606744888344-493238951221?auto=format&fit=crop&w=800&q=80"}
-                        alt={selectedCraftsStory.storyTitle}
+                        alt={selectedCraftsStory.storyTitle || "Crafts"}
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1606744888344-493238951221?auto=format&fit=crop&w=800&q=80";
+                        }}
                       />
                     </div>
 
@@ -655,7 +694,10 @@ export function Header() {
                         <img
                           className="designers max-w-[280px] h-[200px] object-cover rounded-md"
                           src={selectedCollaborationStory.bannerImage || "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80"}
-                          alt={selectedCollaborationStory.storyTitle}
+                          alt={selectedCollaborationStory.storyTitle || "Collaborations"}
+                          onError={(e) => {
+                            e.currentTarget.src = "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=800&q=80";
+                          }}
                         />
                       </div>
                     </div>
@@ -703,7 +745,10 @@ export function Header() {
                     <img
                       className="object-cover rounded-md h-[70%]"
                       src={selectedClusterStory.bannerImage || "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80"}
-                      alt={selectedClusterStory.storyTitle}
+                      alt={selectedClusterStory.storyTitle || "Clusters"}
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80";
+                      }}
                     />
                     <div className="h-[30%] color-base rounded-md flex justify-center items-center">
                       <Link href="/story" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
@@ -871,7 +916,7 @@ export function Header() {
           </button>
 
           {!isLoggedIn ? (
-            <button>
+            <button className="hidden xl:block">
               <Link href="/auth" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
                 <span className="mr-1">Sign In</span>
                 <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
@@ -896,13 +941,23 @@ export function Header() {
       {/* Cart Side Tab — opened by the cart button above and by Add to Cart */}
       <CartDrawer />
 
-      {/* Mobile Drawer Menu */}
-      {isMobileMenuOpen && (
-        <MobileMenu
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-        />
-      )}
+      {/* Mobile Drawer Menu with smooth slide animation */}
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isLoggedIn={isLoggedIn}
+        tenantName={tenantName}
+        navigationCraft={INITIAL_NAVIGATION_CRAFT}
+        navigationMaterial={INITIAL_NAVIGATION_MATERIALS}
+        navigationPattern={INITIAL_NAVIGATION_PATTERNS}
+        navigationColor={INITIAL_NAVIGATION_COLORS}
+        navigationAccessories={accessoriesList}
+        navigationHome={homeList}
+        navigationApparel={apparelList}
+        navigationStoryCrafts={storyCraftsList}
+        navigationStoryClusters={storyClustersList}
+        navigationStoryCollaborations={storyCollabsList}
+      />
     </header>
   );
 }

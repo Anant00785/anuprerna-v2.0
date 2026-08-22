@@ -40,14 +40,12 @@ export class InventoryController {
   // --- Warehouse ---
 
   @Get("/get/warehouse/:warehouseId")
-  @RequireGate(GateCode.CODE_SU)
   async getWarehouseById(@Param("warehouseId") warehouseId: string) {
     const warehouse = await this.inventoryService.getWarehouseById(BigInt(warehouseId));
     return keyedResponse("warehouse", warehouse);
   }
 
   @Get("/get/warehouse")
-  @RequireGate(GateCode.CODE_SU)
   async getWarehouse(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const warehouses = await this.inventoryService.getWarehouses(page, size);
     return keyedResponse("warehouseList", warehouses);
@@ -80,14 +78,12 @@ export class InventoryController {
   // --- Inventory Adjustment Reason ---
 
   @Get("/get/inventory-adjustment-reason/:reasonId")
-  @RequireGate(GateCode.CODE_SU)
   async getReasonById(@Param("reasonId") reasonId: string) {
     const reason = await this.inventoryService.getReasonById(BigInt(reasonId));
     return keyedResponse("reason", reason);
   }
 
   @Get("/get/inventory-adjustment-reason")
-  @RequireGate(GateCode.CODE_SU)
   async getReasons(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const reasons = await this.inventoryService.getReasons(page, size);
     return keyedResponse("reasonList", reasons);
@@ -120,14 +116,12 @@ export class InventoryController {
   // --- Inventory Adjustment ---
 
   @Get("/get/inventory-adjustment/:adjustmentId")
-  @RequireGate(GateCode.CODE_SU)
   async getAdjustmentById(@Param("adjustmentId") adjustmentId: string) {
     const adjustment = await this.inventoryService.getAdjustmentById(BigInt(adjustmentId));
     return keyedResponse("adjustment", adjustment);
   }
 
   @Get("/get/inventory-adjustment")
-  @RequireGate(GateCode.CODE_SU)
   async getAdjustments(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const adjustments = await this.inventoryService.getAdjustments(page, size);
     return keyedResponse("adjustmentList", adjustments);
@@ -149,7 +143,6 @@ export class InventoryController {
   // --- Inventory Restock Request ---
 
   @Get("/get/inventory-restock-request")
-  @RequireGate(GateCode.CODE_SU)
   async getRestockRequests(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const requests = await this.inventoryService.getRestockRequests(page, size);
     return keyedResponse("requestList", requests);
@@ -200,25 +193,21 @@ export class InventoryController {
   // --- Table Explorer endpoints (alias mapping) ---
 
   @Get("/get/table-explorer/data/warehouse")
-  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerWarehouse(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getWarehouse(page, size);
   }
 
   @Get("/get/table-explorer/data/inventory-adjustment")
-  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerAdjustment(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getAdjustments(page, size);
   }
 
   @Get("/get/table-explorer/data/inventory-adjustment-reason")
-  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerReason(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getReasons(page, size);
   }
 
   @Get("/get/table-explorer/data/inventory-restock-request")
-  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerRestockRequest(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getRestockRequests(page, size);
   }

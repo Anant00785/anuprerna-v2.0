@@ -18,7 +18,6 @@ export class StoryController {
   constructor(private readonly storyService: StoryService) {}
 
   @Get("/get/story-content-category-list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List story content categories." })
   async getStoryContentCategoryList() {
     const list = await this.storyService.getStoryContentCategories();
@@ -50,7 +49,6 @@ export class StoryController {
   }
 
   @Get("/get/story-content-list")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "List all story contents." })
   async getStoryContentList() {
     const list = await this.storyService.getStoryContentList();
@@ -58,7 +56,6 @@ export class StoryController {
   }
 
   @Get("/get/story-content/:storyContentId")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Get story content by ID." })
   @ApiParam({ name: "storyContentId", description: "Story Content ID", example: 100, type: Number })
   async getStoryContent(@Param("storyContentId") storyContentId: string) {
@@ -183,7 +180,6 @@ export class StoryController {
   }
 
   @Get("/get/story/products/:storyContentId")
-  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Get products for story." })
   @ApiParam({ name: "storyContentId", description: "Story Content ID", example: 100, type: Number })
   async getStoryProducts(@Param("storyContentId") storyContentId: string) {

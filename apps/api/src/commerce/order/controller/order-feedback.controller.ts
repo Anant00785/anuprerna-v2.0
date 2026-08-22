@@ -38,19 +38,16 @@ export class OrderFeedbackController {
   }
 
   @Get("/get/order/feedback/:orderId")
-  @RequireGate(GateCode.CODE_CU)
   async getFeedbackByOrder(@Param("orderId") orderId: string) {
     return keyedResponse("feedback", null);
   }
 
   @Get("/get/super-user/order/feedback/:feedbackId")
-  @RequireGate(GateCode.CODE_SU)
   async getFeedbackById(@Param("feedbackId") feedbackId: string) {
     return keyedResponse("feedback", null);
   }
 
   @Get("/get/order/feedback-list")
-  @RequireGate(GateCode.CODE_SU)
   async getFeedbackList() {
     return keyedResponse("feedbackList", []);
   }

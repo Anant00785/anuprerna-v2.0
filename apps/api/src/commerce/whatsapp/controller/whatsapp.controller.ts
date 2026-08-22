@@ -38,7 +38,6 @@ export class WhatsappController {
     }
 
     @Get('get/customers/whatsapp-status')
-    @RequireGate(GateCode.CODE_SU)
     async getStatus(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.whatsappService.getHistory(page, size);
@@ -46,7 +45,6 @@ export class WhatsappController {
     }
 
     @Get('get/table-explorer/data/whatsapp-notification-history')
-    @RequireGate(GateCode.CODE_SU)
     async getHistoryData(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.whatsappService.getHistory(page, size);
@@ -54,7 +52,6 @@ export class WhatsappController {
     }
 
     @Get('get/table-explorer/data/whatsapp-notification-history/:id')
-    @RequireGate(GateCode.CODE_SU)
     async getHistoryDataById(@Param('id') id: string) {
         const recordId = parseInt(id, 10);
         if (isNaN(recordId)) throw new Error('Invalid ID');

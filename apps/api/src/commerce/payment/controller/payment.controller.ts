@@ -135,7 +135,6 @@ export class PaymentController {
     }
 
     @Get("/get/table-explorer/data/razorpay-transaction")
-    @RequireGate(GateCode.CODE_SU)
     async getRazorpayTransactionData(
         @Query("page") page: string = "0",
         @Query("size") size: string = "10"
@@ -145,14 +144,12 @@ export class PaymentController {
     }
 
     @Get("/get/table-explorer/data/razorpay-transaction/:id")
-    @RequireGate(GateCode.CODE_SU)
     async getRazorpayTransactionById(@Param("id") id: string) {
         const data = await this.razorpayService.getTransactionById(BigInt(id));
         return keyedResponse("entity", data);
     }
 
     @Get("/get/table-explorer/data/stripe-transaction")
-    @RequireGate(GateCode.CODE_SU)
     async getStripeTransactionData(
         @Query("page") page: string = "0",
         @Query("size") size: string = "10"
@@ -162,7 +159,6 @@ export class PaymentController {
     }
 
     @Get("/get/table-explorer/data/stripe-transaction/:id")
-    @RequireGate(GateCode.CODE_SU)
     async getStripeTransactionById(@Param("id") id: string) {
         const data = await this.stripeService.getTransactionById(BigInt(id));
         return keyedResponse("entity", data);

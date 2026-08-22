@@ -22,19 +22,16 @@ export class TenantProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get('get/super-user/profile')
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserProfiles() {
     return this.profileService.getSuperUserProfiles();
   }
 
   @Get('get/tenant/profile/:uId')
-  @RequireGate(GateCode.CODE_SU)
   async getTenantProfile(@Param('uId') uId: string) {
     return this.profileService.getTenantProfile(Number(uId));
   }
 
   @Get('get/customer/profile')
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerProfile(@CurrentTenant() tenant: any) {
     return this.profileService.getTenantProfile(tenant.id);
   }

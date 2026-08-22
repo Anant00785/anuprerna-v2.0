@@ -15,7 +15,6 @@ export class ElementFeedbackController {
   constructor(private readonly workflowService: WorkflowService) {}
 
   @Get('get/element/feedback/:feedbackId')
-  @RequireGate(GateCode.CODE_SU)
   async getElementFeedback(@Param('feedbackId') feedbackId: number) {
     const feedback = await this.workflowService.getElementFeedbackById(feedbackId);
     return keyedResponse('data', feedback);

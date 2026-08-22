@@ -26,13 +26,11 @@ export class OrderFulfillmentController {
   }
 
   @Get("/get/super-user/order/:orderId/fulfillment-list")
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }
 
   @Get("/get/customer/order/:orderId/fulfillment-list")
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }
@@ -50,7 +48,6 @@ export class OrderFulfillmentController {
   }
 
   @Get("/get/super-user/order/:orderId/ready-list")
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserReadyList(@Param("orderId") orderId: string) {
     return keyedResponse("readyList", []);
   }

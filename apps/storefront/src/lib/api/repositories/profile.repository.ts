@@ -87,33 +87,34 @@ export const profileRepository = {
    * Get current authenticated user profile
    */
   async getCustomerProfile(jwtToken?: string): Promise<UserProfileData> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
+    try {
+      const headers: Record<string, string> = {};
+      if (jwtToken) {
+        headers["Authorization"] = `Bearer ${jwtToken}`;
+      }
+      const response = await apiRequest<{
+        customer?: { tenant?: Record<string, any> } & Record<string, any>;
+      }>("get/customer/profile", { headers });
+
+      const customer = response?.customer ?? {};
+      const tenant = customer.tenant ?? {};
+      const name: string = tenant.name ?? "";
+      const [firstName, ...rest] = name.trim().split(/\s+/).filter(Boolean);
+
+      return {
+        ...tenant,
+        ...customer,
+        id: tenant.uid ?? tenant.id,
+        email: tenant.email,
+        firstName: firstName ?? "",
+        lastName: rest.join(" "),
+        phone: tenant.contactNumber ?? "",
+        gender: tenant.gender,
+        dob: tenant.dob,
+      };
+    } catch {
+      return {};
     }
-    // Loom answers `{success, message, customer: {tenant: {...}}}` — reading the
-    // profile fields off the top level yields an object of `undefined`s, which
-    // is why the header showed a logged-in user with no name or email.
-    const response = await apiRequest<{
-      customer?: { tenant?: Record<string, any> } & Record<string, any>;
-    }>("get/customer/profile", { headers });
-
-    const customer = response?.customer ?? {};
-    const tenant = customer.tenant ?? {};
-    const name: string = tenant.name ?? "";
-    const [firstName, ...rest] = name.trim().split(/\s+/).filter(Boolean);
-
-    return {
-      ...tenant,
-      ...customer,
-      id: tenant.uid ?? tenant.id,
-      email: tenant.email,
-      firstName: firstName ?? "",
-      lastName: rest.join(" "),
-      phone: tenant.contactNumber ?? "",
-      gender: tenant.gender,
-      dob: tenant.dob,
-    };
   },
 
   /**
@@ -135,16 +136,20 @@ export const profileRepository = {
    * Get user address list
    */
   async getAddressList(jwtToken?: string): Promise<Address[]> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
+    try {
+      const headers: Record<string, string> = {};
+      if (jwtToken) {
+        headers["Authorization"] = `Bearer ${jwtToken}`;
+      }
+      const response = await apiRequest<{ addressList?: Address[]; payload?: Address[]; content?: Address[] } | Address[]>(
+        "get/address-list",
+        { headers }
+      );
+      if (Array.isArray(response)) return response;
+      return response?.addressList || response?.payload || response?.content || [];
+    } catch {
+      return [];
     }
-    const response = await apiRequest<{ addressList?: Address[]; payload?: Address[]; content?: Address[] } | Address[]>(
-      "get/address-list",
-      { headers }
-    );
-    if (Array.isArray(response)) return response;
-    return response.addressList || response.payload || response.content || [];
   },
 
   /**
@@ -195,16 +200,20 @@ export const profileRepository = {
    * Get user order list
    */
   async getOrderList(jwtToken?: string): Promise<Order[]> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
+    try {
+      const headers: Record<string, string> = {};
+      if (jwtToken) {
+        headers["Authorization"] = `Bearer ${jwtToken}`;
+      }
+      const response = await apiRequest<{ orderList?: Order[]; payload?: Order[]; content?: Order[] } | Order[]>(
+        "get/customer/order-list/all",
+        { headers }
+      );
+      if (Array.isArray(response)) return response;
+      return response?.orderList || response?.payload || response?.content || [];
+    } catch {
+      return [];
     }
-    const response = await apiRequest<{ orderList?: Order[]; payload?: Order[]; content?: Order[] } | Order[]>(
-      "get/customer/order-list/all",
-      { headers }
-    );
-    if (Array.isArray(response)) return response;
-    return response.orderList || response.payload || response.content || [];
   },
 
   /**

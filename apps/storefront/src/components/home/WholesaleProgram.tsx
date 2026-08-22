@@ -92,7 +92,7 @@ export function WholesaleProgram() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href="/wholesale-partner-program"
-              className="px-8 py-3 rounded-lg font-semibold bg-[#7D5B20] text-white hover:bg-[#6c5b48] transition-all duration-300 whitespace-nowrap shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="inline-block px-8 py-3.5 bg-white hover:bg-[#fffcf8] text-gray-900 font-medium text-base rounded-xl border-2 border-[#cb9b6d] transition-all shadow-md hover:shadow-lg active:scale-98"
             >
               Become a Partner
             </Link>

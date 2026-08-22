@@ -9,29 +9,28 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
   const pathArray = params?.path || [];
   const targetPath = pathArray.join('/');
   const search = request.nextUrl.search;
-  const targetUrl = `${TARGET_HOST}/${targetPath}${search}`;
 
-  // Clone headers and set origin to match the legacy Weave console's origin.
-  // Load-bearing, per apps/cms/CLAUDE.md rule 3: the backend applies
-  // `@NVerseDomainValidated` to 114 of 249 controllers, and that check needs a
-  // *present and allowlisted* Origin. `http://localhost:4201` is Weave's dev
-  // origin and is on the allowlist (`loom/support/CORSOrigin.java:51`).
-  // Deleting these headers — as this did — fails that check outright.
+  const springBase = 'https://loom-v2.anuprerna.com';
+  const nestBase = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+
+  const isAuth = targetPath === 'authenticate/email' || targetPath === 'authenticate';
+
+  // Build target URLs
+  const primaryUrl = isAuth
+    ? `${springBase}/authenticate/email${search}`
+    : `${springBase}/${targetPath}${search}`;
+
   const headers = new Headers(request.headers);
-  headers.delete('host'); // let fetch derive it from TARGET_HOST
-  headers.set('origin', 'http://localhost:4201');
-  headers.set('referer', 'http://localhost:4201/');
+  headers.delete('host');
+  headers.set('origin', 'https://anuprerna.com');
+  headers.set('referer', 'https://anuprerna.com/');
 
-  // Remove next.js / browser internal headers that cause backend conflicts
+  // Remove internal Next.js headers
   headers.delete('x-forwarded-host');
   headers.delete('x-forwarded-proto');
   headers.delete('x-forwarded-port');
   headers.delete('x-forwarded-for');
 
-  // Every Table Explorer endpoint requires this alongside the Super-User bearer
-  // token (Loom change of 2026-08-01, after the previous token leaked). Injected
-  // unconditionally: the proxy can't tell a table-explorer path from any other,
-  // and Loom ignores it elsewhere. Server-side only — never NEXT_PUBLIC_.
   const tableExplorerToken = process.env.LOOM_TABLE_EXPLORER_TOKEN;
   if (tableExplorerToken) {
     headers.set('X-Loom-Table-Explorer-Token', tableExplorerToken);
@@ -47,12 +46,27 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
   }
 
   try {
-    const backendResponse = await fetch(targetUrl, {
-      method: request.method,
-      headers: headers,
-      body: body,
-      redirect: 'follow',
-    });
+    let backendResponse: Response;
+    try {
+      backendResponse = await fetch(primaryUrl, {
+        method: request.method,
+        headers: headers,
+        body: body,
+        redirect: 'follow',
+      });
+    } catch (primaryErr) {
+      // If primary (SpringBoot) fails and is auth, try NestJS fallback
+      if (isAuth) {
+        backendResponse = await fetch(`${nestBase}/auth/authenticate${search}`, {
+          method: request.method,
+          headers: headers,
+          body: body,
+          redirect: 'follow',
+        });
+      } else {
+        throw primaryErr;
+      }
+    }
 
     const responseHeaders = new Headers(backendResponse.headers);
     // Delete content-encoding and content-length because Node fetch decompresses the ArrayBuffer

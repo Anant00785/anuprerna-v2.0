@@ -50,7 +50,6 @@ export class SkuGroupController {
 
   /** SkuGroupDaoController#retrieveSkuGroupList() */
   @Get("/get/sku-group/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List every SKU group." })
   @ApiResponse({ status: 200, description: "Full SKU group list." })
   async getSkuGroupList() {
@@ -115,7 +114,6 @@ export class SkuGroupController {
 
   /** SkuGroupDaoController#retrieveSkuGroupData(int page, int size) */
   @Get("/get/table-explorer/data/sku-group")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of SKU groups." })
   @ApiResponse({ status: 200, description: "Page of SKU group data." })
   async getSkuGroupData(@Query() query: unknown) {
@@ -126,7 +124,6 @@ export class SkuGroupController {
 
   /** SkuGroupDaoController#retrieveSkuGroupDataById(Long id) */
   @Get("/get/table-explorer/data/sku-group/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single SKU group." })
   @ApiResponse({ status: 200, description: "SKU group data or null." })
   async getSkuGroupDataById(@Param("id") id: string) {

@@ -25,8 +25,7 @@ export class SettingsController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SUCU)
-  @Get('get/settings/:settingId')
+    @Get('get/settings/:settingId')
   async getSettingById(@Param('settingId') settingId: string) {
     try {
       const id = BigInt(settingId);
@@ -61,8 +60,7 @@ export class SettingsController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('get/table-explorer/data/settings')
+    @Get('get/table-explorer/data/settings')
   async getPaginatedSettings(@Query('page') page: string = '0', @Query('size') size: string = '10') {
     try {
       const p = parseInt(page, 10);
@@ -75,8 +73,7 @@ export class SettingsController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('get/table-explorer/data/settings/:id')
+    @Get('get/table-explorer/data/settings/:id')
   async getSettingExplorerById(@Param('id') idParam: string) {
     try {
       const id = BigInt(idParam);

@@ -24,13 +24,11 @@ export class MadeToOrderProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get('get/made-to-order-profile-list')
-  @RequireGate(GateCode.CODE_SU)
   async getMadeToOrderProfileList() {
     return this.profileService.getMadeToOrderProfileList();
   }
 
   @Get('get/made-to-order-profile/:profileId')
-  @RequireGate(GateCode.CODE_SU)
   async getMadeToOrderProfile(@Param('profileId') profileId: string) {
     return this.profileService.getMadeToOrderProfile(Number(profileId));
   }
@@ -62,13 +60,11 @@ export class MadeToOrderProfileController {
   }
 
   @Get('get/table-explorer/data/made-to-order-profile')
-  @RequireGate(GateCode.CODE_SU)
   async exploreMadeToOrderProfile(@Query('page') page: string, @Query('size') size: string) {
     return this.profileService.exploreMadeToOrderProfile(Number(page) || 0, Number(size) || 10);
   }
 
   @Get('get/table-explorer/data/made-to-order-profile/:id')
-  @RequireGate(GateCode.CODE_SU)
   async exploreMadeToOrderProfileById(@Param('id') id: string) {
     return this.profileService.getMadeToOrderProfile(Number(id));
   }

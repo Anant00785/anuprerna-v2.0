@@ -27,28 +27,24 @@ export class OrderController {
   }
 
   @Get("/get/customer/order/:orderId")
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerOrder(@Param("orderId") orderId: string) {
     const result = await this.orderService.getOrderById(BigInt(orderId));
     return keyedResponse("order", result);
   }
 
   @Get("/get/customer/order-list")
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerOrderList(@CurrentTenant() tenant: AuthenticatedTenant, @Query("page") page: string = "0", @Query("size") size: string = "10") {
     const result = await this.orderService.getCustomerOrders(tenant.tenantId, parseInt(page, 10), parseInt(size, 10));
     return keyedResponse("orderList", result);
   }
 
   @Get("/get/super-user/order/:orderId")
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserOrder(@Param("orderId") orderId: string) {
     const result = await this.orderService.getOrderById(BigInt(orderId));
     return keyedResponse("order", result);
   }
 
   @Get("/get/super-user/order-list")
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserOrderList(@Query("page") page: string = "0", @Query("size") size: string = "10") {
     const result = await this.orderService.getAllOrders(parseInt(page, 10), parseInt(size, 10));
     return keyedResponse("orderList", result);

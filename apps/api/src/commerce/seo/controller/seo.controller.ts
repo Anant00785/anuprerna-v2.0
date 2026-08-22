@@ -18,14 +18,12 @@ export class SeoController {
     constructor(private readonly seoService: SeoService) {}
 
     @Get("/get/product-seo-list")
-    @RequireGate(GateCode.CODE_SU)
     async getProductSeoList() {
         const result = await this.seoService.getProductSeoList();
         return keyedResponse("entityList", result);
     }
 
     @Get("/get/article-seo-list")
-    @RequireGate(GateCode.CODE_SU)
     async getArticleSeoList() {
         const result = await this.seoService.getArticleSeoList();
         return keyedResponse("entityList", result);
@@ -41,7 +39,6 @@ export class SeoController {
     }
 
     @Get("/get/table-explorer/data/product-image-gallery-seo")
-    @RequireGate(GateCode.CODE_SU)
     async getProductImageGallerySEOData(
         @Query("page") pageStr: string,
         @Query("size") sizeStr: string

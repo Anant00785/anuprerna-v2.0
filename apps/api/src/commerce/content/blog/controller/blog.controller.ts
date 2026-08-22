@@ -18,7 +18,6 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Get("/get/blog-content-types")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get blog content types." })
   async getBlogContentTypes() {
     const list = await this.blogService.getBlogContentTypes();
@@ -50,7 +49,6 @@ export class BlogController {
   }
 
   @Get("/get/blog-content-category-list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get blog content category list." })
   async getBlogContentCategoryList() {
     const list = await this.blogService.getBlogContentCategories();
@@ -83,7 +81,6 @@ export class BlogController {
   }
 
   @Get("/get/blog-content-list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get blog content list (admin)." })
   async getBlogContentList() {
     const list = await this.blogService.getBlogContentList();

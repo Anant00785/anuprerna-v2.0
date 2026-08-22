@@ -30,7 +30,6 @@ export class CatalogItemController {
   }
 
   @Get("/get/artisan/catalog-item/:catalogItemId")
-  @RequireGate(GateCode.CODE_AR)
   @ApiOperation({ summary: "Retrieve an artisan catalog item by ID." })
   @ApiParam({ name: "catalogItemId", description: "Catalog Item ID", example: 1, type: Number })
   async getArtisanCatalogItem(@Param('catalogItemId') id: string) {

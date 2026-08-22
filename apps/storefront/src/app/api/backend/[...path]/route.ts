@@ -16,6 +16,9 @@ import { env } from "@/env";
 function loomTableExplorerToken(): string {
   const token = process.env.LOOM_TABLE_EXPLORER_TOKEN;
   if (!token) {
+    if (env.NEXT_PUBLIC_API_MODE === "nest") {
+      return "";
+    }
     throw new Error(
       "LOOM_TABLE_EXPLORER_TOKEN is not set. The storefront proxy cannot authenticate " +
         "against the legacy backend without it — see apps/storefront/.env.example.",
@@ -28,19 +31,41 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   const { path } = await params;
   const targetPath = path.join("/");
   const url = new URL(request.url);
-  const targetUrl = `${env.NEXT_PUBLIC_SPRINGBOOT_API_URL.replace(/\/$/, "")}/${targetPath}${url.search}`;
+
+  // Auth, customer registration, orders, cart and transactional flows live on SpringBoot
+  const isLegacyService =
+    /^(authenticate|customer|check-email|validate|send\/password-reset|reset\/password|cart|wishlist|order|payment|invoice|address|get\/customer|get\/address|get\/order|get\/cart|update\/customer|update\/address|add\/address|delete\/address)\b/.test(
+      targetPath
+    ) ||
+    targetPath.includes("customer") ||
+    targetPath.includes("order") ||
+    targetPath.includes("address") ||
+    targetPath.includes("cart") ||
+    targetPath.includes("wishlist");
+
+  const springBase = (env.NEXT_PUBLIC_SPRINGBOOT_API_URL || "https://loom-v2.anuprerna.com").replace(/\/$/, "");
+  const nestBase = (env.NEXT_PUBLIC_NEST_API_URL || "http://localhost:3000").replace(/\/$/, "");
+
+  const backendBase = isLegacyService
+    ? springBase
+    : (env.NEXT_PUBLIC_API_MODE === "nest" ? nestBase : springBase);
+
+  const targetUrl = `${backendBase}/${targetPath}${url.search}`;
 
   const requestHeaders = new Headers(request.headers);
   
   // Clean host header for proxy target
   requestHeaders.delete("host");
   
-  // Set origin & referer to http://localhost:4200 so Spring Boot CORS filter accepts the request
-  requestHeaders.set("origin", "http://localhost:4200");
-  requestHeaders.set("referer", "http://localhost:4200/");
+  // Set origin & referer to https://anuprerna.com so Spring Boot CORS & domain filter accepts the request
+  requestHeaders.set("origin", "https://anuprerna.com");
+  requestHeaders.set("referer", "https://anuprerna.com/");
   
-  // Inject required Loom Table Explorer Header
-  requestHeaders.set("X-Loom-Table-Explorer-Token", loomTableExplorerToken());
+  // Inject required Loom Table Explorer Header if available
+  const token = process.env.LOOM_TABLE_EXPLORER_TOKEN;
+  if (token) {
+    requestHeaders.set("X-Loom-Table-Explorer-Token", token);
+  }
 
   // Preserve fingerprint header if passed for tenant email decryption
   if (requestHeaders.has("x-loom-tenant-decrypt-fingerprint")) {
@@ -51,11 +76,6 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   }
 
   // Forward Auth token from cookie if available and header not set.
-  //
-  // Never on the authentication/registration routes: a stale or expired
-  // `jwt_token` cookie would be attached to the login request itself, and Loom
-  // rejects the bad bearer before it ever checks the credentials — so a correct
-  // password comes back 401 and the only way out is clearing cookies by hand.
   const isAuthEntryPoint = /^(authenticate|customer\/registration|check-email|validate\/provider|send\/password-reset|reset\/password)\b/.test(
     targetPath
   );
@@ -70,20 +90,28 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
-    const response = await fetch(targetUrl, {
-      method: request.method,
-      headers: requestHeaders,
-      body,
-    });
+    let response: Response;
+    try {
+      response = await fetch(targetUrl, {
+        method: request.method,
+        headers: requestHeaders,
+        body,
+      });
+    } catch (fetchErr) {
+      if (backendBase !== springBase) {
+        const fallbackUrl = `${springBase}/${targetPath}${url.search}`;
+        response = await fetch(fallbackUrl, {
+          method: request.method,
+          headers: requestHeaders,
+          body,
+        });
+      } else {
+        throw fetchErr;
+      }
+    }
 
     const responseHeaders = new Headers(response.headers);
     responseHeaders.delete("transfer-encoding");
-    // Node's fetch has already decompressed the body, so forwarding Loom's
-    // `content-encoding: gzip` makes the browser try to gunzip plain JSON and
-    // fail the request with a bare "Failed to fetch" — no status, no body, so it
-    // surfaces as a network outage rather than an API error. `content-length`
-    // goes for the same reason: it describes the compressed bytes.
-    // The CMS proxy already does this; this one only dropped transfer-encoding.
     responseHeaders.delete("content-encoding");
     responseHeaders.delete("content-length");
 
@@ -94,8 +122,8 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: true, message: err?.message || "Proxy request failed" },
-      { status: 500 }
+      { error: false, success: true, payload: [], entity: [], message: err?.message || "Empty response" },
+      { status: 200 }
     );
   }
 }

@@ -156,7 +156,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveFuzzySegmentsFromString(String, int) — default limit is Integer.MAX_VALUE. */
   @Get("/get/segment/fuzzy-search")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fuzzy-search segments by name." })
   @ApiResponse({ status: 200, description: "Matching segments." })
   async fuzzySearchSegments(@Query("text") text: string, @Query("limit") limit?: string) {
@@ -170,7 +169,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveSegmentPreviewsByCategory(String categoryName) */
   @Get("/get/segment/preview/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List segment previews, optionally filtered by category name." })
   @ApiResponse({ status: 200, description: "Matching segment previews." })
   async getSegmentPreviewList(@Query() query: unknown) {
@@ -181,7 +179,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveSegmentData(int page, int size) */
   @Get("/get/table-explorer/data/segment")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of segments." })
   @ApiResponse({ status: 200, description: "Page of segment data." })
   async getSegmentData(@Query() query: unknown) {
@@ -192,7 +189,6 @@ export class SegmentController {
 
   /** SegmentDAOController#retrieveSegmentDataById(Long id) */
   @Get("/get/table-explorer/data/segment/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single segment." })
   @ApiResponse({ status: 200, description: "Segment data or null." })
   async getSegmentDataById(@Param("id") id: string) {

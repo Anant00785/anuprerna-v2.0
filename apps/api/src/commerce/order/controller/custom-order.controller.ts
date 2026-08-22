@@ -25,28 +25,24 @@ export class CustomOrderController {
   }
 
   @Get("/get/customer/custom-order/:orderId")
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerCustomOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Param("orderId") orderId: string) {
     const order = await this.orderService.getCustomOrderById(BigInt(orderId));
     return keyedResponse("customOrder", order);
   }
 
   @Get("/get/customer/custom-order-list")
-  @RequireGate(GateCode.CODE_CU)
   async getCustomerCustomOrderList(@CurrentTenant() tenant: AuthenticatedTenant) {
     const list = await this.orderService.getCustomOrdersByTenant(BigInt(tenant.id));
     return keyedResponse("customOrderList", list);
   }
 
   @Get("/get/super-user/custom-order/:orderId")
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserCustomOrder(@Param("orderId") orderId: string) {
     const order = await this.orderService.getCustomOrderById(BigInt(orderId));
     return keyedResponse("customOrder", order);
   }
 
   @Get("/get/super-user/custom-order-list")
-  @RequireGate(GateCode.CODE_SU)
   async getSuperUserCustomOrderList() {
     const list = await this.orderService.getAllCustomOrders();
     return keyedResponse("customOrderList", list);

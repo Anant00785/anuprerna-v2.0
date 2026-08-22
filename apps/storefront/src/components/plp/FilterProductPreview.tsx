@@ -106,8 +106,10 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
 
   const badge = isStockAvailable ? "In Stock" : "Made to Order";
 
-  const productUrl = `/product/${product.product_group || "fabric"}-product/${product.slug}`;
-  const displayImage = isHovered && product.hover_image ? product.hover_image : product.hero_image;
+  const productUrl = `/product/${product.product_group || (product as any).productGroup || "fabric"}-product/${product.slug}`;
+  const heroImg = product.hero_image || (product as any).heroImage || "";
+  const hoverImg = product.hover_image || (product as any).hoverImage || "";
+  const displayImage = isHovered && hoverImg ? hoverImg : (heroImg || hoverImg);
 
   return (
     <div className="fb-filter-product-preview flex flex-col justify-between items-center relative bg-white border border-[#75787F]/20 shadow md:shadow-md rounded md:rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">

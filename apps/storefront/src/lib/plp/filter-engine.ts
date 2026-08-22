@@ -279,19 +279,26 @@ export function filterProducts(
         });
       }
     } else if (key.type === "sub") {
+      const activeParents: string[] = [];
       const activeSubValues: string[] = [];
       group.cohort.options.forEach((parentOpt) => {
+        if (parentOpt.active) {
+          activeParents.push(parentOpt.value.trim().toLowerCase());
+        }
         if (parentOpt.subOptions) {
           parentOpt.subOptions.forEach((subOpt) => {
-            if (subOpt.active) activeSubValues.push(subOpt.value.toLowerCase());
+            if (subOpt.active) activeSubValues.push(subOpt.value.trim().toLowerCase());
           });
         }
       });
 
-      if (activeSubValues.length > 0) {
-        result = result.filter((p) =>
-          activeSubValues.includes((p.sub_category || "").toLowerCase())
-        );
+      if (activeParents.length > 0 || activeSubValues.length > 0) {
+        result = result.filter((p) => {
+          const seg = (p.segment_category || "").trim().toLowerCase();
+          const sub = (p.sub_category || "").trim().toLowerCase();
+          return (activeParents.length > 0 && activeParents.includes(seg)) ||
+                 (activeSubValues.length > 0 && activeSubValues.includes(sub));
+        });
       }
     } else if (key.type === "csv") {
       const activeIds = group.cohort.options

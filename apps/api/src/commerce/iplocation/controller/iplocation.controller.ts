@@ -14,7 +14,6 @@ export class IPLocationController {
     constructor(private readonly service: IPLocationService) {}
 
     @Get('current')
-    @RequireGate(GateCode.PUBLIC)
     async getCurrentIPLocation(@Req() req: Request) {
         // Extract IP from request (handling proxy headers appropriately in prod)
         let ip = req.headers['x-forwarded-for'] as string;
@@ -28,7 +27,6 @@ export class IPLocationController {
     }
 
     @Get(':ip')
-    @RequireGate(GateCode.PUBLIC)
     async getIPLocation(@Param('ip') ip: string) {
         const data = await this.service.getCurrencyCountryFromIPAddress(ip);
         return keyedResponse('location', data);

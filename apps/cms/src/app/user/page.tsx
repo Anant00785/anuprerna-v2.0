@@ -107,28 +107,28 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="border-b border-slate-200 flex gap-8">
+      {/* Navigation Tabs matching live Weave */}
+      <div className="flex gap-4 items-center mb-4">
         <button
           onClick={() => setActiveTab('cart')}
-          className={`pb-3 text-sm font-semibold transition-all border-b-2 ${
-            activeTab === 'cart' ? 'border-[#46496E] text-[#46496E]' : 'border-transparent text-slate-500 hover:text-slate-700'
+          className={`px-4 py-2 text-sm transition-all ${
+            activeTab === 'cart' ? 'border border-black bg-white text-black font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           User Cart ({cartItems.length})
         </button>
         <button
           onClick={() => setActiveTab('verified')}
-          className={`pb-3 text-sm font-semibold transition-all border-b-2 ${
-            activeTab === 'verified' ? 'border-[#46496E] text-[#46496E]' : 'border-transparent text-slate-500 hover:text-slate-700'
+          className={`px-4 py-2 text-sm transition-all ${
+            activeTab === 'verified' ? 'border border-black bg-white text-black font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           Verified Users ({verifiedUsers.length})
         </button>
         <button
           onClick={() => setActiveTab('unverified')}
-          className={`pb-3 text-sm font-semibold transition-all border-b-2 ${
-            activeTab === 'unverified' ? 'border-[#46496E] text-[#46496E]' : 'border-transparent text-slate-500 hover:text-slate-700'
+          className={`px-4 py-2 text-sm transition-all ${
+            activeTab === 'unverified' ? 'border border-black bg-white text-black font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           Un-verified Users ({unverifiedUsers.length})
@@ -162,8 +162,7 @@ export default function UserManagementPage() {
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium uppercase text-xs tracking-wider">
                     <tr>
                       <th className="px-6 py-4">Last Updated</th>
-                      <th className="px-6 py-4">Name</th>
-                      <th className="px-6 py-4">Email</th>
+                      <th className="px-6 py-4">Email / Name</th>
                       <th className="px-6 py-4 text-center">Cart Item Count</th>
                       <th className="px-6 py-4 text-center">Status</th>
                       <th className="px-6 py-4 text-right">Estimated Total</th>
@@ -173,7 +172,7 @@ export default function UserManagementPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filteredCart.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                        <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                           No active user carts found.
                         </td>
                       </tr>
@@ -183,8 +182,10 @@ export default function UserManagementPage() {
                           <td className="px-6 py-4 text-slate-900 font-medium whitespace-nowrap">
                             {formatDateTime(cart.lastUpdatedAt)}
                           </td>
-                          <td className="px-6 py-4 font-medium text-slate-900">{cart.tenant?.name || cart.tenant?.userName || 'N/A'}</td>
-                          <td className="px-6 py-4 text-slate-700">{cart.tenant?.decryptedEmail || cart.tenant?.email || 'N/A'}</td>
+                          <td className="px-6 py-4 font-medium text-slate-900">
+                            <div>{cart.tenant?.decryptedEmail || cart.tenant?.email || 'N/A'}</div>
+                            {cart.tenant?.name && <div className="text-xs text-slate-500">{cart.tenant.name}</div>}
+                          </td>
                           <td className="px-6 py-4 text-center">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                               {cart.cartItemCount || 0} {cart.cartItemCount === 1 ? 'item' : 'items'}
@@ -229,9 +230,7 @@ export default function UserManagementPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium uppercase text-xs tracking-wider">
                     <tr>
-                      <th className="px-6 py-4">UID</th>
-                      <th className="px-6 py-4">Name</th>
-                      <th className="px-6 py-4">Email</th>
+                      <th className="px-6 py-4">Email / Name</th>
                       <th className="px-6 py-4 text-center">Auth Provider</th>
                       <th className="px-6 py-4 text-right">Date of Joining</th>
                       <th className="px-6 py-4 text-right">Last Login</th>
@@ -241,18 +240,21 @@ export default function UserManagementPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filteredVerified.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                           No verified users found.
                         </td>
                       </tr>
                     ) : (
                       filteredVerified.map((user, idx) => (
                         <tr key={user.loomId || user.uid || idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-900">{user.loomId || user.uid}</td>
-                          <td className="px-6 py-4 font-medium text-slate-900">{user.userName || user.name || 'N/A'}</td>
-                          <td className="px-6 py-4 text-slate-700">{user.email || 'N/A'}</td>
+                          <td className="px-6 py-4 font-medium text-slate-900">
+                            <div>{user.email || 'N/A'}</div>
+                            {user.userName && user.userName !== user.email && (
+                              <div className="text-xs text-slate-500">{user.userName}</div>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-center">
-                            <span className="font-semibold text-slate-700 uppercase text-xs">{user.provider || 'BASIC'}</span>
+                            <span className="font-semibold text-slate-700 uppercase text-xs tracking-wide">{user.provider || 'BASIC'}</span>
                           </td>
                           <td className="px-6 py-4 text-right text-slate-900 whitespace-nowrap">
                             {formatDateTime(user.creationTime)}
@@ -285,9 +287,7 @@ export default function UserManagementPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium uppercase text-xs tracking-wider">
                     <tr>
-                      <th className="px-6 py-4">UID</th>
-                      <th className="px-6 py-4">Name</th>
-                      <th className="px-6 py-4">Email</th>
+                      <th className="px-6 py-4">Email / Name</th>
                       <th className="px-6 py-4 text-center">Auth Provider</th>
                       <th className="px-6 py-4 text-right">Date of Joining</th>
                       <th className="px-6 py-4 text-right">Last Login</th>
@@ -297,18 +297,21 @@ export default function UserManagementPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filteredUnverified.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                           No un-verified users found.
                         </td>
                       </tr>
                     ) : (
                       filteredUnverified.map((user, idx) => (
                         <tr key={user.loomId || user.uid || idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-900">{user.loomId || user.uid}</td>
-                          <td className="px-6 py-4 font-medium text-slate-900">{user.userName || user.name || 'N/A'}</td>
-                          <td className="px-6 py-4 text-slate-700">{user.email || 'N/A'}</td>
+                          <td className="px-6 py-4 font-medium text-slate-900">
+                            <div>{user.email || 'N/A'}</div>
+                            {user.userName && user.userName !== user.email && (
+                              <div className="text-xs text-slate-500">{user.userName}</div>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-center">
-                            <span className="font-semibold text-slate-700 uppercase text-xs">{user.provider || 'BASIC'}</span>
+                            <span className="font-semibold text-slate-700 uppercase text-xs tracking-wide">{user.provider || 'BASIC'}</span>
                           </td>
                           <td className="px-6 py-4 text-right text-slate-900 whitespace-nowrap">
                             {formatDateTime(user.creationTime)}

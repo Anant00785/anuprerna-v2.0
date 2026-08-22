@@ -13,14 +13,12 @@ export class SitemapController {
     constructor(private readonly service: SitemapService) {}
 
     @Get('image-sitemap')
-    @RequireGate(GateCode.PUBLIC)
     async getProductImageSitemapData() {
         const data = await this.service.getProductImageSitemapData();
         return keyedResponse('sitemapData', data);
     }
 
     @Get('enabled-image-sitemap')
-    @RequireGate(GateCode.PUBLIC)
     async getEnabledProductImageSitemapData() {
         const data = await this.service.getEnabledProductImageSitemapData();
         return keyedResponse('sitemapData', data);

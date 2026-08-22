@@ -16,8 +16,8 @@ export function PartnerBanner() {
           </p>
 
           <Link
-            href="/b2b/partner-registration"
-            className="inline-block px-8 py-3.5 bg-white border-2 border-anuprerna-gold text-gray-900 font-semibold text-base rounded-xl hover:bg-anuprerna-gold hover:text-white transition-all shadow-xs"
+            href="/wholesale-partner-program"
+            className="inline-block px-8 py-3.5 bg-white hover:bg-[#fffcf8] text-gray-900 font-medium text-base rounded-xl border-2 border-[#cb9b6d] transition-all shadow-md hover:shadow-lg active:scale-98"
           >
             Become a Partner
           </Link>

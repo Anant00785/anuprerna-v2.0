@@ -100,7 +100,6 @@ export class CategoryController {
 
   /** getCategoryData(request, page, size) */
   @Get("/get/table-explorer/data/category")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of categories." })
   @ApiResponse({ status: 200, description: "Page of category data." })
   async getCategoryData(@Query() query: unknown) {

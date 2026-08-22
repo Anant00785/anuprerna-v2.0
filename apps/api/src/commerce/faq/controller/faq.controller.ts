@@ -18,14 +18,12 @@ export class FaqController {
     constructor(private readonly faqService: FaqService) {}
 
     @Get("/get/faqs")
-    @RequireGate(GateCode.CODE_SU)
     async getFaqList() {
         const list = await this.faqService.retrieveFaqList();
         return keyedResponse("faqList", list);
     }
 
     @Get("/get/faq/:faqId")
-    @RequireGate(GateCode.CODE_SU)
     async getFaq(@Param("faqId") faqId: string) {
         const id = BigInt(faqId);
         const entity = await this.faqService.retrieveFaqById(id);
@@ -64,7 +62,6 @@ export class FaqController {
     }
 
     @Get("/get/table-explorer/data/faq")
-    @RequireGate(GateCode.CODE_SU)
     async getFaqData(
         @Query("page") pageStr: string,
         @Query("size") sizeStr: string
@@ -76,7 +73,6 @@ export class FaqController {
     }
 
     @Get("/get/table-explorer/data/faq/:id")
-    @RequireGate(GateCode.CODE_SU)
     async getFaqById(@Param("id") idStr: string) {
         const id = BigInt(idStr);
         const data = await this.faqService.retrieveFaqDataById(id);
@@ -85,7 +81,6 @@ export class FaqController {
     }
 
     @Get("/get/table-explorer/data/faq-question")
-    @RequireGate(GateCode.CODE_SU)
     async getFaqQuestionData(
         @Query("page") pageStr: string,
         @Query("size") sizeStr: string
@@ -97,7 +92,6 @@ export class FaqController {
     }
 
     @Get("/get/table-explorer/data/faq-question/:id")
-    @RequireGate(GateCode.CODE_SU)
     async getFaqQuestionById(@Param("id") idStr: string) {
         const id = BigInt(idStr);
         const data = await this.faqService.retrieveFaqQuestionDataById(id);

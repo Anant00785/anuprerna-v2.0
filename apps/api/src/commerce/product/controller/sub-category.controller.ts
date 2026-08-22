@@ -228,7 +228,6 @@ export class SubCategoryController {
 
   /** getFeaturedSubCategories(String categoryName) */
   @Get("/get/sub-category/featured/:categoryName")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List sub-categories marked featured within a category." })
   @ApiResponse({ status: 200, description: "Matching featured sub-categories." })
   async getFeaturedSubCategories(@Param("categoryName") categoryName: string) {
@@ -239,7 +238,6 @@ export class SubCategoryController {
 
   /** retrieveSubCategoryData(int page, int size) */
   @Get("/get/table-explorer/data/sub-category")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of sub-categories." })
   @ApiResponse({ status: 200, description: "Page of sub-category data." })
   async getSubCategoryData(@Query() query: unknown) {
@@ -250,7 +248,6 @@ export class SubCategoryController {
 
   /** retrieveSubCategoryDataById(Long id) */
   @Get("/get/table-explorer/data/sub-category/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single sub-category." })
   @ApiResponse({ status: 200, description: "Sub-category data or null." })
   async getSubCategoryDataById(@Param("id") id: string) {

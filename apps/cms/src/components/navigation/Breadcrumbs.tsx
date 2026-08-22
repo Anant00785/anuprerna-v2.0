@@ -31,11 +31,11 @@ export function Breadcrumbs() {
           <React.Fragment key={index}>
             <span className="wv-bc-sep">/</span>
             {isLast ? (
-              <span className="wv-bc-segment wv-bc-segment--active">
+              <span className="bg-[#383b63] text-white px-2.5 py-1 rounded text-xs font-semibold tracking-wide">
                 {formatSegment(segment)}
               </span>
             ) : (
-              <Link href={url} className="wv-bc-segment">
+              <Link href={url} className="wv-bc-segment text-slate-600 hover:text-slate-900">
                 {formatSegment(segment)}
               </Link>
             )}

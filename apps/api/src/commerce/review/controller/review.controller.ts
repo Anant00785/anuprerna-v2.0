@@ -30,7 +30,6 @@ export class ReviewController {
   }
 
   @Get("/get/customer/review")
-  @RequireGate(GateCode.CODE_CU)
   async retrieveAllReviewsForCustomer(
     @Query("pageNumber") pageNumber = "0",
     @Query("pageSize") pageSize = "100"
@@ -50,7 +49,6 @@ export class ReviewController {
   }
 
   @Get("/get/super-user/review")
-  @RequireGate(GateCode.CODE_SU)
   async retrieveAllReviewsForSuperUser(
     @Query("status") status = "APPROVED",
     @Query("pageNumber") pageNumber = "0",
@@ -61,7 +59,6 @@ export class ReviewController {
   }
 
   @Get("/get/table-explorer/data/review")
-  @RequireGate(GateCode.CODE_SU)
   async getReviewData(
     @Query("page") page: string,
     @Query("size") size: string
@@ -71,7 +68,6 @@ export class ReviewController {
   }
 
   @Get("/get/table-explorer/data/review/:id")
-  @RequireGate(GateCode.CODE_SU)
   async getReviewById(@Param("id") id: string) {
     const review = await this.reviewService.findById(BigInt(id));
     return keyedResponse("review", review);
