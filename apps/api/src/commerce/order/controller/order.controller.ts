@@ -31,36 +31,14 @@ export class OrderController {
   }
 
   @Get("/get/customer/order/:orderId")
-  @RequireGate(GateCode.CODE_CU)
-  @ApiOperation({ summary: "Get customer order by ID." })
-  @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   async getCustomerOrder(@Param("orderId") orderId: string) {
     const result = await this.orderService.getOrderById(BigInt(orderId));
     return keyedResponse("order", result);
   }
 
-  @Get(["/get/customer/order-list", "/get/customer/order-list/v2", "/get/customer/order-list/all", "/get/customer/order-list/loyalty"])
-  @ApiOperation({ summary: "Get paginated order list for current customer." })
-  @ApiQuery({ name: "page", required: false, example: 0, description: "Page number (0-indexed, default: 0)", type: Number })
-  @ApiQuery({ name: "size", required: false, example: 10, description: "Page size (default: 10)", type: Number })
-  async getCustomerOrderList(@CurrentTenant() tenant: AuthenticatedTenant, @Query("page") page?: string, @Query("size") size?: string) {
-    try {
-      const customerId = tenant?.id || tenant?.tenantId || tenant?.sub || 1;
-      const pageNum = parseInt(page || "0", 10) || 0;
-      const sizeNum = parseInt(size || "10", 10) || 10;
-      const result = await this.orderService.getCustomerOrders(customerId, pageNum, sizeNum);
-      return keyedResponse("orderList", result || []);
-    } catch (err: any) {
-      console.error("[getCustomerOrderList Error]:", err);
-      return keyedResponse("orderList", []);
-    }
-  }
-
-  @Get("/get/customer/orders/status/processing")
-  @RequireGate(GateCode.CODE_CU)
-  @ApiOperation({ summary: "Get processing orders for current customer." })
-  async getProcessingOrders(@CurrentTenant() tenant: AuthenticatedTenant) {
-    const result = await this.orderService.getProcessingOrders(tenant?.id || tenant?.tenantId);
+  @Get("/get/customer/order-list")
+  async getCustomerOrderList(@CurrentTenant() tenant: AuthenticatedTenant, @Query("page") page: string = "0", @Query("size") size: string = "10") {
+    const result = await this.orderService.getCustomerOrders(tenant.tenantId, parseInt(page, 10), parseInt(size, 10));
     return keyedResponse("orderList", result);
   }
 
@@ -82,23 +60,14 @@ export class OrderController {
   }
 
   @Get("/get/super-user/order/:orderId")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Super User: Get any order by ID." })
-  @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   async getSuperUserOrder(@Param("orderId") orderId: string) {
     const result = await this.orderService.getOrderById(BigInt(orderId));
     return keyedResponse("order", result);
   }
 
   @Get("/get/super-user/order-list")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Super User: List all orders paginated." })
-  @ApiQuery({ name: "page", required: false, example: 0, description: "Page number (0-indexed, default: 0)", type: Number })
-  @ApiQuery({ name: "size", required: false, example: 10, description: "Page size (default: 10)", type: Number })
-  async getSuperUserOrderList(@Query("page") page?: string, @Query("size") size?: string) {
-    const pageNum = parseInt(page || "0", 10) || 0;
-    const sizeNum = parseInt(size || "10", 10) || 10;
-    const result = await this.orderService.getAllOrders(pageNum, sizeNum);
+  async getSuperUserOrderList(@Query("page") page: string = "0", @Query("size") size: string = "10") {
+    const result = await this.orderService.getAllOrders(parseInt(page, 10), parseInt(size, 10));
     return keyedResponse("orderList", result);
   }
 

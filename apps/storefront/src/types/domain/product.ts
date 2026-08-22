@@ -8,6 +8,7 @@ export interface Product {
   id: string;
   slug: string;
   name: string;
+  sku?: string;
   price: number;
   originalPrice?: number;
   currency: string;

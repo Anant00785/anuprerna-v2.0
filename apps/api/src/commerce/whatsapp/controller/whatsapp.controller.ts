@@ -88,29 +88,25 @@ export class WhatsappController {
     return simpleResponse(true, "WhatsApp notification prompt dismissed successfully.");
   }
 
-  @Get("get/customers/whatsapp-status")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get customer WhatsApp notification status list" })
-  async getStatus(@Query("page") page = "0", @Query("size") size = "10") {
-    const history = await this.whatsappService.getHistory(parseInt(page, 10), parseInt(size, 10));
-    return keyedResponse("statusList", history);
-  }
+    @Get('get/customers/whatsapp-status')
+    async getStatus(@Query() query: any) {
+        const { page, size } = parsePaginationInput(query);
+        const history = await this.whatsappService.getHistory(page, size);
+        return keyedResponse('statusList', history);
+    }
 
-  @Get("get/table-explorer/data/whatsapp-notification-history")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Table explorer data for WhatsApp notification history" })
-  async getHistoryData(@Query("page") page = "0", @Query("size") size = "10") {
-    const history = await this.whatsappService.getHistory(parseInt(page, 10), parseInt(size, 10));
-    return keyedResponse("whatsappHistory", history);
-  }
+    @Get('get/table-explorer/data/whatsapp-notification-history')
+    async getHistoryData(@Query() query: any) {
+        const { page, size } = parsePaginationInput(query);
+        const history = await this.whatsappService.getHistory(page, size);
+        return keyedResponse('whatsappHistory', history);
+    }
 
-  @Get("get/table-explorer/data/whatsapp-notification-history/:id")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Inspect WhatsApp notification record by ID" })
-  @ApiParam({ name: "id", example: 3, type: Number })
-  async getHistoryDataById(@Param("id") id: string) {
-    const recordId = parseInt(id, 10);
-    const record = await this.whatsappService.getHistoryById(recordId || 3);
-    return keyedResponse("whatsappHistoryRecord", record);
-  }
+    @Get('get/table-explorer/data/whatsapp-notification-history/:id')
+    async getHistoryDataById(@Param('id') id: string) {
+        const recordId = parseInt(id, 10);
+        if (isNaN(recordId)) throw new Error('Invalid ID');
+        const record = await this.whatsappService.getHistoryById(recordId);
+        return keyedResponse('whatsappHistoryRecord', record);
+    }
 }

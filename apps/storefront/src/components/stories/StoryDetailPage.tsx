@@ -44,8 +44,8 @@ export function StoryDetailPage({ storyId }: { storyId: string }) {
   // Handle active section scrolling for TOC
   useEffect(() => {
     const handleScroll = () => {
-      if (!story?.storyContentSectionList) return;
-      const sections = story.storyContentSectionList;
+      const sections = story?.sections || story?.storyContentSectionList;
+      if (!sections) return;
       for (let i = sections.length - 1; i >= 0; i--) {
         const el = document.getElementById(`section-${i}`);
         if (el) {
@@ -82,7 +82,7 @@ export function StoryDetailPage({ storyId }: { storyId: string }) {
     );
   }
 
-  const sections = (story.storyContentSectionList || []).sort(
+  const sections = (story.sections || story.storyContentSectionList || []).sort(
     (a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0)
   );
 

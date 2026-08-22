@@ -193,4 +193,34 @@ export class SubCategoryController {
     const { success, message } = await this.subCategoryService.deleteSubCategory(id);
     return simpleResponse(success, success ? SubCategoryMessages.SUB_CATEGORY_DELETED : message);
   }
+
+  /** getFeaturedSubCategories(String categoryName) */
+  @Get("/get/sub-category/featured/:categoryName")
+  @ApiOperation({ summary: "List sub-categories marked featured within a category." })
+  @ApiResponse({ status: 200, description: "Matching featured sub-categories." })
+  async getFeaturedSubCategories(@Param("categoryName") categoryName: string) {
+    const name = parseCategoryNameParam(categoryName);
+    const subCategories = await this.subCategoryService.getFeaturedSubCategories(name);
+    return keyedResponse("featuredSubCategoryList", subCategories);
+  }
+
+  /** retrieveSubCategoryData(int page, int size) */
+  @Get("/get/table-explorer/data/sub-category")
+  @ApiOperation({ summary: "Paginated table-explorer projection of sub-categories." })
+  @ApiResponse({ status: 200, description: "Page of sub-category data." })
+  async getSubCategoryData(@Query() query: unknown) {
+    const { page, size } = parseTableExplorerPageQuery(query);
+    const data = await this.subCategoryService.retrieveSubCategoryData(page, size);
+    return keyedResponse("subCategoryDataList", data);
+  }
+
+  /** retrieveSubCategoryDataById(Long id) */
+  @Get("/get/table-explorer/data/sub-category/:id")
+  @ApiOperation({ summary: "Table-explorer projection of a single sub-category." })
+  @ApiResponse({ status: 200, description: "Sub-category data or null." })
+  async getSubCategoryDataById(@Param("id") id: string) {
+    const parsedId = BigInt(parseIdParam(id));
+    const data = await this.subCategoryService.retrieveSubCategoryDataById(parsedId);
+    return keyedResponse("subCategoryData", data);
+  }
 }

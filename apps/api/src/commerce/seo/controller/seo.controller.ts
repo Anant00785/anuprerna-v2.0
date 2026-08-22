@@ -18,16 +18,12 @@ export class SeoController {
     constructor(private readonly seoService: SeoService) {}
 
     @Get("/get/product-seo-list")
-    @ApiOperation({ summary: "Get all products SEO metadata." })
-    @ApiResponse({ status: 200, description: "Product SEO list." })
     async getProductSeoList() {
         const result = await this.seoService.getProductSeoList();
         return keyedResponse("entityList", result);
     }
 
     @Get("/get/article-seo-list")
-    @ApiOperation({ summary: "Get all articles (blogs & stories) SEO metadata." })
-    @ApiResponse({ status: 200, description: "Article SEO list." })
     async getArticleSeoList() {
         const result = await this.seoService.getArticleSeoList();
         return keyedResponse("entityList", result);
@@ -47,11 +43,6 @@ export class SeoController {
     }
 
     @Get("/get/table-explorer/data/product-image-gallery-seo")
-    @RequireGate(GateCode.CODE_SU)
-    @ApiOperation({ summary: "Get paginated product image gallery SEO data." })
-    @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page index" })
-    @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })
-    @ApiResponse({ status: 200, description: "Gallery SEO list." })
     async getProductImageGallerySEOData(
         @Query("page") pageStr: string = "0",
         @Query("size") sizeStr: string = "10"

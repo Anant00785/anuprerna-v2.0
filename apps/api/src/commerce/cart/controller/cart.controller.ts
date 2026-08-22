@@ -55,7 +55,6 @@ export class CartController {
 
   /** getCartItemData(request, page, size) */
   @Get("/get/table-explorer/data/cart-item")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer: paginated list of all cart items (admin)." })
   @ApiResponse({ status: 200, description: "Paginated cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
@@ -68,7 +67,6 @@ export class CartController {
 
   /** getCartItemById(request, id) */
   @Get("/get/table-explorer/data/cart-item/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer: fetch a single cart item by id (admin)." })
   @ApiParam({ name: "id", description: "Cart item ID", example: 157423053, type: Number })
   @ApiResponse({ status: 200, description: "The cart item, or null if not found." })
@@ -82,7 +80,6 @@ export class CartController {
 
   /** getCartItemList(request) */
   @Get("/get/cart-item/list")
-  @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "List the authenticated customer's own cart items." })
   @ApiResponse({ status: 200, description: "The caller's cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
@@ -94,7 +91,6 @@ export class CartController {
 
   /** getCartItemListUsingUid(request, uid) */
   @Get("/get/tenant/cart-item/list/:uid")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "List a specific tenant's cart items by uid (admin)." })
   @ApiParam({ name: "uid", description: "Tenant User UID", example: "e4d9ea92-78f6-4ce9-9d99-ce843f7e2fe4", type: String })
   @ApiResponse({ status: 200, description: "The tenant's cart item list." })
@@ -108,7 +104,6 @@ export class CartController {
 
   /** getCartItemListForTenants(request) */
   @Get("/get/tenant/cart-item/list")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Tenant-wise cart overview across all tenants (admin)." })
   @ApiResponse({ status: 200, description: "Per-tenant cart overview." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })

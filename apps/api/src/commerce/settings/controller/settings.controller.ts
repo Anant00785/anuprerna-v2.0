@@ -28,11 +28,7 @@ export class SettingsController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SUCU)
-  @Get('get/settings/:settingId')
-  @ApiOperation({ summary: "Get setting by setting ID." })
-  @ApiParam({ name: "settingId", type: Number, description: "Setting unique identifier", example: 1 })
-  @ApiResponse({ status: 200, description: "Setting details." })
+    @Get('get/settings/:settingId')
   async getSettingById(@Param('settingId') settingId: string) {
     try {
       const id = BigInt(settingId);
@@ -70,12 +66,7 @@ export class SettingsController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('get/table-explorer/data/settings')
-  @ApiOperation({ summary: "Get paginated settings data for Table Explorer." })
-  @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page number (0-indexed)" })
-  @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })
-  @ApiResponse({ status: 200, description: "Paginated list of settings." })
+    @Get('get/table-explorer/data/settings')
   async getPaginatedSettings(@Query('page') page: string = '0', @Query('size') size: string = '10') {
     try {
       const p = parseInt(page, 10);
@@ -88,11 +79,7 @@ export class SettingsController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('get/table-explorer/data/settings/:id')
-  @ApiOperation({ summary: "Get setting data by ID for Table Explorer." })
-  @ApiParam({ name: "id", type: Number, description: "Setting unique identifier", example: 1 })
-  @ApiResponse({ status: 200, description: "Setting explorer details." })
+    @Get('get/table-explorer/data/settings/:id')
   async getSettingExplorerById(@Param('id') idParam: string) {
     try {
       const id = BigInt(idParam);

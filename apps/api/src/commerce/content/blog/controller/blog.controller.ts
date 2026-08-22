@@ -27,8 +27,7 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Get("/get/blog-content-types")
-  @ApiOperation({ summary: "Get all blog content types." })
-  @ApiResponse({ status: 200, description: "List of blog content types." })
+  @ApiOperation({ summary: "Get blog content types." })
   async getBlogContentTypes() {
     const list = await this.blogService.getBlogContentTypes();
     return keyedResponse("blogContentTypes", list);

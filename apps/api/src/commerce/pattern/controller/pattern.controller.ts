@@ -48,16 +48,14 @@ export class PatternController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('/get/table-explorer/data/pattern')
+    @Get('/get/table-explorer/data/pattern')
   @ApiOperation({ summary: "Paginated table-explorer projection of patterns." })
   async getTableExplorerData(@Query('page') page: string = '1', @Query('size') size: string = '10') {
     return this.service.getTableExplorerData(parseInt(page, 10), parseInt(size, 10));
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('/get/table-explorer/data/pattern/:id')
+    @Get('/get/table-explorer/data/pattern/:id')
   @ApiOperation({ summary: "Table-explorer projection of pattern by ID." })
   @ApiParam({ name: 'id', description: 'Pattern ID', example: 1, type: Number })
   async getTableExplorerDataById(@Param('id') id: string) {

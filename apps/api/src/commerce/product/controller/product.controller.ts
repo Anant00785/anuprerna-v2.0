@@ -258,7 +258,6 @@ export class ProductController {
 
   /** ProductDAOController#retrieveProductData(int page, int size) */
   @Get("/get/table-explorer/data/product")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of products." })
   @ApiResponse({ status: 200, description: "Page of product data." })
   async getProductData(@Query() query: unknown) {
@@ -269,7 +268,6 @@ export class ProductController {
 
   /** ProductDAOController#retrieveProductDataById(Long id) */
   @Get("/get/table-explorer/data/product/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single product." })
   @ApiResponse({ status: 200, description: "Product data or null." })
   async getProductDataById(@Param("id") id: string) {

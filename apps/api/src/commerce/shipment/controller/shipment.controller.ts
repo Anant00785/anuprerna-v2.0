@@ -15,17 +15,12 @@ export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}
 
   @Get("/get/shipment-list")
-  @ApiOperation({ summary: "Get list of all active shipment methods." })
-  @ApiResponse({ status: 200, description: "List of shipment methods." })
   async getShipmentList() {
     const list = await this.shipmentService.getShipmentList();
     return keyedResponse("shipmentList", list);
   }
 
   @Get("/get/shipment/:shipmentId")
-  @ApiOperation({ summary: "Get shipment method details by ID." })
-  @ApiParam({ name: "shipmentId", type: Number, description: "Shipment unique identifier", example: 21209 })
-  @ApiResponse({ status: 200, description: "Shipment details." })
   async getShipment(@Param("shipmentId") shipmentId: string) {
     const id = BigInt(shipmentId);
     const shipment = await this.shipmentService.getShipment(id);
@@ -66,11 +61,6 @@ export class ShipmentController {
   }
 
   @Get("/get/table-explorer/data/shipment")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get paginated shipments for Table Explorer." })
-  @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page number" })
-  @ApiQuery({ name: "size", required: false, type: Number, example: 10, description: "Page size" })
-  @ApiResponse({ status: 200, description: "Paginated shipment list." })
   async getShipmentData(
     @Query("page") pageStr: string = "0",
     @Query("size") sizeStr: string = "10"
@@ -82,10 +72,6 @@ export class ShipmentController {
   }
 
   @Get("/get/table-explorer/data/shipment/:id")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get shipment record by ID for Table Explorer." })
-  @ApiParam({ name: "id", type: Number, description: "Shipment unique identifier", example: 21209 })
-  @ApiResponse({ status: 200, description: "Shipment details." })
   async getShipmentDataById(@Param("id") idStr: string) {
     const id = BigInt(idStr);
     const shipment = await this.shipmentService.getShipmentDataById(id);

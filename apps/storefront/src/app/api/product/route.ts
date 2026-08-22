@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
-const BASE_URL = env.NEXT_PUBLIC_SPRINGBOOT_API_URL.replace(/\/$/, "");
+const BASE_URL = (
+  env.NEXT_PUBLIC_API_MODE === "nest"
+    ? env.NEXT_PUBLIC_NEST_API_URL
+    : env.NEXT_PUBLIC_SPRINGBOOT_API_URL
+).replace(/\/$/, "");
 const DEFAULT_HEADERS = {
   Accept: "application/json",
   Origin: "https://anuprerna.com",
@@ -16,40 +20,82 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. Try fabric product details first
-    const fabricUrl = `${BASE_URL}/get/v2/fabric-product/slug/${encodeURIComponent(slug)}`;
-    const fabricRes = await fetch(fabricUrl, {
-      headers: DEFAULT_HEADERS,
-      next: { revalidate: 60 },
-    });
+    // 1. Try v2 fabric product details first
+    const fabricV2Url = `${BASE_URL}/get/v2/fabric-product/slug/${encodeURIComponent(slug)}`;
+    try {
+      const fabricV2Res = await fetch(fabricV2Url, {
+        headers: DEFAULT_HEADERS,
+        next: { revalidate: 60 },
+      });
 
-    if (fabricRes.ok) {
-      const fabricJson = await fabricRes.json();
-      if (fabricJson.fabricProduct && fabricJson.fabricProduct.product) {
-        return NextResponse.json({
-          success: true,
-          productType: "fabric",
-          data: fabricJson.fabricProduct,
-        });
+      if (fabricV2Res.ok) {
+        const fabricJson = await fabricV2Res.json();
+        const productData = fabricJson.fabricProduct || fabricJson.product || fabricJson.payload || fabricJson;
+        if (productData && (productData.product || productData.name || productData.slug)) {
+          const finalData = productData.product
+            ? productData
+            : { product: productData, ...productData };
+          return NextResponse.json({
+            success: true,
+            productType: "fabric",
+            data: finalData,
+          });
+        }
       }
+    } catch {
+      // Fall through to v1
     }
 
-    // 2. Fallback to finished product details
-    const finishedUrl = `${BASE_URL}/get/finished-product/slug/${encodeURIComponent(slug)}`;
-    const finishedRes = await fetch(finishedUrl, {
-      headers: DEFAULT_HEADERS,
-      next: { revalidate: 60 },
-    });
+    // 2. Try v1 fabric product details fallback
+    const fabricV1Url = `${BASE_URL}/get/fabric-product/slug/${encodeURIComponent(slug)}`;
+    try {
+      const fabricV1Res = await fetch(fabricV1Url, {
+        headers: DEFAULT_HEADERS,
+        next: { revalidate: 60 },
+      });
 
-    if (finishedRes.ok) {
-      const finishedJson = await finishedRes.json();
-      if (finishedJson.finishedProduct || finishedJson.product) {
-        return NextResponse.json({
-          success: true,
-          productType: "finished",
-          data: finishedJson.finishedProduct || finishedJson.product || finishedJson.payload,
-        });
+      if (fabricV1Res.ok) {
+        const fabricJson = await fabricV1Res.json();
+        const productData = fabricJson.fabricProduct || fabricJson.product || fabricJson.payload || fabricJson;
+        if (productData && (productData.product || productData.name || productData.slug)) {
+          const finalData = productData.product
+            ? productData
+            : { product: productData, ...productData };
+          return NextResponse.json({
+            success: true,
+            productType: "fabric",
+            data: finalData,
+          });
+        }
       }
+    } catch {
+      // Fall through to finished
+    }
+
+    // 3. Try finished product details
+    const finishedUrl = `${BASE_URL}/get/finished-product/slug/${encodeURIComponent(slug)}`;
+    try {
+      const finishedRes = await fetch(finishedUrl, {
+        headers: DEFAULT_HEADERS,
+        next: { revalidate: 60 },
+      });
+
+      if (finishedRes.ok) {
+        const finishedJson = await finishedRes.json();
+        const productData = finishedJson.finishedProduct || finishedJson.product || finishedJson.payload || finishedJson;
+        if (productData && (productData.product || productData.name || productData.slug)) {
+          const finalData = productData.product
+            ? productData
+            : { product: productData, ...productData };
+          return NextResponse.json({
+            success: true,
+            productType: "finished",
+            data: finalData,
+          });
+        }
+      }
+    } catch {
+      // Fall through
     }
 
     return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });

@@ -31,17 +31,11 @@ export class OrderFulfillmentController {
   }
 
   @Get("/get/super-user/order/:orderId/fulfillment-list")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Super User: Get order fulfillment history." })
-  @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   async getSuperUserFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }
 
   @Get("/get/customer/order/:orderId/fulfillment-list")
-  @RequireGate(GateCode.CODE_CU)
-  @ApiOperation({ summary: "Customer: Get my order fulfillment history." })
-  @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   async getCustomerFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }
@@ -65,9 +59,6 @@ export class OrderFulfillmentController {
   }
 
   @Get("/get/super-user/order/:orderId/ready-list")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Super User: Get order ready history." })
-  @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   async getSuperUserReadyList(@Param("orderId") orderId: string) {
     return keyedResponse("readyList", []);
   }

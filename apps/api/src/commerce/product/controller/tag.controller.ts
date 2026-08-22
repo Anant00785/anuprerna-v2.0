@@ -118,7 +118,6 @@ export class TagController {
 
   /** TagDAOController#retrieveTagData(int page, int size) */
   @Get("/get/table-explorer/data/tag")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of tags." })
   @ApiResponse({ status: 200, description: "Page of tag data." })
   async getTagData(@Query() query: unknown) {
@@ -129,7 +128,6 @@ export class TagController {
 
   /** TagDAOController#retrieveTagDataById(Long id) */
   @Get("/get/table-explorer/data/tag/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single tag." })
   @ApiResponse({ status: 200, description: "Tag data or null." })
   async getTagDataById(@Param("id") id: string) {

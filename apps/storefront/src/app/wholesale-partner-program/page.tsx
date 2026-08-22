@@ -3,7 +3,7 @@ import { Header } from "@/components/navigation/Header";
 import { Footer } from "@/components/navigation/Footer";
 import { WholesalePartnerPage } from "@/components/b2b/WholesalePartnerPage";
 
-export default function WholesalePartnerRoute() {
+export default function WholesalePartnerProgramPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col justify-between">
       <div>

@@ -20,7 +20,7 @@ export const plpRepository = {
   async getPLPData(group: "fabric" | "finished", category: string = ""): Promise<PLPDataResponse> {
     try {
       const isServer = typeof window === "undefined";
-      const origin = isServer ? "http://localhost:3000" : "";
+      const origin = isServer ? "http://localhost:4200" : "";
       const url = `${origin}/api/plp?group=${group}&category=${encodeURIComponent(category)}`;
 
       const res = await fetch(url, { cache: "no-store" });
@@ -45,7 +45,7 @@ export const plpRepository = {
     if (!productIdsCsv) return [];
     try {
       const isServer = typeof window === "undefined";
-      const origin = isServer ? "http://localhost:3000" : "";
+      const origin = isServer ? "http://localhost:4200" : "";
       const url = `${origin}/api/plp/related?ids=${encodeURIComponent(productIdsCsv)}`;
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) return [];
@@ -64,7 +64,7 @@ export const plpRepository = {
     if (!category) return [];
     try {
       const isServer = typeof window === "undefined";
-      const origin = isServer ? "http://localhost:3000" : "";
+      const origin = isServer ? "http://localhost:4200" : "";
       const url = `${origin}/api/plp/segments?category=${encodeURIComponent(category)}`;
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) return [];

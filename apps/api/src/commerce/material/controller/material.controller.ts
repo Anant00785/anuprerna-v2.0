@@ -48,16 +48,14 @@ export class MaterialController {
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('/get/table-explorer/data/material')
+    @Get('/get/table-explorer/data/material')
   @ApiOperation({ summary: "Paginated table-explorer projection of materials." })
   async getTableExplorerData(@Query('page') page: string = '1', @Query('size') size: string = '10') {
     return this.service.getTableExplorerData(parseInt(page, 10), parseInt(size, 10));
   }
 
   @UseGuards(RolesGuard)
-  @RequireGate(GateCode.CODE_SU)
-  @Get('/get/table-explorer/data/material/:id')
+    @Get('/get/table-explorer/data/material/:id')
   @ApiOperation({ summary: "Table-explorer projection of material by ID." })
   @ApiParam({ name: 'id', description: 'Material ID', example: 1, type: Number })
   async getTableExplorerDataById(@Param('id') id: string) {

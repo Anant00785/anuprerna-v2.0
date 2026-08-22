@@ -188,24 +188,18 @@ export class OrderFeedbackController {
   }
 
   @Get("/get/order/feedback/:orderId")
-  @ApiOperation({ summary: "Get feedback submitted for an order ID." })
-  @ApiParam({ name: "orderId", description: "Order ID (e.g. 244117, 244620)", example: 244117, type: Number })
   async getFeedbackByOrder(@Param("orderId") orderId: string) {
     const rows = await this.db.select().from(schema.purchaseOrderFeedback).where(eq(schema.purchaseOrderFeedback.orderId, Number(orderId))).limit(1);
     return keyedResponse("feedback", formatFeedback(rows[0]));
   }
 
   @Get("/get/super-user/order/feedback/:feedbackId")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Super User: Get specific feedback by feedback ID." })
-  @ApiParam({ name: "feedbackId", description: "Feedback ID (e.g. 244127, 244632)", example: 244127, type: Number })
   async getFeedbackById(@Param("feedbackId") feedbackId: string) {
     const rows = await this.db.select().from(schema.purchaseOrderFeedback).where(eq(schema.purchaseOrderFeedback.id, BigInt(feedbackId))).limit(1);
     return keyedResponse("feedback", formatFeedback(rows[0]));
   }
 
   @Get("/get/order/feedback-list")
-  @ApiOperation({ summary: "List recent customer order feedbacks." })
   async getFeedbackList() {
     const rows = await this.db.select().from(schema.purchaseOrderFeedback).orderBy(desc(schema.purchaseOrderFeedback.id)).limit(50);
     return keyedResponse("feedbackList", rows.map(formatFeedback));

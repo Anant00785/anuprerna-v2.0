@@ -1,43 +1,21 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { UserProfile, OrderListItem } from '@/types/domain/profile';
 import { OrderListCard } from './OrderListCard';
-
-interface CartPreviewItem {
-  id: number;
-  name: string;
-  heroImage: string;
-  quantity: number;
-  unit: string;
-}
+import { useCartStore } from '@/stores/cart.store';
 
 interface ProfileDashboardViewProps {
   profile: UserProfile;
   orders: OrderListItem[];
 }
 
-const mockCartItems: CartPreviewItem[] = [
-  {
-    id: 1,
-    name: 'Organic Handspun Khadi Cotton Fabric - Undyed Natural White',
-    heroImage: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=300&auto=format&fit=crop',
-    quantity: 10,
-    unit: 'Meters',
-  },
-  {
-    id: 2,
-    name: 'Eri Silk Handwoven Fabric - Crimson Madder Dye',
-    heroImage: 'https://images.unsplash.com/photo-1606760227091-3dd850d97f1d?q=80&w=300&auto=format&fit=crop',
-    quantity: 5,
-    unit: 'Meters',
-  },
-];
-
 export const ProfileDashboardView: React.FC<ProfileDashboardViewProps> = ({ profile, orders: initialOrders }) => {
   const [orders, setOrders] = useState<OrderListItem[]>(initialOrders);
-  const [cartItems] = useState<CartPreviewItem[]>(mockCartItems);
+  const { cart, open: openCart, refresh: refreshCart } = useCartStore();
+
+  useEffect(() => {
+    refreshCart();
+  }, [refreshCart]);
 
   const firstName = profile.tenant.name.split(' ')[0] || 'User';
 
@@ -48,6 +26,7 @@ export const ProfileDashboardView: React.FC<ProfileDashboardViewProps> = ({ prof
   };
 
   const recentOrders = orders.slice(0, 2);
+  const cartItems = cart?.items || [];
 
   return (
     <div className="w-full space-y-8">
@@ -84,29 +63,59 @@ export const ProfileDashboardView: React.FC<ProfileDashboardViewProps> = ({ prof
         <div className="bg-[#efeee9] p-6 rounded-2xl border border-amber-950/5">
           {cartItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-center">
-              {cartItems.slice(0, 3).map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-2xs space-y-2 hover:shadow-md transition-shadow"
-                >
-                  <img src={item.heroImage} alt={item.name} className="w-full h-32 object-cover rounded-lg" />
-                  <p className="text-xs font-bold uppercase text-gray-900 line-clamp-2 mt-2">{item.name}</p>
-                  <p className="text-sm font-semibold text-gray-700">
-                    {item.quantity} {item.unit}
-                  </p>
-                </div>
-              ))}
+              {cartItems.slice(0, 3).map((item) => {
+                const img =
+                  item.product?.thumbnail ||
+                  item.product?.gallery?.[0] ||
+                  "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=300&auto=format&fit=crop";
+                const unit = item.unit || (item.productGroup === "fabric" ? "Meters" : "Units");
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={openCart}
+                    className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-2xs space-y-2 hover:shadow-md transition-shadow text-left cursor-pointer w-full"
+                  >
+                    <img
+                      src={img}
+                      alt={item.product?.name || "Product"}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <p className="text-xs font-bold uppercase text-gray-900 line-clamp-2 mt-2">
+                      {item.product?.name || "Fabric Item"}
+                    </p>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {item.quantity} {unit}
+                    </p>
+                  </button>
+                );
+              })}
 
-              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-2xs flex flex-col justify-center items-center text-center cursor-pointer hover:bg-amber-50/50 transition-colors h-full min-h-[160px]">
-                <p className="text-sm font-bold uppercase text-gray-900 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={openCart}
+                className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-2xs flex flex-col justify-center items-center text-center cursor-pointer hover:bg-amber-50/50 hover:border-[#8E7862] transition-colors h-full min-h-[160px] w-full group"
+              >
+                <p className="text-sm font-bold uppercase text-gray-900 group-hover:text-[#8E7862] flex items-center gap-1.5 transition-colors">
                   View Cart
-                  <span className="material-symbols-outlined text-base">arrow_forward</span>
+                  <span className="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
                 </p>
-              </div>
+              </button>
             </div>
           ) : (
-            <div className="text-center py-8 text-lg uppercase text-gray-600 font-semibold tracking-wider">
-              Your cart is empty
+            <div className="text-center py-8 flex flex-col items-center justify-center gap-3">
+              <p className="text-lg uppercase text-gray-600 font-semibold tracking-wider">
+                Your cart is empty
+              </p>
+              <button
+                type="button"
+                onClick={openCart}
+                className="text-sm font-medium text-[#8E7862] hover:underline cursor-pointer"
+              >
+                Open Cart Drawer
+              </button>
             </div>
           )}
         </div>

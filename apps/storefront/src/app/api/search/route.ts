@@ -57,20 +57,37 @@ export async function GET(request: Request) {
     const combinedProducts = [...rawResultSet, ...relatedResultSet];
 
     // Format products
-    const products = combinedProducts.map((p: any) => ({
-      id: p.id || p.product_id,
-      product_id: p.product_id || p.id,
-      name: p.name || p.title,
-      slug: p.slug,
-      hero_image: p.hero_image || p.heroImage,
-      hover_image: p.hover_image || p.hoverImage,
-      price: p.price || 0,
-      calculatedPrice: p.price || 0,
-      unit: p.unit || "METER",
-      special_status: p.special_status || p.specialStatus || "Handwoven Fabric",
-      product_group: p.product_group || p.productGroup || "fabric",
-      total_quantity: p.total_quantity ?? p.totalQuantity ?? 100,
-    }));
+    const products = combinedProducts.map((p: any) => {
+      const baseProduct: any = {
+        ...p,
+        id: p.id || p.product_id,
+        product_id: p.product_id || p.id,
+        name: p.name || p.title,
+        slug: p.slug,
+        hero_image: p.hero_image || p.heroImage,
+        hover_image: p.hover_image || p.hoverImage,
+        price: Number(p.price || 0),
+        unit: p.unit || "METER",
+        special_status: p.special_status || p.specialStatus || "Handwoven Fabric",
+        product_group: p.product_group || p.productGroup || "fabric",
+        total_quantity: p.total_quantity ?? p.totalQuantity ?? 100,
+        made_to_order_fabric_price: p.made_to_order_fabric_price ?? p.madeToOrderFabric?.price,
+        consumed_fabric: p.consumed_fabric ?? p.consumedFabric ?? p.size_profile_option_list?.[0]?.consumedFabric,
+      };
+
+      const calcPrice = Number(p.price || 0);
+      const isFinished = baseProduct.product_group === "finished";
+
+      if (isFinished) {
+        const fabPrice = Number(baseProduct.made_to_order_fabric_price ?? calcPrice);
+        const consumed = Number(baseProduct.consumed_fabric ?? 1) || 1;
+        baseProduct.calculatedPrice = Math.round((fabPrice * consumed + calcPrice) * 100) / 100;
+      } else {
+        baseProduct.calculatedPrice = calcPrice;
+      }
+
+      return baseProduct;
+    });
 
     const stories = storiesJson.storyContentList || storiesJson.payload || [];
     const blogs = blogsJson.blogContentList || blogsJson.payload || [];

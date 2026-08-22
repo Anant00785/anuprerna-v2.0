@@ -36,11 +36,6 @@ export class ReviewController {
   }
 
   @Get("/get/customer/review")
-  @RequireGate(GateCode.CODE_CU)
-  @ApiOperation({ summary: "Get approved reviews for customer view." })
-  @ApiQuery({ name: "pageNumber", required: false, type: Number, example: 0, description: "Page number" })
-  @ApiQuery({ name: "pageSize", required: false, type: Number, example: 100, description: "Page size" })
-  @ApiResponse({ status: 200, description: "List of customer reviews." })
   async retrieveAllReviewsForCustomer(
     @Query("pageNumber") pageNumber = "0",
     @Query("pageSize") pageSize = "100"
@@ -73,12 +68,6 @@ export class ReviewController {
   }
 
   @Get("/get/super-user/review")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get reviews filtered by status for moderation by Super User." })
-  @ApiQuery({ name: "status", required: false, type: String, example: "APPROVED", description: "Review status (APPROVED, PENDING, REJECTED)" })
-  @ApiQuery({ name: "pageNumber", required: false, type: Number, example: 0, description: "Page number" })
-  @ApiQuery({ name: "pageSize", required: false, type: Number, example: 100, description: "Page size" })
-  @ApiResponse({ status: 200, description: "List of reviews for super user." })
   async retrieveAllReviewsForSuperUser(
     @Query("status") status = "APPROVED",
     @Query("pageNumber") pageNumber = "0",
@@ -89,11 +78,6 @@ export class ReviewController {
   }
 
   @Get("/get/table-explorer/data/review")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get paginated review data for Table Explorer." })
-  @ApiQuery({ name: "page", required: false, type: Number, example: 0, description: "Page index" })
-  @ApiQuery({ name: "size", required: false, type: Number, example: 20, description: "Page size" })
-  @ApiResponse({ status: 200, description: "Paginated table explorer reviews." })
   async getReviewData(
     @Query("page") page: string = "0",
     @Query("size") size: string = "20"
@@ -103,10 +87,6 @@ export class ReviewController {
   }
 
   @Get("/get/table-explorer/data/review/:id")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get review data by ID for Table Explorer." })
-  @ApiParam({ name: "id", type: Number, description: "Review unique identifier", example: 1 })
-  @ApiResponse({ status: 200, description: "Table explorer review details." })
   async getReviewById(@Param("id") id: string) {
     const review = await this.reviewService.findById(BigInt(id));
     return keyedResponse("review", review);

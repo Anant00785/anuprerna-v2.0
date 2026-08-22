@@ -138,6 +138,9 @@ export class AuthService {
       return { token, authority };
     } catch (err: any) {
       if (err.response) {
+        if (err.response.status === 401 || err.response.status === 403) {
+          throw new Error('Invalid email or password. Please verify your admin credentials and try again.');
+        }
         const serverMessage = err.response.data?.message || err.response.data?.error || (typeof err.response.data === 'string' ? err.response.data : null);
         throw new Error(serverMessage || `Authentication failed with status ${err.response.status}`);
       }

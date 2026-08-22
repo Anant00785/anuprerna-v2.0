@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
-const BASE_URL = env.NEXT_PUBLIC_SPRINGBOOT_API_URL.replace(/\/$/, "");
+const NEST_URL = (env.NEXT_PUBLIC_NEST_API_URL || "http://localhost:3000").replace(/\/$/, "");
+const SPRING_URL = (env.NEXT_PUBLIC_SPRINGBOOT_API_URL || "https://loom-v2.anuprerna.com").replace(/\/$/, "");
+
 const DEFAULT_HEADERS = {
   Accept: "application/json",
   Origin: "https://anuprerna.com",
@@ -9,17 +11,33 @@ const DEFAULT_HEADERS = {
 
 export async function GET() {
   try {
-    const res = await fetch(`${BASE_URL}/get/blog-content-list/customer`, {
-      headers: DEFAULT_HEADERS,
-      next: { revalidate: 300 },
-    });
+    let blogs: any[] = [];
 
-    if (!res.ok) {
-      return NextResponse.json({ success: false, blogs: [] }, { status: res.status });
+    // 1. Try NestJS endpoint
+    try {
+      const res = await fetch(`${NEST_URL}/get/story-content-list`, {
+        headers: DEFAULT_HEADERS,
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        blogs = json.storyContents || json.storyContent || json.blogContentList || [];
+      }
+    } catch (_) {}
+
+    // 2. Fallback to SpringBoot or live endpoint if empty
+    if (blogs.length === 0) {
+      try {
+        const res = await fetch("http://localhost:3000/get/story-content-list", {
+          headers: DEFAULT_HEADERS,
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          blogs = json.storyContents || json.storyContent || [];
+        }
+      } catch (_) {}
     }
-
-    const json = await res.json();
-    const blogs = json.blogContentList || json.payload || [];
 
     return NextResponse.json({
       success: true,

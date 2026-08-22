@@ -108,7 +108,6 @@ export class SpecialStatusController {
 
   /** SpecialStatusDaoController#retrieveSpecialStatusData(int page, int size) */
   @Get("/get/table-explorer/data/special-status")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of special statuses." })
   @ApiResponse({ status: 200, description: "Page of special status data." })
   async getSpecialStatusData(@Query() query: unknown) {
@@ -119,7 +118,6 @@ export class SpecialStatusController {
 
   /** SpecialStatusDaoController#retrieveSpecialStatusDataById(Long id) */
   @Get("/get/table-explorer/data/special-status/:id")
-  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single special status." })
   @ApiResponse({ status: 200, description: "Special status data or null." })
   async getSpecialStatusDataById(@Param("id") id: string) {

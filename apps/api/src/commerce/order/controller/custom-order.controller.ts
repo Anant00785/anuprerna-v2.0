@@ -37,10 +37,6 @@ export class CustomOrderController {
   }
 
   @Get("/get/customer/custom-order/:orderId")
-  @RequireGate(GateCode.CODE_CU)
-  @ApiOperation({ summary: "Get a specific custom order for the authenticated customer" })
-  @ApiParam({ name: "orderId", description: "Custom Order ID (e.g. 2440968)", example: 2440968, type: Number })
-  @ApiResponse({ status: 200, description: "Custom order details" })
   async getCustomerCustomOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Param("orderId") orderId: string) {
     try {
       const order = await this.orderService.getCustomOrderById(BigInt(orderId));
@@ -51,9 +47,6 @@ export class CustomOrderController {
   }
 
   @Get("/get/customer/custom-order-list")
-  @RequireGate(GateCode.CODE_CU)
-  @ApiOperation({ summary: "Get all custom orders for the authenticated customer" })
-  @ApiResponse({ status: 200, description: "List of custom orders" })
   async getCustomerCustomOrderList(@CurrentTenant() tenant: AuthenticatedTenant) {
     try {
       const customerId = tenant?.id || tenant?.tenantId || tenant?.sub || 1;
@@ -65,10 +58,6 @@ export class CustomOrderController {
   }
 
   @Get("/get/super-user/custom-order/:orderId")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get a specific custom order (super user)" })
-  @ApiParam({ name: "orderId", description: "Custom Order ID (e.g. 2440968)", example: 2440968, type: Number })
-  @ApiResponse({ status: 200, description: "Custom order details" })
   async getSuperUserCustomOrder(@Param("orderId") orderId: string) {
     try {
       const order = await this.orderService.getCustomOrderById(BigInt(orderId));
@@ -79,9 +68,6 @@ export class CustomOrderController {
   }
 
   @Get("/get/super-user/custom-order-list")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Get all custom orders (super user)" })
-  @ApiResponse({ status: 200, description: "Full list of all custom orders" })
   async getSuperUserCustomOrderList() {
     try {
       const list = await this.orderService.getAllCustomOrders();

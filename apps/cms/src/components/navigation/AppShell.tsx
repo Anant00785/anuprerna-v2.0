@@ -12,54 +12,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const isLoginPage = pathname === '/login';
+  const isLoginPage = pathname === '/login' || pathname === '/';
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Prevent SSR Hydration mismatch
+  // Standalone Login Page - render immediately without blocking
+  if (isLoginPage) {
+    return <div className="min-h-screen w-full bg-white">{children}</div>;
+  }
+
+  // Prevent SSR Hydration mismatch on protected routes
   if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen w-screen bg-slate-50 flex flex-col justify-center items-center gap-3 text-slate-700">
-        <div className="w-8 h-8 border-3 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen w-full bg-slate-50 flex flex-col justify-center items-center gap-3 text-slate-700">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
         <p className="text-xs text-slate-500 font-light tracking-wide uppercase">Loading Weave Console...</p>
       </div>
     );
   }
 
   // Unauthenticated user trying to access protected routes
-  if (!isAuthenticated && !isLoginPage) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen w-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen w-full bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-3 border-slate-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <div className="w-8 h-8 border-2 border-slate-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-sm text-slate-500 font-light">Redirecting to login portal...</p>
         </div>
       </div>
     );
   }
 
-  // Authenticated user trying to access login page -> redirect to dashboard
-  if (isAuthenticated && isLoginPage) {
-    return (
-      <div className="min-h-screen w-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-slate-600 font-light">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Standalone Login Page
-  if (isLoginPage) {
-    return <div className="min-h-screen w-screen bg-white">{children}</div>;
-  }
-
   // Protected Dashboard Layout
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#f1f5f9]">
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-[#f1f5f9]">
       <ProductionWarningBanner />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
