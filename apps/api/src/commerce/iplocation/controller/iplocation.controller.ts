@@ -25,7 +25,6 @@ export class IPLocationController {
         const data = await this.service.getCurrencyCountryFromIPAddress(ip);
         return keyedResponse('location', data);
     }
-    if (Array.isArray(ip)) ip = ip[0];
 
     @Get(':ip')
     async getIPLocation(@Param('ip') ip: string) {
