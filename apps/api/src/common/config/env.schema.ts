@@ -42,6 +42,7 @@ export class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
+  @Transform(({ value, obj }) => value || obj.JWT_SECRET)
   AUTH_JWT_SECRET!: string;
 
   // ---------------------------------------------------------------------
