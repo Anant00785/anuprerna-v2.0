@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { NVerseService } from "./nverse.service.js";
 
-@ApiTags("nverse")
+@ApiTags("Authentication")
 @Controller()
 export class NVerseController {
   constructor(private readonly service: NVerseService) {}

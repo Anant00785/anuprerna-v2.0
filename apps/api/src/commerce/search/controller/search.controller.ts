@@ -43,20 +43,32 @@ export class SearchController {
     return simpleResponse(true, "Reindexing successful");
   }
 
-  // --- AI & Vector Endpoints ---
-
   @Get("/search/ai/blog/:keyword")
   @ApiOperation({ summary: "AI Vector search for blogs" })
   @ApiParam({ name: "keyword", example: "handloom", description: "Blog search keyword" })
   async aiBlogSearch(@Param("keyword") keyword: string) {
-    return keyedResponse("entityList", []);
+    const error = validateSearchTerm(keyword);
+    if (error) return simpleResponse(false, error);
+    try {
+      const results = await this.searchService.searchBlogs(keyword);
+      return keyedResponse("entityList", results);
+    } catch {
+      return keyedResponse("entityList", []);
+    }
   }
 
   @Get("/search/ai/story/:keyword")
   @ApiOperation({ summary: "AI Vector search for stories" })
   @ApiParam({ name: "keyword", example: "artisan", description: "Story search keyword" })
   async aiStorySearch(@Param("keyword") keyword: string) {
-    return keyedResponse("entityList", []);
+    const error = validateSearchTerm(keyword);
+    if (error) return simpleResponse(false, error);
+    try {
+      const results = await this.searchService.searchStories(keyword);
+      return keyedResponse("entityList", results);
+    } catch {
+      return keyedResponse("entityList", []);
+    }
   }
 
   @Get("/search/ai/:keyword")

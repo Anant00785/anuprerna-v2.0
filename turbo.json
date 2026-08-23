@@ -1,7 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**"] },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"],
+      "passThroughEnv": [
+        "NEXT_PUBLIC_*",
+        "DATABASE_URL",
+        "AUTH_JWT_SECRET",
+        "JWT_SECRET",
+        "NODE_ENV",
+        "PORT",
+        "SWAGGER",
+        "PASSWORD_ENCODER_SALT",
+        "AWS_*",
+        "LOOM_*"
+      ]
+    },
     "dev": { "cache": false, "persistent": true },
     "lint": {},
     "typecheck": { "dependsOn": ["^build"] },

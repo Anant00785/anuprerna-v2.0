@@ -13,31 +13,34 @@ export class CreateFinishedProductDto {
   @ApiPropertyOptional({ example: "SILK-SCARF-01", description: "SKU" })
   sku?: string;
 
-  @ApiPropertyOptional({ example: 11026725, description: "SubCategory ID" })
+  @ApiPropertyOptional({ example: 3527, description: "SubCategory ID (e.g. 3527, 3531)" })
   subCategoryId?: number;
+
+  @ApiPropertyOptional({ example: 2576, description: "SKU Group ID (e.g. 2576)" })
+  skuGroupId?: number;
 }
 
 export class UpdateFinishedProductDto {
-  @ApiProperty({ example: 156298620, description: "Finished Product ID" })
+  @ApiProperty({ example: 2728, description: "Finished Product ID (e.g. 2728, 3071, 3644)" })
   id!: number;
 
-  @ApiPropertyOptional({ example: "Handwoven Silk Scarf", description: "Product Name" })
+  @ApiPropertyOptional({ example: "A-Line Panel Dress | Solid White", description: "Product Name" })
   name?: string;
 
-  @ApiPropertyOptional({ example: 1300, description: "Price" })
+  @ApiPropertyOptional({ example: 1683, description: "Price" })
   price?: number;
 }
 
 export class ProductDisableRequestDto {
-  @ApiProperty({ example: 156298620, description: "Product ID to enable/disable" })
+  @ApiProperty({ example: 2728, description: "Product ID to enable/disable (e.g. 2728)" })
   productId!: number;
 
-  @ApiProperty({ example: true, description: "Disabled status" })
+  @ApiProperty({ example: false, description: "Disabled status" })
   disabled!: boolean;
 }
 
 export class ProductZohoTriggerDto {
-  @ApiProperty({ example: 156298620, description: "Product ID to re-trigger Zoho workflow" })
+  @ApiProperty({ example: 2728, description: "Product ID to re-trigger Zoho workflow" })
   productId!: number;
 }
 

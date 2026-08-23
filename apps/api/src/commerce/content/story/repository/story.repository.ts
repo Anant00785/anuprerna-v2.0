@@ -112,6 +112,10 @@ export class StoryRepository {
   }
 
   // Story Content Section
+  async getAllStoryContentSections() {
+    return this.db.select().from(schema.storyContentSection).orderBy(desc(schema.storyContentSection.id));
+  }
+
   async getStoryContentSections(storyContentId: bigint) {
     return this.db.select().from(schema.storyContentSection).where(eq(schema.storyContentSection.storyContentId, storyContentId));
   }
@@ -198,6 +202,10 @@ export class StoryRepository {
 
   async getProductsRelatedToStory(storyContentId: bigint) {
     return this.db.select().from(schema.storyProductMapping).where(eq(schema.storyProductMapping.storyContentId, storyContentId));
+  }
+
+  async getAllStoryProductMappings() {
+    return this.db.select().from(schema.storyProductMapping).orderBy(desc(schema.storyProductMapping.id));
   }
 
   async addStoryProductMapping(data: StoryProductMappingInput) {

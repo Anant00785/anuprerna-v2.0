@@ -1,22 +1,19 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { RolesGuard } from "../../../common/auth/roles.guard.js";
+import { Controller, Get, Query } from "@nestjs/common";
+import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { FilterService } from "../service/filter.service.js";
 import { parseFabricProductFilterParameters } from "../dto/filter.dto.js";
 import { keyedResponse } from "../../../common/response/rain-response.js";
 
 @Controller()
 @ApiTags("Filter")
-@ApiBearerAuth()
-@UseGuards(RolesGuard)
 export class FilterController {
     constructor(private readonly filterService: FilterService) {}
 
-    @Get(["/get/filter/fabric", "/get/fabric-preview-list"])
+    @Get("/get/filter/fabric")
     @ApiOperation({ summary: "Get fabric product filter preview grid." })
-    @ApiQuery({ name: "category", description: "Filter by category name (e.g. FABRIC)", example: "FABRIC", required: false })
-    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name (e.g. NATURAL AND ORGANIC)", example: "NATURAL AND ORGANIC", required: false })
+    @ApiQuery({ name: "category", description: "Filter by category name (e.g. FABRIC, Fabrics)", example: "Fabrics", required: false })
+    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name (e.g. ORGANIC AND NATURAL)", example: "ORGANIC AND NATURAL", required: false })
     async getFabricFilterPreviewList(
         @Query("category") category?: string,
         @Query("segmentCategory") segmentCategory?: string
@@ -30,12 +27,23 @@ export class FilterController {
         }
     }
 
+    @Get("/get/fabric-preview-list")
+    @ApiOperation({ summary: "Get fabric preview list (alias)." })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "Fabrics", required: false })
+    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name", example: "ORGANIC AND NATURAL", required: false })
+    async getFabricPreviewListAlias(
+        @Query("category") category?: string,
+        @Query("segmentCategory") segmentCategory?: string
+    ) {
+        return this.getFabricFilterPreviewList(category, segmentCategory);
+    }
+
     @Get("/get/v2/filter/fabric")
     @ApiOperation({ summary: "Get paginated fabric product filter preview grid (v2)." })
-    @ApiQuery({ name: "category", description: "Filter by category name", example: "FABRIC", required: false })
-    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name", example: "NATURAL AND ORGANIC", required: false })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "Fabrics", required: false })
+    @ApiQuery({ name: "segmentCategory", description: "Filter by segment name", example: "ORGANIC AND NATURAL", required: false })
     @ApiQuery({ name: "pageSize", description: "Number of items per page", example: "20", required: false })
-    @ApiQuery({ name: "pageNumber", description: "Page offset index", example: "0", required: false })
+    @ApiQuery({ name: "pageNumber", description: "Page offset index (0-indexed)", example: "0", required: false })
     async getFabricFilterPreviewListPaginated(
         @Query("category") category?: string,
         @Query("segmentCategory") segmentCategory?: string,
@@ -50,7 +58,7 @@ export class FilterController {
 
     @Get("/get/filter/finished")
     @ApiOperation({ summary: "Get finished product filter preview grid." })
-    @ApiQuery({ name: "category", description: "Filter by category name", example: "FINISHED", required: false })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "Apparel", required: false })
     async getFinishedFilterPreviewList(
         @Query("category") category?: string
     ) {
@@ -68,9 +76,25 @@ export class FilterController {
         return keyedResponse("products", products);
     }
 
-    @Get(["/get/filter/segment-list", "/get/filter/segment/list"])
+    @Get("/get/filter/segment-list")
     @ApiOperation({ summary: "Get filter segments list." })
-    async getFilterSegmentList() {
-        return keyedResponse("segmentList", []);
+    @ApiQuery({ name: "category", description: "Filter segments by category name (e.g. Fabrics, SwatchKit, Apparel, Accessories, Home)", required: false })
+    async getFilterSegmentList(@Query("category") category?: string) {
+        const segmentList = await this.filterService.getFilterSegmentList(category);
+        return keyedResponse("segmentList", segmentList);
+    }
+
+    @Get("/get/filter/segment/list")
+    @ApiOperation({ summary: "Get filter segments list (slash alias)." })
+    @ApiQuery({ name: "category", description: "Filter segments by category name", required: false })
+    async getFilterSegmentListSlash(@Query("category") category?: string) {
+        return this.getFilterSegmentList(category);
+    }
+
+    @Get("/get/segment-list")
+    @ApiOperation({ summary: "Get segment list (LOOM legacy route)." })
+    @ApiQuery({ name: "category", description: "Filter segments by category name", required: false })
+    async getSegmentList(@Query("category") category?: string) {
+        return this.getFilterSegmentList(category);
     }
 }

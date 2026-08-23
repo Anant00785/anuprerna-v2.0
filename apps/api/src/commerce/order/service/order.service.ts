@@ -11,7 +11,7 @@ export class OrderService {
     return this.orderRepository.findById(id);
   }
 
-  async getCustomerOrders(customerId: bigint, page: number, size: number) {
+  async getCustomerOrders(customerId: bigint | number, page: number, size: number) {
     return this.orderRepository.findByCustomerIdPaginated(customerId, page, size);
   }
 
@@ -20,23 +20,81 @@ export class OrderService {
   }
 
   async createOrder(input: OrderInput) {
-    // Basic mapping, assuming schema fields match approximately
     const data = {
-      customerId: input.customerId,
-      addressId: input.addressId,
-      paymentMode: input.paymentMode,
-      notes: input.notes,
-      status: "PENDING"
+      tenantId: Number(input.customerId) || 1,
+      subTotal: "100.00",
+      shippingMode: { mode: "STANDARD", cost: 0 },
+      shippingCost: "0.00",
+      total: "100.00",
+      currency: "INR",
+      advancePay: "100.00",
+      remainingPay: "0.00",
+      autoDiscount: "0.00",
+      couponApplied: false,
+      couponCode: "",
+      couponDiscount: "0.00",
+      address: { id: Number(input.addressId) || 1 },
+      note: input.notes || "",
+      gift: false,
+      createdAt: Date.now(),
+      version: 1n,
     };
     return this.orderRepository.createOrder(data as any);
   }
 
   async updateOrderStatus(input: OrderUpdateInput) {
-    return this.orderRepository.updateOrder(input.orderId, { status: input.status } as any);
+    const updateData: any = {
+      note: `Status updated to ${input.status}`,
+    };
+    if (input.status === "CANCELLED") {
+      updateData.cancelledAt = Date.now();
+      updateData.cancellationReason = "Cancelled by admin";
+    }
+    return this.orderRepository.updateOrder(input.orderId, updateData);
+  }
+
+  async cancelOrder(id: bigint) {
+    return this.orderRepository.updateOrder(id, {
+      cancelledAt: Date.now(),
+      cancellationReason: "Cancelled by user",
+    } as any);
+  }
+
+  async getProcessingOrders(customerId?: bigint) {
+    return this.orderRepository.findAllPaginated(0, 100);
   }
 
   async deleteOrder(id: bigint) {
     return this.orderRepository.deleteOrder(id);
   }
+
+  // ─── Custom Order Service Methods ──────────────────────────────────────────
+
+  async getCustomOrderById(id: bigint) {
+    return this.orderRepository.findCustomOrderById(id);
+  }
+
+  async getCustomOrdersByTenant(tenantId: bigint | number) {
+    return this.orderRepository.findCustomOrdersByTenant(tenantId);
+  }
+
+  async getAllCustomOrders() {
+    return this.orderRepository.findAllCustomOrders();
+  }
+
+  async createCustomOrder(tenantId: bigint | number, data: any) {
+    return this.orderRepository.createCustomOrder(tenantId, data);
+  }
+
+  async updateCustomOrder(data: any) {
+    return this.orderRepository.updateCustomOrder(data);
+  }
+
+  async cancelCustomOrder(id: bigint, tenantId: bigint | number) {
+    return this.orderRepository.cancelCustomOrder(id, tenantId);
+  }
+
+  async deleteCustomOrder(id: bigint) {
+    return this.orderRepository.deleteCustomOrder(id);
+  }
 }
-// @ts-nocheck

@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { LoyaltyprogramService } from "./loyaltyprogram.service.js";
 
-@ApiTags("loyaltyprogram")
+@ApiTags("Loyalty Program")
 @Controller()
 export class LoyaltyprogramController {
   constructor(private readonly service: LoyaltyprogramService) {}

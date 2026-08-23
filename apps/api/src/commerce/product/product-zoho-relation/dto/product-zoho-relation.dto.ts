@@ -1,29 +1,87 @@
 // @ts-nocheck
-/**
- * apps/api/src/commerce/product-zoho-relation/dto/product-zoho-relation.dto.ts
- *
- * Request DTOs mirroring ProductZohoRelationDAOController's public surface:
- *  - retrieveProductZohoRelationData(page, size)
- *  - retrieveProductZohoRelationById(id) / retrieveProductZohoRelationDataById(id)
- *  - create/update (base BehemothCRUDDAOController CRUD — no override, so
- *    the full entity shape is read/written)
- *  - deleteProductZohoRelation(id)
- *  - findProductZohoRelationByProductAndSku(product, sku)
- *  - findProductZohoRelationByZohoItemIdAndSku(zohoItemId, sku)
- *  - findProductZohoRelationByZohoItemId(zohoItemId)
- *  - streamAllByFinishedProduct(includeDisabled) / streamAllByFabricProduct(includeDisabled)
- *
- * No controllers are generated for this domain in this pass (per the
- * migration brief), so these parsers exist for the service layer / a
- * future controller to call, not wired to any route here.
- *
- * No validation library (zod/class-validator) is installed in this project
- * (`@anuprerna/types` is an empty workspace stub, package.json lists
- * neither), so parsing is done by hand, matching cart.dto.ts /
- * product-size-profile.dto.ts.
- */
 import { BadRequestException } from "@nestjs/common";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { ProductZohoRelationInput } from "../types/product-zoho-relation.types.js";
+
+export class CreateProductZohoRelationDto {
+  @ApiProperty({ example: 200415, description: "Parent Product ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  productId!: number;
+
+  @ApiProperty({ example: "DAN1200458", description: "Product SKU code" })
+  @IsNotEmpty()
+  @IsString()
+  sku!: string;
+
+  @ApiPropertyOptional({ example: "460517000010726810", description: "Zoho inventory item ID" })
+  @IsOptional()
+  @IsString()
+  zohoItemId?: string;
+
+  @ApiPropertyOptional({ example: "52091220", description: "HSN classification code" })
+  @IsOptional()
+  @IsString()
+  hsnCode?: string;
+
+  @ApiPropertyOptional({ example: 350.0, description: "Purchase cost price" })
+  @IsOptional()
+  @IsNumber()
+  purchasePrice?: number;
+
+  @ApiProperty({ example: 5.0, description: "GST / Tax percentage rate" })
+  @IsNotEmpty()
+  @IsNumber()
+  tax!: number;
+
+  @ApiPropertyOptional({ example: false, description: "Disabled status flag" })
+  @IsOptional()
+  @IsBoolean()
+  disabled?: boolean;
+}
+
+export class UpdateProductZohoRelationDto {
+  @ApiProperty({ example: 200417, description: "Product Zoho relation unique ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  id!: number;
+
+  @ApiProperty({ example: 200415, description: "Parent Product ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  productId!: number;
+
+  @ApiProperty({ example: "DAN1200458", description: "Product SKU code" })
+  @IsNotEmpty()
+  @IsString()
+  sku!: string;
+
+  @ApiPropertyOptional({ example: "460517000010726810", description: "Zoho inventory item ID" })
+  @IsOptional()
+  @IsString()
+  zohoItemId?: string;
+
+  @ApiPropertyOptional({ example: "52091220", description: "HSN classification code" })
+  @IsOptional()
+  @IsString()
+  hsnCode?: string;
+
+  @ApiPropertyOptional({ example: 350.0, description: "Purchase cost price" })
+  @IsOptional()
+  @IsNumber()
+  purchasePrice?: number;
+
+  @ApiProperty({ example: 5.0, description: "GST / Tax percentage rate" })
+  @IsNotEmpty()
+  @IsNumber()
+  tax!: number;
+
+  @ApiPropertyOptional({ example: false, description: "Disabled status flag" })
+  @IsOptional()
+  @IsBoolean()
+  disabled?: boolean;
+}
 
 function requireInt(value: unknown, field: string): number {
   const n = typeof value === "string" ? Number(value) : value;

@@ -17,8 +17,12 @@ import { simpleResponse, keyedResponse } from "../../../common/response/rain-res
 import { ImageService } from "../service/image.service.js";
 import { validateImageFile } from "../validators/image.validator.js";
 
+import { IsNotEmpty, IsString } from "class-validator";
+
 export class DeleteImageDto {
   @ApiProperty({ example: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/sample.jpg", description: "S3 Image URL to delete" })
+  @IsNotEmpty()
+  @IsString()
   imgUrl!: string;
 }
 

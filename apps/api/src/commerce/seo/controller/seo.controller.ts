@@ -1,12 +1,12 @@
 // @ts-nocheck
 import { Controller, Get, Post, Param, Query, Body, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ActionCode } from "../../../common/errors/action-code.js";
 import { SeoService } from "../service/seo.service.js";
-import { parseProductImageGallerySEOPayload } from "../dto/seo.dto.js";
+import { ModifyGalleryImagesDto, parseProductImageGallerySEOPayload } from "../dto/seo.dto.js";
 import { validateProductImageGallerySEOPayload } from "../validators/seo.validator.js";
 import { sanitizeProductImageGallerySEOPayload } from "../validators/seo.sanitizer.js";
 
@@ -30,6 +30,10 @@ export class SeoController {
     }
 
     @Get("/get/filter-seo/:code/:name")
+    @ApiOperation({ summary: "Get filter SEO metadata by filter code and name." })
+    @ApiParam({ name: "code", description: "Filter code (CAT, SEG, SUB)", example: "CAT" })
+    @ApiParam({ name: "name", description: "Filter name (e.g. Fabric)", example: "Fabric" })
+    @ApiResponse({ status: 200, description: "Filter SEO metadata." })
     async getFilterSeo(
         @Param("code") code: string,
         @Param("name") name: string
@@ -40,8 +44,8 @@ export class SeoController {
 
     @Get("/get/table-explorer/data/product-image-gallery-seo")
     async getProductImageGallerySEOData(
-        @Query("page") pageStr: string,
-        @Query("size") sizeStr: string
+        @Query("page") pageStr: string = "0",
+        @Query("size") sizeStr: string = "10"
     ) {
         const page = parseInt(pageStr, 10) || 0;
         const size = parseInt(sizeStr, 10) || 10;
@@ -51,7 +55,10 @@ export class SeoController {
 
     @Post("/modify/gallery-images")
     @RequireGate(GateCode.CODE_SUCU)
-    async updateGalleryImages(@Body() rawPayload: unknown) {
+    @ApiOperation({ summary: "Create/update/delete product gallery image SEO metadata." })
+    @ApiBody({ type: ModifyGalleryImagesDto })
+    @ApiResponse({ status: 201, description: "Gallery images updated successfully." })
+    async updateGalleryImages(@Body() rawPayload: ModifyGalleryImagesDto) {
         const parsed = parseProductImageGallerySEOPayload(rawPayload);
         
         const validationError = validateProductImageGallerySEOPayload(parsed);
@@ -74,15 +81,18 @@ export class SeoController {
     }
 
     @Get("/get/product/image-sitemap")
+    @ApiOperation({ summary: "Get product image sitemap dataset." })
+    @ApiResponse({ status: 200, description: "Product image sitemap dataset." })
     async getProductImageSitemapData() {
         const result = await this.seoService.getProductImageSitemapData();
         return keyedResponse("entityList", result);
     }
 
     @Get("/get/product/enabled-image-sitemap")
+    @ApiOperation({ summary: "Get enabled active products image sitemap dataset." })
+    @ApiResponse({ status: 200, description: "Active products image sitemap dataset." })
     async getEnabledProductImageSitemapData() {
         const result = await this.seoService.getEnabledProductImageSitemapData();
         return keyedResponse("entityList", result);
     }
 }
-// @ts-nocheck

@@ -59,29 +59,55 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle("Anuprerna API")
-    .setDescription("Migrated LOOM Backend")
-    .setVersion("2.0")
-    .addBearerAuth()
-    .addTag("Health")
-    .addTag("Authentication")
-    .addTag("Cart")
-    .addTag("Product")
+    .setDescription("Migrated LOOM Backend - Complete E-commerce & Content Management System. This API provides comprehensive endpoints for authentication, commerce operations, content management, and more.")
+    .setVersion("2.0.0")
+    .setContact("Anuprerna Team", "https://anuprerna.com", "support@anuprerna.com")
+    .setLicense("Proprietary", "https://anuprerna.com")
+    .addBearerAuth(
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "JWT token for authentication. Use the /auth/login endpoint to obtain a token.",
+      },
+      "bearer",
+    )
     .build();
 
-  // Enable Swagger by default in non-production environments.
-  // In production set `SWAGGER=true` to explicitly enable it.
-  const enableSwagger = appConfig.get("NODE_ENV", { infer: true }) !== "production" || appConfig.get("SWAGGER", { infer: true }) === "true";
+  // Swagger UI is on unless SWAGGER=false.
+  const enableSwagger = appConfig.get("SWAGGER", { infer: true }) !== "false";
 
   if (enableSwagger) {
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup("docs", app, document, { jsonDocumentUrl: "docs-json" });
+    
+    // Setup multiple Swagger UI endpoints
+    SwaggerModule.setup("docs", app, document, { 
+      jsonDocumentUrl: "docs-json",
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayOperationId: true,
+        filter: true,
+        showRequestHeaders: true,
+        defaultModelsExpandDepth: 1,
+        docExpansion: "list",
+      }
+    });
+    SwaggerModule.setup("swagger", app, document, { jsonDocumentUrl: "swagger-json" });
+    SwaggerModule.setup("api-docs", app, document, { jsonDocumentUrl: "api-docs-json" });
   }
 
   await app.listen(appConfig.get("PORT", { infer: true }) ?? 3000);
 
   const url = await app.getUrl();
   console.log("🚀 Server running at:", url);
-  if (enableSwagger) console.log("📖 Swagger UI:", `${url}/docs`);
+  if (enableSwagger) {
+    console.log("\n📖 API Documentation:");
+    console.log(`   🔵 Swagger UI (Primary): ${url}/docs`);
+    console.log(`   🔵 Swagger UI (Alt 1):   ${url}/swagger`);
+    console.log(`   🔵 Swagger UI (Alt 2):   ${url}/api-docs`);
+    console.log(`   📄 OpenAPI JSON:         ${url}/docs-json`);
+    console.log(`\n💡 To generate share links, run: node scripts/export-swagger.mjs --host=localhost:3000\n`);
+  }
 }
 
 bootstrap();

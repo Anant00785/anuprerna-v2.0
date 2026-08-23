@@ -410,6 +410,7 @@ export class ProductService {
       return ActionCode.UPDATE_SUCCESS;
     } catch (err) {
       if (err instanceof OptimisticLockError) throw err;
+      console.error("ProductService.updateProduct error:", err);
       return ActionCode.UPDATE_FAILURE;
     }
   }

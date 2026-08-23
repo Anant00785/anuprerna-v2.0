@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { RestfulService } from "./restful.service.js";
 
-@ApiTags("restful")
+@ApiTags("Misc")
 @Controller()
 export class RestfulController {
   constructor(private readonly service: RestfulService) {}

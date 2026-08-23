@@ -19,10 +19,12 @@
  * lookups, so there are no dummy providers here.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
 import { SkuGroupService } from "./service/sku-group.service.js";
 import { SkuGroupRepository } from "./repository/sku-group.repository.js";
 
 @Module({
+  imports: [AuthModule],
   providers: [SkuGroupService, SkuGroupRepository],
   exports: [SkuGroupService],
 })

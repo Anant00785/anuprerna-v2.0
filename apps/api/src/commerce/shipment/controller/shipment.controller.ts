@@ -1,13 +1,14 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { ShipmentService } from "../service/shipment.service.js";
-import { parseShipmentInput } from "../dto/shipment.dto.js";
+import { CreateShipmentDto, UpdateShipmentDto, parseShipmentInput } from "../dto/shipment.dto.js";
 
 @ApiBearerAuth()
+@ApiTags("Shipment")
 @Controller()
 @UseGuards(RolesGuard)
 export class ShipmentController {
@@ -28,7 +29,10 @@ export class ShipmentController {
 
   @Post("/add/shipment")
   @RequireGate(GateCode.CODE_SU)
-  async createShipment(@Body() body: unknown) {
+  @ApiOperation({ summary: "Create a new shipment method." })
+  @ApiBody({ type: CreateShipmentDto })
+  @ApiResponse({ status: 201, description: "Shipment created successfully." })
+  async createShipment(@Body() body: CreateShipmentDto) {
     const input = parseShipmentInput(body);
     const result = await this.shipmentService.createShipment(input);
     return simpleResponse(result.success, result.message);
@@ -36,7 +40,10 @@ export class ShipmentController {
 
   @Patch("/update/shipment")
   @RequireGate(GateCode.CODE_SU)
-  async updateShipment(@Body() body: unknown) {
+  @ApiOperation({ summary: "Update an existing shipment method." })
+  @ApiBody({ type: UpdateShipmentDto })
+  @ApiResponse({ status: 200, description: "Shipment updated successfully." })
+  async updateShipment(@Body() body: UpdateShipmentDto) {
     const input = parseShipmentInput(body);
     const result = await this.shipmentService.updateShipment(input);
     return simpleResponse(result.success, result.message);
@@ -44,6 +51,9 @@ export class ShipmentController {
 
   @Delete("/delete/shipment/:shipmentId")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Delete shipment method by ID." })
+  @ApiParam({ name: "shipmentId", type: Number, description: "Shipment unique identifier", example: 21209 })
+  @ApiResponse({ status: 200, description: "Shipment deletion response." })
   async deleteShipment(@Param("shipmentId") shipmentId: string) {
     const id = BigInt(shipmentId);
     const result = await this.shipmentService.deleteShipment(id);
@@ -52,8 +62,8 @@ export class ShipmentController {
 
   @Get("/get/table-explorer/data/shipment")
   async getShipmentData(
-    @Query("page") pageStr: string,
-    @Query("size") sizeStr: string
+    @Query("page") pageStr: string = "0",
+    @Query("size") sizeStr: string = "10"
   ) {
     const page = parseInt(pageStr, 10) || 0;
     const size = parseInt(sizeStr, 10) || 10;

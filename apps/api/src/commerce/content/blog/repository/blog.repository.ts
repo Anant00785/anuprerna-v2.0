@@ -2,7 +2,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../../database/database.module.js";
 import * as schema from "../../../../database/schema/schema.js";
-import { eq, inArray, desc } from "drizzle-orm";
+import { eq, ne, and, inArray, notInArray, desc } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { BlogContentTypeInput, BlogContentCategoryInput, BlogContentInput, BlogContentSectionInput } from "../types/blog.types.js";
 
@@ -48,8 +48,11 @@ export class BlogRepository {
   }
 
   async updateBlogContentCategory(id: bigint, data: BlogContentCategoryInput) {
+    const updatePayload: any = {};
+    if (data.name) updatePayload.name = data.name;
+    if (data.blogContentTypeId && data.blogContentTypeId > 0n) updatePayload.blogContentTypeId = data.blogContentTypeId;
     const rows = await this.db.update(schema.blogContentCategory)
-      .set({ name: data.name })
+      .set(updatePayload)
       .where(eq(schema.blogContentCategory.id, id))
       .returning();
     return rows[0] ?? null;
@@ -77,6 +80,29 @@ export class BlogRepository {
 
   async getBlogsByCategory(categoryId: bigint) {
     return this.db.select().from(schema.blogContent).where(eq(schema.blogContent.blogContentCategoryId, categoryId)).orderBy(desc(schema.blogContent.timeOfCreation));
+  }
+
+  async getRecommendedBlogs(blogId: bigint, limit: number = 6) {
+    const currentBlog = await this.getBlogContentById(blogId);
+    if (!currentBlog) {
+      return this.db.select().from(schema.blogContent).where(ne(schema.blogContent.id, blogId)).limit(limit).orderBy(desc(schema.blogContent.timeOfCreation));
+    }
+    const sameCategory = await this.db.select().from(schema.blogContent)
+      .where(and(eq(schema.blogContent.blogContentCategoryId, currentBlog.blogContentCategoryId), ne(schema.blogContent.id, blogId)))
+      .limit(limit)
+      .orderBy(desc(schema.blogContent.timeOfCreation));
+    
+    if (sameCategory.length >= limit) {
+      return sameCategory;
+    }
+    const excludedIds = [blogId, ...sameCategory.map(b => b.id)];
+    const remaining = limit - sameCategory.length;
+    const additional = await this.db.select().from(schema.blogContent)
+      .where(notInArray(schema.blogContent.id, excludedIds))
+      .limit(remaining)
+      .orderBy(desc(schema.blogContent.timeOfCreation));
+    
+    return [...sameCategory, ...additional];
   }
 
   async addBlogContent(data: BlogContentInput) {
@@ -136,6 +162,10 @@ export class BlogRepository {
   }
 
   // Blog Content Section
+  async getAllBlogContentSections() {
+    return this.db.select().from(schema.blogContentSection).limit(50);
+  }
+
   async getBlogContentSections(blogContentId: bigint) {
     return this.db.select().from(schema.blogContentSection).where(eq(schema.blogContentSection.blogContentId, blogContentId));
   }
@@ -213,5 +243,3 @@ export class BlogRepository {
     await this.db.delete(schema.blogContentSection).where(eq(schema.blogContentSection.id, id));
   }
 }
-// @ts-nocheck
-// @ts-nocheck

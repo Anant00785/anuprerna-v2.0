@@ -1,10 +1,14 @@
+// @ts-nocheck
 import { Module } from "@nestjs/common";
-import { ArtisanpaymentController } from "./artisanpayment.controller.js";
-import { ArtisanpaymentService } from "./artisanpayment.service.js";
+import { AuthModule } from "../../auth/auth.module.js";
+import { ArtisanPaymentController } from "./controller/artisanpayment.controller.js";
+import { ArtisanPaymentService } from "./service/artisanpayment.service.js";
+import { ArtisanPaymentRepository } from "./repository/artisanpayment.repository.js";
 
 @Module({
-  controllers: [ArtisanpaymentController],
-  providers: [ArtisanpaymentService],
-  exports: [ArtisanpaymentService],
+  imports: [AuthModule],
+  controllers: [ArtisanPaymentController],
+  providers: [ArtisanPaymentService, ArtisanPaymentRepository],
+  exports: [ArtisanPaymentService, ArtisanPaymentRepository],
 })
 export class ArtisanpaymentModule {}

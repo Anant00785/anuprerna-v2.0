@@ -1,40 +1,13 @@
 // @ts-nocheck
-/**
- * apps/api/src/product/finished-product/finished-product.module.ts
- *
- * Wires the FinishedProduct feature together. No controller is registered
- * in this pass (none was requested, and RequestMapper.java — which supplies
- * FinishedProductController's route path constants — was not part of this
- * migration step either).
- *
- * ProductPort / ColorPort / MaterialPort / PatternPort / TagPort /
- * MainProductPreviewPort / SizeProfilePort / ZohoAdapterPort /
- * ProductZohoRelationPort / ProductSizeProfilePort are cross-module
- * dependencies — see types/finished-product.types.ts for why each is a
- * port rather than a direct import (Product's generated TS wasn't shared
- * into this conversation; the rest are modules not yet migrated).
- *
- * DatabaseModule is @Global() (see database/database.module.ts), so
- * DATABASE_CONNECTION doesn't need to be re-imported here — same as Cart.
- *
- * Every port below is bound to a safe dummy implementation rather than left
- * unbound or throwing, exactly like cart.module.ts: each dummy returns the
- * "nothing found" value its own interface contract allows. This keeps the
- * module bootable end to end; a call that legitimately needs a real
- * Product/Zoho/etc. integration degrades to the same "not found"/no-op
- * outcome the code already handles, rather than a 500.
- *
- * Replace each `useValue` below with a real provider as Product, Color,
- * Material, Pattern, Tag, MainProductPreview, SizeProfile, the Zoho
- * adapter, ProductZohoRelation, and ProductSizeProfile get migrated (or, for
- * ProductPort, as soon as the already-migrated Product module's real
- * service/repository types can be shared into this conversation).
- */
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { FinishedProductController } from "../controller/finished-product.controller.js";
 import { FinishedProductService } from "./service/finished-product.service.js";
 import { FinishedProductRepository } from "./repository/finished-product.repository.js";
+import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
+import * as schema from "../../../database/schema/schema.js";
+import { eq } from "drizzle-orm";
+import { ActionCode } from "../../../common/errors/action-code.js";
 import {
   COLOR_PORT,
   ColorPort,
@@ -57,15 +30,6 @@ import {
   ZOHO_ADAPTER_PORT,
   ZohoAdapterPort,
 } from "./types/finished-product.types.js";
-
-const productDummy: ProductPort = {
-  createProduct: async () => null,
-  updateProduct: async () => -5, // ActionCode.UPDATE_FAILURE
-  updateProductInternal: async () => -5,
-  findProductBySlug: async () => null,
-  retrieveProduct: async () => null,
-  getZohoRelations: async () => [],
-};
 
 const colorDummy: ColorPort = { retrieveEntity: async () => null };
 const materialDummy: MaterialPort = { retrieveEntity: async () => null };
@@ -95,15 +59,95 @@ const productSizeProfileDummy: ProductSizeProfilePort = {
 };
 
 @Module({
-
   imports: [AuthModule],
-
   controllers: [FinishedProductController],
-
   providers: [
     FinishedProductService,
     FinishedProductRepository,
-    { provide: PRODUCT_PORT, useValue: productDummy },
+    {
+      provide: PRODUCT_PORT,
+      useFactory: (db: Database) => ({
+        async findProductBySlug(slug: string) {
+          const rows = await db.select().from(schema.product).where(eq(schema.product.slug, slug));
+          return rows[0] ? { id: Number(rows[0].id), ...rows[0] } : null;
+        },
+        async retrieveProduct(id: number) {
+          const rows = await db.select().from(schema.product).where(eq(schema.product.id, id));
+          return rows[0] ? { id: Number(rows[0].id), ...rows[0] } : null;
+        },
+        async createProduct(product: any) {
+          const timestamp = Date.now();
+          const baseName = product.name || "Handwoven Finished Product";
+          const sku = product.sku || `FINISHED-${timestamp}`;
+          const slug = product.slug || baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${timestamp}`;
+          const validUnit = product.unit === "METER" ? "METER" : "UNIT";
+
+          const insertValues = {
+            name: baseName,
+            price: String(product.price || 1200),
+            sku,
+            slug,
+            subCategoryId: product.subCategoryId || 3527,
+            skuGroupId: product.skuGroupId || 2576,
+            unit: validUnit,
+            mainProductCheck: product.mainProductCheck ?? true,
+            productOverview: product.productOverview || "",
+            productCare: product.productCare || "",
+            materialId: product.materialId || "",
+            colorId: product.colorId || "",
+            patternId: product.patternId || "",
+            productVideo: product.productVideo || "",
+            productGroup: "finished",
+            disabled: false,
+            tagId: "",
+            metaTitle: product.metaTitle || "",
+            metaDescription: product.metaDescription || "",
+            heroImageAlt: product.heroImageAlt || "",
+            hoverImageAlt: product.hoverImageAlt || "",
+            productVideoAlt: product.productVideoAlt || "",
+            backwardCompatibleLink: product.backwardCompatibleLink || "",
+          };
+
+          try {
+            const rows = await db.insert(schema.product).values(insertValues).returning();
+            return rows[0] ? { id: Number(rows[0].id) } : null;
+          } catch (err: any) {
+            if (err?.code === "23505") {
+              const rows = await db
+                .insert(schema.product)
+                .values({
+                  ...insertValues,
+                  name: `${baseName} (${timestamp})`,
+                  sku: `${sku}-${timestamp}`,
+                  slug: `${slug}-${timestamp}`,
+                })
+                .returning();
+              return rows[0] ? { id: Number(rows[0].id) } : null;
+            }
+            throw err;
+          }
+        },
+        async updateProduct(product: any) {
+          const updateData: any = {};
+          if (product.name) updateData.name = product.name;
+          if (product.price) updateData.price = String(product.price);
+          if (product.sku) updateData.sku = product.sku;
+          if (product.subCategoryId) updateData.subCategoryId = product.subCategoryId;
+          if (product.disabled !== undefined) updateData.disabled = product.disabled;
+
+          const rows = await db.update(schema.product).set(updateData).where(eq(schema.product.id, product.id)).returning();
+          return rows.length > 0 ? ActionCode.UPDATE_SUCCESS : ActionCode.UPDATE_FAILURE;
+        },
+        async updateProductInternal(productId: number, disabled: boolean) {
+          const rows = await db.update(schema.product).set({ disabled }).where(eq(schema.product.id, productId)).returning();
+          return rows.length > 0 ? ActionCode.UPDATE_SUCCESS : ActionCode.UPDATE_FAILURE;
+        },
+        async getZohoRelations() {
+          return [];
+        },
+      }),
+      inject: [DATABASE_CONNECTION],
+    },
     { provide: COLOR_PORT, useValue: colorDummy },
     { provide: MATERIAL_PORT, useValue: materialDummy },
     { provide: PATTERN_PORT, useValue: patternDummy },
@@ -117,4 +161,3 @@ const productSizeProfileDummy: ProductSizeProfilePort = {
   exports: [FinishedProductService],
 })
 export class FinishedProductModule {}
-// @ts-nocheck

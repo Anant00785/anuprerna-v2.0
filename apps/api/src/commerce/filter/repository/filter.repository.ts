@@ -93,8 +93,24 @@ export class FilterRepository {
             left join finish_profile_items on product_fabric.product_id = finish_profile_items.product_id
             left join max_discount_product on product_fabric.product_id = max_discount_product.id
             where product.disabled=false
-            and (${category}::text is null or ${category}::text = '' or lower(category.name) = lower(${category}::text))
-            and (${segmentCategory}::text is null or ${segmentCategory}::text = '' or lower(segment.name) = lower(${segmentCategory}::text))
+            and (
+                ${category || null}::text is null
+                or ${category || null}::text = ''
+                or lower(category.name) = lower(${category || null}::text)
+                or lower(category.name) like ('%' || lower(${category || null}::text) || '%')
+                or lower(${category || null}::text) like ('%' || lower(category.name) || '%')
+            )
+            and (
+                ${segmentCategory || null}::text is null
+                or ${segmentCategory || null}::text = ''
+                or lower(segment.name) = lower(${segmentCategory || null}::text)
+                or lower(segment.name) like ('%' || lower(${segmentCategory || null}::text) || '%')
+                or lower(${segmentCategory || null}::text) like ('%' || lower(segment.name) || '%')
+                or exists (
+                    select 1 from unnest(string_to_array(lower(${segmentCategory || null}::text), ' ')) as word
+                    where length(word) > 2 and word != 'and' and lower(segment.name) like ('%' || word || '%')
+                )
+            )
             order by product_fabric.id desc
         `;
         
@@ -182,8 +198,24 @@ export class FilterRepository {
             left join finish_profile_items on product_fabric.product_id = finish_profile_items.product_id
             left join max_discount_product on product_fabric.product_id = max_discount_product.id
             where product.disabled=false
-            and (${category}::text is null or ${category}::text = '' or lower(category.name) = lower(${category}::text))
-            and (${segmentCategory}::text is null or ${segmentCategory}::text = '' or lower(segment.name) = lower(${segmentCategory}::text))
+            and (
+                ${category || null}::text is null
+                or ${category || null}::text = ''
+                or lower(category.name) = lower(${category || null}::text)
+                or lower(category.name) like ('%' || lower(${category || null}::text) || '%')
+                or lower(${category || null}::text) like ('%' || lower(category.name) || '%')
+            )
+            and (
+                ${segmentCategory || null}::text is null
+                or ${segmentCategory || null}::text = ''
+                or lower(segment.name) = lower(${segmentCategory || null}::text)
+                or lower(segment.name) like ('%' || lower(${segmentCategory || null}::text) || '%')
+                or lower(${segmentCategory || null}::text) like ('%' || lower(segment.name) || '%')
+                or exists (
+                    select 1 from unnest(string_to_array(lower(${segmentCategory || null}::text), ' ')) as word
+                    where length(word) > 2 and word != 'and' and lower(segment.name) like ('%' || word || '%')
+                )
+            )
             order by product_fabric.id desc
             LIMIT ${limit} OFFSET ${offset}
         `;
@@ -311,12 +343,43 @@ export class FilterRepository {
                 left join made_to_order_fabric_discount on made_to_order_fabric.id = made_to_order_fabric_discount.id
             where
                 product.disabled = false
-                and (${category}::text is null or ${category}::text = '' or lower(category.name) = lower(${category}::text))
+                and (
+                    ${category || null}::text is null
+                    or ${category || null}::text = ''
+                    or lower(category.name) = lower(${category || null}::text)
+                    or lower(category.name) like ('%' || lower(${category || null}::text) || '%')
+                    or lower(${category || null}::text) like ('%' || lower(category.name) || '%')
+                )
             order by product_finished.id desc
         `;
 
         const result = await this.db.execute(query);
         return (result as unknown as Record<string, unknown>[]).map(mapFinishedFilterPreviewRow);
+    }
+
+    async findSegmentPreview(categoryName?: string | null): Promise<any[]> {
+        const query = sql`
+            select
+                segment.category_id as "categoryId",
+                category.name as "categoryName",
+                segment.id as "segmentId",
+                segment.name as "name",
+                segment.icon as "icon",
+                segment.meta_title as "metaTitle",
+                segment.meta_description as "metaDescription",
+                segment.social_image as "socialImage"
+            from segment
+            left join category on segment.category_id = category.id
+            where ${categoryName || null}::text is null
+                or ${categoryName || null}::text = ''
+                or lower(category.name) = lower(${categoryName || null}::text)
+                or lower(category.name) like ('%' || lower(${categoryName || null}::text) || '%')
+                or lower(${categoryName || null}::text) like ('%' || lower(category.name) || '%')
+            order by segment.id desc
+        `;
+
+        const result = await this.db.execute(query);
+        return (result as unknown as Record<string, unknown>[]) || [];
     }
 
     async findFabricFilterPreviewFiltered(params: FabricProductFilterParameters): Promise<FabricFilterPreview[]> {
@@ -457,5 +520,3 @@ export class FilterRepository {
         return (result as unknown as Record<string, unknown>[]).map(mapFabricFilterPreviewRow);
     }
 }
-// @ts-nocheck
-// @ts-nocheck

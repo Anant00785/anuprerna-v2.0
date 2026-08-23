@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { NotificationService } from '../service/notification.service.js';
 import { parsePaginationInput } from '../dto/notification.dto.js';
@@ -8,6 +8,7 @@ import { GateCode } from '../../../auth/types/auth.types.js';
 import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
 
 @ApiBearerAuth()
+@ApiTags("Notifications")
 @Controller()
 @UseGuards(RolesGuard)
 export class NotificationController {

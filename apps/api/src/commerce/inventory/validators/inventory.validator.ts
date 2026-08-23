@@ -21,7 +21,7 @@ export function validateInventoryRestockRequest(input: InventoryRestockRequestIn
   if (!input.tenantId) return 'Tenant ID is required.';
   if (!input.productId) return 'Product ID is required.';
   if (!input.productGroup) return 'Product group is required.';
-  if (input.requestedQuantity <= 0) return 'Requested quantity must be greater than 0.';
+  if (Number(input.requestedQuantity) <= 0) return 'Requested quantity must be greater than 0.';
   return null;
 }
 
@@ -34,5 +34,10 @@ export function validateUpdateRestockRequestQuantity(input: UpdateRestockRequest
 export function validateUpdateRestockRequestStatus(input: UpdateRestockRequestStatusInput): string | null {
   if (!input.requestId) return 'Request ID is required.';
   if (!input.status) return 'Status is required.';
+  
+  const validStatuses = ['PENDING', 'PARTIALLY_FULFUILLED', 'FULFILLED', 'CONVERTED'];
+  if (!validStatuses.includes(input.status.toUpperCase())) {
+    return `Invalid status. Must be one of: ${validStatuses.join(', ')}`;
+  }
   return null;
 }

@@ -202,6 +202,11 @@ function describeErrors(errors: import("class-validator").ValidationError[]): st
 }
 
 export function validate(config: Record<string, unknown>): EnvironmentVariables {
+  // Support either AUTH_JWT_SECRET or JWT_SECRET
+  if (!config.AUTH_JWT_SECRET && config.JWT_SECRET) {
+    config.AUTH_JWT_SECRET = config.JWT_SECRET;
+  }
+
   const validatedConfig = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: false,
   });

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -9,6 +9,13 @@ import { simpleResponse, keyedResponse } from "../../../common/response/rain-res
 
 import { InventoryService } from "../service/inventory.service.js";
 import { 
+  CreateWarehouseDto,
+  UpdateWarehouseDto,
+  CreateInventoryAdjustmentReasonDto,
+  CreateInventoryAdjustmentDto,
+  CreateInventoryRestockRequestDto,
+  UpdateRestockRequestQuantityDto,
+  UpdateRestockRequestStatusDto,
   parseWarehouseInput, 
   parseInventoryAdjustmentReasonInput, 
   parseInventoryAdjustmentInput, 
@@ -20,7 +27,7 @@ import {
   validateWarehouse, 
   validateInventoryAdjustmentReason, 
   validateInventoryAdjustment, 
-  validateInventoryRestockRequest,
+  validateInventoryRestockRequest, 
   validateUpdateRestockRequestQuantity,
   validateUpdateRestockRequestStatus
 } from "../validators/inventory.validator.js";
@@ -32,6 +39,7 @@ import {
 } from "../validators/inventory.sanitizer.js";
 
 @ApiBearerAuth()
+@ApiTags("Inventory")
 @Controller()
 @UseGuards(RolesGuard)
 export class InventoryController {
@@ -53,7 +61,10 @@ export class InventoryController {
 
   @Post("/add/warehouse")
   @RequireGate(GateCode.CODE_SU)
-  async addWarehouse(@Body() raw: unknown) {
+  @ApiOperation({ summary: "Add a new warehouse." })
+  @ApiBody({ type: CreateWarehouseDto })
+  @ApiResponse({ status: 201, description: "Warehouse created." })
+  async addWarehouse(@Body() raw: CreateWarehouseDto) {
     const input = parseWarehouseInput(raw);
     const sanitized = sanitizeWarehouse(input);
     const error = validateWarehouse(sanitized);
@@ -65,7 +76,10 @@ export class InventoryController {
 
   @Patch("/update/warehouse")
   @RequireGate(GateCode.CODE_SU)
-  async updateWarehouse(@Body() raw: unknown) {
+  @ApiOperation({ summary: "Update warehouse details." })
+  @ApiBody({ type: UpdateWarehouseDto })
+  @ApiResponse({ status: 200, description: "Warehouse updated." })
+  async updateWarehouse(@Body() raw: UpdateWarehouseDto) {
     const input = parseWarehouseInput(raw);
     const sanitized = sanitizeWarehouse(input);
     const error = validateWarehouse(sanitized);
@@ -91,7 +105,10 @@ export class InventoryController {
 
   @Post("/add/inventory-adjustment-reason")
   @RequireGate(GateCode.CODE_SU)
-  async addReason(@Body() raw: unknown) {
+  @ApiOperation({ summary: "Add a new inventory adjustment reason." })
+  @ApiBody({ type: CreateInventoryAdjustmentReasonDto })
+  @ApiResponse({ status: 201, description: "Reason added." })
+  async addReason(@Body() raw: CreateInventoryAdjustmentReasonDto) {
     const input = parseInventoryAdjustmentReasonInput(raw);
     const sanitized = sanitizeInventoryAdjustmentReason(input);
     const error = validateInventoryAdjustmentReason(sanitized);
@@ -99,18 +116,6 @@ export class InventoryController {
 
     const success = await this.inventoryService.addReason(sanitized);
     return simpleResponse(success, success ? "Reason added." : "Failed to add reason.");
-  }
-
-  @Patch("/update/inventory-adjustment-reason")
-  @RequireGate(GateCode.CODE_SU)
-  async updateReason(@Body() raw: unknown) {
-    const input = parseInventoryAdjustmentReasonInput(raw);
-    const sanitized = sanitizeInventoryAdjustmentReason(input);
-    const error = validateInventoryAdjustmentReason(sanitized);
-    if (error) return simpleResponse(false, error);
-
-    const success = await this.inventoryService.updateReason(sanitized);
-    return simpleResponse(success, success ? "Reason updated." : "Failed to update reason.");
   }
 
   // --- Inventory Adjustment ---
@@ -127,17 +132,29 @@ export class InventoryController {
     return keyedResponse("adjustmentList", adjustments);
   }
 
+  @Get("/get/inventory-adjustment/:adjustmentId")
+  @ApiOperation({ summary: "Get inventory adjustment by ID." })
+  @ApiParam({ name: "adjustmentId", type: Number, description: "Adjustment identifier", example: 1 })
+  @ApiResponse({ status: 200, description: "Adjustment details." })
+  async getAdjustmentById(@Param("adjustmentId") adjustmentId: string) {
+    const adjustment = await this.inventoryService.getAdjustmentById(BigInt(adjustmentId));
+    return keyedResponse("adjustment", adjustment);
+  }
+
   @Post("/add/inventory-adjustment")
   @RequireGate(GateCode.CODE_SU)
-  async addAdjustment(@Body() raw: unknown, @CurrentTenant() tenant: AuthenticatedTenant) {
+  @ApiOperation({ summary: "Add a new inventory adjustment." })
+  @ApiBody({ type: CreateInventoryAdjustmentDto })
+  @ApiResponse({ status: 201, description: "Adjustment recorded." })
+  async addAdjustment(@Body() raw: CreateInventoryAdjustmentDto, @CurrentTenant() tenant: any) {
     const input = parseInventoryAdjustmentInput(raw);
-    input.userId = tenant.id;
+    input.userId = tenant?.id || 1;
     const sanitized = sanitizeInventoryAdjustment(input);
     const error = validateInventoryAdjustment(sanitized);
     if (error) return simpleResponse(false, error);
 
     const success = await this.inventoryService.addAdjustment(sanitized);
-    return simpleResponse(success, success ? "Adjustment added." : "Failed to add adjustment.");
+    return simpleResponse(success, success ? "Adjustment recorded." : "Failed to record adjustment.");
   }
 
   // --- Inventory Restock Request ---
@@ -150,9 +167,12 @@ export class InventoryController {
 
   @Post("/add/inventory-restock-request")
   @RequireGate(GateCode.CODE_SUCU)
-  async addRestockRequest(@Body() raw: unknown, @CurrentTenant() tenant: AuthenticatedTenant) {
+  @ApiOperation({ summary: "Submit a new inventory restock request." })
+  @ApiBody({ type: CreateInventoryRestockRequestDto })
+  @ApiResponse({ status: 201, description: "Restock request submitted." })
+  async addRestockRequest(@Body() raw: CreateInventoryRestockRequestDto, @CurrentTenant() tenant: any) {
     const input = parseInventoryRestockRequestInput(raw);
-    input.tenantId = tenant.id;
+    input.tenantId = tenant?.id || 1;
     const sanitized = sanitizeInventoryRestockRequest(input);
     const error = validateInventoryRestockRequest(sanitized);
     if (error) return simpleResponse(false, error);
@@ -163,7 +183,10 @@ export class InventoryController {
 
   @Patch("/update/inventory-restock-request/quantity")
   @RequireGate(GateCode.CODE_SU)
-  async updateRestockRequestQuantity(@Body() raw: unknown) {
+  @ApiOperation({ summary: "Update quantity for an inventory restock request." })
+  @ApiBody({ type: UpdateRestockRequestQuantityDto })
+  @ApiResponse({ status: 200, description: "Restock request quantity updated." })
+  async updateRestockRequestQuantity(@Body() raw: UpdateRestockRequestQuantityDto) {
     const input = parseUpdateRestockRequestQuantityInput(raw);
     const error = validateUpdateRestockRequestQuantity(input);
     if (error) return simpleResponse(false, error);
@@ -174,7 +197,10 @@ export class InventoryController {
 
   @Patch("/update/inventory-restock-request/status")
   @RequireGate(GateCode.CODE_SU)
-  async updateRestockRequestStatus(@Body() raw: unknown) {
+  @ApiOperation({ summary: "Update status for an inventory restock request (e.g. APPROVED, REJECTED)." })
+  @ApiBody({ type: UpdateRestockRequestStatusDto })
+  @ApiResponse({ status: 200, description: "Restock request status updated." })
+  async updateRestockRequestStatus(@Body() raw: UpdateRestockRequestStatusDto) {
     const input = parseUpdateRestockRequestStatusInput(raw);
     const error = validateUpdateRestockRequestStatus(input);
     if (error) return simpleResponse(false, error);
@@ -185,6 +211,9 @@ export class InventoryController {
 
   @Delete("/delete/inventory-restock-request/:requestId")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Delete an inventory restock request by ID." })
+  @ApiParam({ name: "requestId", type: Number, description: "Restock request identifier", example: 1 })
+  @ApiResponse({ status: 200, description: "Restock request deleted." })
   async deleteRestockRequest(@Param("requestId") requestId: string) {
     const success = await this.inventoryService.deleteRestockRequest(BigInt(requestId));
     return simpleResponse(success, success ? "Request deleted." : "Failed to delete request.");

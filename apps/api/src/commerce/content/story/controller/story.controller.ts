@@ -221,24 +221,31 @@ export class StoryController {
 
   // Table Explorer Data Endpoints
   @Get("/get/table-explorer/data/story-content")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryContent() {
     const list = await this.storyService.getStoryContentList();
     return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/story-content-section")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryContentSection() {
-    return keyedResponse("records", []);
+    const list = await this.storyService.getAllStoryContentSections();
+    return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/story-content-category")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerStoryContentCategory() {
     const list = await this.storyService.getStoryContentCategories();
     return keyedResponse("records", list);
   }
 
   @Get("/get/table-explorer/data/story-product-mapping")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Paginated table-explorer projection of story product mappings." })
   async getTableExplorerStoryProductMapping() {
-    return keyedResponse("records", []);
+    const list = await this.storyService.getAllStoryProductMappings();
+    return keyedResponse("records", list);
   }
 }

@@ -22,5 +22,8 @@ export class FilterService {
     async getFilteredFabricFilterPreviewList(params: FabricProductFilterParameters): Promise<FabricFilterPreview[]> {
         return this.filterRepository.findFabricFilterPreviewFiltered(params);
     }
+
+    async getFilterSegmentList(category?: string): Promise<any[]> {
+        return this.filterRepository.findSegmentPreview(category || null);
+    }
 }
-// @ts-nocheck

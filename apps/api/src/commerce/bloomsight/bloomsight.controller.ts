@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { BloomsightService } from "./bloomsight.service.js";
 
-@ApiTags("bloomsight")
+@ApiTags("Analytics & Ads")
 @Controller()
 export class BloomsightController {
   constructor(private readonly service: BloomsightService) {}

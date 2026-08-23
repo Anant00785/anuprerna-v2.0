@@ -7,7 +7,7 @@ export class CatalogService {
 
   async findAll(limit: number, offset: number): Promise<CatalogListResult> {
     try {
-      return await this.catalogRepository.findAll(limit, offset);
+      return await this.catalogRepository.findAllWithCount(limit, offset);
     } catch (error) {
       throw new InternalServerErrorException("Failed to fetch catalogs from the database.");
     }
@@ -21,4 +21,3 @@ export class CatalogService {
     return row;
   }
 }
-

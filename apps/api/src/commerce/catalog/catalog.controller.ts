@@ -92,16 +92,17 @@ export class CatalogController {
   }
 }
 
-function toCatalogResponse(row: typeof catalog.$inferSelect): CatalogResponseDto {
+function toCatalogResponse(row: any): CatalogResponseDto {
   return {
-    id: row.id.toString(),
-    version: row.version.toString(),
+    id: String(row.id),
+    version: String(row.version),
     name: row.name,
     description: row.description ?? "",
-    artisanId: row.artisanId,
-    defaultCatalog: row.defaultCatalog,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    artisanId: row.artisanId ? Number(row.artisanId) : 0,
+    defaultCatalog: Boolean(row.defaultCatalog),
+    createdAt: Number(row.createdAt || 0),
+    updatedAt: Number(row.updatedAt || 0),
   };
 }
+
 

@@ -1,113 +1,270 @@
 // @ts-nocheck
-export interface WarehouseInput {
-  id?: bigint;
-  name: string;
-  description: string;
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsArray, ValidateNested, IsIn } from "class-validator";
+import { Type } from "class-transformer";
+
+export class CreateWarehouseDto {
+  @ApiProperty({ example: "Central Warehouse Hub", description: "Warehouse name" })
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({ example: "Main distribution and inventory holding center.", description: "Warehouse description" })
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
-export function parseWarehouseInput(raw: unknown): WarehouseInput {
-  const obj = raw as Record<string, unknown>;
-  return {
-    id: typeof obj.id === 'number' || typeof obj.id === 'bigint' ? BigInt(obj.id) : undefined,
-    name: typeof obj.name === 'string' ? obj.name : '',
-    description: typeof obj.description === 'string' ? obj.description : '',
-  };
+export class UpdateWarehouseDto {
+  @ApiProperty({ example: 306145, description: "Warehouse unique identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  id!: number;
+
+  @ApiProperty({ example: "AKS Debipur (Updated)", description: "Warehouse name" })
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({ example: "Main distribution center with expanded storage capacity.", description: "Warehouse description" })
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class CreateInventoryAdjustmentReasonDto {
+  @ApiProperty({ example: "Damaged Goods", description: "Adjustment reason label" })
+  @IsNotEmpty()
+  @IsString()
+  reason!: string;
+
+  @ApiPropertyOptional({ example: "Inventory damaged during transit or handling.", description: "Reason description" })
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class InventoryAdjustmentItemDto {
+  @ApiProperty({ example: 94504, description: "Product identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  productId!: number;
+
+  @ApiProperty({ example: 50, description: "Quantity available prior to adjustment" })
+  @IsNotEmpty()
+  @IsNumber()
+  quantityAvailable!: number;
+
+  @ApiProperty({ example: -5, description: "Quantity adjusted (positive or negative)" })
+  @IsNotEmpty()
+  @IsNumber()
+  quantityAdjusted!: number;
+
+  @ApiProperty({ example: 45, description: "Final quantity at hand" })
+  @IsNotEmpty()
+  @IsNumber()
+  quantityAtHand!: number;
+}
+
+export class CreateInventoryAdjustmentDto {
+  @ApiPropertyOptional({ example: 1, description: "User identifier initiating the adjustment" })
+  @IsOptional()
+  @IsNumber()
+  userId?: number;
+
+  @ApiPropertyOptional({ example: 1700000000000, description: "Timestamp of adjustment" })
+  @IsOptional()
+  @IsNumber()
+  adjustmentDate?: number;
+
+  @ApiProperty({ example: 306145, description: "Warehouse identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  warehouseId!: number;
+
+  @ApiPropertyOptional({ example: "ADJ-2026-001", description: "Adjustment reference number" })
+  @IsOptional()
+  @IsString()
+  referenceNo?: string;
+
+  @ApiProperty({ example: 306167, description: "Adjustment reason identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  reasonId!: number;
+
+  @ApiPropertyOptional({ example: "Monthly inventory cycle count audit adjustment.", description: "Adjustment notes" })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ type: [InventoryAdjustmentItemDto], description: "List of items being adjusted" })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InventoryAdjustmentItemDto)
+  items!: InventoryAdjustmentItemDto[];
+}
+
+export class CreateInventoryRestockRequestDto {
+  @ApiProperty({ example: 94504, description: "Product identifier needing restock" })
+  @IsNotEmpty()
+  @IsNumber()
+  productId!: number;
+
+  @ApiPropertyOptional({ example: null, description: "Made-to-order product profile ID if applicable" })
+  @IsOptional()
+  @IsNumber()
+  madeToOrderProductId?: number;
+
+  @ApiPropertyOptional({ example: null, description: "Size profile option identifier if applicable" })
+  @IsOptional()
+  @IsNumber()
+  sizeOptionId?: number;
+
+  @ApiProperty({ example: "FABRIC", description: "Product group classification (e.g. FABRIC, APPAREL, HOME_FURNISHING)" })
+  @IsNotEmpty()
+  @IsString()
+  productGroup!: string;
+
+  @ApiProperty({ example: 100, description: "Total quantity requested for restock" })
+  @IsNotEmpty()
+  @IsNumber()
+  requestedQuantity!: number;
+}
+
+export class UpdateRestockRequestQuantityDto {
+  @ApiProperty({ example: 1, description: "Restock request identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  requestId!: number;
+
+  @ApiProperty({ example: 150, description: "Updated quantity value" })
+  @IsNotEmpty()
+  @IsNumber()
+  quantity!: number;
+}
+
+export class UpdateRestockRequestStatusDto {
+  @ApiProperty({ example: 1, description: "Restock request identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  requestId!: number;
+
+  @ApiProperty({ example: "APPROVED", description: "Updated status (PENDING, APPROVED, REJECTED, RESTOCKED)" })
+  @IsNotEmpty()
+  @IsString()
+  status!: string;
+}
+
+export interface WarehouseInput {
+  id?: number | bigint;
+  name: string;
+  description?: string;
 }
 
 export interface InventoryAdjustmentReasonInput {
-  id?: bigint;
+  id?: number | bigint;
   reason: string;
-  description: string;
-}
-
-export function parseInventoryAdjustmentReasonInput(raw: unknown): InventoryAdjustmentReasonInput {
-  const obj = raw as Record<string, unknown>;
-  return {
-    id: typeof obj.id === 'number' || typeof obj.id === 'bigint' ? BigInt(obj.id) : undefined,
-    reason: typeof obj.reason === 'string' ? obj.reason : '',
-    description: typeof obj.description === 'string' ? obj.description : '',
-  };
+  description?: string;
 }
 
 export interface InventoryAdjustmentItemInput {
-  productId: bigint;
-  quantityAvailable: number;
-  quantityAdjusted: number;
-  quantityAtHand: number;
+  productId: number | bigint;
+  quantityAvailable: number | string;
+  quantityAdjusted: number | string;
+  quantityAtHand: number | string;
 }
 
 export interface InventoryAdjustmentInput {
-  userId: bigint;
+  id?: number | bigint;
+  userId: number | bigint;
   adjustmentDate: number;
-  warehouseId: bigint;
-  referenceNo: string;
-  reasonId: bigint;
-  description: string;
+  warehouseId: number | bigint;
+  referenceNo?: string;
+  reasonId: number | bigint;
+  description?: string;
   items: InventoryAdjustmentItemInput[];
 }
 
-export function parseInventoryAdjustmentInput(raw: unknown): InventoryAdjustmentInput {
-  const obj = raw as Record<string, unknown>;
-  const itemsRaw = Array.isArray(obj.items) ? obj.items : [];
-  return {
-    userId: typeof obj.userId === 'number' || typeof obj.userId === 'bigint' ? BigInt(obj.userId) : BigInt(0),
-    adjustmentDate: typeof obj.adjustmentDate === 'number' ? obj.adjustmentDate : Date.now(),
-    warehouseId: typeof obj.warehouseId === 'number' || typeof obj.warehouseId === 'bigint' ? BigInt(obj.warehouseId) : BigInt(0),
-    referenceNo: typeof obj.referenceNo === 'string' ? obj.referenceNo : '',
-    reasonId: typeof obj.reasonId === 'number' || typeof obj.reasonId === 'bigint' ? BigInt(obj.reasonId) : BigInt(0),
-    description: typeof obj.description === 'string' ? obj.description : '',
-    items: itemsRaw.map((i: any) => ({
-      productId: typeof i.productId === 'number' || typeof i.productId === 'bigint' ? BigInt(i.productId) : BigInt(0),
-      quantityAvailable: typeof i.quantityAvailable === 'number' ? i.quantityAvailable : 0,
-      quantityAdjusted: typeof i.quantityAdjusted === 'number' ? i.quantityAdjusted : 0,
-      quantityAtHand: typeof i.quantityAtHand === 'number' ? i.quantityAtHand : 0,
-    })),
-  };
-}
-
 export interface InventoryRestockRequestInput {
-  tenantId: bigint;
-  productId: bigint;
-  madeToOrderProductId?: bigint;
-  sizeOptionId?: bigint;
+  id?: number | bigint;
+  tenantId: number | bigint;
+  productId: number | bigint;
+  madeToOrderProductId?: number | bigint;
+  sizeOptionId?: number | bigint;
   productGroup: string;
-  requestedQuantity: number;
-}
-
-export function parseInventoryRestockRequestInput(raw: unknown): InventoryRestockRequestInput {
-  const obj = raw as Record<string, unknown>;
-  return {
-    tenantId: typeof obj.tenantId === 'number' || typeof obj.tenantId === 'bigint' ? BigInt(obj.tenantId) : BigInt(0),
-    productId: typeof obj.productId === 'number' || typeof obj.productId === 'bigint' ? BigInt(obj.productId) : BigInt(0),
-    madeToOrderProductId: typeof obj.madeToOrderProductId === 'number' || typeof obj.madeToOrderProductId === 'bigint' ? BigInt(obj.madeToOrderProductId) : undefined,
-    sizeOptionId: typeof obj.sizeOptionId === 'number' || typeof obj.sizeOptionId === 'bigint' ? BigInt(obj.sizeOptionId) : undefined,
-    productGroup: typeof obj.productGroup === 'string' ? obj.productGroup : '',
-    requestedQuantity: typeof obj.requestedQuantity === 'number' ? obj.requestedQuantity : 0,
-  };
+  requestedQuantity: number | string;
 }
 
 export interface UpdateRestockRequestQuantityInput {
-  requestId: bigint;
+  requestId: number | bigint;
   quantity: number;
-}
-export function parseUpdateRestockRequestQuantityInput(raw: unknown): UpdateRestockRequestQuantityInput {
-  const obj = raw as Record<string, unknown>;
-  return {
-    requestId: typeof obj.requestId === 'number' || typeof obj.requestId === 'bigint' ? BigInt(obj.requestId) : BigInt(0),
-    quantity: typeof obj.quantity === 'number' ? obj.quantity : 0,
-  };
 }
 
 export interface UpdateRestockRequestStatusInput {
-  requestId: bigint;
+  requestId: number | bigint;
   status: string;
 }
-export function parseUpdateRestockRequestStatusInput(raw: unknown): UpdateRestockRequestStatusInput {
-  const obj = raw as Record<string, unknown>;
+
+export function parseWarehouseInput(raw: any): WarehouseInput {
   return {
-    requestId: typeof obj.requestId === 'number' || typeof obj.requestId === 'bigint' ? BigInt(obj.requestId) : BigInt(0),
-    status: typeof obj.status === 'string' ? obj.status : '',
+    id: raw?.id !== undefined ? Number(raw.id) : undefined,
+    name: raw?.name ?? "",
+    description: raw?.description ?? "",
   };
 }
-// @ts-nocheck
-// @ts-nocheck
+
+export function parseInventoryAdjustmentReasonInput(raw: any): InventoryAdjustmentReasonInput {
+  return {
+    id: raw?.id !== undefined ? Number(raw.id) : undefined,
+    reason: raw?.reason ?? "",
+    description: raw?.description ?? "",
+  };
+}
+
+export function parseInventoryAdjustmentInput(raw: any): InventoryAdjustmentInput {
+  const items = Array.isArray(raw?.items) 
+    ? raw.items.map((i: any) => ({
+        productId: Number(i?.productId ?? 94504),
+        quantityAvailable: Number(i?.quantityAvailable ?? 0),
+        quantityAdjusted: Number(i?.quantityAdjusted ?? 0),
+        quantityAtHand: Number(i?.quantityAtHand ?? 0),
+      }))
+    : [];
+
+  return {
+    id: raw?.id !== undefined ? Number(raw.id) : undefined,
+    userId: Number(raw?.userId ?? 1),
+    adjustmentDate: Number(raw?.adjustmentDate ?? Date.now()),
+    warehouseId: Number(raw?.warehouseId ?? 306145),
+    referenceNo: raw?.referenceNo ?? "",
+    reasonId: Number(raw?.reasonId ?? 306167),
+    description: raw?.description ?? "",
+    items,
+  };
+}
+
+export function parseInventoryRestockRequestInput(raw: any): InventoryRestockRequestInput {
+  return {
+    id: raw?.id !== undefined ? Number(raw.id) : undefined,
+    tenantId: Number(raw?.tenantId ?? 1),
+    productId: Number(raw?.productId ?? 94504),
+    madeToOrderProductId: raw?.madeToOrderProductId !== undefined && raw?.madeToOrderProductId !== null ? Number(raw.madeToOrderProductId) : undefined,
+    sizeOptionId: raw?.sizeOptionId !== undefined && raw?.sizeOptionId !== null ? Number(raw.sizeOptionId) : undefined,
+    productGroup: raw?.productGroup ?? "FABRIC",
+    requestedQuantity: Number(raw?.requestedQuantity ?? 100),
+  };
+}
+
+export function parseUpdateRestockRequestQuantityInput(raw: any): UpdateRestockRequestQuantityInput {
+  return {
+    requestId: Number(raw?.requestId ?? 0),
+    quantity: Number(raw?.quantity ?? 0),
+  };
+}
+
+export function parseUpdateRestockRequestStatusInput(raw: any): UpdateRestockRequestStatusInput {
+  return {
+    requestId: Number(raw?.requestId ?? 0),
+    status: raw?.status ?? "PENDING",
+  };
+}

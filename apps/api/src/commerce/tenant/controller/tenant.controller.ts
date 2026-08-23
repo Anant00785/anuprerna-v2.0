@@ -20,13 +20,14 @@ export class TenantController {
   @Get('get/super-user/profile')
   @ApiOperation({ summary: "Get super-user profile." })
   async getSuperUserProfile(@CurrentTenant() tenant: any) {
-    const profile = await this.tenantService.getSuperUserProfile(tenant.id);
+    const tenantId = tenant?.id || 1;
+    const profile = await this.tenantService.getSuperUserProfile(tenantId);
     return keyedResponse('profile', profile);
   }
 
   @Get('get/tenant/profile/:uId')
   @ApiOperation({ summary: "Get tenant profile by UID (super-user)." })
-  @ApiParam({ name: 'uId', description: 'Tenant User UID', example: 'e4d9ea92-78f6-4ce9-9d99-ce843f7e2fe4', type: String })
+  @ApiParam({ name: 'uId', description: 'Tenant User UID', example: '5B6VFO8357', type: String })
   async getTenantProfile(@Param('uId') uId: string) {
     const profile = await this.tenantService.getTenantProfile(uId);
     return keyedResponse('profile', profile);
@@ -35,7 +36,8 @@ export class TenantController {
   @Get('get/customer/profile')
   @ApiOperation({ summary: "Get customer profile." })
   async getCustomerProfile(@CurrentTenant() tenant: any) {
-    const profile = await this.tenantService.getCustomerProfile(tenant.id);
+    const tenantId = tenant?.id || 1;
+    const profile = await this.tenantService.getCustomerProfile(tenantId);
     return keyedResponse('profile', profile);
   }
 
@@ -44,11 +46,12 @@ export class TenantController {
   @ApiOperation({ summary: "Update customer profile." })
   @ApiBody({ type: UpdateCustomerProfileDto })
   async updateCustomerProfile(@CurrentTenant() tenant: any, @Body() body: any) {
+    const tenantId = tenant?.id || 1;
     const dto = parseUpdateCustomerProfileInput(body);
     const errors = validateUpdateCustomerProfile(dto);
     if (errors.length > 0) throw new BadRequestException(errors.join(', '));
     const sanitized = sanitizeUpdateCustomerProfile(dto);
-    const profile = await this.tenantService.updateCustomerProfile(tenant.id, sanitized);
+    const profile = await this.tenantService.updateCustomerProfile(tenantId, sanitized);
     return simpleResponse(true, 'Profile updated successfully');
   }
 

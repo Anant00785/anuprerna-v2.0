@@ -1,27 +1,77 @@
 // @ts-nocheck
-/**
- * apps/api/src/commerce/product-size-profile/dto/product-size-profile.dto.ts
- *
- * Request DTOs mirroring ProductSizeProfileDAOController's public surface:
- *  - retrieveProductSizeProfileData(page, size)
- *  - retrieveProductSizeProfileById(id) / retrieveProductSizeProfileDataById(id)
- *  - create/update (base BehemothCRUDDAOController CRUD — no override, so
- *    the full entity shape is read/written, unlike Cart's quirky
- *    quantity-only update)
- *  - deleteProductSizeProfileItems(product) -> by productId
- *  - getProductSizeProfileBySizeOption / deleteProductSizeProfileBySizeOption -> by sizeProfileOptionId
- *
- * No controllers are generated for this domain (no RequestMapper.java was
- * found in the uploaded sources for ProductSizeProfile), so these parsers
- * exist for the service layer / a future controller to call, not wired to
- * any route here.
- *
- * No validation library (zod/class-validator) is installed in this project
- * (`@anuprerna/types` is an empty workspace stub, package.json lists
- * neither), so parsing is done by hand, matching cart.dto.ts / auth.dto.ts.
- */
 import { BadRequestException } from "@nestjs/common";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { ProductSizeProfileInput } from "../types/product-size-profile.types.js";
+
+export class CreateProductSizeProfileDto {
+  @ApiProperty({ example: 107260025, description: "Parent Product ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  productId!: number;
+
+  @ApiProperty({ example: 12562710, description: "Size Profile Option ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  sizeProfileOptionId!: number;
+
+  @ApiProperty({ example: "WCS264480700004-S", description: "Size option SKU" })
+  @IsNotEmpty()
+  @IsString()
+  sizeProfileOptionSku!: string;
+
+  @ApiProperty({ example: 10, description: "Available stock quantity" })
+  @IsNotEmpty()
+  @IsNumber()
+  quantity!: number;
+
+  @ApiPropertyOptional({ example: 2.5, description: "Fabric consumed (meters) for impact calculation" })
+  @IsOptional()
+  @IsNumber()
+  consumedFabric?: number;
+
+  @ApiPropertyOptional({ example: false, description: "Disabled status" })
+  @IsOptional()
+  @IsBoolean()
+  disabled?: boolean;
+}
+
+export class UpdateProductSizeProfileDto {
+  @ApiProperty({ example: 161702936, description: "Product size profile unique ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  id!: number;
+
+  @ApiProperty({ example: 107260025, description: "Parent Product ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  productId!: number;
+
+  @ApiProperty({ example: 12562710, description: "Size Profile Option ID" })
+  @IsNotEmpty()
+  @IsNumber()
+  sizeProfileOptionId!: number;
+
+  @ApiProperty({ example: "WCS264480700004-S", description: "Size option SKU" })
+  @IsNotEmpty()
+  @IsString()
+  sizeProfileOptionSku!: string;
+
+  @ApiProperty({ example: 10, description: "Available stock quantity" })
+  @IsNotEmpty()
+  @IsNumber()
+  quantity!: number;
+
+  @ApiPropertyOptional({ example: 2.5, description: "Fabric consumed (meters) for impact calculation" })
+  @IsOptional()
+  @IsNumber()
+  consumedFabric?: number;
+
+  @ApiPropertyOptional({ example: false, description: "Disabled status" })
+  @IsOptional()
+  @IsBoolean()
+  disabled?: boolean;
+}
 
 function requireInt(value: unknown, field: string): number {
   const n = typeof value === "string" ? Number(value) : value;
@@ -75,8 +125,7 @@ export function parseProductIdParam(productId: unknown): number {
 
 /**
  * getProductSizeProfileBySizeOption / deleteProductSizeProfileBySizeOption
- * (SizeProfileOption option) — resolves by size profile option id, since
- * the SizeProfileOption entity itself is out of scope for this migration.
+ * (SizeProfileOption option) — resolves by size profile option id.
  */
 export function parseSizeProfileOptionIdParam(sizeProfileOptionId: unknown): number {
   return requireInt(sizeProfileOptionId, "sizeProfileOptionId");
@@ -130,5 +179,3 @@ export function parseUpdateProductSizeProfileRequest(body: unknown): UpdateProdu
   }
   return parsed as UpdateProductSizeProfileRequest;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -18,19 +18,35 @@ export class MaterialService {
   async add(data: any) {
     validateAddMaterial(data);
     data.name = sanitizeMaterialName(data.name);
-    const created = await this.repository.create(data);
-    return keyedResponse('material', mapMaterialEntityToOutput(created));
+    try {
+      const created = await this.repository.create({ name: data.name });
+      return keyedResponse('material', mapMaterialEntityToOutput(created));
+    } catch (e: any) {
+      if (e.code === '23505') {
+        return simpleResponse(false, 'Material with this name already exists.');
+      }
+      return simpleResponse(false, e.message || 'Failed to add material');
+    }
   }
 
   async update(data: any) {
+    if (!data.id) {
+      return simpleResponse(false, 'Material ID is required.');
+    }
     validateAddMaterial(data);
     data.name = sanitizeMaterialName(data.name);
-    const { id, ...updateData } = data;
-    const updated = await this.repository.update(id, updateData);
-    if (!updated) {
-      return simpleResponse(false, 'Not found');
+    try {
+      const updated = await this.repository.update(BigInt(data.id), { name: data.name });
+      if (!updated) {
+        return simpleResponse(false, 'Not found');
+      }
+      return keyedResponse('material', mapMaterialEntityToOutput(updated));
+    } catch (e: any) {
+      if (e.code === '23505') {
+        return simpleResponse(false, 'Material with this name already exists.');
+      }
+      return simpleResponse(false, e.message || 'Failed to update material');
     }
-    return keyedResponse('material', mapMaterialEntityToOutput(updated));
   }
 
   async delete(id: string) {
@@ -55,4 +71,3 @@ export class MaterialService {
     return keyedResponse('material', mapMaterialEntityToOutput(item));
   }
 }
-// @ts-nocheck

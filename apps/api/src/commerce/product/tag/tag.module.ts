@@ -22,10 +22,12 @@
  * TagService without re-declaring TagRepository.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
 import { TagService } from "./service/tag.service.js";
 import { TagRepository } from "./repository/tag.repository.js";
 
 @Module({
+  imports: [AuthModule],
   providers: [TagService, TagRepository],
   exports: [TagService],
 })

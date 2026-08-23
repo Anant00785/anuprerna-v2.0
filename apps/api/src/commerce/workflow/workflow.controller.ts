@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { WorkflowService } from "./workflow.service.js";
 
-@ApiTags("workflow")
+@ApiTags("Workflow")
 @Controller()
 export class WorkflowController {
   constructor(private readonly service: WorkflowService) {}

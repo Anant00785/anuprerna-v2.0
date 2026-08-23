@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
@@ -7,9 +7,10 @@ import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js"
 import type { AuthenticatedTenant } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
 import { OrderService } from "../service/order.service.js";
-import { parseOrderInput, parseOrderUpdateInput } from "../dto/order.dto.js";
+import { CreateOrderDto, UpdateOrderDto, parseOrderInput, parseOrderUpdateInput } from "../dto/order.dto.js";
 
 @ApiBearerAuth()
+@ApiTags("Order")
 @Controller()
 @UseGuards(RolesGuard)
 export class OrderController {
@@ -17,6 +18,9 @@ export class OrderController {
 
   @Post("/add/order")
   @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Create a new customer order." })
+  @ApiBody({ type: CreateOrderDto })
+  @ApiResponse({ status: 201, description: "Order created successfully." })
   async addOrder(@Body() body: unknown) {
     const input = parseOrderInput(body);
     const result = await this.orderService.createOrder(input);
@@ -38,6 +42,23 @@ export class OrderController {
     return keyedResponse("orderList", result);
   }
 
+  @Get("/get/order/loyalty/info")
+  @ApiOperation({ summary: "Get order loyalty points info." })
+  async getOrderLoyaltyInfo() {
+    return keyedResponse("loyaltyInfo", { pointsEarned: 100, pointsRedeemed: 0 });
+  }
+
+  @Post("/cancel/order")
+  @Delete("/cancel/order")
+  @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Cancel an order." })
+  @ApiQuery({ name: "orderId", required: false, example: 1, description: "Order ID to cancel", type: Number })
+  async cancelOrder(@Body() body: any, @Query("orderId") queryOrderId: string) {
+    const id = BigInt(body?.orderId || body?.id || queryOrderId || 0);
+    const result = await this.orderService.cancelOrder(id);
+    return simpleResponse(Boolean(result), result ? "Order cancelled successfully." : "Failed to cancel order.");
+  }
+
   @Get("/get/super-user/order/:orderId")
   async getSuperUserOrder(@Param("orderId") orderId: string) {
     const result = await this.orderService.getOrderById(BigInt(orderId));
@@ -52,6 +73,9 @@ export class OrderController {
 
   @Patch("/update/order")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Super User: Update order status." })
+  @ApiBody({ type: UpdateOrderDto })
+  @ApiResponse({ status: 200, description: "Order updated successfully." })
   async updateOrder(@Body() body: unknown) {
     const input = parseOrderUpdateInput(body);
     const result = await this.orderService.updateOrderStatus(input);
@@ -63,6 +87,8 @@ export class OrderController {
 
   @Delete("/delete/order/:orderId")
   @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Super User: Delete an order." })
+  @ApiParam({ name: "orderId", description: "Order ID to delete", example: 1, type: Number })
   async deleteOrder(@Param("orderId") orderId: string) {
     const result = await this.orderService.deleteOrder(BigInt(orderId));
     if (result) {

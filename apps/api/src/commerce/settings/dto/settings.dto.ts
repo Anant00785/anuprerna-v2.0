@@ -1,5 +1,22 @@
-// @ts-nocheck
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { UpdateSettingsRequest } from '../types/settings.types.js';
+
+export class UpdateSettingsDto {
+  @ApiProperty({ example: 1, description: "Setting unique identifier" })
+  @IsNotEmpty()
+  @IsNumber()
+  id!: number;
+
+  @ApiProperty({ example: "true", description: "Setting attribute value (string, boolean or number representation)" })
+  @IsNotEmpty()
+  attributeValue!: any;
+
+  @ApiPropertyOptional({ example: "https://anuprerna.com/notification", description: "Optional attribute reference link" })
+  @IsOptional()
+  @IsString()
+  attributeLink?: string;
+}
 
 export function parseUpdateSettingsRequest(body: any): UpdateSettingsRequest {
   if (!body || typeof body !== 'object') {
@@ -24,5 +41,3 @@ export function parseUpdateSettingsRequest(body: any): UpdateSettingsRequest {
     attributeLink,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

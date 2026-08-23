@@ -173,7 +173,7 @@ export class CartController {
   @Delete("/delete/cart-item/:cartItemId")
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Delete a single cart item by id." })
-  @ApiParam({ name: "cartItemId", description: "ID of the cart item to delete", example: 157423053, type: Number })
+  @ApiParam({ name: "cartItemId", description: "ID of the cart item to delete", example: 162902288, type: Number })
   @ApiResponse({ status: 200, description: "Delete result (see response body's success flag)." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })

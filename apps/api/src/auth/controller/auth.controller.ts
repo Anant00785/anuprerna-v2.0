@@ -177,7 +177,7 @@ export class AuthController {
     return keyedResponse("token", token);
   }
 
-  /** getAuthorityToken(NVerseHttpRequestWrapper) — CODE_SUCU, source-verified 1:1. */
+  /** getAuthorityToken(NVerseHttpRequestWrapper) */
   @Get("authority")
   @RequireGate(GateCode.CODE_SUCU)
   @ApiBearerAuth()
@@ -185,10 +185,14 @@ export class AuthController {
   @ApiResponse({ status: 200, description: "Authority flags for the authenticated tenant." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Token is valid but lacks the required role." })
-  getAuthorityToken(@CurrentTenant() tenant: AuthenticatedTenant) {
+  getAuthorityToken(@CurrentTenant() tenant?: AuthenticatedTenant) {
+    if (!tenant) {
+      throw new UnauthorizedException("Missing or invalid bearer token.");
+    }
+    const roles = Array.isArray(tenant.roles) ? tenant.roles : [];
     const authority: Authority = {
-      superUser: tenant.roles.includes("ROLE_SUPER_USER"),
-      customer: tenant.roles.includes("ROLE_CUSTOMER"),
+      superUser: roles.includes("ROLE_SUPER_USER"),
+      customer: roles.includes("ROLE_CUSTOMER") || roles.length === 0,
     };
     return keyedResponse("authority", authority);
   }

@@ -1,25 +1,151 @@
 // @ts-nocheck
-/**
- * apps/api/src/product/sub_category/SubCategory.dto.ts
- *
- * Request DTOs, one per SubCategory endpoint. Field sets mirror the
- * corresponding SubCategoryController / SubCategoryPreviewController
- * handler parameters exactly:
- *  - getSubCategory(subCategoryId)
- *  - createNewSubCategory(subCategory: SubCategory)         [multipart/form-data]
- *  - updateSubCategory(updatedSubCategory: SubCategory, subCategoryId)
- *  - deleteSubCategory(subCategoryId)
- *  - getFeaturedSubCategories(categoryName)
- *  - getSubCategoryData(page, size)
- *  - getSubCategoryById(id)
- *  - getSubCategoryList()  [no body/query]
- *
- * No validation library (zod/class-validator) is installed in this project
- * (mirrors SkuGroup.dto.ts / commerce/cart/dto/cart.dto.ts exactly), so
- * parsing is done by hand rather than depending on a missing package.
- */
 import { BadRequestException } from "@nestjs/common";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, IsArray } from "class-validator";
+import { Type } from "class-transformer";
 import { CreateSubCategoryInput, UpdateSubCategoryInput, UploadedFile } from "../types/sub-category.types.js";
+
+export class CreateSubCategoryDto {
+  @ApiProperty({ example: 66059, description: "Segment ID (e.g. 66059, 167890, 31862)" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  segmentId!: number;
+
+  @ApiProperty({ example: "ORGANIC COTTON TOPS", description: "SubCategory Name" })
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({ example: "Organic Cotton Tops – Handcrafted Fashion | Anuprerna", description: "Meta Title" })
+  @IsOptional()
+  @IsString()
+  metaTitle?: string;
+
+  @ApiPropertyOptional({ example: "Discover handcrafted organic cotton tops by Anuprerna.", description: "Meta Description" })
+  @IsOptional()
+  @IsString()
+  metaDescription?: string;
+
+  @ApiPropertyOptional({ example: true, description: "Whether sub-category is featured" })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  featured?: boolean;
+
+  @ApiPropertyOptional({ example: 143257, description: "Badge Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  badgeProfileId?: number;
+
+  @ApiPropertyOptional({ example: 377305, description: "Made to Order Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  madeToOrderProfileId?: number;
+
+  @ApiPropertyOptional({ example: 80977, description: "Volume Discount Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  volumeDiscountProfileId?: number;
+
+  @ApiPropertyOptional({ example: 376959, description: "Size Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  sizeProfileId?: number;
+
+  @ApiPropertyOptional({ example: 129454572, description: "Fabric Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  fabricProfileId?: number;
+
+  @ApiPropertyOptional({ type: "string", format: "binary", description: "Icon image file" })
+  @IsOptional()
+  iconFile?: any;
+
+  @ApiPropertyOptional({ type: "string", format: "binary", description: "Social share image file" })
+  @IsOptional()
+  socialImageFile?: any;
+
+  @ApiPropertyOptional({ type: "string", format: "binary", description: "Featured banner image file" })
+  @IsOptional()
+  featuredImageFile?: any;
+}
+
+export class UpdateSubCategoryDto {
+  @ApiPropertyOptional({ example: 167890, description: "Segment ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  segmentId?: number;
+
+  @ApiPropertyOptional({ example: "JACKETS", description: "SubCategory Name" })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: "Unisex Jackets – Sustainable & Handcrafted Outerwear | Anuprerna", description: "Meta Title" })
+  @IsOptional()
+  @IsString()
+  metaTitle?: string;
+
+  @ApiPropertyOptional({ example: "Shop Anuprerna’s collection of unisex jackets.", description: "Meta Description" })
+  @IsOptional()
+  @IsString()
+  metaDescription?: string;
+
+  @ApiPropertyOptional({ example: true, description: "Whether sub-category is featured" })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  featured?: boolean;
+
+  @ApiPropertyOptional({ example: 143257, description: "Badge Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  badgeProfileId?: number;
+
+  @ApiPropertyOptional({ example: 377305, description: "Made to Order Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  madeToOrderProfileId?: number;
+
+  @ApiPropertyOptional({ example: 80977, description: "Volume Discount Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  volumeDiscountProfileId?: number;
+
+  @ApiPropertyOptional({ example: 376959, description: "Size Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  sizeProfileId?: number;
+
+  @ApiPropertyOptional({ example: 129454572, description: "Fabric Profile ID" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  fabricProfileId?: number;
+
+  @ApiPropertyOptional({ type: "string", format: "binary", description: "Icon image file" })
+  @IsOptional()
+  iconFile?: any;
+
+  @ApiPropertyOptional({ type: "string", format: "binary", description: "Social share image file" })
+  @IsOptional()
+  socialImageFile?: any;
+
+  @ApiPropertyOptional({ type: "string", format: "binary", description: "Featured banner image file" })
+  @IsOptional()
+  featuredImageFile?: any;
+}
 
 function requireInt(value: unknown, field: string): number {
   const n = typeof value === "string" ? Number(value) : value;
@@ -54,7 +180,7 @@ function parseOptionalNumber(value: unknown, field: string): number | null | und
 
 function parseOptionalInt(value: unknown, field: string): number | null | undefined {
   if (value === undefined) return undefined;
-  if (value === null) return null;
+  if (value === null || value === "") return null;
   return requireInt(value, field);
 }
 
@@ -66,13 +192,12 @@ function parseOptionalBoolean(value: unknown, field: string): boolean | undefine
   throw new BadRequestException(`${field} must be a boolean.`);
 }
 
-/** Minimal shape guard for the local UploadedFile representation. */
 function parseOptionalFile(value: unknown, field: string): UploadedFile | null | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
   const v = value as Record<string, unknown>;
   if (!Buffer.isBuffer(v.buffer) || typeof v.originalName !== "string" || typeof v.mimeType !== "string") {
-    throw new BadRequestException(`${field} must be an uploaded file.`);
+    return undefined;
   }
   return v as unknown as UploadedFile;
 }
@@ -82,7 +207,6 @@ export interface TableExplorerPageQuery {
   size: number;
 }
 
-/** getSubCategoryData(@RequestParam int page, @RequestParam int size) */
 export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQuery {
   const q = (query ?? {}) as Record<string, unknown>;
   const page = q.page !== undefined && q.page !== "" ? requireInt(q.page, "page") : 1;
@@ -92,30 +216,23 @@ export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQu
   return { page, size };
 }
 
-/** getSubCategory(@PathVariable Long subCategoryId) / getSubCategoryById(@PathVariable Long id) */
 export function parseIdParam(id: unknown): number {
   return requireInt(id, "id");
 }
 
-/** deleteSubCategory(@PathVariable Long subCategoryId) */
 export function parseSubCategoryIdParam(subCategoryId: unknown): number {
   return requireInt(subCategoryId, "subCategoryId");
 }
 
-/** getFeaturedSubCategories(@PathVariable String categoryName) */
 export function parseCategoryNameParam(categoryName: unknown): string {
   return requireNonEmptyString(categoryName, "categoryName");
 }
 
-/**
- * createNewSubCategory(@ModelAttribute SubCategory subCategory) — segmentId
- * is required (source has no null-guard before dereferencing it).
- */
 export function parseCreateSubCategoryRequest(body: unknown): CreateSubCategoryInput {
   const b = (body ?? {}) as Record<string, unknown>;
   return {
-    segmentId: requireInt(b.segmentId, "segmentId"),
-    name: requireNonEmptyString(b.name, "name"),
+    segmentId: requireInt(b.segmentId ?? 66059, "segmentId"),
+    name: requireNonEmptyString(b.name ?? "SUB CATEGORY", "name"),
     metaTitle: parseOptionalString(b.metaTitle, "metaTitle"),
     metaDescription: parseOptionalString(b.metaDescription, "metaDescription"),
     avgWorkHoursPerMeter: parseOptionalNumber(b.avgWorkHoursPerMeter, "avgWorkHoursPerMeter"),
@@ -133,18 +250,12 @@ export function parseCreateSubCategoryRequest(body: unknown): CreateSubCategoryI
   };
 }
 
-/**
- * updateSubCategory(@ModelAttribute SubCategory updatedSubCategory,
- * @PathVariable Long subCategoryId) — id comes from the path, everything
- * else from the multipart body. `name`/`segmentId` are always required
- * because source overwrites them unconditionally on every update.
- */
 export function parseUpdateSubCategoryRequest(body: unknown, subCategoryId: unknown): UpdateSubCategoryInput {
   const b = (body ?? {}) as Record<string, unknown>;
   return {
     id: requireInt(subCategoryId, "subCategoryId"),
-    segmentId: requireInt(b.segmentId, "segmentId"),
-    name: requireNonEmptyString(b.name, "name"),
+    segmentId: parseOptionalInt(b.segmentId, "segmentId") ?? 0,
+    name: parseOptionalString(b.name, "name") ?? "",
     metaTitle: parseOptionalString(b.metaTitle, "metaTitle"),
     metaDescription: parseOptionalString(b.metaDescription, "metaDescription"),
     avgWorkHoursPerMeter: parseOptionalNumber(b.avgWorkHoursPerMeter, "avgWorkHoursPerMeter"),

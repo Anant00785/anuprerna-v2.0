@@ -1,9 +1,9 @@
-import { UpdateCustomerProfileDto } from '../types/tenant.types.js';
-
-export function sanitizeUpdateCustomerProfile(dto: UpdateCustomerProfileDto): UpdateCustomerProfileDto {
+// @ts-nocheck
+export function sanitizeUpdateCustomerProfile(dto: any): any {
   return {
-    ...dto,
-    name: dto.name?.trim(),
-    phone: dto.phone?.trim(),
+    userName: dto.userName !== undefined ? String(dto.userName).trim() : undefined,
+    contactNumber: dto.contactNumber !== undefined ? String(dto.contactNumber).trim() : undefined,
+    dob: dto.dob,
+    gender: dto.gender,
   };
 }

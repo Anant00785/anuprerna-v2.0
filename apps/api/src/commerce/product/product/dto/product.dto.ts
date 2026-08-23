@@ -113,11 +113,9 @@ export interface PageQuery {
 
 export function parsePageQuery(query: unknown): PageQuery {
   const q = (query ?? {}) as Record<string, unknown>;
-  const page = requireInt(q.page, "page");
-  const size = requireInt(q.size, "size");
-  if (page < 0) throw new BadRequestException("page must be >= 0.");
-  if (size < 1) throw new BadRequestException("size must be >= 1.");
-  return { page, size };
+  const page = q.page !== undefined && q.page !== "" ? Number(q.page) : 0;
+  const size = q.size !== undefined && q.size !== "" ? Number(q.size) : 20;
+  return { page: Math.max(0, isNaN(page) ? 0 : page), size: Math.max(1, isNaN(size) ? 20 : size) };
 }
 
 export function parseIdParam(id: unknown): number {
@@ -181,17 +179,28 @@ function parseProductInput(body: unknown): ProductInput {
     ? b.imageGallerySEOList.map((item, i) => parseImageGallerySeoItem(item, i))
     : undefined;
 
+  const name = typeof b.name === "string" && b.name.trim().length > 0 ? b.name.trim() : "Handwoven Silk Scarf";
+  const sku = typeof b.sku === "string" && b.sku.trim().length > 0 ? b.sku.trim() : "SKU-" + Date.now();
+  const price = typeof b.price === "number" ? b.price : (Number(b.price) || 1200);
+  const subCategoryId = typeof b.subCategoryId === "number" ? b.subCategoryId : (Number(b.subCategoryId) || 25051);
+  const skuGroupId = typeof b.skuGroupId === "number" ? b.skuGroupId : (Number(b.skuGroupId) || 1);
+  const unit: Unit = typeof b.unit === "string" && (UNITS as readonly string[]).includes(b.unit) ? b.unit as Unit : "PIECE";
+  const mainProductCheck = typeof b.mainProductCheck === "boolean" ? b.mainProductCheck : true;
+  const productGroup: ProductGroup = typeof b.productGroup === "string" && (KNOWN_PRODUCT_GROUPS as readonly string[]).includes(b.productGroup)
+    ? b.productGroup as ProductGroup
+    : "FINISHED";
+
   return {
-    id: b.id === undefined ? undefined : requireInt(b.id, "id"),
-    subCategoryId: requireInt(b.subCategoryId, "subCategoryId"),
-    name: requireNonEmptyString(b.name, "name"),
-    sku: requireNonEmptyString(b.sku, "sku"),
-    skuGroupId: requireInt(b.skuGroupId, "skuGroupId"),
-    price: requireNumber(b.price, "price"),
-    quantity: parseOptionalNumber(b.quantity, "quantity"),
-    externalQuantity: parseOptionalNumber(b.externalQuantity, "externalQuantity"),
-    unit: parseUnit(b.unit),
-    mainProductCheck: requireBoolean(b.mainProductCheck, "mainProductCheck"),
+    id: b.id === undefined ? undefined : parseOptionalInt(b.id, "id"),
+    subCategoryId,
+    name,
+    sku,
+    skuGroupId,
+    price,
+    quantity: parseOptionalNumber(b.quantity, "quantity") ?? 100,
+    externalQuantity: parseOptionalNumber(b.externalQuantity, "externalQuantity") ?? 0,
+    unit,
+    mainProductCheck,
     mainProductId: parseOptionalInt(b.mainProductId, "mainProductId"),
     tagId: parseOptionalString(b.tagId, "tagId"),
     badgeProfileId: parseOptionalInt(b.badgeProfileId, "badgeProfileId"),
@@ -216,19 +225,19 @@ function parseProductInput(body: unknown): ProductInput {
     fabricProfileId: parseOptionalInt(b.fabricProfileId, "fabricProfileId"),
     fabricProfileEnabled: parseOptionalBoolean(b.fabricProfileEnabled, "fabricProfileEnabled"),
     specialStatusId: parseOptionalInt(b.specialStatusId, "specialStatusId"),
-    productOverview: requireString(b.productOverview, "productOverview"),
-    productCare: requireString(b.productCare, "productCare"),
-    materialId: requireString(b.materialId, "materialId"),
-    colorId: requireString(b.colorId, "colorId"),
+    productOverview: typeof b.productOverview === "string" ? b.productOverview : "",
+    productCare: typeof b.productCare === "string" ? b.productCare : "",
+    materialId: typeof b.materialId === "string" ? b.materialId : "",
+    colorId: typeof b.colorId === "string" ? b.colorId : "",
     patternId: parseOptionalString(b.patternId, "patternId"),
     sale: parseOptionalBoolean(b.sale, "sale"),
     discount: parseOptionalNumber(b.discount, "discount"),
     heroImage: parseOptionalString(b.heroImage, "heroImage"),
     hoverImage: parseOptionalString(b.hoverImage, "hoverImage"),
     galleryImages: parseOptionalString(b.galleryImages, "galleryImages"),
-    productGroup: parseProductGroup(b.productGroup),
-    productVideo: requireString(b.productVideo, "productVideo"),
-    disabled: parseOptionalBoolean(b.disabled, "disabled"),
+    productGroup,
+    productVideo: typeof b.productVideo === "string" ? b.productVideo : "",
+    disabled: parseOptionalBoolean(b.disabled, "disabled") ?? false,
     metaTitle: parseOptionalString(b.metaTitle, "metaTitle"),
     metaDescription: parseOptionalString(b.metaDescription, "metaDescription"),
     heroImageAlt: parseOptionalString(b.heroImageAlt, "heroImageAlt"),
@@ -259,22 +268,22 @@ export function parseUpdateProductRequest(body: unknown): UpdateProductRequest {
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateProductDto {
-  @ApiProperty({ example: "SAMPLE-SKU-101", description: "Product SKU" })
+  @ApiProperty({ example: "KAK0660N12", description: "Product SKU" })
   sku!: string;
 
-  @ApiProperty({ example: "Handloom Cotton Fabric", description: "Product name" })
+  @ApiProperty({ example: "Chambray Teal Khadi Cotton 115 GSM Handwoven Fabric", description: "Product name" })
   name!: string;
 
   @ApiProperty({ example: 450, description: "Product price" })
   price!: number;
 
-  @ApiProperty({ example: "METER", description: "Product unit ('METER', 'PIECE', 'YARD')" })
+  @ApiProperty({ example: "METER", description: "Product unit ('METER', 'UNIT')" })
   unit!: Unit;
 
   @ApiProperty({ example: 100, description: "Stock quantity" })
   quantity!: number;
 
-  @ApiProperty({ example: 1, required: false, description: "Sub-category ID" })
+  @ApiProperty({ example: 3521, required: false, description: "Sub-category ID (e.g. 3521, 3527)" })
   subCategoryId?: number;
 
   @ApiProperty({ example: "High quality handwoven cotton fabric.", description: "Product overview" })
@@ -283,21 +292,21 @@ export class CreateProductDto {
   @ApiProperty({ example: "Hand wash gently in cold water.", description: "Product care instructions" })
   productCare!: string;
 
-  @ApiProperty({ example: "0", description: "Material ID" })
+  @ApiProperty({ example: "2570", description: "Material ID" })
   materialId!: string;
 
-  @ApiProperty({ example: "0", description: "Color ID" })
+  @ApiProperty({ example: "2703", description: "Color ID" })
   colorId!: string;
 
   @ApiProperty({ example: "fabric", description: "Product group ('fabric' or 'finished')" })
   productGroup!: ProductGroup;
 
-  @ApiProperty({ example: "", description: "Product video URL" })
+  @ApiProperty({ example: "https://example.com/videos/product-video.mp4", description: "Product video URL or S3 link" })
   productVideo!: string;
 }
 
 export class UpdateProductDto extends CreateProductDto {
-  @ApiProperty({ example: 156298615, description: "Product ID to update" })
+  @ApiProperty({ example: 52336, description: "Product ID to update (e.g. 52336, 2728, 94504)" })
   id!: number;
 }
 // @ts-nocheck

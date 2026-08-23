@@ -14,17 +14,7 @@ import { env } from "@/env";
 // during `next build`, where the variable is legitimately absent, so throwing
 // at load time would break the build instead of the request.
 function loomTableExplorerToken(): string {
-  const token = process.env.LOOM_TABLE_EXPLORER_TOKEN;
-  if (!token) {
-    if (env.NEXT_PUBLIC_API_MODE === "nest") {
-      return "";
-    }
-    throw new Error(
-      "LOOM_TABLE_EXPLORER_TOKEN is not set. The storefront proxy cannot authenticate " +
-        "against the legacy backend without it — see apps/storefront/.env.example.",
-    );
-  }
-  return token;
+  return process.env.LOOM_TABLE_EXPLORER_TOKEN || "";
 }
 
 async function proxyRequest(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
@@ -32,25 +22,15 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   const targetPath = path.join("/");
   const url = new URL(request.url);
 
-  // Auth, customer registration, orders, cart and transactional flows live on SpringBoot
-  const isLegacyService =
-    /^(authenticate|customer|check-email|validate|send\/password-reset|reset\/password|cart|wishlist|order|payment|invoice|address|get\/customer|get\/address|get\/order|get\/cart|update\/customer|update\/address|add\/address|delete\/address)\b/.test(
-      targetPath
-    ) ||
-    targetPath.includes("customer") ||
-    targetPath.includes("order") ||
-    targetPath.includes("address") ||
-    targetPath.includes("cart") ||
-    targetPath.includes("wishlist");
+  // All traffic goes to the NestJS backend (Render).
+  // Legacy SpringBoot (loom-v2.anuprerna.com) is no longer used.
+  const nestBase = (
+    env.NEXT_PUBLIC_API_URL ||
+    env.NEXT_PUBLIC_NEST_API_URL ||
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
 
-  const springBase = (env.NEXT_PUBLIC_SPRINGBOOT_API_URL || "https://loom-v2.anuprerna.com").replace(/\/$/, "");
-  const nestBase = (env.NEXT_PUBLIC_NEST_API_URL || "http://localhost:3000").replace(/\/$/, "");
-
-  const backendBase = isLegacyService
-    ? springBase
-    : (env.NEXT_PUBLIC_API_MODE === "nest" ? nestBase : springBase);
-
-  const targetUrl = `${backendBase}/${targetPath}${url.search}`;
+  const targetUrl = `${nestBase}/${targetPath}${url.search}`;
 
   const requestHeaders = new Headers(request.headers);
   

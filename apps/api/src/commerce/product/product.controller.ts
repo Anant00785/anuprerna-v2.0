@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { ProductService } from "./product.service.js";
 
-@ApiTags("product")
+@ApiTags("Product")
 @Controller()
 export class ProductController {
   constructor(private readonly service: ProductService) {}

@@ -25,6 +25,7 @@
  */
 import { Module } from "@nestjs/common";
 import { AuthController } from "./controller/auth.controller.js";
+import { LoomLegacyAuthController } from "./controller/loom-legacy-auth.controller.js";
 import { GatekeeperService } from "./service/gatekeeper.service.js";
 import { TenantLookupRepository } from "./repository/tenant-lookup.repository.js";
 import { RolesGuard } from "../common/auth/roles.guard.js";
@@ -36,7 +37,7 @@ const auth0ValidationDummy: Auth0ValidationPort = {
 };
 
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, LoomLegacyAuthController],
   providers: [
     GatekeeperService,
     TenantLookupRepository,

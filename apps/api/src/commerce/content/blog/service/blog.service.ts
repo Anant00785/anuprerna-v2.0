@@ -69,6 +69,18 @@ export class BlogService {
     return this.blogRepository.getBlogsByCategory(categoryId);
   }
 
+  async getAllBlogContentSections() {
+    return this.blogRepository.getAllBlogContentSections();
+  }
+
+  async getBlogContentSections(blogContentId: bigint) {
+    return this.blogRepository.getBlogContentSections(blogContentId);
+  }
+
+  async getRecommendedBlogs(blogId: bigint) {
+    return this.blogRepository.getRecommendedBlogs(blogId);
+  }
+
   async addBlogContent(data: BlogContentInput) {
     const result = await this.blogRepository.addBlogContent(data);
     return result ? ActionCode.INSERT_SUCCESS : ActionCode.INSERT_FAILURE;
@@ -99,4 +111,3 @@ export class BlogService {
     return ActionCode.DELETE_SUCCESS;
   }
 }
-// @ts-nocheck

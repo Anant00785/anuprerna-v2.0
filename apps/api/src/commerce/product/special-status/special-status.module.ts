@@ -24,10 +24,12 @@
  * whoever creates that aggregator.
  */
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../../../auth/auth.module.js";
 import { SpecialStatusService } from "./service/special-status.service.js";
 import { SpecialStatusRepository } from "./repository/special-status.repository.js";
 
 @Module({
+  imports: [AuthModule],
   providers: [SpecialStatusService, SpecialStatusRepository],
   exports: [SpecialStatusService],
 })

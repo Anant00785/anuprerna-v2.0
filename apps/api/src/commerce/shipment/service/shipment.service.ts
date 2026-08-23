@@ -54,12 +54,19 @@ export class ShipmentService {
   }
 
   async deleteShipment(id: bigint): Promise<{ success: boolean; message: string; actionCode: number }> {
-    const deleted = await this.shipmentRepository.deleteById(id);
-    
-    if (deleted) {
-      return { success: true, message: "Shipment deleted successfully.", actionCode: ActionCode.DELETE_SUCCESS };
+    try {
+      const deleted = await this.shipmentRepository.deleteById(id);
+      
+      if (deleted) {
+        return { success: true, message: "Shipment deleted successfully.", actionCode: ActionCode.DELETE_SUCCESS };
+      }
+      return { success: false, message: "Failed to delete shipment. Record not found.", actionCode: ActionCode.NO_ACTION };
+    } catch (err: any) {
+      if (err?.code === "23503" || String(err?.message).includes("foreign key")) {
+        return { success: false, message: "Cannot delete shipment because it is associated with existing orders.", actionCode: ActionCode.DELETE_FAILURE };
+      }
+      return { success: false, message: "Failed to delete shipment.", actionCode: ActionCode.DELETE_FAILURE };
     }
-    return { success: false, message: "Failed to delete shipment. Record not found.", actionCode: ActionCode.NO_ACTION };
   }
 
   async getShipmentData(page: number, size: number): Promise<ShipmentData[]> {
@@ -70,4 +77,3 @@ export class ShipmentService {
     return this.shipmentRepository.findDataById(id);
   }
 }
-// @ts-nocheck

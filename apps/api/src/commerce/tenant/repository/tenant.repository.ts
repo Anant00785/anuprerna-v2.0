@@ -8,23 +8,41 @@ import * as schema from '../../../database/schema/schema.js';
 export class TenantRepository {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
-  async getSuperUserProfile(tenantId: string) {
-    const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, BigInt(tenantId))).limit(1);
-    return result[0];
+  async getSuperUserProfile(tenantId: any) {
+    const id = BigInt(tenantId || 1);
+    const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, id)).limit(1);
+    return result[0] ?? null;
   }
 
   async getTenantProfile(uId: string) {
     const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.loomId, uId)).limit(1);
-    return result[0];
+    return result[0] ?? null;
   }
 
-  async getCustomerProfile(tenantId: string) {
-    const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, BigInt(tenantId))).limit(1);
-    return result[0];
+  async getCustomerProfile(tenantId: any) {
+    const id = BigInt(tenantId || 1);
+    const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, id)).limit(1);
+    return result[0] ?? null;
   }
 
-  async updateCustomerProfile(tenantId: string, data: any) {
-    await this.db.update(schema.loomTenant).set(data).where(eq(schema.loomTenant.id, BigInt(tenantId)));
+  async updateCustomerProfile(tenantId: any, data: any) {
+    const id = BigInt(tenantId || 1);
+    const updateData: any = {};
+    if (data.userName !== undefined) updateData.userName = data.userName;
+    if (data.contactNumber !== undefined) updateData.contactNumber = data.contactNumber;
+    if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.dob !== undefined) {
+      if (typeof data.dob === "number") {
+        updateData.dob = data.dob;
+      } else if (typeof data.dob === "string") {
+        const parsed = Date.parse(data.dob);
+        updateData.dob = isNaN(parsed) ? 0 : parsed;
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await this.db.update(schema.loomTenant).set(updateData).where(eq(schema.loomTenant.id, id));
+    }
     return this.getCustomerProfile(tenantId);
   }
 
@@ -32,10 +50,8 @@ export class TenantRepository {
     return this.db.select().from(schema.userRole).limit(limit).offset(offset);
   }
 
-  async getUserRoleById(id: string) {
+  async getUserRoleById(id: any) {
     const result = await this.db.select().from(schema.userRole).where(eq(schema.userRole.id, BigInt(id))).limit(1);
-    return result[0];
+    return result[0] ?? null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

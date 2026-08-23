@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TransmissionService } from '../../transmission/service/transmission.service.js';
+import { TransmissionService } from '../../transmission/transmission.service.js';
 import { WhatsappRepository } from '../repository/whatsapp.repository.js';
 import { WhatsappOutboundMessage, WhatsappTransferResponse, WhatsappNotificationStatus, WhatsappNotificationEntityType, WhatsappNotificationTriggerType, WhatsappNotificationTenantType } from '../types/whatsapp.types.js';
 import * as schema from '../../../database/schema/schema.js';

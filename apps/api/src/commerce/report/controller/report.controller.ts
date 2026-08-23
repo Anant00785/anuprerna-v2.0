@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Param, Body, Res, UseGuards } from '@nestjs/common';
 import { ReportService } from '../service/report.service.js';
 import { ReportType, ReportConfig } from '../types/report.types.js';
@@ -8,6 +8,7 @@ import { GateCode } from '../../../auth/types/auth.types.js';
 import { Response } from 'express';
 
 @ApiBearerAuth()
+@ApiTags("Reports")
 @Controller('download/report')
 @UseGuards(RolesGuard)
 export class ReportController {
