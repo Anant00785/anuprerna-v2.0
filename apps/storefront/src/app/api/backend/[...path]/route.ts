@@ -14,17 +14,7 @@ import { env } from "@/env";
 // during `next build`, where the variable is legitimately absent, so throwing
 // at load time would break the build instead of the request.
 function loomTableExplorerToken(): string {
-  const token = process.env.LOOM_TABLE_EXPLORER_TOKEN;
-  if (!token) {
-    if (env.NEXT_PUBLIC_API_MODE === "nest") {
-      return "";
-    }
-    throw new Error(
-      "LOOM_TABLE_EXPLORER_TOKEN is not set. The storefront proxy cannot authenticate " +
-        "against the legacy backend without it — see apps/storefront/.env.example.",
-    );
-  }
-  return token;
+  return process.env.LOOM_TABLE_EXPLORER_TOKEN || "";
 }
 
 async function proxyRequest(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
