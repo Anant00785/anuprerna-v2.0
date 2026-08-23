@@ -1,4 +1,6 @@
 import { apiRequest } from "../client";
+import { env } from "@/env";
+
 import {
   AddOrderPayload,
   RazorpayPaymentSession,
@@ -138,7 +140,6 @@ export const checkoutRepository = {
         method: "POST",
         body: JSON.stringify(payload),
       },
-      "legacy"
     );
 
     if (!response.success && !response.message) {
@@ -153,7 +154,7 @@ export const checkoutRepository = {
    */
   async createRazorpaySession(orderId: string | number): Promise<RazorpayPaymentSession> {
     const response = await apiRequest<any>(
-      "/create/payment/session",
+      "/create/payment-session",
       {
         method: "POST",
         body: JSON.stringify({
@@ -161,13 +162,12 @@ export const checkoutRepository = {
           paymentType: "advance",
         }),
       },
-      "legacy"
     );
 
     const entity = response.entity || response.payload || response.data || response;
     return {
       razorpayOrderId: entity.razorpayOrderId || entity.id || "",
-      key: entity.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_placeholder",
+      key: entity.key || env.NEXT_PUBLIC_RAZORPAY_KEY,
       amount: Number(entity.amount) || 0,
       currency: entity.currency || "INR",
     };
@@ -178,12 +178,11 @@ export const checkoutRepository = {
    */
   async createStripeSession(payload: Record<string, unknown>): Promise<StripePaymentSessionResponse> {
     const response = await apiRequest<any>(
-      "/create/stripe/session",
+      "/create/stripe/payment-session",
       {
         method: "POST",
         body: JSON.stringify(payload),
       },
-      "legacy"
     );
 
     return {
@@ -196,12 +195,11 @@ export const checkoutRepository = {
    */
   async verifyPaymentSuccess(payload: PaymentSuccessPayload): Promise<void> {
     await apiRequest<RainTreeResponse>(
-      "/payment/success",
+      "/update/payment/success",
       {
         method: "POST",
         body: JSON.stringify(payload),
       },
-      "legacy"
     );
   },
 
@@ -211,15 +209,15 @@ export const checkoutRepository = {
   async reportPaymentFailure(payload: PaymentFailPayload): Promise<void> {
     try {
       await apiRequest<RainTreeResponse>(
-        "/payment/fail",
+        "/update/payment/failure",
         {
           method: "POST",
           body: JSON.stringify(payload),
         },
-        "legacy"
       );
     } catch (err) {
       console.warn("Failed to report payment failure:", err);
     }
   },
+
 };

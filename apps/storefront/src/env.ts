@@ -9,7 +9,9 @@ const schema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url().default("https://loom-v2.anuprerna.com"),
   NEXT_PUBLIC_AUTH0_DOMAIN: z.string().min(1).default("dev-cxnfeuu6gvepp7qu.us.auth0.com"),
   NEXT_PUBLIC_AUTH0_CLIENT_ID: z.string().min(1).default("iW2PThISjeDP6I1dGoTgsoWDGwneBXPP"),
+  NEXT_PUBLIC_RAZORPAY_KEY: z.string().min(1).default("rzp_test_TPvtsOM52j6QKA"),
 });
+
 
 function cleanUrl(val: string | undefined, fallback: string): string {
   if (!val || val.trim() === "") return fallback;
@@ -24,4 +26,6 @@ export const env = schema.parse({
   NEXT_PUBLIC_API_URL: cleanUrl(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SPRINGBOOT_API_URL, "https://loom-v2.anuprerna.com"),
   NEXT_PUBLIC_AUTH0_DOMAIN: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "dev-cxnfeuu6gvepp7qu.us.auth0.com",
   NEXT_PUBLIC_AUTH0_CLIENT_ID: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "iW2PThISjeDP6I1dGoTgsoWDGwneBXPP",
+  NEXT_PUBLIC_RAZORPAY_KEY: process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_TPvtsOM52j6QKA",
 });
+

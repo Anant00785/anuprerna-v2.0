@@ -52,10 +52,40 @@ export class RazorpayPaymentService {
       }
     } catch {}
 
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const amountInPaise = Math.round(Number(amount) * 100);
+
+    let razorpayOrderId = "order_mock_" + Date.now();
+
+    // Create real Razorpay order if keys are configured
+    if (keyId && keySecret) {
+      try {
+        const credentials = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+        const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${credentials}`,
+          },
+          body: JSON.stringify({
+            amount: amountInPaise,
+            currency,
+            receipt: `order_${validOrderId}_${Date.now()}`,
+          }),
+        });
+        if (rzpRes.ok) {
+          const rzpOrder = await rzpRes.json();
+          razorpayOrderId = rzpOrder.id || razorpayOrderId;
+        }
+      } catch {}
+    }
+
     const session = {
-      razorpayOrderId: "order_mock_" + Date.now(),
-      amount: Math.round(Number(amount) * 100),
-      currency: currency,
+      razorpayOrderId,
+      key: keyId || "",
+      amount: amountInPaise,
+      currency,
     };
 
     await this.repository.create({
@@ -70,6 +100,7 @@ export class RazorpayPaymentService {
 
     return session;
   }
+
 
   async updateTransactionSuccess(tenant: any, request: RazorpayPaymentSuccessInput) {
     const validOrderId = await this.resolveValidOrderId(request.loomOrderId);
