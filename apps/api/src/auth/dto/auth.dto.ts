@@ -141,11 +141,12 @@ export class RegisterRequestDto {
 
 /** Swagger schema for Email specific registration. */
 export class RegisterEmailRequestDto {
-  @ApiProperty({ example: "newuser@example.com", description: "Account email address." })
+  @ApiPropertyOptional({ example: "newuser@example.com", description: "Account email address." })
+  @IsOptional()
   @IsString()
-  email!: string;
+  email?: string;
 
-  @ApiProperty({ example: "Password123!", minLength: 8, maxLength: 38, description: "Account password." })
+  @ApiPropertyOptional({ example: "Password123!", minLength: 8, maxLength: 38, description: "Account password." })
   @IsOptional()
   @IsString()
   password?: string;
@@ -159,17 +160,23 @@ export class RegisterEmailRequestDto {
   @IsOptional()
   @IsString()
   contactNumber?: string;
+
+  @ApiPropertyOptional({ description: "Optional nested tenant object from Loom clients." })
+  @IsOptional()
+  tenant?: any;
 }
 
 /** Swagger schema for Social specific registration. */
 export class RegisterSocialRequestDto {
-  @ApiProperty({ example: "socialuser@example.com", description: "Account email address." })
+  @ApiPropertyOptional({ example: "socialuser@example.com", description: "Account email address." })
+  @IsOptional()
   @IsString()
-  email!: string;
+  email?: string;
 
-  @ApiProperty({ example: "GOOGLE", description: "Social Provider (GOOGLE, FACEBOOK, APPLE)." })
+  @ApiPropertyOptional({ example: "GOOGLE", description: "Social Provider (GOOGLE, FACEBOOK, APPLE)." })
+  @IsOptional()
   @IsString()
-  provider!: string;
+  provider?: string;
 
   @ApiPropertyOptional({ example: "eyJhbGciOiJSUzI1NiIs...", description: "Auth0/Social Token." })
   @IsOptional()
@@ -180,6 +187,10 @@ export class RegisterSocialRequestDto {
   @IsOptional()
   @IsString()
   userName?: string;
+
+  @ApiPropertyOptional({ description: "Optional nested tenant object from Loom clients." })
+  @IsOptional()
+  tenant?: any;
 }
 
 export class SendOtpDto {
@@ -249,9 +260,19 @@ export class ResetPasswordDto {
 }
 
 export class CheckEmailTenantDto {
-  @ApiProperty({ example: "user@example.com", description: "Email address to check" })
+  @ApiPropertyOptional({ example: "user@example.com", description: "Email address to check" })
+  @IsOptional()
   @IsString()
-  email!: string;
+  email?: string;
+
+  @ApiPropertyOptional({ example: "user@example.com", description: "Username to check" })
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @ApiPropertyOptional({ description: "Optional nested tenant object" })
+  @IsOptional()
+  tenant?: any;
 }
 
 /** NVerseRequest(username, password) — email/password login body. */
@@ -261,10 +282,12 @@ export interface EmailLoginRequest {
 }
 
 export function parseEmailLoginRequest(body: unknown): EmailLoginRequest {
-  const b = (body ?? {}) as Record<string, unknown>;
+  const b = (body ?? {}) as Record<string, any>;
+  const rawEmail = b.username ?? b.email ?? b.tenant?.email ?? b.tenant?.username;
+  const rawPass = b.password ?? b.tenant?.password;
   return {
-    username: requireEmailShape(b.username ?? b.email),
-    password: requirePasswordShape(b.password),
+    username: requireEmailShape(rawEmail),
+    password: requirePasswordShape(rawPass),
   };
 }
 
@@ -276,11 +299,12 @@ export interface SocialLoginRequest {
 }
 
 export function parseSocialLoginRequest(body: unknown): SocialLoginRequest {
-  const b = (body ?? {}) as Record<string, unknown>;
+  const b = (body ?? {}) as Record<string, any>;
+  const rawEmail = b.username ?? b.email ?? b.tenant?.email;
   return {
-    username: requireEmailShape(b.username ?? b.email),
-    auth0Token: typeof b.password === "string" ? b.password : (typeof b.auth0Token === "string" ? b.auth0Token : (typeof b.token === "string" ? b.token : "social-token")),
-    provider: (b.provider as AuthProvider) || "GOOGLE",
+    username: requireEmailShape(rawEmail),
+    auth0Token: typeof b.password === "string" ? b.password : (typeof b.auth0Token === "string" ? b.auth0Token : (typeof b.token === "string" ? b.token : (b.tenant?.password || "social-token"))),
+    provider: (b.provider || b.tenant?.provider || "GOOGLE") as AuthProvider,
   };
 }
 
@@ -291,10 +315,11 @@ export interface ValidateProviderRequest {
 }
 
 export function parseValidateProviderRequest(body: unknown): ValidateProviderRequest {
-  const b = (body ?? {}) as Record<string, unknown>;
+  const b = (body ?? {}) as Record<string, any>;
+  const rawEmail = b.username ?? b.email ?? b.tenant?.email;
   return {
-    username: requireEmailShape(b.username ?? b.email),
-    provider: requireProvider(b.provider),
+    username: requireEmailShape(rawEmail),
+    provider: requireProvider(b.provider || b.tenant?.provider || "BASIC"),
   };
 }
 
@@ -307,12 +332,16 @@ export interface RegisterRequest {
 }
 
 export function parseRegisterRequest(body: unknown): RegisterRequest {
-  const b = (body ?? {}) as Record<string, unknown>;
-  const email = requireNonEmptyString(b.email ?? b.username, "email");
-  const password = typeof b.password === "string" && b.password.length > 0 ? b.password : "Password123!";
-  const userName = typeof b.userName === "string" ? b.userName : (typeof b.name === "string" ? b.name : email.split("@")[0]);
-  const contactNumber = typeof b.contactNumber === "string" ? b.contactNumber : (typeof b.phone === "string" ? b.phone : "");
-  const role = typeof b.role === "string" ? b.role : undefined;
+  const b = (body ?? {}) as Record<string, any>;
+  const rawEmail = b.email ?? b.username ?? b.tenant?.email ?? b.tenant?.username;
+  const email = requireNonEmptyString(rawEmail, "email");
+  const rawPass = b.password ?? b.tenant?.password;
+  const password = typeof rawPass === "string" && rawPass.length > 0 ? rawPass : "Password123!";
+  const rawName = b.userName ?? b.name ?? b.tenant?.name ?? b.tenant?.userName;
+  const userName = typeof rawName === "string" ? rawName : email.split("@")[0];
+  const rawPhone = b.contactNumber ?? b.phone ?? b.tenant?.contactNumber;
+  const contactNumber = typeof rawPhone === "string" ? rawPhone : "";
+  const role = typeof b.role === "string" ? b.role : (typeof b.tenant?.role === "string" ? b.tenant.role : undefined);
 
   return { email, password, userName, contactNumber, role };
 }

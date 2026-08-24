@@ -178,20 +178,23 @@ export class LoomLegacyAuthController {
     return this.handleRegisterEmail(body);
   }
 
-  private async handleRegisterEmail(body: RegisterEmailRequestDto) {
-    const email = body?.email;
-    const password = body?.password || "Password123!";
+  private async handleRegisterEmail(body: any) {
+    const email = (body?.tenant?.email || body?.email || "").trim().toLowerCase();
+    const password = body?.tenant?.password || body?.password || "Password123!";
     if (!email) return simpleResponse(false, "Email is required");
 
     const existing = await this.tenantLookup.findByEmail(email);
     if (existing) return simpleResponse(false, "Email is already registered");
 
+    const userName = body?.tenant?.name || body?.tenant?.userName || body?.userName || email.split("@")[0] || "Customer";
+    const contactNumber = body?.tenant?.contactNumber || body?.contactNumber || "";
+
     const hashedPassword = await this.gatekeeper.hashPassword(password);
     const tenant = await this.tenantLookup.createTenant({
       email,
       hashedPassword,
-      userName: body.userName || email.split("@")[0],
-      contactNumber: body.contactNumber || "",
+      userName,
+      contactNumber,
       role: "ROLE_CUSTOMER",
     });
 
@@ -202,7 +205,18 @@ export class LoomLegacyAuthController {
       roles: tenant.roles,
     };
     const token = await this.gatekeeper.generateToken(authenticatedTenant);
-    return keyedResponse("token", token);
+    return {
+      success: true,
+      message: "Customer registered successfully",
+      token,
+      entity: {
+        id: tenant.id,
+        email: tenant.email,
+        userName: (tenant as any).userName || userName,
+        registered: true,
+        emailVerified: true,
+      },
+    };
   }
 
   @Post("register/social")
@@ -288,9 +302,20 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiOperation({ summary: "Check if tenant email is registered (GET)" })
   async checkEmailTenantGet(@Query("email") email: string) {
-    if (!email) return simpleResponse(false, "Email is required");
-    const tenant = await this.tenantLookup.findByEmail(email);
-    return keyedResponse("isRegistered", Boolean(tenant));
+    const clean = (email || "").trim().toLowerCase();
+    if (!clean) return simpleResponse(false, "Email is required");
+    const tenant = await this.tenantLookup.findByEmail(clean);
+    const registered = Boolean(tenant);
+    return {
+      success: true,
+      isRegistered: registered,
+      registered,
+      entity: {
+        registered,
+        emailVerified: tenant ? tenant.emailVerified : false,
+        provider: tenant ? tenant.provider : "BASIC",
+      },
+    };
   }
 
   @Post("check-email/tenant")
@@ -298,8 +323,20 @@ export class LoomLegacyAuthController {
   @ApiOperation({ summary: "Check if tenant email is registered (POST)" })
   @ApiBody({ type: CheckEmailTenantDto })
   async checkEmailTenantPost(@Body() body: CheckEmailTenantDto) {
-    if (!body?.email) return simpleResponse(false, "Email is required");
-    const tenant = await this.tenantLookup.findByEmail(body.email);
-    return keyedResponse("isRegistered", Boolean(tenant));
+    const rawEmail = body?.email || (body as any)?.username || (body as any)?.tenant?.email || "";
+    const clean = rawEmail.trim().toLowerCase();
+    if (!clean) return simpleResponse(false, "Email is required");
+    const tenant = await this.tenantLookup.findByEmail(clean);
+    const registered = Boolean(tenant);
+    return {
+      success: true,
+      isRegistered: registered,
+      registered,
+      entity: {
+        registered,
+        emailVerified: tenant ? tenant.emailVerified : false,
+        provider: tenant ? tenant.provider : "BASIC",
+      },
+    };
   }
 }
