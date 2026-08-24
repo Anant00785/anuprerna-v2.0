@@ -70,25 +70,11 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
-    let response: Response;
-    try {
-      response = await fetch(targetUrl, {
-        method: request.method,
-        headers: requestHeaders,
-        body,
-      });
-    } catch (fetchErr) {
-      if (backendBase !== springBase) {
-        const fallbackUrl = `${springBase}/${targetPath}${url.search}`;
-        response = await fetch(fallbackUrl, {
-          method: request.method,
-          headers: requestHeaders,
-          body,
-        });
-      } else {
-        throw fetchErr;
-      }
-    }
+    const response = await fetch(targetUrl, {
+      method: request.method,
+      headers: requestHeaders,
+      body,
+    });
 
     const responseHeaders = new Headers(response.headers);
     responseHeaders.delete("transfer-encoding");
@@ -102,8 +88,8 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: false, success: true, payload: [], entity: [], message: err?.message || "Empty response" },
-      { status: 200 }
+      { error: true, success: false, payload: [], entity: [], message: err?.message || "Backend request failed" },
+      { status: 502 }
     );
   }
 }
