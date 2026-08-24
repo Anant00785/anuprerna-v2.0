@@ -97,24 +97,37 @@ export const authRepository = {
    * Authenticate with email & password
    */
   async loginEmail(username: string, password: string): Promise<JWTResponse> {
-    return apiRequest<JWTResponse>("authenticate/email", {
+    const res = await apiRequest<any>("authenticate/email", {
       method: "POST",
       body: JSON.stringify({ username, password }),
     });
+    const token = res?.jwt || res?.token || res?.accessToken || "";
+    return {
+      jwt: token,
+      token,
+      ...res,
+    };
   },
 
   /**
    * Authenticate with Social provider (e.g. GOOGLE)
    */
   async loginSocial(username: string, token: string, provider: string = "GOOGLE"): Promise<JWTResponse> {
-    return apiRequest<JWTResponse>("authenticate/social", {
+    const res = await apiRequest<any>("authenticate/social", {
       method: "POST",
       body: JSON.stringify({
         username,
         password: token,
+        auth0Token: token,
         provider,
       }),
     });
+    const jwt = res?.jwt || res?.token || res?.accessToken || "";
+    return {
+      jwt,
+      token: jwt,
+      ...res,
+    };
   },
 
   /**

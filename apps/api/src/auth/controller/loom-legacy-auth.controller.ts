@@ -62,7 +62,13 @@ export class LoomLegacyAuthController {
       roles: tenant.roles,
     };
     const token = await this.gatekeeper.generateToken(authenticatedTenant);
-    return keyedResponse("token", token);
+    return {
+      success: true,
+      message: "",
+      token,
+      jwt: token,
+      entity: { token, jwt: token, email: tenant.email },
+    };
   }
 
   @Post("authenticate/social")
@@ -70,13 +76,20 @@ export class LoomLegacyAuthController {
   @ApiOperation({ summary: "Authenticate via social provider (LOOM route)" })
   @ApiBody({ type: LoomAuthenticateSocialDto })
   async authenticateSocial(@Body() body: LoomAuthenticateSocialDto) {
-    const userEmail = body?.email || body?.username;
+    const userEmail = (body?.email || body?.username || "").trim().toLowerCase();
     if (!userEmail) {
       throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
     }
-    const tenant = await this.tenantLookup.findByEmail(userEmail);
+    let tenant = await this.tenantLookup.findByEmail(userEmail);
     if (!tenant) {
-      throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+      // Auto-create social tenant if not exists yet
+      tenant = await this.tenantLookup.createTenant({
+        email: userEmail,
+        hashedPassword: "social-authenticated",
+        userName: userEmail.split("@")[0],
+        contactNumber: "",
+        role: "ROLE_CUSTOMER",
+      });
     }
 
     const authenticatedTenant: AuthenticatedTenant = {
@@ -86,7 +99,13 @@ export class LoomLegacyAuthController {
       roles: tenant.roles,
     };
     const token = await this.gatekeeper.generateToken(authenticatedTenant);
-    return keyedResponse("token", token);
+    return {
+      success: true,
+      message: "",
+      token,
+      jwt: token,
+      entity: { token, jwt: token, email: userEmail },
+    };
   }
 
   @Get("get/authority/token")

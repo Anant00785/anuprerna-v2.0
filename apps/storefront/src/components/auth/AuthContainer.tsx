@@ -65,14 +65,15 @@ const AuthFlow: React.FC = () => {
       }
 
       const res = await authRepository.loginSocial(googleEmail, idToken, "GOOGLE");
-      if (!res?.jwt) {
+      const jwtToken = res?.jwt || (res as any)?.token || (res as any)?.accessToken;
+      if (!jwtToken) {
         setGoogleError("Google login succeeded, but no JWT token was returned.");
         return;
       }
 
-      setToken(res.jwt);
+      setToken(jwtToken);
       try {
-        setUser(await profileRepository.getCustomerProfile(res.jwt));
+        setUser(await profileRepository.getCustomerProfile(jwtToken));
       } catch {
         setUser({ email: googleEmail });
       }
