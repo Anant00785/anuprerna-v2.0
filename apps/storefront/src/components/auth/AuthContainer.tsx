@@ -24,13 +24,14 @@ const AuthFlow: React.FC = () => {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("returnUrl") || "/profile/dashboard";
+  const returnUrl = searchParams.get("returnUrl") || "/";
 
   const { setToken, setUser } = useAuthStore();
   const { loginWithPopup, getIdTokenClaims, user: auth0User } = useAuth0();
 
   const handleAuthComplete = () => {
     router.push(returnUrl);
+    router.refresh();
   };
 
   /**
@@ -172,6 +173,7 @@ const AuthFlow: React.FC = () => {
                 {step === "REGISTER" && (
                   <AuthRegisterForm
                     email={email}
+                    onSuccessRegister={handleAuthComplete}
                     onBack={() => setStep("EMAIL")}
                   />
                 )}

@@ -2,15 +2,20 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authRepository } from "@/lib/api/repositories/auth.repository";
+import { profileRepository } from "@/lib/api/repositories/profile.repository";
+import { useAuthStore } from "@/stores/auth.store";
 
 interface AuthRegisterFormProps {
   email: string;
+  onSuccessRegister?: () => void;
   onBack: () => void;
 }
 
 export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
   email,
+  onSuccessRegister,
   onBack,
 }) => {
   const [firstName, setFirstName] = useState("");
@@ -24,6 +29,12 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccessful, setIsSuccessful] = useState(false);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl") || "/";
+
+  const { setToken, setUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +59,6 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
     setErrorMsg(null);
 
     try {
-      // Loom's registration endpoint returns an ack, never a JWT — the customer
-      // has to verify their email and then log in. Do not auto-authenticate here.
       const res = await authRepository.registerCustomer({
         email,
         password,
@@ -60,7 +69,29 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
         setErrorMsg(res.message || "Registration failed. Please try again.");
         return;
       }
+
+      const token = (res as any)?.token;
+      if (token) {
+        setToken(token);
+        try {
+          const profile = await profileRepository.getCustomerProfile(token);
+          setUser(profile);
+        } catch {
+          setUser({ email, userName: `${firstName.trim()} ${lastName.trim()}` });
+        }
+      }
+
       setIsSuccessful(true);
+
+      // Auto-redirect to home or returnUrl after short confirmation feedback
+      setTimeout(() => {
+        if (onSuccessRegister) {
+          onSuccessRegister();
+        } else {
+          router.push(returnUrl);
+          router.refresh();
+        }
+      }, 1000);
     } catch (err: any) {
       setErrorMsg(err?.message || "Registration failed. Please try again.");
     } finally {
