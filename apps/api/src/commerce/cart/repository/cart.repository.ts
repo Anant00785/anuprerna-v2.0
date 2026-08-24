@@ -48,7 +48,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, gte, isNotNull, lte } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
-import { cartItem } from "../../../database/schema/schema.js";
+import { cartItem, productFabric, productFinished, sizeProfileOption } from "../../../database/schema/schema.js";
 import { CartItemData, CartItemSummaryRow, OrderType, Unit } from "../types/cart.types.js";
 
 export interface InsertCartItemValues {
@@ -321,7 +321,58 @@ export class CartRepository {
 
   /** BehemothCRUDDAOController#addNewEntity(cartItem) equivalent */
   async insert(data: InsertCartItemValues) {
-    const rows = await this.db.insert(cartItem).values(data).returning();
+    let cleanFabricId: number | null = null;
+    let cleanFinishedId: number | null = null;
+    let cleanSelectedFabricId: number | null = null;
+    let cleanSizeOptionId: number | null = null;
+
+    try {
+      if (data.fabricProductId && data.fabricProductId > 0) {
+        const byId = await this.db.select({ id: productFabric.id }).from(productFabric).where(eq(productFabric.id, BigInt(data.fabricProductId))).limit(1);
+        if (byId.length > 0) {
+          cleanFabricId = Number(byId[0].id);
+        } else {
+          const byProdId = await this.db.select({ id: productFabric.id }).from(productFabric).where(eq(productFabric.productId, data.fabricProductId)).limit(1);
+          if (byProdId.length > 0) {
+            cleanFabricId = Number(byProdId[0].id);
+          }
+        }
+      }
+
+      if (data.finishedProductId && data.finishedProductId > 0) {
+        const byId = await this.db.select({ id: productFinished.id }).from(productFinished).where(eq(productFinished.id, BigInt(data.finishedProductId))).limit(1);
+        if (byId.length > 0) {
+          cleanFinishedId = Number(byId[0].id);
+        } else {
+          const byProdId = await this.db.select({ id: productFinished.id }).from(productFinished).where(eq(productFinished.productId, data.finishedProductId)).limit(1);
+          if (byProdId.length > 0) {
+            cleanFinishedId = Number(byProdId[0].id);
+          }
+        }
+      }
+
+      if (data.selectedFabricId && data.selectedFabricId > 0) {
+        const byId = await this.db.select({ id: productFabric.id }).from(productFabric).where(eq(productFabric.id, BigInt(data.selectedFabricId))).limit(1);
+        if (byId.length > 0) cleanSelectedFabricId = Number(byId[0].id);
+      }
+
+      if (data.selectedSizeOptionId && data.selectedSizeOptionId > 0) {
+        const byId = await this.db.select({ id: sizeProfileOption.id }).from(sizeProfileOption).where(eq(sizeProfileOption.id, BigInt(data.selectedSizeOptionId))).limit(1);
+        if (byId.length > 0) cleanSizeOptionId = Number(byId[0].id);
+      }
+    } catch (e) {
+      console.warn("[CartRepository] FK lookup fallback:", e);
+    }
+
+    const payload: InsertCartItemValues = {
+      ...data,
+      fabricProductId: cleanFabricId,
+      finishedProductId: cleanFinishedId,
+      selectedFabricId: cleanSelectedFabricId,
+      selectedSizeOptionId: cleanSizeOptionId,
+    };
+
+    const rows = await this.db.insert(cartItem).values(payload).returning();
     return rows[0];
   }
 
