@@ -22,15 +22,15 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   const targetPath = path.join("/");
   const url = new URL(request.url);
 
-  // All traffic goes to the NestJS backend (Render).
-  // Legacy SpringBoot (loom-v2.anuprerna.com) is no longer used.
   const nestBase = (
+    process.env.NEXT_PUBLIC_API_URL ||
     env.NEXT_PUBLIC_API_URL ||
     env.NEXT_PUBLIC_NEST_API_URL ||
     "http://localhost:3000"
   ).replace(/\/$/, "");
 
   const targetUrl = `${nestBase}/${targetPath}${url.search}`;
+  console.log(`[Storefront Proxy] ${request.method} ${targetPath} -> ${targetUrl}`);
 
   const requestHeaders = new Headers(request.headers);
   
