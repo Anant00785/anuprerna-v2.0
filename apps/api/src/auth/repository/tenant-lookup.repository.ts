@@ -8,7 +8,7 @@
  *  - Fault-tolerant in-memory fallback when Postgres is unreachable.
  */
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { loomTenant, userRole } from "../../database/schema/schema.js";
 import { AuthProvider, TenantLoginMetadataUpdate, TenantWithRoles, UserRole } from "../types/auth.types.js";
@@ -78,12 +78,13 @@ export class TenantLookupRepository {
 
   /** NVerseUserDetailsService#loadUserByUsername(String username) — username is the tenant's email. */
   async findByEmail(email: string): Promise<TenantWithRoles | null> {
+    const cleanEmail = email.trim().toLowerCase();
     try {
       const rows = await this.db
         .select(TENANT_ROLE_COLUMNS)
         .from(loomTenant)
         .leftJoin(userRole, eq(userRole.userId, loomTenant.id))
-        .where(eq(loomTenant.email, email));
+        .where(sql`lower(${loomTenant.email}) = ${cleanEmail}`);
 
       const result = mapRowsToTenant(rows as unknown as TenantRoleRow[]);
       if (result) return result;
@@ -91,7 +92,7 @@ export class TenantLookupRepository {
       // Fallback to in-memory store if DB query fails
     }
 
-    return inMemoryTenants.get(email.toLowerCase()) || null;
+    return inMemoryTenants.get(cleanEmail) || null;
   }
 
   /** Lookup by LoomTenant#uid (loom_id column) — used to resolve the tenant behind a verified JWT/uid. */

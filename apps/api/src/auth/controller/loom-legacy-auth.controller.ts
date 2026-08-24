@@ -43,7 +43,10 @@ export class LoomLegacyAuthController {
     }
 
     const tenant = await this.tenantLookup.findByEmail(username);
-    if (!tenant || tenant.banned || tenant.suspended || tenant.deleted) {
+    if (!tenant) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
+    }
+    if (tenant.banned || tenant.suspended || tenant.deleted) {
       throw new UnauthorizedException(AuthErrorCode.ACCOUNT_DISABLED);
     }
 
