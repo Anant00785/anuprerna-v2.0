@@ -186,33 +186,26 @@ export class CartService {
     const values = toInsertValues(tenantId, input);
 
     if (input.fabricProductId && input.fabricProductId !== 0) {
-      const preview = await this.fabricPreview.retrieveEntity(input.fabricProductId);
-      if (!preview) return ActionCode.INSERT_FAILURE;
       values.fabricProductId = input.fabricProductId;
     }
 
     if (input.finishedProductId && input.finishedProductId !== 0) {
-      const preview = await this.finishedPreview.retrieveEntity(input.finishedProductId);
-      if (!preview) return ActionCode.INSERT_FAILURE;
       values.finishedProductId = input.finishedProductId;
     }
 
     if (input.selectedFabricId && input.selectedFabricId !== 0) {
-      const fabric = await this.fabricPreview.retrieveFabricProductByProductId(input.selectedFabricId);
-      if (!fabric) return ActionCode.INSERT_FAILURE;
       values.selectedFabricId = input.selectedFabricId;
     }
 
     if (input.selectedSizeOptionId && input.selectedSizeOptionId !== 0) {
-      const size = await this.sizeProfileOption.retrieveSizeProfileOption(input.selectedSizeOptionId);
-      if (!size) return ActionCode.INSERT_FAILURE;
       values.selectedSizeOptionId = input.selectedSizeOptionId;
     }
 
     try {
       await this.repo.insert(values);
       return ActionCode.INSERT_SUCCESS;
-    } catch {
+    } catch (err) {
+      console.error("[CartService] Insert error:", err);
       return ActionCode.INSERT_FAILURE;
     }
   }

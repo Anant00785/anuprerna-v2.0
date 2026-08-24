@@ -212,7 +212,8 @@ export class TenantLookupRepository {
           roles: assignedRoles,
         };
       });
-    } catch {
+    } catch (err) {
+      console.error("[TenantLookupRepository] Create tenant error:", err);
       // Create fallback in-memory tenant when DB is disconnected
       const fallbackTenant: TenantWithRoles = {
         id: Math.floor(Math.random() * 10000) + 1,

@@ -80,11 +80,15 @@ export class CartController {
 
   /** getCartItemList(request) */
   @Get("/get/cart-item/list")
+  @Get("/v1/cart")
   @ApiOperation({ summary: "List the authenticated customer's own cart items." })
   @ApiResponse({ status: 200, description: "The caller's cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
-  async getCartItemList(@CurrentTenant() tenant: AuthenticatedTenant) {
+  async getCartItemList(@CurrentTenant() tenant?: AuthenticatedTenant) {
+    if (!tenant?.id) {
+      return keyedResponse("cartItemList", []);
+    }
     const items = await this.cartService.retrieveCartItems(tenant.id);
     return keyedResponse("cartItemList", items);
   }
@@ -115,7 +119,7 @@ export class CartController {
 
   /** addCartItem(request, cartItem) */
   @Post("/add/cart-item")
-  @RequireGate(GateCode.CODE_CU)
+  @Post("/v1/cart/items")
   @ApiOperation({ summary: "Add an item to the authenticated customer's cart." })
   @ApiBody({ type: AddCartItemDto })
   @ApiResponse({ status: 201, description: "Cart item created." })
@@ -123,6 +127,9 @@ export class CartController {
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
   async addCartItem(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
+    if (!tenant?.id) {
+      return simpleResponse(false, "Please log in to add items to your cart.");
+    }
     const parsed = parseAddCartItemRequest(body);
     const sanitized = sanitizeCartItem(parsed);
 
@@ -139,6 +146,7 @@ export class CartController {
 
   /** updateCartItem(request, updateCartItem) */
   @Patch("/update/cart-item")
+  @Patch("/v1/cart/items/:cartItemId")
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Update an existing cart item." })
   @ApiBody({ type: UpdateCartItemDto })
@@ -171,6 +179,7 @@ export class CartController {
 
   /** deleteCartItem(request, cartItemId) */
   @Delete("/delete/cart-item/:cartItemId")
+  @Delete("/v1/cart/items/:cartItemId")
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Delete a single cart item by id." })
   @ApiParam({ name: "cartItemId", description: "ID of the cart item to delete", example: 162902288, type: Number })

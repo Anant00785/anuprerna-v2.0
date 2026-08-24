@@ -13,14 +13,14 @@ export const wishlistRepository = {
     }
 
     try {
-      const response = await apiRequest<{ productPreviewList?: Record<string, any>[] } | Record<string, any>[]>(
+      const response = await apiRequest<{ productPreviewList?: Record<string, any>[]; data?: Record<string, any>[] } | Record<string, any>[]>(
         `get/product-preview-list/csv/${encodeURIComponent(csv)}`,
         { headers }
       );
 
       const items = Array.isArray(response)
         ? response
-        : (response?.productPreviewList ?? []);
+        : (response?.productPreviewList ?? (response as any)?.data ?? []);
 
       return items.map((item) => {
         const group: 'fabric' | 'finished' =

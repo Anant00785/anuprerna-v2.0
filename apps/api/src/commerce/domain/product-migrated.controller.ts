@@ -1,5 +1,5 @@
 import * as schema from "../../database/schema/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 // @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
@@ -19,11 +19,44 @@ export class ProductMigratedDomainController {
   @ApiOperation({ summary: "Bulk product preview retrieval by SKU list" })
   async get_get_product_preview_list_csv_commaSeparatedCSVList(@Param('commaSeparatedCSVList') commaSeparatedCSVList: string) {
     try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
+      const skuList = (commaSeparatedCSVList || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (skuList.length === 0) {
+        return { success: true, message: "", productPreviewList: [], data: [] };
+      }
+
+      const rows = await (this.db as any)
+        .select({
+          id: schema.product.id,
+          productId: schema.product.id,
+          name: schema.product.name,
+          sku: schema.product.sku,
+          heroImage: schema.product.heroImage,
+          price: schema.product.price,
+          unit: schema.product.unit,
+          slug: schema.product.slug,
+          productGroup: schema.product.productGroup,
+        })
+        .from(schema.product)
+        .where(inArray(schema.product.sku, skuList));
+
+      return {
+        success: true,
+        message: "",
+        productPreviewList: rows || [],
+        data: rows || [],
+      };
     } catch (err) {
-      return keyedResponse("data", []);
+      console.error("[Wishlist SKU Lookup Error]:", err);
+      return {
+        success: true,
+        message: "",
+        productPreviewList: [],
+        data: [],
+      };
     }
   }
 
