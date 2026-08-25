@@ -595,29 +595,44 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
   color: #9c8a6c;
 }
 
-.fb-s-navigation ul .fb-s-nav-link.trigger-enter .fb-s-nav-dropdown {
-  display: block;
-}
-
-.fb-s-navigation ul .fb-s-nav-link.trigger-enter-active .fb-s-nav-dropdown {
-  opacity: 1;
+.fb-s-navigation ul .fb-s-nav-link {
+  position: relative;
 }
 
 .fb-s-navigation ul .fb-s-nav-link .fb-s-nav-dropdown {
   opacity: 0;
   position: absolute;
-  overflow: hidden;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: white;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
   padding: 12px;
-  top: -35px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  transform: translateY(90px);
-  will-change: transform;
-  display: none;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(6px);
+  pointer-events: none;
+  display: block;
+  visibility: hidden;
   width: max-content;
   font-size: 0.875rem;
   line-height: 1.25rem;
-  z-index: 50;
+  z-index: 60;
+}
+
+.fb-s-navigation ul .fb-s-nav-link.trigger-enter .fb-s-nav-dropdown,
+.fb-s-navigation ul .fb-s-nav-link.trigger-enter-active .fb-s-nav-dropdown,
+.fb-s-navigation ul .fb-s-nav-link:hover .fb-s-nav-dropdown {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.fb-s-navigation ul .fb-s-nav-link .fb-s-nav-dropdown.dropdown-align-right {
+  left: auto;
+  right: 0;
 }
 
 .fb-s-navigation ul .fb-s-nav-link .fb-s-nav-dropdown .fb-sn-section {
@@ -740,35 +755,7 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
 }
 
 .dropdownBackground {
-  width: 100px;
-  height: 100px;
-  max-height: 86vh;
-  position: absolute;
-  top: 0;
-  background: white;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-  box-sizing: border-box;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
-  transform-origin: 50% 0;
-  display: flex;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 40;
-}
-
-.dropdownBackground .arrow {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  display: block;
-  background: white;
-  border-left: 1px solid #E5E7EB;
-  border-top: 1px solid #E5E7EB;
-  transform: translate(-50%, -50%) rotate(45deg);
-  z-index: 41;
+  display: none !important;
 }
 
 .dropdownBackground.open {

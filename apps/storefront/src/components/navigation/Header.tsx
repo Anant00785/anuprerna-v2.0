@@ -777,7 +777,7 @@ export function Header() {
           <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
             <span className="fb-s-nav-main whitespace-nowrap">Our Story</span>
 
-            <div className="fb-s-nav-dropdown fb-resources-dropdown">
+            <div className="fb-s-nav-dropdown fb-resources-dropdown dropdown-align-right">
               <div className="w-[520px] p-2">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="fb-sn-section bg-[#F6F8F6] rounded-lg p-4 border border-[#E3EBE3]">
@@ -840,7 +840,7 @@ export function Header() {
           <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
             <span className="fb-s-nav-main whitespace-nowrap">B2B</span>
 
-            <div className="fb-s-nav-dropdown fb-resources-dropdown">
+            <div className="fb-s-nav-dropdown fb-resources-dropdown dropdown-align-right">
               <div className="w-[300px] p-2">
                 <div className="fb-sn-section bg-[#FAF8F5] rounded-lg p-4 border border-[#EFEEE9] shadow-xs">
                   <div className="fb-sn-category capitalize font-bold text-sm text-[#1F1F1F] mb-3 pb-2 border-b border-[#EAE6DF]">
