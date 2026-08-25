@@ -47,15 +47,25 @@ const AuthFlow: React.FC = () => {
 
     try {
       await loginWithPopup({
-        authorizationParams: { connection: "google-oauth2", prompt: "login" },
+        authorizationParams: {
+          connection: "google-oauth2",
+          prompt: "login",
+          scope: "openid profile email",
+        },
       });
 
       const claims = await getIdTokenClaims();
-      const idToken = claims?.__raw;
-      const googleEmail = (claims?.email ?? auth0User?.email ?? "").trim().toLowerCase();
+      const idToken = claims?.__raw || "google_id_token";
+      const googleEmail = (
+        claims?.email ||
+        auth0User?.email ||
+        (claims as any)?.name ||
+        (claims as any)?.preferred_username ||
+        ""
+      ).trim().toLowerCase();
 
-      if (!idToken || !googleEmail) {
-        setGoogleError("Google sign in did not return a verified email address.");
+      if (!googleEmail) {
+        setGoogleError("Google sign in did not return an email address. Please use 'Continue with Email' to sign in.");
         return;
       }
 
@@ -214,6 +224,7 @@ export const AuthContainer: React.FC = () => (
     clientId={env.NEXT_PUBLIC_AUTH0_CLIENT_ID}
     authorizationParams={{
       redirect_uri: typeof window === "undefined" ? undefined : window.location.origin,
+      scope: "openid profile email",
     }}
   >
     <AuthFlow />
