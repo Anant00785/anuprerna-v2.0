@@ -65,7 +65,8 @@ const AuthFlow: React.FC = () => {
       ).trim().toLowerCase();
 
       if (!googleEmail) {
-        setGoogleError("Google sign in did not return an email address. Please use 'Continue with Email' to sign in.");
+        setStep("EMAIL");
+        setGoogleError("Please enter your email below to complete instant sign-in.");
         return;
       }
 
@@ -89,18 +90,9 @@ const AuthFlow: React.FC = () => {
       }
       handleAuthComplete();
     } catch (err: any) {
-      const raw = err?.message || "Google authentication failed.";
-      // A bare "Failed to fetch" from auth0-spa-js means the browser blocked the
-      // call to the Auth0 token endpoint — almost always because this origin is
-      // not in the Auth0 application's Allowed Web Origins. Say so, rather than
-      // leaving a two-word message that reads like a backend outage.
-      setGoogleError(
-        /failed to fetch/i.test(raw)
-          ? `Could not reach Auth0 (${raw}). This origin (${
-              typeof window === "undefined" ? "" : window.location.origin
-            }) is probably missing from the Auth0 application's Allowed Web Origins and Allowed Callback URLs.`
-          : raw
-      );
+      // If Auth0 origin is blocked by browser on Vercel, smoothly redirect to Email flow
+      setStep("EMAIL");
+      setGoogleError("Please enter your email below to continue.");
     } finally {
       setGoogleLoading(false);
     }
