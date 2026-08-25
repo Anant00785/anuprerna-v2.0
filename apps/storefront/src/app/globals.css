@@ -741,9 +741,11 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
   position: absolute;
   top: 0;
   background: white;
-  border: 3px solid #EFEEE9;
-  border-radius: 8px;
-  transition: all 0.3s ease, opacity 0.1s ease, transform 0.2s ease;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-sizing: border-box;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
   transform-origin: 50% 0;
   display: flex;
   justify-content: center;
@@ -754,11 +756,14 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
 
 .dropdownBackground .arrow {
   position: absolute;
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   display: block;
-  background: #EFEEE9;
-  transform: translate(-35%, -50%) rotate(45deg);
+  background: white;
+  border-left: 1px solid #E5E7EB;
+  border-top: 1px solid #E5E7EB;
+  transform: translate(-50%, -50%) rotate(45deg);
+  z-index: 41;
 }
 
 .dropdownBackground.open {

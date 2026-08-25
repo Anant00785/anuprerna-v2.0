@@ -778,59 +778,59 @@ export function Header() {
             <span className="fb-s-nav-main whitespace-nowrap">Our Story</span>
 
             <div className="fb-s-nav-dropdown fb-resources-dropdown">
-              <div className="grid grid-cols-2 gap-1">
-                <div className="fb-sn-section color-tetradic-1 rounded px-3 py-3">
-                  <div className="fb-sn-category capitalize font-bold mb-2">
-                    <span className="flex justify-start items-center gap-2">
-                      <div>About Us</div>
-                    </span>
+              <div className="w-[520px] p-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="fb-sn-section bg-[#F6F8F6] rounded-lg p-4 border border-[#E3EBE3]">
+                    <div className="fb-sn-category capitalize font-bold text-sm text-[#1F1F1F] mb-3 pb-2 border-b border-[#D8E4D8]">
+                      About Us
+                    </div>
+                    <div className="fb-sn-sub-category flex flex-col gap-2 text-xs text-gray-700">
+                      <Link href="/content/about-us/about-the-brand/56485" target="_blank" className="hover:text-[#2E5E4E] hover:translate-x-0.5 transition-all py-0.5">
+                        About The Brand
+                      </Link>
+                      <Link href="/content/about-us/about-our-impact/57938" target="_blank" className="hover:text-[#2E5E4E] hover:translate-x-0.5 transition-all py-0.5">
+                        About Our Impact
+                      </Link>
+                      <Link href="/content/about-us/about-the-founder/57073" target="_blank" className="hover:text-[#2E5E4E] hover:translate-x-0.5 transition-all py-0.5">
+                        About the Founder
+                      </Link>
+                      <Link href="/content/about-us/about-anuprerna-studio/53794" target="_blank" className="hover:text-[#2E5E4E] hover:translate-x-0.5 transition-all py-0.5">
+                        About the studio
+                      </Link>
+                      <Link href="/contact" className="hover:text-[#2E5E4E] hover:translate-x-0.5 transition-all py-0.5">
+                        Contact Us
+                      </Link>
+                    </div>
                   </div>
-                  <div className="fb-sn-sub-category">
-                    <Link href="/content/about-us/about-the-brand/56485" target="_blank">
-                      <div>About The Brand</div>
-                    </Link>
-                    <Link href="/content/about-us/about-our-impact/57938" target="_blank">
-                      <div>About Our Impact</div>
-                    </Link>
-                    <Link href="/content/about-us/about-the-founder/57073" target="_blank">
-                      <div>About the Founder</div>
-                    </Link>
-                    <Link href="/content/about-us/about-anuprerna-studio/53794" target="_blank">
-                      <div>About the studio</div>
-                    </Link>
-                    <Link href="/contact">
-                      <div>Contact Us</div>
-                    </Link>
-                  </div>
-                </div>
 
-                <div className="fb-sn-section color-complementary-2 rounded px-3 py-3">
-                  <div className="fb-sn-category capitalize font-bold mb-2">
-                    <div>Care guide</div>
+                  <div className="fb-sn-section bg-[#FDF8F3] rounded-lg p-4 border border-[#F3E7DC]">
+                    <div className="fb-sn-category capitalize font-bold text-sm text-[#1F1F1F] mb-3 pb-2 border-b border-[#ECDCCD]">
+                      Care guide
+                    </div>
+                    <div className="fb-sn-sub-category flex flex-col gap-2 text-xs text-gray-700">
+                      <Link href="/content/care-guide/how-to-nurture-your-natural-dyed-clothing/126408" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                        Natural Dyed Fabric CareGuide
+                      </Link>
+                      <Link href="/content/care-guide/handmade-textiles-care-guide/108968" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                        Handmade Textiles CareGuide
+                      </Link>
+                      <Link href="/content/care-guide/say-goodbye-to-shrinkage-a-guide-for-fabric-care/2114526" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                        Fabric Shrinkage CareGuide
+                      </Link>
+                    </div>
                   </div>
-                  <div className="fb-sn-sub-category">
-                    <Link href="/content/care-guide/how-to-nurture-your-natural-dyed-clothing/126408" target="_blank">
-                      <div>Natural Dyed Fabric CareGuide</div>
-                    </Link>
-                    <Link href="/content/care-guide/handmade-textiles-care-guide/108968" target="_blank">
-                      <div>Handmade Textiles CareGuide</div>
-                    </Link>
-                    <Link href="/content/care-guide/say-goodbye-to-shrinkage-a-guide-for-fabric-care/2114526" target="_blank">
-                      <div>Fabric Shrinkage CareGuide</div>
-                    </Link>
-                  </div>
-                </div>
 
-                <div className="fb-sn-section color-analogous-1 rounded-md flex justify-center items-center min-h-[100px] col-span-2">
-                  <Link href="/blogs" target="_blank" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
-                    <span className="mr-1">Read More Of Our Stories</span>
-                    <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-                      <g fillRule="evenodd">
-                        <path className="HoverArrow__linePath" d="M0 5h7"></path>
-                        <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4"></path>
-                      </g>
-                    </svg>
-                  </Link>
+                  <div className="fb-sn-section bg-[#FAF7F2] rounded-lg p-3 border border-[#EAE3D9] flex justify-center items-center col-span-2">
+                    <Link href="/blogs" target="_blank" className="fb-arrow-btn flex items-center justify-center text-xs font-semibold text-[#7D5A20] hover:text-[#5A3F12] transition-colors">
+                      <span className="mr-1">Read More Of Our Stories</span>
+                      <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                        <g fillRule="evenodd">
+                          <path className="HoverArrow__linePath" d="M0 5h7"></path>
+                          <path className="HoverArrow__tipPath" d="M1 1l4 4-4 4"></path>
+                        </g>
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -841,32 +841,32 @@ export function Header() {
             <span className="fb-s-nav-main whitespace-nowrap">B2B</span>
 
             <div className="fb-s-nav-dropdown fb-resources-dropdown">
-              <div className="grid grid-cols-1 gap-1">
-                <div className="fb-sn-section color-tetradic-3 rounded px-3 py-3">
-                  <div className="fb-sn-category capitalize font-bold mb-2">
-                    <div>Wholesale for Brands</div>
+              <div className="w-[300px] p-2">
+                <div className="fb-sn-section bg-[#FAF8F5] rounded-lg p-4 border border-[#EFEEE9] shadow-xs">
+                  <div className="fb-sn-category capitalize font-bold text-sm text-[#1F1F1F] mb-3 pb-2 border-b border-[#EAE6DF]">
+                    Wholesale for Brands
                   </div>
-                  <div className="fb-sn-sub-category">
-                    <Link href="/wholesale-partner-program" target="_blank">
-                      <div>Wholesale <span className="font-bold">Partner</span> Program</div>
+                  <div className="fb-sn-sub-category flex flex-col gap-2 text-xs text-gray-700">
+                    <Link href="/wholesale-partner-program" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Wholesale <span className="font-semibold text-black">Partner</span> Program
                     </Link>
-                    <Link href="/artisanflow" target="_blank">
-                      <div>Traceability Platform: <span className="font-bold">ArtisanFlow</span></div>
+                    <Link href="/artisanflow" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Traceability Platform: <span className="font-semibold text-black">ArtisanFlow</span>
                     </Link>
-                    <Link href="/content/wholesale/order-fabric-swatches/59195" target="_blank">
-                      <div>Order Fabric Swatches</div>
+                    <Link href="/content/wholesale/order-fabric-swatches/59195" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Order Fabric Swatches
                     </Link>
-                    <Link href="/content/wholesale/natural-sustainable-custom-dyeing/59105" target="_blank">
-                      <div>Sustainable Dyeing</div>
+                    <Link href="/content/wholesale/natural-sustainable-custom-dyeing/59105" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Sustainable Dyeing
                     </Link>
-                    <Link href="/content/wholesale/eco-printing/24862107" target="_blank">
-                      <div>Sustainable Printing</div>
+                    <Link href="/content/wholesale/eco-printing/24862107" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Sustainable Printing
                     </Link>
-                    <Link href="/content/wholesale/wholesale-production-preorder/59335" target="_blank">
-                      <div>Custom Fabric Production</div>
+                    <Link href="/content/wholesale/wholesale-production-preorder/59335" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Custom Fabric Production
                     </Link>
-                    <Link href="/content/wholesale/custom-clothing-accessories-homewares/703160" target="_blank">
-                      <div>Finished Product Development</div>
+                    <Link href="/content/wholesale/custom-clothing-accessories-homewares/703160" target="_blank" className="hover:text-[#7D5A20] hover:translate-x-0.5 transition-all py-0.5">
+                      Finished Product Development
                     </Link>
                   </div>
                 </div>
