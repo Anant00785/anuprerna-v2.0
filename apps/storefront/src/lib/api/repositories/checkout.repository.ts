@@ -131,8 +131,9 @@ export const checkoutRepository = {
     );
 
     let discountPercentage = 10;
-    if (response.payload && typeof response.payload === "object") {
-      discountPercentage = Number((response.payload as any).discountPercentage) || 10;
+    const respPayload = (response as any)?.payload || (response as any)?.data;
+    if (respPayload && typeof respPayload === "object") {
+      discountPercentage = Number(respPayload.discountPercentage) || 10;
     }
 
     return {

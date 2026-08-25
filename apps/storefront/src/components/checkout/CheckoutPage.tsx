@@ -447,7 +447,7 @@ export function CheckoutPage() {
           throw new Error("Failed to load Razorpay payment gateway.");
         }
 
-        const rzpKey = session.key || env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_TPvtsOM52j6QKA";
+        const rzpKey = session.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_TPvtsOM52j6QKA";
         const rzpAmount = session.amount || Math.round(priceBreakdown.advancePay * 100);
 
         const rzpOptions: any = {

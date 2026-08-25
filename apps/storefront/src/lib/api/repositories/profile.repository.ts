@@ -29,6 +29,8 @@ export interface Address {
 
 export interface UserProfileData {
   id?: number | string;
+  name?: string;
+  userName?: string;
   firstName?: string;
   lastName?: string;
   email?: string;

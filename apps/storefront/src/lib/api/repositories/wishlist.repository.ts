@@ -22,7 +22,7 @@ export const wishlistRepository = {
         ? response
         : (response?.productPreviewList ?? (response as any)?.data ?? []);
 
-      return items.map((item) => {
+      return items.map((item: any) => {
         const group: 'fabric' | 'finished' =
           item.productGroup === 'finished' || item.product_group === 'finished' ? 'finished' : 'fabric';
 

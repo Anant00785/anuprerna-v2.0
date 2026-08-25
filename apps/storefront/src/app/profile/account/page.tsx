@@ -23,7 +23,7 @@ export default function AccountPage() {
       setProfile({
         tenant: {
           id: Number(customer.id) || 0,
-          name: customer.name || [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim() || 'Customer',
+          name: (customer as any).name || [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim() || 'Customer',
           email: customer.email ?? '',
         },
       });
