@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useCurrencyStore } from "@/stores/currency.store";
 import { useCartStore } from "@/stores/cart.store";
+import { useAuthStore } from "@/stores/auth.store";
 import { cartRepository } from "@/lib/api/repositories/cart.repository";
 import { ProductCustomFabricProfile, FabricProfileItem } from "./ProductCustomFabricProfile";
 import { ProductFinishProfile, FinishProfileItem } from "./ProductFinishProfile";
@@ -45,6 +47,16 @@ function formatDateRange(fromDays: number, toDays: number): string {
   return `${fromStr} to ${toStr}`;
 }
 
+const DEFAULT_FABRIC_VD_PROFILE: VolumeDiscountProfile = {
+  profileName: "Volume Discount",
+  disclaimer: "Volume discounts applied automatically based on meterage.",
+  volumeDiscountProfileItemList: [
+    { minimumOrderQuantity: 50, discount: 7.5, preOrder: true, advancePayment: 50, deliveryFromDays: 45, deliveryToDays: 60 },
+    { minimumOrderQuantity: 75, discount: 10.0, preOrder: true, advancePayment: 50, deliveryFromDays: 45, deliveryToDays: 60 },
+    { minimumOrderQuantity: 100, discount: 17.5, preOrder: true, advancePayment: 50, deliveryFromDays: 45, deliveryToDays: 60 },
+  ],
+};
+
 export function ProductPreOrderDialog({
   isOpen,
   onClose,
@@ -55,8 +67,10 @@ export function ProductPreOrderDialog({
   initialSelectedSize = null,
   initialCustomSizeData = null,
 }: ProductPreOrderDialogProps) {
+  const router = useRouter();
   const { selectedCurrency, convertPrice } = useCurrencyStore();
   const { refresh: refreshCart, open: openCart } = useCartStore();
+  const { isLoggedIn } = useAuthStore();
   const currencyCode = selectedCurrency.toUpperCase();
 
   const [selectedFabric, setSelectedFabric] = useState<FabricProfileItem | null>(initialSelectedFabric);
@@ -68,9 +82,14 @@ export function ProductPreOrderDialog({
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [copiedSku, setCopiedSku] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const vdProfile: VolumeDiscountProfile | undefined =
-    product.volumeDiscountProfile || productData?.product?.volumeDiscountProfile;
+  const p = product || productData?.product || {};
+  const productGroup = p.productGroup === "finished" ? "finished" : "fabric";
+  const unit = (p.unit || "METER").toLowerCase();
+
+  const rawVd = product?.volumeDiscountProfile || productData?.product?.volumeDiscountProfile || productData?.volumeDiscountProfile;
+  const vdProfile: VolumeDiscountProfile | undefined = rawVd || (productGroup === "fabric" ? DEFAULT_FABRIC_VD_PROFILE : undefined);
 
   const vdList: VolumeDiscountItem[] = vdProfile?.volumeDiscountProfileItemList
     ? [...vdProfile.volumeDiscountProfileItemList].sort(
@@ -95,10 +114,6 @@ export function ProductPreOrderDialog({
   }, [isOpen, initialSelectedFabric, initialSelectedFinishes, initialSelectedSize, initialCustomSizeData, defaultMoq]);
 
   if (!isOpen) return null;
-
-  const p = product || productData?.product || {};
-  const productGroup = p.productGroup === "finished" ? "finished" : "fabric";
-  const unit = (p.unit || "METER").toLowerCase();
 
   // Find active discount tier based on quantity
   const sortedDescTiers = [...vdList].sort(
@@ -182,7 +197,18 @@ export function ProductPreOrderDialog({
   };
 
   const handlePreOrderNow = async () => {
+    if (!isLoggedIn) {
+      if (typeof window !== "undefined") {
+        router.push(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+      } else {
+        router.push("/auth");
+      }
+      return;
+    }
+
     setIsSubmitting(true);
+    setErrorMessage(null);
+
     try {
       const finishIds = selectedFinishes.map((f) => f.id).filter(Boolean);
       const finishIdToUse = finishIds.length > 0 ? finishIds.join(",") : undefined;
@@ -192,7 +218,7 @@ export function ProductPreOrderDialog({
         fabricProductId: productGroup === "fabric" ? previewId : undefined,
         finishedProductId: productGroup === "finished" ? previewId : undefined,
         quantity: quantity,
-        unit: p.unit || "METER",
+        unit: (p.unit || "METER").toUpperCase(),
         price: discountedUnitPrice,
         makingCharge: productGroup === "finished" ? (rawMakingCharge || 0) : 0,
         sku: p.sku || "",
@@ -210,8 +236,9 @@ export function ProductPreOrderDialog({
       await refreshCart();
       onClose();
       openCart();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to add pre-order to cart:", err);
+      setErrorMessage(err?.message || "Failed to add pre-order item to cart.");
     } finally {
       setIsSubmitting(false);
     }
@@ -243,6 +270,20 @@ export function ProductPreOrderDialog({
             <h2 className="w-full font-semibold text-[#3c3c3c] text-xl md:text-2xl text-center">
               Pre Order
             </h2>
+
+            {/* Error Message Banner */}
+            {errorMessage && (
+              <div className="w-full bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-center justify-between animate-in fade-in">
+                <span>{errorMessage}</span>
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-500 hover:text-red-800 font-bold ml-2 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Disclaimer Advance Payment Box */}
             <div className="w-full flex justify-center mt-1 mb-2">
@@ -410,10 +451,11 @@ export function ProductPreOrderDialog({
               </div>
             )}
 
-            {p.finishProfileEnabled && (p.finishProfile || productData?.finishProfile) && (
+            {/* Custom Organic Dye & Natural Vegetable Dye */}
+            {(p.finishProfileEnabled !== false || productGroup === "fabric") && (
               <div className="mt-2">
                 <ProductFinishProfile
-                  finishProfile={p.finishProfile || productData?.finishProfile || {}}
+                  finishProfile={p.finishProfile || productData?.finishProfile || null}
                   selectedFinishes={selectedFinishes}
                   onFinishChange={(finishes) => setSelectedFinishes(finishes)}
                 />

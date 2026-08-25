@@ -30,6 +30,23 @@ export interface PaymentFailPayload {
   error?: Record<string, unknown>;
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("anuprerna-auth") || localStorage.getItem("loom_auth");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const token = parsed.jwt || parsed.token || parsed.state?.jwt || parsed.state?.token;
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+      }
+    } catch {}
+  }
+  return headers;
+}
+
 export const checkoutRepository = {
   /**
    * Fetch available shipment options
@@ -38,7 +55,7 @@ export const checkoutRepository = {
     try {
       const response = await apiRequest<any>(
         "/get/shipment-list",
-        { next: { revalidate: 60 } } as RequestInit,
+        { headers: getAuthHeaders(), next: { revalidate: 60 } } as RequestInit,
         "legacy"
       );
 
@@ -82,46 +99,41 @@ export const checkoutRepository = {
           estimatedFromDay: 3,
           estimatedToDay: 4,
         },
-        {
-          id: 2,
-          name: "Pay Duty & Taxes on Delivery (DDU)",
-          locationType: "INTERNATIONAL",
-          baseAmount: 1500,
-          additionalAmount: 80,
-          baseQuantity: 4,
-          estimatedFromDay: 7,
-          estimatedToDay: 12,
-        },
-        {
-          id: 1,
-          name: "No Additional Duty or Taxes Payable (DDP)",
-          locationType: "INTERNATIONAL",
-          baseAmount: 3000,
-          additionalAmount: 125,
-          baseQuantity: 4,
-          estimatedFromDay: 10,
-          estimatedToDay: 20,
-        },
       ];
     }
   },
 
   /**
-   * Apply voucher discount code
+   * Fetch available payment modes
    */
-  async applyCoupon(voucherCode: string): Promise<VoucherResponse> {
-    const response = await apiRequest<any>(
-      "/apply/voucher/discount",
+  async getPaymentMode(): Promise<any> {
+    try {
+      const response = await apiRequest<any>(
+        "/get/payment-mode",
+        { headers: getAuthHeaders(), next: { revalidate: 300 } } as RequestInit
+      );
+      return response?.paymentMode || response?.data || response;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Apply coupon / voucher code
+   */
+  async applyCoupon(code: string): Promise<VoucherResponse> {
+    const response = await apiRequest<RainTreeResponse>(
+      `/apply/coupon/${encodeURIComponent(code)}`,
       {
         method: "POST",
-        body: JSON.stringify({ voucherCode }),
+        headers: getAuthHeaders(),
       },
-      "legacy"
     );
 
-    const discountPercentage = Number(
-      response.discountPercentage ?? response.discount ?? response.percentileDiscount ?? 10
-    );
+    let discountPercentage = 10;
+    if (response.payload && typeof response.payload === "object") {
+      discountPercentage = Number((response.payload as any).discountPercentage) || 10;
+    }
 
     return {
       success: response.success ?? true,
@@ -134,19 +146,27 @@ export const checkoutRepository = {
    * Add / Place Order
    */
   async createOrder(payload: AddOrderPayload): Promise<{ orderId: string }> {
-    const response = await apiRequest<RainTreeResponse>(
+    const response = await apiRequest<any>(
       "/add/order",
       {
         method: "POST",
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       },
     );
 
-    if (!response.success && !response.message) {
+    const orderId =
+      response.orderId ||
+      response.payload ||
+      (response.entity ? response.entity.id : undefined) ||
+      (response.data ? response.data.id : undefined) ||
+      (!isNaN(Number(response.message)) ? response.message : undefined);
+
+    if (!orderId && !response.success) {
       throw new Error(response.message || "Failed to create order");
     }
 
-    return { orderId: String(response.message || (response as any).payload || "") };
+    return { orderId: String(orderId || "") };
   },
 
   /**
@@ -157,6 +177,7 @@ export const checkoutRepository = {
       "/create/payment-session",
       {
         method: "POST",
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           orderId: Number(orderId),
           paymentType: "advance",
@@ -181,6 +202,7 @@ export const checkoutRepository = {
       "/create/stripe/payment-session",
       {
         method: "POST",
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       },
     );
@@ -198,6 +220,7 @@ export const checkoutRepository = {
       "/update/payment/success",
       {
         method: "POST",
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       },
     );
@@ -212,6 +235,7 @@ export const checkoutRepository = {
         "/update/payment/failure",
         {
           method: "POST",
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload),
         },
       );
@@ -219,5 +243,4 @@ export const checkoutRepository = {
       console.warn("Failed to report payment failure:", err);
     }
   },
-
 };

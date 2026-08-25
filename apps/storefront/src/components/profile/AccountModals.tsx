@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface EditNameModalProps {
   isOpen: boolean;
@@ -15,10 +15,18 @@ export const EditNameModal: React.FC<EditNameModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const parts = currentName.trim().split(' ');
-  const [firstName, setFirstName] = useState(parts[0] || '');
-  const [lastName, setLastName] = useState(parts.slice(1).join(' ') || '');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      const parts = (currentName || '').trim().split(/\s+/).filter(Boolean);
+      setFirstName(parts[0] || '');
+      setLastName(parts.slice(1).join(' ') || '');
+      setError('');
+    }
+  }, [currentName, isOpen]);
 
   if (!isOpen) return null;
 

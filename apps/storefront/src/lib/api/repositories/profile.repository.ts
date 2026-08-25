@@ -82,23 +82,36 @@ export interface WholesaleInfo {
   nextTierProgress?: number;
 }
 
+function getAuthHeaders(explicitToken?: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  let token = explicitToken;
+  if (!token && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("anuprerna-auth") || localStorage.getItem("loom_auth");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        token = parsed.jwt || parsed.token || parsed.state?.jwt || parsed.state?.token;
+      }
+    } catch {}
+  }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export const profileRepository = {
   /**
    * Get current authenticated user profile
    */
   async getCustomerProfile(jwtToken?: string): Promise<UserProfileData> {
     try {
-      const headers: Record<string, string> = {};
-      if (jwtToken) {
-        headers["Authorization"] = `Bearer ${jwtToken}`;
-      }
-      const response = await apiRequest<{
-        customer?: { tenant?: Record<string, any> } & Record<string, any>;
-      }>("get/customer/profile", { headers });
+      const headers = getAuthHeaders(jwtToken);
+      const response = await apiRequest<any>("get/customer/profile", { headers });
 
       const customer = response?.customer ?? {};
-      const tenant = customer.tenant ?? {};
-      const name: string = tenant.name ?? "";
+      const tenant = customer.tenant ?? response?.profile ?? response?.entity ?? response?.data ?? response ?? {};
+      const name: string = tenant.name || tenant.userName || tenant.user_name || customer.name || "";
       const [firstName, ...rest] = name.trim().split(/\s+/).filter(Boolean);
 
       return {
@@ -106,9 +119,10 @@ export const profileRepository = {
         ...customer,
         id: tenant.uid ?? tenant.id,
         email: tenant.email,
-        firstName: firstName ?? "",
-        lastName: rest.join(" "),
-        phone: tenant.contactNumber ?? "",
+        name: name || [tenant.firstName, tenant.lastName].filter(Boolean).join(" ").trim(),
+        firstName: firstName || tenant.firstName || "",
+        lastName: rest.join(" ") || tenant.lastName || "",
+        phone: tenant.contactNumber || tenant.phone || "",
         gender: tenant.gender,
         dob: tenant.dob,
       };
@@ -121,10 +135,7 @@ export const profileRepository = {
    * Update current user profile
    */
   async updateCustomerProfile(data: UserProfileData, jwtToken?: string): Promise<UserProfileData> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
-    }
+    const headers = getAuthHeaders(jwtToken);
     return apiRequest<UserProfileData>("update/customer/profile", {
       method: "POST",
       headers,
@@ -133,14 +144,35 @@ export const profileRepository = {
   },
 
   /**
-   * Get user address list
+   * Get user profile details
+   */
+  async getProfile(jwtToken?: string): Promise<UserProfileData> {
+    const headers = getAuthHeaders(jwtToken);
+    const response = await apiRequest<{ profile?: UserProfileData; entity?: UserProfileData }>(
+      "get/customer/profile",
+      { headers }
+    );
+    return (response?.profile || response?.entity || response) as UserProfileData;
+  },
+
+  /**
+   * Update user profile details
+   */
+  async updateProfile(data: Partial<UserProfileData>, jwtToken?: string): Promise<UserProfileData> {
+    const headers = getAuthHeaders(jwtToken);
+    return apiRequest<UserProfileData>("update/customer/profile", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Get all user addresses
    */
   async getAddressList(jwtToken?: string): Promise<Address[]> {
     try {
-      const headers: Record<string, string> = {};
-      if (jwtToken) {
-        headers["Authorization"] = `Bearer ${jwtToken}`;
-      }
+      const headers = getAuthHeaders(jwtToken);
       const response = await apiRequest<{ addressList?: Address[]; payload?: Address[]; content?: Address[] } | Address[]>(
         "get/address-list",
         { headers }
@@ -156,10 +188,7 @@ export const profileRepository = {
    * Add a new address
    */
   async addAddress(address: Address, jwtToken?: string): Promise<Address> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
-    }
+    const headers = getAuthHeaders(jwtToken);
     return apiRequest<Address>("add/address", {
       method: "POST",
       headers,
@@ -171,10 +200,7 @@ export const profileRepository = {
    * Update an existing address
    */
   async updateAddress(address: Address, jwtToken?: string): Promise<Address> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
-    }
+    const headers = getAuthHeaders(jwtToken);
     return apiRequest<Address>("update/address", {
       method: "POST",
       headers,
@@ -186,10 +212,7 @@ export const profileRepository = {
    * Delete an address by ID
    */
   async deleteAddress(id: number | string, jwtToken?: string): Promise<{ success: boolean }> {
-    const headers: Record<string, string> = {};
-    if (jwtToken) {
-      headers["Authorization"] = `Bearer ${jwtToken}`;
-    }
+    const headers = getAuthHeaders(jwtToken);
     return apiRequest<{ success: boolean }>(`delete/address/${id}`, {
       method: "DELETE",
       headers,

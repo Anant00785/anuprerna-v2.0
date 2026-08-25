@@ -1,10 +1,13 @@
-// @ts-nocheck
 export function mapTenantProfile(row: any) {
   if (!row) return null;
+  const fullName = row.name ?? row.userName ?? row.user_name ?? "";
+  const [firstName, ...rest] = String(fullName).trim().split(/\s+/).filter(Boolean);
   return {
     id: typeof row.id === "bigint" ? Number(row.id) : row.id,
-    loomId: row.loomId ?? row.loom_id ?? "",
-    userName: row.userName ?? row.user_name ?? "",
+    name: fullName,
+    userName: fullName,
+    firstName: firstName || "",
+    lastName: rest.join(" ") || "",
     email: row.email ?? "",
     contactNumber: row.contactNumber ?? row.contact_number ?? "",
     dob: row.dob ? Number(row.dob) : 0,

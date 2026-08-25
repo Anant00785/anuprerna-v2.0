@@ -7,7 +7,7 @@ import { mapTenantProfile, mapUserRole } from '../mapper/tenant.mapper.js';
 export class TenantService {
   constructor(private readonly tenantRepo: TenantRepository) {}
 
-  async getSuperUserProfile(tenantId: string) {
+  async getSuperUserProfile(tenantId: string | number) {
     const profile = await this.tenantRepo.getSuperUserProfile(tenantId);
     return profile ? mapTenantProfile(profile) : null;
   }
@@ -17,12 +17,12 @@ export class TenantService {
     return profile ? mapTenantProfile(profile) : null;
   }
 
-  async getCustomerProfile(tenantId: string) {
+  async getCustomerProfile(tenantId: string | number) {
     const profile = await this.tenantRepo.getCustomerProfile(tenantId);
     return profile ? mapTenantProfile(profile) : null;
   }
 
-  async updateCustomerProfile(tenantId: string, data: any) {
+  async updateCustomerProfile(tenantId: string | number, data: any) {
     const profile = await this.tenantRepo.updateCustomerProfile(tenantId, data);
     return profile ? mapTenantProfile(profile) : null;
   }
@@ -32,7 +32,7 @@ export class TenantService {
     return roles.map(mapUserRole);
   }
 
-  async getUserRoleById(id: string) {
+  async getUserRoleById(id: string | number) {
     const role = await this.tenantRepo.getUserRoleById(id);
     return role ? mapUserRole(role) : null;
   }

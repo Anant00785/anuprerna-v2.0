@@ -6,6 +6,18 @@ import { mapNestCartToDomain } from "../adapters/nest-cart.adapter";
 import { LegacyCartItemDto, LegacyCartListResponse } from "../dto/legacy-springboot.dto";
 import { NestApiResponse, NestCartDto } from "../dto/nestjs.dto";
 import { RainTreeResponse } from "./auth.repository";
+import { useAuthStore } from "@/stores/auth.store";
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    const jwt = useAuthStore.getState().jwt;
+    if (jwt) {
+      headers["Authorization"] = `Bearer ${jwt}`;
+    }
+  }
+  return headers;
+}
 
 /**
  * What Loom's `POST /add/cart-item` actually binds to: the `CartItem` JPA entity
@@ -69,7 +81,7 @@ export const cartRepository = {
     try {
       const response = await apiRequest<LegacyCartListResponse>(
         "/get/cart-item/list",
-        { next: { revalidate: 0 } } as RequestInit
+        { headers: getAuthHeaders(), next: { revalidate: 0 } } as RequestInit
       );
       return mapLegacyCartToDomain(response.cartItemList ?? []);
     } catch (err) {
@@ -94,6 +106,7 @@ export const cartRepository = {
       "/add/cart-item",
       {
         method: "POST",
+        headers: getAuthHeaders(),
         body: JSON.stringify(toLegacyCartItem(input)),
       }
     );
@@ -125,7 +138,7 @@ export const cartRepository = {
     };
     const response = await apiRequest<RainTreeResponse>(
       "/update/cart-item",
-      { method: "PATCH", body: JSON.stringify(body) }
+      { method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(body) }
     );
     if (!response.success && response.message) {
       throw new Error(response.message || "Failed to update the quantity");
@@ -139,7 +152,7 @@ export const cartRepository = {
   async removeCartItem(cartItemId: string): Promise<void> {
     const response = await apiRequest<RainTreeResponse>(
       `/delete/cart-item/${encodeURIComponent(cartItemId)}`,
-      { method: "DELETE" }
+      { method: "DELETE", headers: getAuthHeaders() }
     );
     if (!response.success && response.message) {
       throw new Error(response.message || "Failed to remove item from cart");

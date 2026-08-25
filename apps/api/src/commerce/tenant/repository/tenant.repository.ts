@@ -28,8 +28,20 @@ export class TenantRepository {
   async updateCustomerProfile(tenantId: any, data: any) {
     const id = BigInt(tenantId || 1);
     const updateData: any = {};
-    if (data.userName !== undefined) updateData.userName = data.userName;
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.userName !== undefined) {
+      updateData.userName = data.userName;
+      if (!updateData.name) updateData.name = data.userName;
+    }
+    if (data.firstName !== undefined || data.lastName !== undefined) {
+      const combined = [data.firstName, data.lastName].filter(Boolean).join(" ").trim();
+      if (combined) {
+        updateData.name = combined;
+        updateData.userName = combined;
+      }
+    }
     if (data.contactNumber !== undefined) updateData.contactNumber = data.contactNumber;
+    if (data.phone !== undefined) updateData.contactNumber = data.phone;
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.dob !== undefined) {
       if (typeof data.dob === "number") {

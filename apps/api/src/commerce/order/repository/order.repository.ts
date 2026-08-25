@@ -8,12 +8,17 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 @Injectable()
 export class OrderRepository {
   constructor(
-    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
+    @Inject(DATABASE_CONNECTION) public readonly db: NodePgDatabase<typeof schema>,
   ) {}
 
   async findById(id: bigint) {
     const rows = await this.db.select().from(schema.orders).where(eq(schema.orders.id, id));
-    return rows[0] ?? null;
+    if (!rows[0]) return null;
+    const items = await this.db.select().from(schema.orderItem).where(eq(schema.orderItem.orderId, Number(id)));
+    return {
+      ...rows[0],
+      orderItemList: items || [],
+    };
   }
 
   async findByCustomerIdPaginated(customerId: bigint | number, page: number, size: number) {

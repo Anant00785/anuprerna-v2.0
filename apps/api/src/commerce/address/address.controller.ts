@@ -1,24 +1,29 @@
-// @ts-nocheck
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 import { AddressService, type CreateAddressInput } from "./address.service.js";
+import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
+import { RolesGuard } from "../../common/auth/roles.guard.js";
+import type { AuthenticatedTenant } from "../../auth/types/auth.types.js";
 
 @ApiTags("Address")
 @ApiBearerAuth()
+@UseGuards(RolesGuard)
 @Controller()
 export class AddressController {
   constructor(private readonly service: AddressService) {}
 
   @Get("get/address")
   @ApiOperation({ summary: "Get all address records" })
-  async getAll() {
-    return this.service.getAll();
+  async getAll(@CurrentTenant() tenant?: AuthenticatedTenant) {
+    const tid = Number(tenant?.tenantId || tenant?.id);
+    return this.service.getAll(Number.isSafeInteger(tid) ? tid : undefined);
   }
 
   @Get("get/address-list")
   @ApiOperation({ summary: "Fetch customer shipping address book" })
-  async getAddressList() {
-    return this.service.getAll();
+  async getAddressList(@CurrentTenant() tenant?: AuthenticatedTenant) {
+    const tid = Number(tenant?.tenantId || tenant?.id);
+    return this.service.getAll(Number.isSafeInteger(tid) ? tid : undefined);
   }
 
   @Post("create/address")
@@ -49,8 +54,8 @@ export class AddressController {
       },
     },
   })
-  async create(@Body() body: CreateAddressInput) {
-    return this.service.create(body);
+  async create(@Body() body: CreateAddressInput, @CurrentTenant() tenant?: AuthenticatedTenant) {
+    return this.service.create(body, tenant?.tenantId || tenant?.id);
   }
 
   @Post("add/address")
@@ -81,11 +86,13 @@ export class AddressController {
       },
     },
   })
-  async addAddress(@Body() body: CreateAddressInput) {
-    return this.service.create(body);
+  async addAddress(@Body() body: CreateAddressInput, @CurrentTenant() tenant?: AuthenticatedTenant) {
+    return this.service.create(body, tenant?.tenantId || tenant?.id);
   }
 
+  @Post("update/address")
   @Patch("update/address")
+  @HttpCode(200)
   @ApiOperation({ summary: "Update an existing customer address" })
   @ApiBody({
     schema: {
@@ -111,7 +118,11 @@ export class AddressController {
     },
   })
   async updateAddress(@Body() body: any) {
-    const id = Number(body?.id || body?.addressId);
+    const rawId = body?.id ?? body?.addressId ?? body?.address_id ?? body?.data?.id ?? body?.payload?.id;
+    const id = Number(rawId);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return { success: false, error: "A valid integer address id is required for update." };
+    }
     return this.service.update(id, body);
   }
 

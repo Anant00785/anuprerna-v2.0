@@ -111,105 +111,47 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
   const hoverImg = product.hover_image || (product as any).hoverImage || "";
   const displayImage = isHovered && hoverImg ? hoverImg : (heroImg || hoverImg);
 
+  const productSku = product.sku || String(product.id || "");
+  const inWishlist = hydrated && (isInWishlistStore(productSku) || Boolean(product.inWishlist));
+  const categoryLabel = product.special_status || product.category || (product as any).sub_category || "Dyeable Khadi...";
+  const unitLabel = (product.unit || "meter").toLowerCase();
+
   return (
-    <div className="fb-filter-product-preview flex flex-col justify-between items-center relative bg-white border border-[#75787F]/20 shadow md:shadow-md rounded md:rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      {/* Stock Status Badge */}
-      {badge && (
-        <div
-          className={`rounded px-2 py-1 text-xs absolute top-2 left-2 z-10 font-medium ${
-            badge === "In Stock"
-              ? "bg-[#e6eac6] text-[#7f8142]"
-              : "bg-[#FFF8D0] text-[#ac9317]"
-          }`}
-        >
-          {badge}
-        </div>
-      )}
-
-      {/* Main Card Content Link */}
-      <Link href={productUrl} className="w-full block group">
-        <div className="px-3 pt-3 pb-1 relative overflow-hidden rounded md:rounded-lg">
-          <div className="w-full aspect-square relative bg-gray-100 rounded md:rounded-lg overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={displayImage || "/assets/img/item.png"}
-              alt={product.name}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              loading="lazy"
-              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-            />
+    <div className="fb-filter-product-preview bg-white border border-gray-200/80 rounded-xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg transition-all duration-300 flex flex-col justify-between group relative">
+      {/* Top Image & In Stock Badge */}
+      <Link href={productUrl} className="block relative w-full aspect-square bg-[#f8f8f8] overflow-hidden">
+        {badge && (
+          <div
+            className={`absolute top-2.5 right-2.5 z-10 text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-sm ${
+              badge === "In Stock"
+                ? "bg-[#EAF3EA] text-[#3B664B]"
+                : "bg-[#FFF8D0] text-[#8C7410]"
+            }`}
+          >
+            {badge}
           </div>
-        </div>
+        )}
 
-        {/* Special Status / Category Subtitle */}
-        <div className="text-[#75787F] text-xs md:text-sm mt-3 mb-1.5 px-3 truncate">
-          {product.special_status || product.category || "Handwoven Fabric"}
-        </div>
-
-        {/* Product Title */}
-        <div className="text-black text-sm md:text-base mb-1 px-3 font-medium line-clamp-2 min-h-[2.5rem]">
-          {product.name}
-        </div>
-
-        {/* Price Display */}
-        <div className="flex justify-start items-center mb-3 text-lg md:text-xl font-medium px-3 text-[#2E2E2E] flex-wrap sm:flex-nowrap">
-          {hasMultipleSizes && (
-            <span className="text-xs mr-1 text-[#75787F]">Starting from </span>
-          )}
-          <span className="text-xs mr-1 text-[#75787F]">{currencyCode}</span>
-
-          {convertedDiscountedPrice ? (
-            <span className="flex items-center gap-1.5">
-              <span className="line-through text-xs sm:text-sm text-[#898E9A]">
-                {convertedBasePrice.toLocaleString("en-US", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-              <span className="text-base sm:text-lg text-[#2E2E2E] font-bold">
-                {convertedDiscountedPrice.toLocaleString("en-US", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </span>
-          ) : (
-            <span>
-              {convertedBasePrice.toLocaleString("en-US", {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-          )}
-
-          <span className="text-xs text-[#75787F] ml-1">/ {product.unit || "METER"}</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={displayImage || "/assets/img/item.png"}
+          alt={product.name}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          loading="lazy"
+          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+        />
       </Link>
 
-      {/* Card Action Buttons */}
-      <div className="px-3 pb-3 w-full flex items-stretch gap-2 mt-auto">
-        <Link
-          href={isLoggedIn ? productUrl : "/auth"}
-          className="w-full bg-[#fffcf7] rounded md:rounded-lg border-2 border-[#8E7862] text-[#7D5B20] py-1.5 px-2 hover:border-[#6c5b48] hover:bg-[#fbf4e8] transition-colors flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {isLoggedIn ? "shoppingmode" : "account_circle"}
-          </span>
-          <span className="text-[11px] sm:text-xs text-center">
-            {isLoggedIn
-              ? `Bulk Order @ ${currencyCode} ${convertedBulkPrice.toLocaleString("en-US", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 2,
-                })}`
-              : "Login to get bulk price"}
-          </span>
-        </Link>
+      {/* Card Content */}
+      <div className="p-3.5 flex flex-col flex-1 justify-between">
+        <div>
+          {/* Row 1: Category Pill & Wishlist Heart */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="bg-[#EFEBF4] text-[#6E6482] text-[11px] font-medium px-2.5 py-0.5 rounded-full truncate max-w-[180px]">
+              {categoryLabel}
+            </span>
 
-        {(() => {
-          const productSku = product.sku || String(product.id || "");
-          const inWishlist = hydrated && (isInWishlistStore(productSku) || Boolean(product.inWishlist));
-          return (
             <button
               type="button"
               onClick={(e) => {
@@ -219,28 +161,95 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
                   toggleWishlist(product.name, productSku);
                 }
               }}
-              className="w-max bg-[#fffcf7] rounded md:rounded-lg text-[#7D5B20] py-1.5 px-2.5 cursor-pointer flex justify-center items-center border border-[#75787F]/20 hover:bg-[#fcf4e8] transition-colors"
+              className="text-gray-400 hover:text-red-500 transition-colors p-0.5 cursor-pointer flex items-center justify-center"
               title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={inWishlist ? "/assets/img/favourite.svg" : "/assets/img/non-favourite.svg"}
-                alt="Wishlist"
-                className="w-5 h-5"
-              />
+              <svg
+                className={`w-5 h-5 transition-transform active:scale-125 ${
+                  inWishlist ? "fill-red-500 text-red-500" : "fill-none stroke-gray-400 hover:stroke-red-500"
+                }`}
+                strokeWidth="1.6"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                />
+              </svg>
             </button>
-          );
-        })()}
+          </div>
+
+          {/* Row 2: Product Title */}
+          <Link href={productUrl} className="block group/title">
+            <h4 className="text-sm sm:text-[15px] font-medium text-gray-900 line-clamp-2 mb-2 leading-snug group-hover/title:text-[#8E7862] transition-colors">
+              {product.name}
+            </h4>
+          </Link>
+
+          {/* Row 3: Price Display */}
+          <div className="flex items-baseline gap-1 text-gray-900 mb-1">
+            {hasMultipleSizes && <span className="text-xs text-gray-400 mr-0.5">From</span>}
+            <span className="text-xs text-gray-400 font-medium">{currencyCode}</span>
+
+            {convertedDiscountedPrice ? (
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-900">
+                  {convertedDiscountedPrice.toLocaleString("en-US", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+                <span className="line-through text-xs text-gray-400">
+                  {convertedBasePrice.toLocaleString("en-US", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </span>
+            ) : (
+              <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-900">
+                {convertedBasePrice.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            )}
+
+            <span className="text-xs text-gray-500 font-normal">/ {unitLabel}</span>
+          </div>
+
+          {/* Row 4: Bulk Order Text */}
+          <div className="text-xs font-medium text-[#4A7C59] mb-3">
+            Bulk order @ {currencyCode}{" "}
+            {convertedBulkPrice.toLocaleString("en-US", {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            })}{" "}
+            / {unitLabel}
+          </div>
+        </div>
+
+        {/* Row 5: Customise & Order CTA */}
+        <Link
+          href={productUrl}
+          className="pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-gray-800 tracking-wider uppercase group-hover:text-[#8E7862] transition-colors"
+        >
+          <span>CUSTOMISE & ORDER</span>
+          <span className="material-symbols-outlined text-base transform group-hover:translate-x-1 transition-transform">
+            arrow_forward
+          </span>
+        </Link>
       </div>
 
       {/* Related Products Swatch Preview Circles */}
       {relatedProducts && relatedProducts.length > 0 && (
-        <div className="p-2 w-full flex justify-center items-center flex-wrap gap-1.5 border-t border-gray-100">
+        <div className="px-3 py-2 w-full flex justify-center items-center flex-wrap gap-1.5 border-t border-gray-100 bg-[#fafafa]">
           {relatedProducts.slice(0, 5).map((related, rIdx) => (
             <Link
               key={rIdx}
               href={`/product/${related.product_group || "fabric"}-product/${related.slug}`}
-              className="w-7 h-7 rounded-full border-2 border-[#b7a98f] overflow-hidden hover:scale-110 transition-transform"
+              className="w-6 h-6 rounded-full border border-gray-300 overflow-hidden hover:scale-110 transition-transform shadow-xs"
               title={related.name}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -254,7 +263,7 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
           {relatedProducts.length > 5 && (
             <Link
               href={productUrl}
-              className="w-7 h-7 rounded-full border-2 border-[#b7a98f] text-[10px] font-bold text-[#7D5B20] bg-[#fffcf7] flex justify-center items-center"
+              className="w-6 h-6 rounded-full border border-gray-300 text-[9px] font-bold text-gray-600 bg-white flex justify-center items-center"
             >
               +{relatedProducts.length - 5}
             </Link>

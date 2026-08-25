@@ -25,23 +25,42 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
       try {
         const liveData = await profileRepository.getCustomerProfile(jwt || undefined);
         if (liveData) {
+          const resolvedName =
+            liveData.name ||
+            [liveData.firstName, liveData.lastName].filter(Boolean).join(" ").trim() ||
+            liveData.userName ||
+            authUser?.name ||
+            [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ").trim() ||
+            "Valued Customer";
+
           const formattedProfile: UserProfile = {
             tenant: {
               id: Number(liveData.id) || Number(authUser?.id) || 1001,
-              name: `${liveData.firstName || ""} ${liveData.lastName || ""}`.trim() || authUser?.firstName || "Valued Customer",
+              name: resolvedName,
               email: liveData.email || authUser?.email || "customer@anuprerna.com",
               avatarUrl: liveData.gender || authUser?.avatarUrl,
             },
           };
           setProfile(formattedProfile);
-          setUser(liveData);
+          setUser({
+            ...authUser,
+            ...liveData,
+            name: resolvedName,
+            firstName: liveData.firstName || resolvedName.split(" ")[0] || "",
+            lastName: liveData.lastName || resolvedName.split(" ").slice(1).join(" ") || "",
+          });
         }
       } catch (err) {
         if (authUser) {
+          const fallbackName =
+            authUser.name ||
+            [authUser.firstName, authUser.lastName].filter(Boolean).join(" ").trim() ||
+            authUser.email ||
+            "Valued Customer";
           setProfile({
             tenant: {
               id: Number(authUser.id) || 1001,
-              name: `${authUser.firstName || ""} ${authUser.lastName || ""}`.trim() || authUser.email || "Valued Customer",
+              name: fallbackName,
               email: authUser.email || "customer@anuprerna.com",
             },
           });
@@ -56,9 +75,11 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
 
   const handleSaveName = async (firstName: string, lastName: string) => {
     setSaving(true);
+    const fullName = `${firstName} ${lastName}`.trim();
     try {
       await profileRepository.updateCustomerProfile(
         {
+          name: fullName,
           firstName,
           lastName,
           email: profile?.tenant.email,
@@ -72,11 +93,18 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
               ...prev,
               tenant: {
                 ...prev.tenant,
-                name: `${firstName} ${lastName}`.trim(),
+                name: fullName,
               },
             }
           : prev
       );
+
+      setUser({
+        ...authUser,
+        name: fullName,
+        firstName,
+        lastName,
+      });
     } catch (err) {
       setProfile((prev) =>
         prev
@@ -84,11 +112,17 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
               ...prev,
               tenant: {
                 ...prev.tenant,
-                name: `${firstName} ${lastName}`.trim(),
+                name: fullName,
               },
             }
           : prev
       );
+      setUser({
+        ...authUser,
+        name: fullName,
+        firstName,
+        lastName,
+      });
     } finally {
       setSaving(false);
       setIsEditNameOpen(false);

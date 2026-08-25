@@ -21,11 +21,18 @@ export class OrderController {
   @ApiOperation({ summary: "Create a new customer order." })
   @ApiBody({ type: CreateOrderDto })
   @ApiResponse({ status: 201, description: "Order created successfully." })
-  async addOrder(@Body() body: unknown) {
-    const input = parseOrderInput(body);
-    const result = await this.orderService.createOrder(input);
-    if (result) {
-      return simpleResponse(true, "Order created successfully.");
+  async addOrder(@Body() body: any, @CurrentTenant() tenant?: AuthenticatedTenant) {
+    const order = await this.orderService.createOrder(body, tenant?.tenantId || tenant?.id);
+    if (order) {
+      const orderId = Number(order.id);
+      return {
+        success: true,
+        message: String(orderId),
+        payload: orderId,
+        orderId,
+        data: order,
+        entity: order,
+      };
     }
     return simpleResponse(false, "Failed to create order.");
   }

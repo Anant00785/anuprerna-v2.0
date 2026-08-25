@@ -25,7 +25,8 @@ import { CartRepository, OptimisticLockError } from "../repository/cart.reposito
 import { toInsertValues, toUpdateValues } from "../mapper/cart.mapper.js";
 import { AddCartItemRequest, UpdateCartItemRequest } from "../dto/cart.dto.js";
 import { ActionCode } from "../../../common/errors/action-code";
-import { cartItem } from "../../../database/schema/schema.js";
+import { eq } from "drizzle-orm";
+import { cartItem, product, productFabric, productFinished } from "../../../database/schema/schema.js";
 import {
   CartItemData,
   CartItemView,
@@ -95,10 +96,122 @@ export class CartService {
       };
 
       if (row.fabricProductId) {
-        view.fabricProductPreview = await this.fabricPreview.retrieveEntity(row.fabricProductId);
+        try {
+          const rows = await (this.repo as any).db
+            .select({
+              id: productFabric.id,
+              version: productFabric.version,
+              gsm: productFabric.gsm,
+              width: productFabric.width,
+              addToSwatch: productFabric.addToSwatch,
+              productId: product.id,
+              product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                price: product.price,
+                unit: product.unit,
+                slug: product.slug,
+                heroImage: product.heroImage,
+                thumbnailImage: product.heroImage,
+                productGroup: product.productGroup,
+                madeToOrderProfileEnabled: product.madeToOrderProfileEnabled,
+                finishProfileEnabled: product.finishProfileEnabled,
+              },
+            })
+            .from(productFabric)
+            .innerJoin(product, eq(productFabric.productId, product.id))
+            .where(eq(productFabric.id, BigInt(row.fabricProductId)))
+            .limit(1);
+
+          if (rows.length > 0) {
+            view.fabricProductPreview = rows[0];
+          } else {
+            const prodRows = await (this.repo as any).db
+              .select({
+                id: product.id,
+                productId: product.id,
+                product: {
+                  id: product.id,
+                  name: product.name,
+                  sku: product.sku,
+                  price: product.price,
+                  unit: product.unit,
+                  slug: product.slug,
+                  heroImage: product.heroImage,
+                  thumbnailImage: product.heroImage,
+                  productGroup: product.productGroup,
+                },
+              })
+              .from(product)
+              .where(eq(product.id, BigInt(row.fabricProductId)))
+              .limit(1);
+            if (prodRows.length > 0) {
+              view.fabricProductPreview = prodRows[0];
+            } else {
+              view.fabricProductPreview = await this.fabricPreview.retrieveEntity(row.fabricProductId);
+            }
+          }
+        } catch (e) {
+          view.fabricProductPreview = await this.fabricPreview.retrieveEntity(row.fabricProductId);
+        }
       }
+
       if (row.finishedProductId) {
-        view.finishedProductPreview = await this.finishedPreview.retrieveEntity(row.finishedProductId);
+        try {
+          const rows = await (this.repo as any).db
+            .select({
+              id: productFinished.id,
+              version: productFinished.version,
+              productId: product.id,
+              product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                price: product.price,
+                unit: product.unit,
+                slug: product.slug,
+                heroImage: product.heroImage,
+                thumbnailImage: product.heroImage,
+                productGroup: product.productGroup,
+              },
+            })
+            .from(productFinished)
+            .innerJoin(product, eq(productFinished.productId, product.id))
+            .where(eq(productFinished.id, BigInt(row.finishedProductId)))
+            .limit(1);
+
+          if (rows.length > 0) {
+            view.finishedProductPreview = rows[0];
+          } else {
+            const prodRows = await (this.repo as any).db
+              .select({
+                id: product.id,
+                productId: product.id,
+                product: {
+                  id: product.id,
+                  name: product.name,
+                  sku: product.sku,
+                  price: product.price,
+                  unit: product.unit,
+                  slug: product.slug,
+                  heroImage: product.heroImage,
+                  thumbnailImage: product.heroImage,
+                  productGroup: product.productGroup,
+                },
+              })
+              .from(product)
+              .where(eq(product.id, BigInt(row.finishedProductId)))
+              .limit(1);
+            if (prodRows.length > 0) {
+              view.finishedProductPreview = prodRows[0];
+            } else {
+              view.finishedProductPreview = await this.finishedPreview.retrieveEntity(row.finishedProductId);
+            }
+          }
+        } catch (e) {
+          view.finishedProductPreview = await this.finishedPreview.retrieveEntity(row.finishedProductId);
+        }
       }
       if (row.selectedFabricId) {
         view.selectedFabric = await this.fabricPreview.retrieveFabricProductByProductId(row.selectedFabricId);

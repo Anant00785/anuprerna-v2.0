@@ -45,8 +45,10 @@ export function Header() {
   const isLoggedIn = hydrated && storeLoggedIn;
   const wishlistCount = hydrated ? wishlistSkus.length : 0;
   const tenantName =
+    user?.name ||
     [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
-    user?.email ||
+    user?.userName ||
+    (user?.email ? user.email.split("@")[0] : "") ||
     "Guest";
 
   // `cartCount` was `useState(0)` with no `setCartCount` call site anywhere, so
@@ -252,10 +254,10 @@ export function Header() {
 
   return (
     <header className="desk_nav w-full sticky top-0 z-50 bg-white border-b border-[#efeee9] shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-      <nav ref={navRef} className="fb-s-navigation w-full container mx-auto flex justify-between items-center gap-2">
+      <nav ref={navRef} className="fb-s-navigation w-full max-w-[1440px] mx-auto flex justify-between items-center px-3 sm:px-6 lg:px-8">
 
         {/* Logo Section */}
-        <div className="xl:flex-[12%] flex justify-start items-center gap-2">
+        <div className="shrink-0 flex justify-start items-center gap-2 mr-3 lg:mr-6">
           {isContactPage ? (
             <Link
               href="/"
@@ -268,7 +270,7 @@ export function Header() {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="w-6 h-6 flex items-center justify-center text-black hover:opacity-75 transition-opacity cursor-pointer select-none focus:outline-none flex-shrink-0"
+              className="lg:hidden w-6 h-6 flex items-center justify-center text-black hover:opacity-75 transition-opacity cursor-pointer select-none focus:outline-none shrink-0"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? (
@@ -288,14 +290,16 @@ export function Header() {
           <Link
             href="/"
             onClick={() => setIsMobileMenuOpen(false)}
-            className="flex justify-start items-center outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 border-0 select-none"
+            className="flex items-center gap-1 shrink-0 outline-none focus:outline-none ring-0 border-0 select-none cursor-pointer"
           >
             <img
-              className="fb-logo-svg select-none"
+              className="h-6 lg:h-7 w-auto select-none block"
               src="https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/logo_black.svg"
               alt="Anuprerna"
             />
-            <div className="font-bold text-base lg:text-xl"><span className="opacity-0 hidden">A</span>nuprerna</div>
+            <span className="font-bold text-lg lg:text-xl text-black tracking-tight select-none">
+              nuprerna
+            </span>
           </Link>
         </div>
 
@@ -305,7 +309,7 @@ export function Header() {
         </div>
 
         {/* Desktop Navigation Links */}
-        <ul className="xl:flex-[63%] text-sm xl:text-base hidden xl:flex justify-start items-center fb-default-transition">
+        <ul className="hidden lg:flex items-center flex-1 justify-start gap-0.5 xl:gap-2 fb-default-transition">
 
           {/* 1. FABRIC */}
           <li className="fb-s-nav-link" onMouseEnter={onEnter} onMouseLeave={onLeave}>
@@ -881,20 +885,20 @@ export function Header() {
         </ul>
 
         {/* Right Action Utilities: Forex Dropdown, Wishlist, Cart, Sign In */}
-        <div className="xl:flex-[25%] flex justify-end items-center gap-3">
-          <ForexDropdown className="hidden xl:block" />
+        <div className="shrink-0 flex justify-end items-center gap-3 lg:gap-4">
+          <ForexDropdown className="hidden lg:block" />
 
-          <Link href="/display/search" onClick={() => setIsMobileMenuOpen(false)} className="xl:hidden flex justify-between items-center gap-1.5">
-            <span className="material-symbols-outlined">search</span>
+          <Link href="/display/search" onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden flex items-center text-gray-700 hover:text-black">
+            <span className="material-symbols-outlined text-[22px]">search</span>
           </Link>
 
-          <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex justify-between items-center relative" title="Wishlist">
+          <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center relative text-gray-700 hover:text-black transition-colors" title="Wishlist">
             {wishlistCount > 0 && (
-              <strong className="absolute top-[-10px] -right-2 count">
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#CA9B6D] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
                 {wishlistCount}
-              </strong>
+              </span>
             )}
-            <span className="material-symbols-outlined">favorite</span>
+            <span className="material-symbols-outlined text-[22px]">favorite_border</span>
           </Link>
 
           <button
@@ -905,18 +909,18 @@ export function Header() {
               openCart();
               if (isLoggedIn) refreshCart();
             }}
-            className="flex justify-between items-center relative mr-2 xl:mr-0"
+            className="flex items-center relative text-gray-700 hover:text-black transition-colors cursor-pointer"
           >
             {cartCount > 0 && (
-              <strong className="absolute top-[-10px] -right-2 count">
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#CA9B6D] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
                 {cartCount}
-              </strong>
+              </span>
             )}
-            <span className="material-symbols-outlined">shopping_cart</span>
+            <span className="material-symbols-outlined text-[22px]">shopping_cart</span>
           </button>
 
           {!isLoggedIn ? (
-            <button className="hidden xl:block">
+            <button className="hidden lg:block">
               <Link href="/auth" className="fb-arrow-btn flex items-center justify-center fb-default-transition">
                 <span className="mr-1">Sign In</span>
                 <svg className="HoverArrow" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">

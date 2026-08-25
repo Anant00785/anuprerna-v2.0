@@ -250,6 +250,9 @@ export function ProductLightGallery({
                   <img
                     src={thumbnailSrc}
                     alt={image.alt || `Thumbnail ${idx + 1}`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/assets/img/item.png";
+                    }}
                     className="w-[72px] h-[72px] rounded-lg object-cover block m-[2px]"
                   />
                   {isVideo && (
@@ -307,6 +310,9 @@ export function ProductLightGallery({
               src={currentItem.src}
               alt={currentItem.alt || productName}
               onClick={() => openLightbox(selectedImageIndex)}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/assets/img/item.png";
+              }}
               className={`cursor-pointer transition-all duration-300 ${
                 productFinish
                   ? "w-auto h-full max-h-[600px] max-md:max-h-[500px] max-md:w-full object-contain max-md:object-cover rounded-lg max-md:rounded-none block"
@@ -423,6 +429,9 @@ export function ProductLightGallery({
                   <img
                     src={thumbnailSrc}
                     alt={image.alt || `Thumbnail ${idx + 1}`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/assets/img/item.png";
+                    }}
                     className="w-[72px] h-[72px] rounded-lg object-cover block m-[2px]"
                   />
                   {isVideo && (
@@ -544,6 +553,9 @@ export function ProductLightGallery({
                   src={activeLightboxItem.src}
                   alt={activeLightboxItem.alt || productName}
                   onClick={() => setIsZoomed(!isZoomed)}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/assets/img/item.png";
+                  }}
                   className={`max-h-[72vh] max-w-[90vw] object-contain rounded-lg transition-transform duration-300 ${
                     isZoomed ? "scale-150 cursor-zoom-out" : "cursor-zoom-in"
                   }`}
@@ -585,7 +597,14 @@ export function ProductLightGallery({
                       : "border-transparent opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <img src={src} alt={`Slide ${tIdx + 1}`} className="w-full h-full object-cover" />
+                  <img
+                    src={src}
+                    alt={`Slide ${tIdx + 1}`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/assets/img/item.png";
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                   {isThumbVideo && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                       <span className="material-symbols-outlined text-white text-sm">play_arrow</span>

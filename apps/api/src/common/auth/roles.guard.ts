@@ -56,8 +56,10 @@ export class RolesGuard implements CanActivate {
                 : typeof payload.role === "string"
                 ? [payload.role]
                 : ["ROLE_SUPER_USER", "ROLE_ADMIN", "ROLE_CUSTOMER"];
+              const tenantIdNum = Number(payload.sub || payload.uid || payload.tenantId || 1);
               request.tenant = {
-                id: Number(payload.sub || payload.uid || payload.tenantId || 1),
+                id: tenantIdNum,
+                tenantId: tenantIdNum,
                 uid: String(payload.uid || payload.sub || "1"),
                 email: String(payload.email || "admin@bloomscorp.com"),
                 roles,

@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { Controller, Get, Patch, Param, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { TenantService } from '../service/tenant.service.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
@@ -36,23 +35,26 @@ export class TenantController {
   @Get('get/customer/profile')
   @ApiOperation({ summary: "Get customer profile." })
   async getCustomerProfile(@CurrentTenant() tenant: any) {
-    const tenantId = tenant?.id || 1;
+    const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
     const profile = await this.tenantService.getCustomerProfile(tenantId);
     return keyedResponse('profile', profile);
   }
 
+  @Post('update/customer/profile')
   @Patch('update/customer/profile')
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Update customer profile." })
   @ApiBody({ type: UpdateCustomerProfileDto })
   async updateCustomerProfile(@CurrentTenant() tenant: any, @Body() body: any) {
-    const tenantId = tenant?.id || 1;
-    const dto = parseUpdateCustomerProfileInput(body);
-    const errors = validateUpdateCustomerProfile(dto);
-    if (errors.length > 0) throw new BadRequestException(errors.join(', '));
-    const sanitized = sanitizeUpdateCustomerProfile(dto);
-    const profile = await this.tenantService.updateCustomerProfile(tenantId, sanitized);
-    return simpleResponse(true, 'Profile updated successfully');
+    const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
+    const profile = await this.tenantService.updateCustomerProfile(tenantId, body);
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      profile,
+      entity: profile,
+      data: profile,
+    };
   }
 
   @Get('get/table-explorer/data/user-role')

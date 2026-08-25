@@ -86,35 +86,36 @@ export function CheckoutAddressSection({
 
   return (
     <div className="flex flex-col gap-6 mb-6">
-      {/* 1. Shipping Address Card */}
-      <div className="bg-white rounded-xl border border-gray-200/90 shadow-sm p-6 sm:p-7">
-        <h3 className="text-base font-bold text-gray-900 mb-4">
+      {/* 1. Shipping Address Section */}
+      <div className="w-full">
+        <h3 className="text-base font-semibold text-gray-900 mb-3">
           Shipping Address
         </h3>
 
-        {shipping && shipping.name ? (
+        {shipping && (shipping.name || shipping.addressLineOne || (shipping as any).addressLine1) ? (
           <div>
-            <div className="border border-gray-200 rounded-xl p-5 bg-white relative">
-              {/* Edit Button */}
+            <div className="border border-gray-200/90 rounded-xl p-5 bg-white relative shadow-2xs">
+              {/* Stacked Edit Button (Matching Screenshot 1:1) */}
               <button
                 type="button"
                 onClick={() => handleOpenEdit(shipping, "SHIPPING")}
-                className="absolute top-5 right-5 text-xs text-gray-600 hover:text-[#ca9b6d] flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                className="absolute top-4 right-5 text-[#8E7862] hover:text-[#6c5b48] flex flex-col items-center text-xs font-medium cursor-pointer transition-colors"
+                title="Edit Address"
               >
-                <span className="material-symbols-outlined text-sm">edit</span>
-                <span>Edit</span>
+                <span className="material-symbols-outlined text-[18px] leading-none mb-0.5">edit</span>
+                <span className="text-[11px] leading-none">Edit</span>
               </button>
 
               {/* Name */}
-              <p className="font-bold text-sm uppercase text-gray-900 tracking-wide pr-14">
-                {shipping.name}
+              <p className="font-semibold text-sm text-gray-900 pr-14">
+                {shipping.name || "Default Address"}
               </p>
 
               {/* Address lines */}
               <p className="text-xs text-gray-600 mt-2 leading-relaxed">
                 {[
-                  shipping.addressLineOne,
-                  shipping.addressLineTwo,
+                  shipping.addressLineOne || (shipping as any).addressLine1,
+                  shipping.addressLineTwo || (shipping as any).addressLine2,
                   shipping.city,
                   shipping.state,
                   shipping.postalCode,
@@ -126,15 +127,15 @@ export function CheckoutAddressSection({
 
               {/* Contact Details */}
               {shipping.primaryPhone && (
-                <p className="text-xs text-gray-700 mt-2.5 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm text-gray-500">call</span>
+                <p className="text-xs text-gray-700 mt-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[15px] text-gray-500 leading-none">call</span>
                   <span>{shipping.primaryPhone}</span>
                 </p>
               )}
 
               {shipping.contactEmail && (
-                <p className="text-xs text-gray-700 mt-1 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm text-gray-500">mail</span>
+                <p className="text-xs text-gray-700 mt-1 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[15px] text-gray-500 leading-none">mail</span>
                   <span>{shipping.contactEmail}</span>
                 </p>
               )}
@@ -144,7 +145,7 @@ export function CheckoutAddressSection({
             <button
               type="button"
               onClick={() => handleOpenList("SHIPPING")}
-              className="text-xs font-bold text-[#ca9b6d] hover:text-[#b8895b] underline mt-3.5 inline-block cursor-pointer transition-colors"
+              className="text-xs font-semibold text-[#8E7862] hover:text-[#6c5b48] underline mt-3 inline-block cursor-pointer transition-colors"
             >
               Use Another Address
             </button>
@@ -158,7 +159,7 @@ export function CheckoutAddressSection({
             )}
           </div>
         ) : (
-          <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center">
+          <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center bg-white">
             <p className="text-sm text-gray-500 mb-3">No shipping address selected.</p>
             <button
               type="button"
@@ -171,13 +172,13 @@ export function CheckoutAddressSection({
         )}
       </div>
 
-      {/* 2. Billing Address Card */}
-      <div className="bg-white rounded-xl border border-gray-200/90 shadow-sm p-6 sm:p-7">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-gray-900">
+      {/* 2. Billing Address Section */}
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-gray-900">
             Billing Address
           </h3>
-          <label className="flex items-center gap-2 text-xs font-semibold text-gray-800 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-800 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={isSameAsShipping}
@@ -199,29 +200,30 @@ export function CheckoutAddressSection({
         </div>
 
         {!isSameAsShipping ? (
-          billing && billing.name ? (
+          billing && (billing.name || billing.addressLineOne || (billing as any).addressLine1) ? (
             <div>
-              <div className="border border-gray-200 rounded-xl p-5 bg-white relative">
-                {/* Edit Button */}
+              <div className="border border-gray-200/90 rounded-xl p-5 bg-white relative shadow-2xs">
+                {/* Stacked Edit Button */}
                 <button
                   type="button"
                   onClick={() => handleOpenEdit(billing, "BILLING")}
-                  className="absolute top-5 right-5 text-xs text-gray-600 hover:text-[#ca9b6d] flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                  className="absolute top-4 right-5 text-[#8E7862] hover:text-[#6c5b48] flex flex-col items-center text-xs font-medium cursor-pointer transition-colors"
+                  title="Edit Address"
                 >
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                  <span>Edit</span>
+                  <span className="material-symbols-outlined text-[18px] leading-none mb-0.5">edit</span>
+                  <span className="text-[11px] leading-none">Edit</span>
                 </button>
 
                 {/* Name */}
-                <p className="font-bold text-sm uppercase text-gray-900 tracking-wide pr-14">
-                  {billing.name}
+                <p className="font-semibold text-sm text-gray-900 pr-14">
+                  {billing.name || "Default Address"}
                 </p>
 
                 {/* Address lines */}
                 <p className="text-xs text-gray-600 mt-2 leading-relaxed">
                   {[
-                    billing.addressLineOne,
-                    billing.addressLineTwo,
+                    billing.addressLineOne || (billing as any).addressLine1,
+                    billing.addressLineTwo || (billing as any).addressLine2,
                     billing.city,
                     billing.state,
                     billing.postalCode,
@@ -233,15 +235,15 @@ export function CheckoutAddressSection({
 
                 {/* Contact Details */}
                 {billing.primaryPhone && (
-                  <p className="text-xs text-gray-700 mt-2.5 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-gray-500">call</span>
+                  <p className="text-xs text-gray-700 mt-2 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-gray-500 leading-none">call</span>
                     <span>{billing.primaryPhone}</span>
                   </p>
                 )}
 
                 {billing.contactEmail && (
-                  <p className="text-xs text-gray-700 mt-1 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-gray-500">mail</span>
+                  <p className="text-xs text-gray-700 mt-1 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-gray-500 leading-none">mail</span>
                     <span>{billing.contactEmail}</span>
                   </p>
                 )}
@@ -251,7 +253,7 @@ export function CheckoutAddressSection({
               <button
                 type="button"
                 onClick={() => handleOpenList("BILLING")}
-                className="text-xs font-bold text-[#ca9b6d] hover:text-[#b8895b] underline mt-3.5 inline-block cursor-pointer transition-colors"
+                className="text-xs font-semibold text-[#8E7862] hover:text-[#6c5b48] underline mt-3 inline-block cursor-pointer transition-colors"
               >
                 Use Another Address
               </button>
@@ -265,7 +267,7 @@ export function CheckoutAddressSection({
               )}
             </div>
           ) : (
-            <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center">
+            <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center bg-white">
               <p className="text-sm text-gray-500 mb-3">No billing address selected.</p>
               <button
                 type="button"
@@ -278,15 +280,15 @@ export function CheckoutAddressSection({
           )
         ) : (
           <div>
-            {billing && billing.name && (
-              <div className="border border-gray-200 rounded-xl p-5 bg-white relative opacity-90">
-                <p className="font-bold text-sm uppercase text-gray-900 tracking-wide pr-14">
-                  {billing.name}
+            {billing && (billing.name || billing.addressLineOne || (billing as any).addressLine1) && (
+              <div className="border border-gray-200/90 rounded-xl p-5 bg-white relative shadow-2xs">
+                <p className="font-semibold text-sm text-gray-900 pr-14">
+                  {billing.name || "Default Address"}
                 </p>
                 <p className="text-xs text-gray-600 mt-2 leading-relaxed">
                   {[
-                    billing.addressLineOne,
-                    billing.addressLineTwo,
+                    billing.addressLineOne || (billing as any).addressLine1,
+                    billing.addressLineTwo || (billing as any).addressLine2,
                     billing.city,
                     billing.state,
                     billing.postalCode,
@@ -296,26 +298,27 @@ export function CheckoutAddressSection({
                     .join(", ")}
                 </p>
                 {billing.primaryPhone && (
-                  <p className="text-xs text-gray-700 mt-2.5 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-gray-500">call</span>
+                  <p className="text-xs text-gray-700 mt-2 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-gray-500 leading-none">call</span>
                     <span>{billing.primaryPhone}</span>
                   </p>
                 )}
                 {billing.contactEmail && (
-                  <p className="text-xs text-gray-700 mt-1 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-gray-500">mail</span>
+                  <p className="text-xs text-gray-700 mt-1 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-gray-500 leading-none">mail</span>
                     <span>{billing.contactEmail}</span>
                   </p>
                 )}
               </div>
             )}
-            {/* Red Phone Validation Warning Box if phone invalid */}
-            {(isBillingPhoneInvalid || (hasValidationErrors && (!billing || !billing.primaryPhone))) && (
-              <div className="bg-[#ffebee] border border-[#f8d7da] text-[#c62828] text-xs font-medium p-3 rounded-lg mt-3.5 flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-[#c62828]">error</span>
-                <span>Select your country code, then enter your phone number without it.</span>
-              </div>
-            )}
+          </div>
+        )}
+
+        {/* Red Phone Validation Warning Box if phone invalid */}
+        {(isBillingPhoneInvalid || (hasValidationErrors && (!billing || !billing.primaryPhone))) && (
+          <div className="bg-[#ffebee] border border-[#f8d7da] text-[#c62828] text-xs font-medium p-3 rounded-lg mt-3.5 flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-[#c62828]">error</span>
+            <span>Select your country code, then enter your phone number without it.</span>
           </div>
         )}
       </div>

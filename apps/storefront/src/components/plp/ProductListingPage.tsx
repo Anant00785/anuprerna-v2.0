@@ -365,30 +365,25 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
 
         {/* Products Column (75% width) */}
         <div className="w-full md:w-3/4">
-          {/* Mobile Active Controls & Count */}
-          <div className="flex justify-center items-center gap-2 flex-col md:hidden mb-4">
-            <FilterActiveControls
-              chips={activeChips}
-              onRemoveChip={handleRemoveChip}
-              onClearAll={handleClearAll}
-            />
-            {sortedProducts.length > 0 && (
-              <div className="w-max rounded text-[#7D5B20] py-1 px-3 bg-[#fffcf7] border border-[#75787F]/20 text-xs sm:text-sm">
-                Showing <span className="font-semibold">{sortedProducts.length}</span> Products
-              </div>
-            )}
-          </div>
+          {/* Top Bar: Count on Left, Sort by on Right */}
+          <div className="w-full flex justify-between items-center pb-4 pt-1 gap-3">
+            <div className="text-sm sm:text-base text-gray-900">
+              <span className="font-bold">{sortedProducts.length}</span>{" "}
+              <span className="font-normal text-gray-700">products</span>
+            </div>
 
-          {/* Top Sort Row */}
-          <div className="w-full flex justify-between md:justify-end items-center pb-4 gap-3">
-            <span className="text-xs text-gray-500 hidden md:block">
-              {sortedProducts.length} items found
-            </span>
             <FilterSortDropdown
               selectedOption={selectedSortOption}
               onSortChange={handleSortChange}
             />
           </div>
+
+          {/* Active Filter Chips */}
+          <FilterActiveControls
+            chips={activeChips}
+            onRemoveChip={handleRemoveChip}
+            onClearAll={handleClearAll}
+          />
 
           {/* Product Grid */}
           <FilterProductGrid

@@ -533,16 +533,7 @@ button:hover .fb_animate {
 .fb-s-navigation {
   position: relative;
   perspective: 600px;
-  padding: 0.875rem 0.5rem 0.625rem 0.5rem;
-}
-
-@media (min-width: 1280px) {
-  .fb-s-navigation {
-    padding-top: 0;
-    padding-bottom: 0;
-    padding-left: 0;
-    padding-right: 0;
-  }
+  min-height: 60px;
 }
 
 .fb-s-navigation .hamburger .material-symbols-outlined {
@@ -550,7 +541,7 @@ button:hover .fb_animate {
 }
 
 .fb-s-navigation .fb-logo-svg {
-  height: 22px;
+  height: 26px;
   width: auto;
   outline: none;
   border: none;
@@ -560,12 +551,6 @@ button:hover .fb_animate {
 @media (min-width: 1024px) {
   .fb-s-navigation .fb-logo-svg {
     height: 28px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .fb-s-navigation .fb-logo-svg {
-    height: 32px;
   }
 }
 
@@ -583,20 +568,27 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
   height: 100%;
   padding-top: 1rem;
   padding-bottom: 1rem;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
 }
 
 @media (min-width: 1280px) {
   .fb-s-navigation ul .fb-s-nav-link {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
   }
 }
 
 .fb-s-navigation ul .fb-s-nav-link .fb-s-nav-main {
   cursor: pointer;
   white-space: nowrap;
+  font-size: 13.5px;
+}
+
+@media (min-width: 1280px) {
+  .fb-s-navigation ul .fb-s-nav-link .fb-s-nav-main {
+    font-size: 14.5px;
+  }
 }
 
 .fb-s-navigation ul .fb-s-nav-link:hover .fb-s-nav-main {

@@ -36,13 +36,13 @@ export function ForexDropdown({ className = "" }: { className?: string }) {
     <div ref={containerRef} className={`select_trigger_cont relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fb-product-currency flex items-center gap-0.5 text-sm font-medium hover:text-[#9c8a6c] transition-colors py-1 px-1.5 rounded"
+        className="border border-[#D1D5DB] rounded px-2 py-0.5 flex items-center gap-0.5 text-xs font-medium text-[#4A4A4A] bg-white hover:border-gray-400 transition-colors cursor-pointer"
         type="button"
       >
-        <span className="sort_text uppercase text-xs sm:text-sm font-semibold">
+        <span className="uppercase text-xs font-semibold">
           {activeOption.name}
         </span>
-        <span className="material-symbols-outlined text-lg leading-none">
+        <span className="material-symbols-outlined text-sm leading-none text-[#7D5A20]">
           {isOpen ? "arrow_drop_up" : "arrow_drop_down"}
         </span>
       </button>

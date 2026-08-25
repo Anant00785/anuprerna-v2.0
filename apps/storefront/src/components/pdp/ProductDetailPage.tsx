@@ -1260,11 +1260,16 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
               )}
 
               {/* 3. Choose Finish / Organic Dye (When Finish Profile is Enabled) */}
-              {p.finishProfileEnabled && (p.finishProfile || productData.finishProfile) && (
+              {(p.finishProfileEnabled !== false || productGroup === "fabric") && (
                 <ProductFinishProfile
-                  finishProfile={p.finishProfile || productData.finishProfile || {}}
+                  finishProfile={p.finishProfile || productData.finishProfile || null}
                   selectedFinishes={selectedFinishes}
                   onFinishChange={(finishes) => setSelectedFinishes(finishes)}
+                  customPantone={pantoneShade}
+                  onCustomPantoneChange={(pantone) => {
+                    setPantoneShade(pantone);
+                    setPantoneSubmitted(Boolean(pantone));
+                  }}
                 />
               )}
             </div>

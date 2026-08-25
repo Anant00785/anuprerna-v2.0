@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AddressItem } from "@/types/domain/profile";
+import { useAuthStore } from "@/stores/auth.store";
 
 interface EditAddressModalProps {
   isOpen: boolean;
@@ -43,6 +44,8 @@ export function EditAddressModal({
   addressType = "SHIPPING",
   title = "Edit Address",
 }: EditAddressModalProps) {
+  const user = useAuthStore((s) => s.user);
+
   const [formData, setFormData] = useState({
     id: address?.id,
     name: "",
@@ -68,16 +71,23 @@ export function EditAddressModal({
 
   useEffect(() => {
     if (isOpen) {
-      const fullPhone = address?.primaryPhone || "";
+      const defaultName =
+        address?.name ||
+        user?.name ||
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+        "";
+      const defaultEmail = address?.contactEmail || (address as any)?.contact_email || user?.email || "";
+      const defaultPhone = address?.primaryPhone || user?.phone || user?.contactNumber || "";
+
       let dial = "+91";
-      let number = fullPhone;
+      let number = defaultPhone;
 
       // Extract dial code if phone starts with +
-      if (fullPhone.startsWith("+")) {
-        const matchingCode = COUNTRY_DIAL_CODES.find((c) => fullPhone.startsWith(c.dial));
+      if (defaultPhone.startsWith("+")) {
+        const matchingCode = COUNTRY_DIAL_CODES.find((c) => defaultPhone.startsWith(c.dial));
         if (matchingCode) {
           dial = matchingCode.dial;
-          number = fullPhone.slice(matchingCode.dial.length).trim();
+          number = defaultPhone.slice(matchingCode.dial.length).trim();
         }
       }
 
@@ -85,39 +95,45 @@ export function EditAddressModal({
       const countryMatch = COUNTRY_DIAL_CODES.find(
         (c) => c.name.toLowerCase() === country.toLowerCase()
       );
-      if (countryMatch && !fullPhone.startsWith("+")) {
+      if (countryMatch && !defaultPhone.startsWith("+")) {
         dial = countryMatch.dial;
       }
 
       setFormData({
         id: address?.id,
-        name: address?.name || "",
-        companyName: address?.companyName || "",
-        addressLineOne: address?.addressLineOne || "",
-        addressLineTwo: address?.addressLineTwo || "",
+        name: defaultName,
+        companyName: address?.companyName || (address as any)?.company_name || "",
+        addressLineOne: address?.addressLineOne || (address as any)?.addressLine1 || (address as any)?.address_line_1 || "",
+        addressLineTwo: address?.addressLineTwo || (address as any)?.addressLine2 || (address as any)?.address_line_2 || "",
         city: address?.city || "",
         state: address?.state || "",
-        postalCode: address?.postalCode || "",
+        postalCode: address?.postalCode || (address as any)?.postal_code || "",
         country,
         phoneDialCode: dial,
         phoneNumber: number,
-        secondaryPhone: address?.secondaryPhone || "",
-        contactEmail: address?.contactEmail || "",
-        vatgstNumber: address?.vatgstNumber || "",
-        eoriNumber: address?.eoriNumber || "",
+        secondaryPhone: address?.secondaryPhone || (address as any)?.secondary_phone || "",
+        contactEmail: defaultEmail,
+        vatgstNumber: address?.vatgstNumber || (address as any)?.vatGstNumber || (address as any)?.vat_gst_number || "",
+        eoriNumber: address?.eoriNumber || (address as any)?.eori_number || "",
         primaryBillingAddress: address?.primaryBillingAddress ?? false,
-        primaryShippingAddress: address?.primaryShippingAddress ?? false,
+        primaryShippingAddress: address?.primaryShippingAddress ?? true,
       });
       setErrors({});
     }
-  }, [isOpen, address]);
+  }, [isOpen, address, user]);
 
   if (!isOpen) return null;
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
+    const resolvedName =
+      formData.name.trim() ||
+      user?.name ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+      "";
+
+    if (!resolvedName && !formData.name.trim()) {
       newErrors.name = "Full name is required";
     }
 
@@ -150,14 +166,19 @@ export function EditAddressModal({
       newErrors.phone = "Enter a valid phone number";
     }
 
-    if (!formData.contactEmail.trim()) {
+    const emailToValidate = formData.contactEmail.trim() || user?.email || "";
+    if (!emailToValidate) {
       newErrors.contactEmail = "Email address is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailToValidate)) {
       newErrors.contactEmail = "Enter a valid email address";
     }
 
+    if (Object.keys(newErrors).length > 0) {
+      newErrors.form = "Please fill in all required fields marked with *.";
+    }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).filter((k) => k !== "form").length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -170,9 +191,17 @@ export function EditAddressModal({
         ? formData.phoneNumber
         : `${formData.phoneDialCode}${formData.phoneNumber.replace(/^0+/, "")}`;
 
+      const resolvedName =
+        formData.name.trim() ||
+        user?.name ||
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+        "My Address";
+
+      const resolvedEmail = formData.contactEmail.trim() || user?.email || "";
+
       const savedAddress: Partial<AddressItem> = {
         id: formData.id,
-        name: formData.name.trim(),
+        name: resolvedName,
         companyName: formData.companyName.trim() || undefined,
         addressLineOne: formData.addressLineOne.trim(),
         addressLineTwo: formData.addressLineTwo.trim() || undefined,
@@ -182,7 +211,7 @@ export function EditAddressModal({
         country: formData.country.trim(),
         primaryPhone: fullPhone,
         secondaryPhone: formData.secondaryPhone.trim() || undefined,
-        contactEmail: formData.contactEmail.trim(),
+        contactEmail: resolvedEmail,
         vatgstNumber: formData.vatgstNumber.trim() || undefined,
         eoriNumber: formData.eoriNumber.trim() || undefined,
         addressType: addressType,

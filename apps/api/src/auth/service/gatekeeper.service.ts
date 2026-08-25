@@ -166,7 +166,7 @@ export class GatekeeperService {
       throw new UnauthorizedException("Token has expired.");
     }
 
-    return { id: payload.sub, uid: payload.uid, email: payload.email, roles: payload.roles };
+    return { id: payload.sub, tenantId: payload.sub, uid: payload.uid, email: payload.email, roles: payload.roles };
   }
 
   // ---------------------------------------------------------------------

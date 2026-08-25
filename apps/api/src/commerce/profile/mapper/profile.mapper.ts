@@ -69,10 +69,16 @@ export function mapMadeToOrderProfile(row: any): any {
 
 export function mapTenantProfile(row: any): any {
   if (!row) return null;
+  const fullName = row.name ?? row.userName ?? row.user_name ?? "";
+  const [firstName, ...rest] = String(fullName).trim().split(/\s+/).filter(Boolean);
   return {
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    phone: row.phone,
+    id: typeof row.id === "bigint" ? Number(row.id) : row.id,
+    name: fullName,
+    userName: fullName,
+    firstName: firstName || "",
+    lastName: rest.join(" ") || "",
+    email: row.email ?? "",
+    phone: row.contactNumber ?? row.phone ?? "",
+    contactNumber: row.contactNumber ?? row.phone ?? "",
   };
 }

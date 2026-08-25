@@ -63,6 +63,7 @@ export enum GateCode {
  */
 export interface AuthenticatedTenant {
   id: number;
+  tenantId?: number;
   uid: string;
   email: string;
   roles: UserRole[];

@@ -7,6 +7,7 @@ import { DATABASE_CONNECTION, type Database } from "../../database/database.modu
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
+import { CurrentTenant } from "../../common/auth/current-tenant.decorator.js";
 
 @ApiTags("Customer")
 @ApiBearerAuth()
@@ -87,17 +88,81 @@ export class CustomerDomainController {
       return keyedResponse("data", []);
     }
   }
-  @Get("/get/table-explorer/data/customer")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/customer" })
-  async get_get_table_explorer_data_customer(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.customer).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
+  @Get("/get/customer/profile")
+  @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Get customer profile" })
+  async get_get_customer_profile(@CurrentTenant() tenant: any) {
+    const tid = BigInt(tenant?.tenantId || tenant?.id || 1);
+    const rows = await (this.db as any).select().from(schema.loomTenant).where(eq(schema.loomTenant.id, tid)).limit(1);
+    const user = rows[0] || null;
+    if (!user) return keyedResponse("profile", null);
+    const fullName = user.name || user.userName || "";
+    const [firstName, ...rest] = String(fullName).trim().split(/\s+/).filter(Boolean);
+    return keyedResponse("profile", {
+      id: Number(user.id),
+      name: fullName,
+      userName: fullName,
+      firstName: firstName || "",
+      lastName: rest.join(" ") || "",
+      email: user.email || "",
+      contactNumber: user.contactNumber || "",
+      phone: user.contactNumber || "",
+      dob: user.dob ? Number(user.dob) : 0,
+      gender: user.gender || "UNDEFINED",
+    });
+  }
+
+  @Post("/update/customer/profile")
+  @Patch("/update/customer/profile")
+  @RequireGate(GateCode.CODE_CU)
+  @ApiOperation({ summary: "Update customer profile" })
+  async update_customer_profile(@CurrentTenant() tenant: any, @Body() body: any) {
+    const tid = BigInt(tenant?.tenantId || tenant?.id || 1);
+    const updateData: any = {};
+    if (body?.name) updateData.name = body.name;
+    if (body?.userName) {
+      updateData.userName = body.userName;
+      if (!updateData.name) updateData.name = body.userName;
     }
+    if (body?.firstName !== undefined || body?.lastName !== undefined) {
+      const combined = [body.firstName, body.lastName].filter(Boolean).join(" ").trim();
+      if (combined) {
+        updateData.name = combined;
+        updateData.userName = combined;
+      }
+    }
+    if (body?.phone || body?.contactNumber) {
+      updateData.contactNumber = body.phone || body.contactNumber;
+    }
+    if (body?.gender) updateData.gender = body.gender;
+
+    if (Object.keys(updateData).length > 0) {
+      await (this.db as any).update(schema.loomTenant).set(updateData).where(eq(schema.loomTenant.id, tid));
+    }
+
+    const rows = await (this.db as any).select().from(schema.loomTenant).where(eq(schema.loomTenant.id, tid)).limit(1);
+    const user = rows[0] || null;
+    const fullName = user?.name || user?.userName || "";
+    const [firstName, ...rest] = String(fullName).trim().split(/\s+/).filter(Boolean);
+    const profile = {
+      id: Number(user?.id || tid),
+      name: fullName,
+      userName: fullName,
+      firstName: firstName || "",
+      lastName: rest.join(" ") || "",
+      email: user?.email || "",
+      contactNumber: user?.contactNumber || "",
+      phone: user?.contactNumber || "",
+      gender: user?.gender || "UNDEFINED",
+    };
+
+    return {
+      success: true,
+      message: "Profile updated successfully",
+      profile,
+      entity: profile,
+      data: profile,
+    };
   }
 
 }

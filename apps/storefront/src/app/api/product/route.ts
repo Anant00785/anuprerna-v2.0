@@ -31,15 +31,20 @@ export async function GET(request: Request) {
       if (fabricV2Res.ok) {
         const fabricJson = await fabricV2Res.json();
         const productData = fabricJson.fabricProduct || fabricJson.product || fabricJson.payload || fabricJson;
-        if (productData && (productData.product || productData.name || productData.slug)) {
-          const finalData = productData.product
-            ? productData
-            : { product: productData, ...productData };
-          return NextResponse.json({
-            success: true,
-            productType: "fabric",
-            data: finalData,
-          });
+        if (productData) {
+          const product = productData.product || productData.productPreview || (productData.name || productData.slug ? productData : null);
+          if (product) {
+            const finalData = {
+              ...productData,
+              product,
+              productType: "fabric",
+            };
+            return NextResponse.json({
+              success: true,
+              productType: "fabric",
+              data: finalData,
+            });
+          }
         }
       }
     } catch {
@@ -57,15 +62,20 @@ export async function GET(request: Request) {
       if (fabricV1Res.ok) {
         const fabricJson = await fabricV1Res.json();
         const productData = fabricJson.fabricProduct || fabricJson.product || fabricJson.payload || fabricJson;
-        if (productData && (productData.product || productData.name || productData.slug)) {
-          const finalData = productData.product
-            ? productData
-            : { product: productData, ...productData };
-          return NextResponse.json({
-            success: true,
-            productType: "fabric",
-            data: finalData,
-          });
+        if (productData) {
+          const product = productData.product || productData.productPreview || (productData.name || productData.slug ? productData : null);
+          if (product) {
+            const finalData = {
+              ...productData,
+              product,
+              productType: "fabric",
+            };
+            return NextResponse.json({
+              success: true,
+              productType: "fabric",
+              data: finalData,
+            });
+          }
         }
       }
     } catch {
@@ -83,15 +93,23 @@ export async function GET(request: Request) {
       if (finishedRes.ok) {
         const finishedJson = await finishedRes.json();
         const productData = finishedJson.finishedProduct || finishedJson.product || finishedJson.payload || finishedJson;
-        if (productData && (productData.product || productData.name || productData.slug)) {
-          const finalData = productData.product
-            ? productData
-            : { product: productData, ...productData };
-          return NextResponse.json({
-            success: true,
-            productType: "finished",
-            data: finalData,
-          });
+        if (productData) {
+          const product = productData.product || productData.productPreview || (productData.name || productData.slug ? productData : null);
+          if (product) {
+            const finalData = {
+              ...productData,
+              product: {
+                ...product,
+                productGroup: product.productGroup || "finished",
+              },
+              productType: "finished",
+            };
+            return NextResponse.json({
+              success: true,
+              productType: "finished",
+              data: finalData,
+            });
+          }
         }
       }
     } catch {

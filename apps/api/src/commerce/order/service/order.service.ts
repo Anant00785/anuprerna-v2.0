@@ -1,11 +1,15 @@
-// @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { OrderRepository } from "../repository/order.repository.js";
 import { OrderInput, OrderUpdateInput } from "../dto/order.dto.js";
+import * as schema from "../../../database/schema/schema.js";
+import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly orderRepository: OrderRepository) {}
+  constructor(
+    private readonly orderRepository: OrderRepository,
+    @Inject(DATABASE_CONNECTION) private readonly db: Database,
+  ) {}
 
   async getOrderById(id: bigint) {
     return this.orderRepository.findById(id);
@@ -19,27 +23,66 @@ export class OrderService {
     return this.orderRepository.findAllPaginated(page, size);
   }
 
-  async createOrder(input: OrderInput) {
+  async createOrder(body: any, authTenantId?: number) {
+    let tenantId = Number(body?.tenantId || body?.customerId || authTenantId || 0);
+    if (!tenantId || tenantId <= 0) {
+      try {
+        const anyTenant = await this.orderRepository.db.select({ id: schema.loomTenant.id }).from(schema.loomTenant).limit(1);
+        tenantId = anyTenant.length > 0 ? Number(anyTenant[0].id) : 1;
+      } catch {
+        tenantId = 1;
+      }
+    }
+
     const data = {
-      tenantId: Number(input.customerId) || 1,
-      subTotal: "100.00",
-      shippingMode: { mode: "STANDARD", cost: 0 },
-      shippingCost: "0.00",
-      total: "100.00",
-      currency: "INR",
-      advancePay: "100.00",
-      remainingPay: "0.00",
-      autoDiscount: "0.00",
-      couponApplied: false,
-      couponCode: "",
-      couponDiscount: "0.00",
-      address: { id: Number(input.addressId) || 1 },
-      note: input.notes || "",
-      gift: false,
+      tenantId,
+      subTotal: String(body?.subTotal ?? body?.subtotal ?? "0.00"),
+      shippingMode: body?.shippingMode ?? { mode: "STANDARD", cost: 0 },
+      shippingCost: String(body?.shippingCost ?? "0.00"),
+      total: String(body?.total ?? "0.00"),
+      currency: String(body?.currency || "INR"),
+      advancePay: String(body?.advancePay ?? body?.total ?? "0.00"),
+      remainingPay: String(body?.remainingPay ?? "0.00"),
+      autoDiscount: String(body?.autoDiscount ?? "0.00"),
+      couponApplied: Boolean(body?.couponApplied),
+      couponCode: String(body?.couponCode || ""),
+      couponDiscount: String(body?.couponDiscount ?? "0.00"),
+      couponDiscountAmount: String(body?.couponDiscountAmount ?? "0.00"),
+      address: body?.address ?? {},
+      note: String(body?.note ?? body?.notes ?? ""),
+      gift: Boolean(body?.gift),
+      loyaltyOrder: Boolean(body?.loyaltyOrder),
       createdAt: Date.now(),
       version: 1n,
     };
-    return this.orderRepository.createOrder(data as any);
+
+    const order = await this.orderRepository.createOrder(data as any);
+
+    if (Array.isArray(body?.orderItems) && body.orderItems.length > 0) {
+      for (const item of body.orderItems) {
+        try {
+          await this.orderRepository.db.insert(schema.orderItem).values({
+            orderId: Number(order.id),
+            orderType: item.orderType || "IN_STOCK",
+            productGroup: item.productGroup || "finished",
+            quantity: String(item.quantity || 1),
+            unit: item.unit || "METER",
+            price: String(item.price || "0.00"),
+            currency: String(item.currency || data.currency),
+            customization: item.customization ?? {},
+            orderStatus: "INITIATED",
+            paymentStatus: "PENDING",
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            version: 1n,
+          } as any);
+        } catch (itemErr) {
+          console.warn("[OrderService] order_item insert error:", itemErr);
+        }
+      }
+    }
+
+    return order;
   }
 
   async updateOrderStatus(input: OrderUpdateInput) {

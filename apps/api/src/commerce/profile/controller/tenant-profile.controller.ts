@@ -33,16 +33,22 @@ export class TenantProfileController {
 
   @Get('get/customer/profile')
   async getCustomerProfile(@CurrentTenant() tenant: any) {
-    return this.profileService.getTenantProfile(tenant.id);
+    const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
+    return this.profileService.getTenantProfile(tenantId);
   }
 
+  @Post('update/customer/profile')
   @Patch('update/customer/profile')
   @RequireGate(GateCode.CODE_CU)
   async updateCustomerProfile(@CurrentTenant() tenant: any, @Body() body: any) {
-    const sanitized = sanitizeUpdateCustomerProfileInput(body);
-    const input = parseUpdateCustomerProfileInput(sanitized);
-    const error = validateUpdateCustomerProfile(input);
-    if (error) throw new BadRequestException(error);
-    return this.profileService.updateCustomerProfile(tenant.id, input);
+    const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
+    const result = await this.profileService.updateCustomerProfile(tenantId, body);
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      profile: result?.data || result,
+      entity: result?.data || result,
+      data: result?.data || result,
+    };
   }
 }

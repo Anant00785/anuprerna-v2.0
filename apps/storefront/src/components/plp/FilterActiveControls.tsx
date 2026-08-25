@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FilterActiveChip, FilterControls } from "@/types/domain/plp";
+import { FilterActiveChip } from "@/types/domain/plp";
 
 interface FilterActiveControlsProps {
   chips: FilterActiveChip[];
@@ -17,37 +17,48 @@ export const FilterActiveControls: React.FC<FilterActiveControlsProps> = ({
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap w-full justify-center md:justify-start items-center mb-3 gap-1.5">
+    <div className="flex flex-wrap w-full items-center gap-2 mb-4">
+      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1 select-none">
+        FILTERS
+      </span>
+
       {chips.map((chip, idx) => {
         let label = "";
         if (chip.type === "range" && chip.range) {
-          label = `${chip.name.toLowerCase()} : ${chip.range.value1} - ${chip.range.value2}`;
+          label = `${chip.range.value1} - ${chip.range.value2}`;
         } else if (chip.option) {
-          label = (chip.option.displayName || chip.option.value).toLowerCase();
+          label = chip.option.displayName || chip.option.value;
         }
+
+        const categoryName = (chip.name || "CRAFT").toUpperCase();
 
         return (
           <div
             key={idx}
-            onClick={() => onRemoveChip(chip)}
-            className="bg-[#fcf4e8] text-[12px] text-[#302e2e] rounded-lg px-2.5 py-1 border border-[#75787F]/20 cursor-pointer flex gap-1 items-center justify-center hover:bg-[#f6ebd9] transition-colors"
+            className="bg-[#FFF6F4] text-xs text-gray-800 rounded-full px-3 py-1 border border-[#FCDFD8] flex items-center gap-1.5 shadow-2xs select-none"
           >
-            <span>{label}</span>
-            <span className="material-symbols-outlined text-[13px] leading-none">
-              close
+            <span className="text-[10px] font-bold text-gray-400 uppercase">
+              {categoryName}
             </span>
+            <span className="font-medium text-gray-800">{label}</span>
+            <button
+              type="button"
+              onClick={() => onRemoveChip(chip)}
+              className="text-gray-400 hover:text-gray-700 ml-0.5 text-xs font-bold leading-none cursor-pointer transition-colors"
+              title="Remove filter"
+            >
+              ✕
+            </button>
           </div>
         );
       })}
 
       <button
+        type="button"
         onClick={onClearAll}
-        className="text-[12px] bg-white text-[#302e2e] rounded-lg px-2.5 py-1 border border-[#75787F]/20 cursor-pointer flex gap-1 items-center justify-center hover:bg-gray-50 transition-colors"
+        className="text-xs font-medium text-[#8E7862] hover:text-[#6c5b48] underline ml-1.5 cursor-pointer select-none transition-colors"
       >
-        <span>clear</span>
-        <span className="material-symbols-outlined text-[13px] leading-none">
-          close
-        </span>
+        Clear all
       </button>
     </div>
   );
