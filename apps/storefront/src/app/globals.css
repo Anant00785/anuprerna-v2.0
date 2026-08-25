@@ -607,10 +607,10 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
   opacity: 0;
   position: absolute;
   overflow: hidden;
-  padding: 13px;
+  padding: 12px;
   top: -35px;
-  border-radius: 2px;
-  transition: all 0.5s;
+  border-radius: 12px;
+  transition: all 0.3s ease;
   transform: translateY(90px);
   will-change: transform;
   display: none;
@@ -623,6 +623,11 @@ a:focus, a:focus-visible, button:focus, button:focus-visible {
 .fb-s-navigation ul .fb-s-nav-link .fb-s-nav-dropdown .fb-sn-section {
   max-height: 435px;
   overflow-y: auto;
+  border-radius: 8px;
+}
+
+.fb-s-navigation ul .fb-s-nav-link .fb-s-nav-dropdown .fb-sn-segment {
+  border-radius: 8px;
 }
 
 .fb-s-navigation ul .fb-s-nav-link .fb-s-nav-dropdown .fb-sn-section .fb-sn-sub-category {
