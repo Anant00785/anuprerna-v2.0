@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PageHeading } from '@/components/ui/PageHeading';
+import Link from 'next/link';
 import {
   ILoyaltyProgramCustomerMetrics,
   ILoyaltyProgramConfigPayload,
@@ -10,7 +10,7 @@ import {
 import { LoyaltyCustomerFilterPage } from '@/components/manage-loyalty-program/LoyaltyCustomerFilterPage';
 import { LoyaltyCustomerPreviewTable } from '@/components/manage-loyalty-program/LoyaltyCustomerPreviewTable';
 import { UpdateUserLoyaltyModal } from '@/components/manage-loyalty-program/UpdateUserLoyaltyModal';
-import { Users, UserCheck, UserX, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function WholesaleLoyaltyProgramPage() {
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -30,7 +30,7 @@ export default function WholesaleLoyaltyProgramPage() {
       const data = await LoyaltyService.getLoyaltyProgramCustomerMetrics(true);
       setActiveUsers(data || []);
     } catch {
-      // Handle error silently or set fallback empty array
+      // Handle error silently
     } finally {
       setLoadingActive(false);
     }
@@ -42,7 +42,7 @@ export default function WholesaleLoyaltyProgramPage() {
       const data = await LoyaltyService.getLoyaltyProgramCustomerMetrics(false);
       setInactiveUsers(data || []);
     } catch {
-      // Handle error silently or set fallback empty array
+      // Handle error silently
     } finally {
       setLoadingInactive(false);
     }
@@ -63,68 +63,66 @@ export default function WholesaleLoyaltyProgramPage() {
     setModalPayload(null);
   };
 
+  const [customerRefreshKey, setCustomerRefreshKey] = useState<number>(0);
+
   const handleModalSuccess = () => {
     fetchActiveUsers();
     fetchInactiveUsers();
+    setCustomerRefreshKey((prev) => prev + 1);
   };
 
   const tabs = [
-    { id: 0, label: 'Customers', icon: Users },
-    { id: 1, label: 'Active Customers', icon: UserCheck, count: activeUsers.length },
-    { id: 2, label: 'Inactive Customers', icon: UserX, count: inactiveUsers.length },
+    { id: 0, label: 'Customers' },
+    { id: 1, label: 'Active Customers' },
+    { id: 2, label: 'Inactive Customers' },
   ];
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <PageHeading heading="Manage Loyalty Program" />
+    <div className="space-y-6 pt-2 pb-20 max-w-7xl mx-auto">
+      {/* BREADCRUMB */}
+      <div className="flex items-center gap-2 text-xs text-slate-500">
+        <span className="bg-[#1f2438] text-white px-2.5 py-0.5 rounded-full font-bold text-[10px]">
+          Manage Loyalty Program
+        </span>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-slate-200">
-        <nav className="flex space-x-8 justify-center" aria-label="Tabs">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors relative ${
-                  isActive
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span
-                    className={`ml-1.5 px-2 py-0.5 text-xs font-semibold rounded-full ${
-                      isActive ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+      {/* TABS (Customers / Active Customers / Inactive Customers) - EXACT POSITIONING */}
+      <div className="flex items-center justify-center gap-8 border-b border-slate-200 text-xs font-semibold pt-2 pb-0.5">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`pb-3 transition-colors relative ${
+                isActive
+                  ? 'text-blue-600 border-b-2 border-blue-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
       <div className="pt-2">
         {/* Tab 0: Customers */}
-        {activeTab === 0 && <LoyaltyCustomerFilterPage onOpenModal={handleOpenModal} />}
+        {activeTab === 0 && (
+          <LoyaltyCustomerFilterPage
+            key={customerRefreshKey}
+            onOpenModal={handleOpenModal}
+          />
+        )}
 
         {/* Tab 1: Active Customers */}
         {activeTab === 1 &&
           (loadingActive ? (
-            <div className="p-12 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              <span className="text-sm font-medium text-slate-500">Loading active customers...</span>
+            <div className="p-16 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-[#585c82] animate-spin" />
+              <span className="text-xs font-medium text-slate-500">Loading active customers...</span>
             </div>
           ) : (
             <LoyaltyCustomerPreviewTable
@@ -137,9 +135,9 @@ export default function WholesaleLoyaltyProgramPage() {
         {/* Tab 2: Inactive Customers */}
         {activeTab === 2 &&
           (loadingInactive ? (
-            <div className="p-12 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              <span className="text-sm font-medium text-slate-500">Loading inactive customers...</span>
+            <div className="p-16 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-[#585c82] animate-spin" />
+              <span className="text-xs font-medium text-slate-500">Loading inactive customers...</span>
             </div>
           ) : (
             <LoyaltyCustomerPreviewTable

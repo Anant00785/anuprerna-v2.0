@@ -8,7 +8,7 @@ import {
   getDuration,
   getStatusBadgeClass,
 } from '@/services/cron-job-service';
-import { ChevronRight, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check } from 'lucide-react';
 import dayjs from 'dayjs';
 
 interface CronJobAggregatedRowProps {
@@ -25,7 +25,7 @@ export const CronJobAggregatedRow: React.FC<CronJobAggregatedRowProps> = ({ aggr
     setCurrentPage(0);
   };
 
-  const totalPages = Math.ceil(aggregatedJob.logs.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(aggregatedJob.logs.length / pageSize));
   const hasNextPage = currentPage < totalPages - 1;
   const hasPrevPage = currentPage > 0;
 
@@ -35,72 +35,72 @@ export const CronJobAggregatedRow: React.FC<CronJobAggregatedRowProps> = ({ aggr
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-2xs border border-slate-200 mb-3 overflow-hidden transition-all">
+    <div className="bg-white rounded-lg shadow-2xs border border-slate-200 mb-2.5 overflow-hidden transition-all">
       {/* Accordion Header */}
       <div
         onClick={toggle}
-        className="flex flex-col md:flex-row md:items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-50/80 transition-colors gap-4"
+        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50/60 transition-colors gap-3 select-none"
       >
-        <div className="flex items-center space-x-3 flex-1 min-w-0">
-          <ChevronRight
-            className={`w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0 ${
-              isExpanded ? 'rotate-90 text-slate-700' : ''
-            }`}
-          />
-          <span className="font-bold text-slate-800 text-base truncate">
+        {/* Left: Chevron + Job Name + Status Badge */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+          )}
+          <span className="font-semibold text-slate-800 text-xs truncate">
             {aggregatedJob.jobName}
           </span>
           <span
-            className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider shrink-0 ${getStatusBadgeClass(
-              aggregatedJob.latestStatus
-            )}`}
+            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider shrink-0 ${
+              aggregatedJob.latestStatus === 'SUCCESS'
+                ? 'bg-[#dcfce7] text-[#166534]'
+                : aggregatedJob.latestStatus === 'FAILURE'
+                ? 'bg-[#fee2e2] text-[#991b1b]'
+                : 'bg-slate-100 text-slate-700'
+            }`}
           >
             {aggregatedJob.latestStatus}
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center space-x-6 text-sm">
-          {/* Counts */}
-          <div className="flex items-center space-x-3 text-slate-600">
-            <span className="font-semibold text-slate-800">
-              {aggregatedJob.totalRuns}{' '}
-              <span className="font-normal text-slate-500">runs</span>
+        {/* Right: Stats */}
+        <div className="flex items-center gap-5 text-xs shrink-0">
+          {/* Total Runs */}
+          <span className="text-slate-500 font-medium whitespace-nowrap">
+            {aggregatedJob.totalRuns} runs
+          </span>
+
+          {/* Success Count */}
+          {aggregatedJob.successCount > 0 && (
+            <span className="flex items-center gap-1 text-emerald-600 font-semibold whitespace-nowrap">
+              <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+              {aggregatedJob.successCount}
             </span>
+          )}
 
-            {aggregatedJob.successCount > 0 && (
-              <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                {aggregatedJob.successCount}
+          {/* Failure Count */}
+          {aggregatedJob.failureCount > 0 && (
+            <span className="flex items-center gap-1 text-rose-600 font-semibold whitespace-nowrap">
+              <span className="w-3.5 h-3.5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[9px] font-bold">
+                !
               </span>
-            )}
+              {aggregatedJob.failureCount}
+            </span>
+          )}
 
-            {aggregatedJob.failureCount > 0 && (
-              <span className="flex items-center gap-1 text-red-600 font-semibold">
-                <AlertCircle className="w-4 h-4 text-red-500" />
-                {aggregatedJob.failureCount}
-              </span>
-            )}
-
-            {aggregatedJob.runningCount > 0 && (
-              <span className="flex items-center gap-1 text-blue-600 font-semibold">
-                <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-                {aggregatedJob.runningCount}
-              </span>
-            )}
-          </div>
-
-          {/* Average duration */}
-          <div className="text-slate-500 min-w-[80px] text-right">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">AVG</span>
-            <span className="ml-1.5 font-bold text-slate-700">
+          {/* Average Duration */}
+          <div className="text-slate-500 whitespace-nowrap">
+            <span className="text-[10px] uppercase font-semibold text-slate-400 mr-1">AVG</span>
+            <span className="font-bold text-slate-700">
               {formatDuration(aggregatedJob.averageDuration)}
             </span>
           </div>
 
-          {/* Last run time */}
-          <div className="text-slate-500 min-w-[150px] text-right">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">LAST</span>
-            <span className="ml-1.5 font-semibold text-slate-700">
+          {/* Last Run Time */}
+          <div className="text-slate-500 whitespace-nowrap">
+            <span className="text-[10px] uppercase font-semibold text-slate-400 mr-1">LAST</span>
+            <span className="font-normal text-slate-700">
               {dayjs(aggregatedJob.lastRunTime).format('M/D/YY, h:mm A')}
             </span>
           </div>
@@ -109,51 +109,57 @@ export const CronJobAggregatedRow: React.FC<CronJobAggregatedRowProps> = ({ aggr
 
       {/* Expanded History */}
       {isExpanded && (
-        <div className="border-t border-slate-200 bg-slate-50/50 p-5 space-y-4 animate-in fade-in duration-150">
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Execution History
+        <div className="border-t border-slate-100 bg-white px-5 py-4 space-y-3">
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            EXECUTION HISTORY
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200 bg-slate-50 text-left">
-                  <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Start Time</th>
-                  <th className="px-4 py-3">End Time</th>
-                  <th className="px-4 py-3">Duration</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Message</th>
+                <tr className="text-[11px] font-semibold text-slate-400 uppercase border-b border-slate-100 pb-2">
+                  <th className="py-2.5 pr-4 font-semibold">ID</th>
+                  <th className="py-2.5 px-4 font-semibold">START TIME</th>
+                  <th className="py-2.5 px-4 font-semibold">END TIME</th>
+                  <th className="py-2.5 px-4 font-semibold">DURATION</th>
+                  <th className="py-2.5 px-4 font-semibold">STATUS</th>
+                  <th className="py-2.5 pl-4 font-semibold">MESSAGE</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50 text-slate-700">
                 {paginatedLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-slate-700">#{log.id}</td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {log.startTime ? dayjs(log.startTime).format('MMM D, YYYY h:mm:ss A') : '-'}
+                  <tr key={log.id} className="hover:bg-slate-50/60 transition">
+                    <td className="py-3 pr-4 font-normal text-slate-700 whitespace-nowrap">
+                      {log.id}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                      {log.startTime ? dayjs(log.startTime).format('MMM D, YYYY, h:mm:ss A') : '-'}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
                       {log.endTime !== null ? (
-                        dayjs(log.endTime).format('MMM D, YYYY h:mm:ss A')
+                        dayjs(log.endTime).format('MMM D, YYYY, h:mm:ss A')
                       ) : (
                         <span className="text-blue-600 font-medium italic">Running...</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-700 font-semibold">
+                    <td className="py-3 px-4 text-slate-700 font-normal whitespace-nowrap">
                       {getDuration(log.startTime, log.endTime)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="py-3 px-4 whitespace-nowrap">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClass(
-                          log.status
-                        )}`}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                          log.status === 'SUCCESS'
+                            ? 'bg-[#dcfce7] text-[#166534]'
+                            : log.status === 'FAILURE'
+                            ? 'bg-[#fee2e2] text-[#991b1b]'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
                       >
                         {log.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 max-w-md whitespace-normal break-words">
-                      {log.message || '-'}
+                    <td className="py-3 pl-4 text-slate-600 truncate max-w-xs">
+                      {log.message || 'Job completed successfully'}
                     </td>
                   </tr>
                 ))}
@@ -161,36 +167,30 @@ export const CronJobAggregatedRow: React.FC<CronJobAggregatedRowProps> = ({ aggr
             </table>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-500 font-medium">
-                Page {currentPage + 1} of {totalPages} ({aggregatedJob.logs.length} total)
-              </span>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                  disabled={!hasPrevPage}
-                  className="px-3 py-1 text-xs font-semibold rounded border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                  disabled={!hasNextPage}
-                  className="px-3 py-1 text-xs font-semibold rounded border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  Next
-                </button>
-              </div>
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+            <span className="text-slate-400 text-[11px]">
+              Page {currentPage + 1} of {totalPages} ({aggregatedJob.logs.length} total)
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                disabled={!hasPrevPage}
+                className="px-3 py-1 text-xs border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={!hasNextPage}
+                className="px-3 py-1 text-xs border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
+              >
+                Next
+              </button>
             </div>
-          )}
-
-          {aggregatedJob.logs.length === 0 && (
-            <div className="text-center py-4 text-xs text-slate-400">
-              No execution history found.
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>

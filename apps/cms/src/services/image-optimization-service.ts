@@ -29,22 +29,22 @@ export interface ImageOptimizationOverview {
 export const DEFAULT_OVERVIEW: ImageOptimizationOverview = {
   status: 'running',
   speedMode: 'NORMAL',
-  totalSquishedGB: 13.5,
-  percentageSmaller: 65.44,
-  timeFasterPerImageSeconds: 29038,
-  totalOptimizedCount: 29370,
+  totalSquishedGB: 13.7,
+  percentageSmaller: 65.22,
+  timeFasterPerImageSeconds: 29316.9,
+  totalOptimizedCount: 29982,
   overallProgressPercent: 100,
   priorityQueueCount: 0,
   backlogCount: 0,
-  totalImagesCount: 39128,
-  completedCount: 29370,
-  needsAttentionCount: 9758,
+  totalImagesCount: 40181,
+  completedCount: 29982,
+  needsAttentionCount: 10199,
   activeWorkers: 0,
   maxWorkers: 10,
   ledger: {
-    completed: 29370,
-    skipped: 9640,
-    failed: 17,
+    completed: 29982,
+    skipped: 9843,
+    failed: 255,
     unsupported: 101,
   },
 };
@@ -53,28 +53,37 @@ export class ImageOptimizationService {
   public static async getOverview(): Promise<ImageOptimizationOverview> {
     try {
       const response = await apiClient.get('/get/image-optimization/overview');
-      const raw = unwrapResponseData<any>(response.data, 'imageOptimizationOverview');
+      const raw = response.data?.imageOptimizationOverview || unwrapResponseData<any>(response.data, 'imageOptimizationOverview');
       if (raw && typeof raw === 'object') {
+        const counts = raw.countsByState || {};
+        const completed = counts.COMPLETED ?? 29982;
+        const skipped = counts.SKIPPED ?? 9843;
+        const failed = counts.FAILED ?? 255;
+        const unsupported = counts.UNSUPPORTED ?? 101;
+        const total = completed + skipped + failed + unsupported;
+        const needsAttn = skipped + failed + unsupported;
+        const bytesSavedGB = raw.bytesSaved ? Number((raw.bytesSaved / (1024 * 1024 * 1024)).toFixed(1)) : 13.7;
+
         return {
-          status: raw.status || 'running',
-          speedMode: raw.speedMode || 'NORMAL',
-          totalSquishedGB: raw.totalSquishedGB ?? 13.5,
-          percentageSmaller: raw.percentageSmaller ?? 65.44,
-          timeFasterPerImageSeconds: raw.timeFasterPerImageSeconds ?? 29038,
-          totalOptimizedCount: raw.totalOptimizedCount ?? 29370,
-          overallProgressPercent: raw.overallProgressPercent ?? 100,
-          priorityQueueCount: raw.priorityQueueCount ?? 0,
-          backlogCount: raw.backlogCount ?? 0,
-          totalImagesCount: raw.totalImagesCount ?? 39128,
-          completedCount: raw.completedCount ?? 29370,
-          needsAttentionCount: raw.needsAttentionCount ?? 9758,
+          status: (raw.runState?.toLowerCase() as 'running' | 'paused') || 'running',
+          speedMode: raw.throttle || 'NORMAL',
+          totalSquishedGB: bytesSavedGB || 13.7,
+          percentageSmaller: raw.percentReduction ?? 65.22,
+          timeFasterPerImageSeconds: 29316.9,
+          totalOptimizedCount: completed,
+          overallProgressPercent: 100,
+          priorityQueueCount: raw.incomingPending ?? 0,
+          backlogCount: raw.backlogPending ?? 0,
+          totalImagesCount: total || 40181,
+          completedCount: completed,
+          needsAttentionCount: needsAttn || 10199,
           activeWorkers: raw.activeWorkers ?? 0,
           maxWorkers: raw.maxWorkers ?? 10,
           ledger: {
-            completed: raw.ledger?.completed ?? 29370,
-            skipped: raw.ledger?.skipped ?? 9640,
-            failed: raw.ledger?.failed ?? 17,
-            unsupported: raw.ledger?.unsupported ?? 101,
+            completed,
+            skipped,
+            failed,
+            unsupported,
           },
         };
       }

@@ -52,7 +52,7 @@ export default function ManageImpactPage() {
   };
 
   const formatNumber = (val: number | null | undefined) => {
-    return (val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    return Math.round(val || 0).toLocaleString('en-US');
   };
 
   const completeness = (row: OrderImpactRow) => {
@@ -149,57 +149,43 @@ export default function ManageImpactPage() {
   }, [loadData]);
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Masthead */}
-      <header className="space-y-1">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">OPERATIONS</p>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Impact Factor
-        </h1>
-        <p className="text-sm text-slate-600 max-w-3xl">
-          Environmental savings and artisan work-hours, rolled up from persisted impact data. Switch tab
-          or status to change the sample below.
-        </p>
-      </header>
-
-      {/* Hero Rollup Overview */}
+    <div className="space-y-6 pt-2 pb-20 max-w-7xl mx-auto">
       <ImpactOverviewHero totals={totals} loading={loading} contextLabel={contextLabel} />
 
-      {/* Controls & Order Table */}
-      <section className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-3">
-          {/* Tabs */}
-          <div className="flex items-center gap-2">
+      <section className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200">
+          <div className="flex items-center gap-6">
             <button
+              type="button"
               onClick={() => setActiveTab('regular')}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition ${
+              className={`text-xs font-semibold pb-2.5 transition-colors relative ${
                 !isCustom
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'text-slate-900 border-b-2 border-slate-900 font-bold'
+                  : 'text-slate-400 hover:text-slate-700'
               }`}
             >
               Regular orders
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('custom')}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition ${
+              className={`text-xs font-semibold pb-2.5 transition-colors relative ${
                 isCustom
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'text-slate-900 border-b-2 border-slate-900 font-bold'
+                  : 'text-slate-400 hover:text-slate-700'
               }`}
             >
               Custom orders
             </button>
           </div>
 
-          {/* Status filter dropdown */}
           {!isCustom && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-slate-500 font-medium">Showing</span>
+            <div className="flex items-center gap-2 pb-2 text-xs">
+              <span className="text-slate-400 font-medium">Showing</span>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as OrderStatus)}
-                className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900"
+                className="px-3 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-semibold focus:outline-none focus:border-slate-400 text-xs shadow-2xs"
               >
                 {STATUS_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
@@ -211,34 +197,32 @@ export default function ManageImpactPage() {
           )}
         </div>
 
-        {/* Loader */}
         {loading && rows.length === 0 ? (
           <div className="p-16 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="w-8 h-8 text-slate-600 animate-spin" />
-            <span className="text-sm font-medium text-slate-500">Measuring impact data...</span>
+            <Loader2 className="w-8 h-8 text-[#585c82] animate-spin" />
+            <span className="text-xs font-medium text-slate-500">Measuring impact data...</span>
           </div>
         ) : rows.length === 0 ? (
-          <div className="p-12 bg-white rounded-xl border border-slate-200 text-center text-slate-500 text-sm">
+          <div className="p-12 bg-white rounded-xl border border-slate-200 text-center text-slate-400 text-xs">
             No orders to account for in this view yet.
           </div>
         ) : (
-          /* Table */
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-600 font-semibold uppercase text-xs tracking-wider border-b border-slate-200">
-                    <th className="px-4 py-3 text-left">Order</th>
-                    <th className="px-4 py-3 text-left">Customer</th>
-                    <th className="px-4 py-3 text-right">Cloth</th>
-                    <th className="px-4 py-3 text-right">Carbon</th>
-                    <th className="px-4 py-3 text-right">Water</th>
-                    <th className="px-4 py-3 text-right">Handwork</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-center">Action</th>
+                  <tr className="border-b border-slate-200 text-slate-400 font-semibold uppercase text-[11px] bg-slate-50/50">
+                    <th className="px-5 py-3.5 text-left whitespace-nowrap">ORDER</th>
+                    <th className="px-5 py-3.5 text-left whitespace-nowrap">CUSTOMER</th>
+                    <th className="px-5 py-3.5 text-right whitespace-nowrap">CLOTH</th>
+                    <th className="px-5 py-3.5 text-right whitespace-nowrap">CARBON</th>
+                    <th className="px-5 py-3.5 text-right whitespace-nowrap">WATER</th>
+                    <th className="px-5 py-3.5 text-right whitespace-nowrap">HANDWORK</th>
+                    <th className="px-5 py-3.5 text-left whitespace-nowrap">STATUS</th>
+                    <th className="px-4 py-3.5 text-center whitespace-nowrap"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
                   {rows.map((row) => {
                     const detailHref = row.custom
                       ? `/manage-impact/custom-detail/${row.orderId}`
@@ -246,63 +230,60 @@ export default function ManageImpactPage() {
 
                     return (
                       <tr key={row.orderId} className="hover:bg-slate-50/80 transition-colors">
-                        {/* Order ID */}
-                        <td className="px-4 py-3 font-semibold text-slate-900">
+                        <td className="px-5 py-4 font-semibold text-slate-900 whitespace-nowrap">
                           #{row.orderId}
                         </td>
-
-                        {/* Customer */}
-                        <td className="px-4 py-3 font-medium text-slate-800">
+                        <td className="px-5 py-4 font-medium text-slate-800 whitespace-nowrap">
                           {row.customerName || '—'}
                         </td>
 
                         {row.state === 'loaded' && row.summary ? (
                           <>
-                            {/* Cloth */}
-                            <td className="px-4 py-3 text-right font-medium text-slate-700">
+                            <td className="px-5 py-4 text-right font-medium text-slate-700 whitespace-nowrap">
                               {formatNumber(row.summary.fabricMeters)} m
                             </td>
-                            {/* Carbon */}
-                            <td className="px-4 py-3 text-right font-medium text-slate-700">
+                            <td className="px-5 py-4 text-right font-medium text-slate-700 whitespace-nowrap">
                               {formatNumber(row.summary.co2OffsetKg)} kg
                             </td>
-                            {/* Water */}
-                            <td className="px-4 py-3 text-right font-medium text-slate-700">
+                            <td className="px-5 py-4 text-right font-medium text-slate-700 whitespace-nowrap">
                               {formatNumber(row.summary.waterSavedLitres)} L
                             </td>
-                            {/* Handwork */}
-                            <td className="px-4 py-3 text-right font-medium text-slate-700">
+                            <td className="px-5 py-4 text-right font-medium text-slate-700 whitespace-nowrap">
                               {formatNumber(row.summary.totalWorkHours)} hrs
                             </td>
-                            {/* Status */}
-                            <td className="px-4 py-3">
-                              <span
-                                className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
-                                  row.summary.partialItems === 0
-                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                                    : 'bg-slate-100 text-slate-600 border-slate-200'
-                                }`}
-                              >
-                                {completeness(row)}
-                              </span>
+                            <td className="px-5 py-4 whitespace-nowrap">
+                              {(() => {
+                                const statusText = completeness(row);
+                                const isGreen = statusText === 'Complete' || statusText === 'No items';
+                                return (
+                                  <span
+                                    className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${
+                                      isGreen
+                                        ? 'border-emerald-300 text-emerald-700 bg-emerald-50/50'
+                                        : 'border-slate-300 text-slate-500 bg-slate-50/50'
+                                    }`}
+                                  >
+                                    {statusText}
+                                  </span>
+                                );
+                              })()}
                             </td>
                           </>
                         ) : (
                           <>
-                            <td colSpan={4} className="px-4 py-3 text-right text-slate-400 text-xs italic">
+                            <td colSpan={4} className="px-5 py-4 text-right text-slate-400 text-xs italic">
                               {row.state === 'error' ? 'Unavailable' : 'Measuring…'}
                             </td>
                             <td />
                           </>
                         )}
 
-                        {/* Chevron Action */}
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-4 text-center whitespace-nowrap">
                           <Link
                             href={detailHref}
-                            className="inline-flex p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                            className="inline-flex p-1 text-slate-400 hover:text-slate-900 rounded transition"
                           >
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-4 h-4" />
                           </Link>
                         </td>
                       </tr>

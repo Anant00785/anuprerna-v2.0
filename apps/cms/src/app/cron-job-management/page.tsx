@@ -54,29 +54,27 @@ export default function CronJobManagementPage() {
   }, [aggregatedJobs, statusFilter]);
 
   return (
-    <div className="space-y-6 pb-12">
-      <PageHeading heading="CRON JOB LOGS" />
-
+    <div className="space-y-4 pt-1 pb-16 max-w-7xl mx-auto">
       {errorMessage && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-sm text-red-700">
-          <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-xs text-red-700">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       {/* Top Banner Card */}
-      <div className="w-full bg-[#565985] text-white px-6 py-4 rounded-xl shadow-xs font-bold text-sm tracking-wider uppercase flex items-center justify-between">
+      <div className="w-full bg-[#585c82] text-white px-4 py-2.5 rounded text-xs font-bold tracking-wider uppercase flex items-center justify-between">
         <span>TOTAL COUNT ({filteredJobs.length})</span>
       </div>
 
       {/* Filter and Refresh Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3 text-sm">
-          <label className="text-slate-600 font-semibold">Filter by status:</label>
+      <div className="flex items-center justify-between gap-4 py-1">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-slate-500 font-medium">Filter by status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-2xs"
+            className="px-2.5 py-1 text-xs bg-white border border-slate-200 rounded text-slate-800 font-medium focus:outline-none shadow-2xs"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -87,31 +85,32 @@ export default function CronJobManagementPage() {
         </div>
 
         <button
+          type="button"
           onClick={fetchCronLogs}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs transition disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1d4ed8] hover:bg-blue-700 rounded shadow-xs transition disabled:opacity-50"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>{loading ? 'Loading...' : 'Refresh'}</span>
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Job List or Loading / Empty */}
       {loading && aggregatedJobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-slate-200 space-y-3">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-          <p className="text-slate-500 text-sm font-medium">Loading cron job logs...</p>
+        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-lg border border-slate-200 space-y-3">
+          <RefreshCw className="w-6 h-6 text-[#585c82] animate-spin" />
+          <p className="text-slate-500 text-xs font-medium">Loading cron job logs...</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredJobs.map((job) => (
             <CronJobAggregatedRow key={job.jobName} aggregatedJob={job} />
           ))}
 
           {filteredJobs.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-              <Inbox className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="text-slate-500 text-sm font-medium">
+            <div className="text-center py-12 bg-white rounded-lg border border-slate-200 space-y-2">
+              <Inbox className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="text-slate-500 text-xs font-medium">
                 {statusFilter === 'ALL'
                   ? 'No cron job logs available'
                   : `No jobs with status: ${statusFilter}`}

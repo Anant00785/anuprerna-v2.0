@@ -132,128 +132,115 @@ export const UpdateUserLoyaltyModal: React.FC<UpdateUserLoyaltyModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="font-bold text-slate-800 text-base uppercase tracking-wider">
-            Update User Wholesale Program
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200/60 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 sm:p-7">
+        {/* Title */}
+        <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider text-center pb-5">
+          UPDATE USER WHOLESALE PROGRAM
+        </h3>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {errorMessage && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
+            <div className="p-2.5 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Currency */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Currency <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.minimumOrderValueCurrency}
-                onChange={(e) => handleCurrencyChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-              >
-                <option value="INR">INR</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </select>
-              {validationErrors.minimumOrderValueCurrency && (
-                <span className="text-xs text-red-500">{validationErrors.minimumOrderValueCurrency}</span>
-              )}
-            </div>
-
-            {/* Amount */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Amount ({formData.minimumOrderValueCurrency}) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.minimumOrderValue || ''}
-                onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-              />
-              {validationErrors.minimumOrderValue && (
-                <span className="text-xs text-red-500">{validationErrors.minimumOrderValue}</span>
-              )}
-            </div>
-
-            {/* Tenure (Months) */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Tenure (Months) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.tenure || ''}
-                onChange={(e) => setFormData((prev) => ({ ...prev, tenure: parseInt(e.target.value) || 0 }))}
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-              />
-              {validationErrors.tenure && (
-                <span className="text-xs text-red-500">{validationErrors.tenure}</span>
-              )}
-            </div>
-
-            {/* Discount (%) */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Discount (%) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.discountPercentage ?? ''}
-                onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-              />
-              {validationErrors.discountPercentage && (
-                <span className="text-xs text-red-500">{validationErrors.discountPercentage}</span>
-              )}
-            </div>
-
-            {/* Type of Action */}
-            <div className="space-y-1 md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Type of Action <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value as LoyaltyConfigAuditLogTypeEnum }))}
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-              >
-                <option value={LoyaltyConfigAuditLogTypeEnum.ONBOARDING} disabled={!!formData.id}>
-                  ONBOARDING
-                </option>
-                <option value={LoyaltyConfigAuditLogTypeEnum.RENEWAL_MANUAL} disabled={!formData.id}>
-                  RENEWAL (MANUAL)
-                </option>
-                <option value={LoyaltyConfigAuditLogTypeEnum.ADJUSTMENT} disabled={!formData.id}>
-                  ADJUSTMENT
-                </option>
-              </select>
-              {validationErrors.type && (
-                <span className="text-xs text-red-500">{validationErrors.type}</span>
-              )}
-            </div>
+          {/* Currency Dropdown */}
+          <div className="space-y-1">
+            <select
+              value={formData.minimumOrderValueCurrency}
+              onChange={(e) => handleCurrencyChange(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-white border border-blue-400 rounded-md text-slate-800 outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+            </select>
+            {validationErrors.minimumOrderValueCurrency && (
+              <span className="text-[11px] text-red-500">{validationErrors.minimumOrderValueCurrency}</span>
+            )}
           </div>
 
-          {/* Forex Conversion Banner */}
+          {/* Amount */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700">
+              Amount ({formData.minimumOrderValueCurrency}) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={formData.minimumOrderValue || ''}
+              onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            />
+            {validationErrors.minimumOrderValue && (
+              <span className="text-[11px] text-red-500">{validationErrors.minimumOrderValue}</span>
+            )}
+          </div>
+
+          {/* Tenure (Months) */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700">
+              Tenure (Months) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={formData.tenure || ''}
+              onChange={(e) => setFormData((prev) => ({ ...prev, tenure: parseInt(e.target.value) || 0 }))}
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            />
+            {validationErrors.tenure && (
+              <span className="text-[11px] text-red-500">{validationErrors.tenure}</span>
+            )}
+          </div>
+
+          {/* Discount (%) */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700">
+              Discount (%) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={formData.discountPercentage ?? ''}
+              onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: parseFloat(e.target.value) || 0 }))}
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            />
+            {validationErrors.discountPercentage && (
+              <span className="text-[11px] text-red-500">{validationErrors.discountPercentage}</span>
+            )}
+          </div>
+
+          {/* Type of Action */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700">
+              Type Of Action <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value as LoyaltyConfigAuditLogTypeEnum }))}
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md text-slate-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            >
+              <option value={LoyaltyConfigAuditLogTypeEnum.ONBOARDING}>
+                ONBOARDING
+              </option>
+              <option value={LoyaltyConfigAuditLogTypeEnum.RENEWAL_MANUAL}>
+                RENEWAL (MANUAL)
+              </option>
+              <option value={LoyaltyConfigAuditLogTypeEnum.ADJUSTMENT}>
+                ADJUSTMENT
+              </option>
+            </select>
+            {validationErrors.type && (
+              <span className="text-[11px] text-red-500">{validationErrors.type}</span>
+            )}
+          </div>
+
+          {/* Forex Conversion Banner (if not INR) */}
           {formData.minimumOrderValueCurrency !== 'INR' && (
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex flex-col md:flex-row md:items-center justify-between text-xs text-slate-700 gap-2">
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-md flex flex-col md:flex-row md:items-center justify-between text-xs text-slate-700 gap-2">
               <div className="flex items-center gap-2">
                 <span>Final Value:</span>
                 <span className="px-2 py-0.5 font-bold text-emerald-700 bg-emerald-100 rounded">
@@ -265,29 +252,28 @@ export const UpdateUserLoyaltyModal: React.FC<UpdateUserLoyaltyModalProps> = ({
                 </span>
               </div>
               {formData.exchangeRate && (
-                <div className="text-slate-500 italic">
+                <div className="text-slate-500 italic text-[11px]">
                   1 {formData.minimumOrderValueCurrency} ≈ {(1 / formData.exchangeRate).toFixed(2)} INR
-                  {forexRates?.recordDate && ` (as per ${new Date(forexRates.recordDate).toLocaleDateString()})`}
                 </div>
               )}
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition"
-            >
-              Close
-            </button>
+          {/* Buttons: Update and Close side by side in purple */}
+          <div className="grid grid-cols-2 gap-4 pt-4">
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition disabled:opacity-50"
+              className="py-2.5 px-4 text-xs font-semibold text-white bg-[#585c82] hover:bg-[#484c68] rounded-md shadow-xs transition-colors disabled:opacity-50"
             >
               {submitting ? 'Updating...' : 'Update'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2.5 px-4 text-xs font-semibold text-white bg-[#585c82] hover:bg-[#484c68] rounded-md shadow-xs transition-colors"
+            >
+              Close
             </button>
           </div>
         </form>

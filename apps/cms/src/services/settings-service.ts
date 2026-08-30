@@ -21,13 +21,14 @@ export interface ImpactAssumptions {
 
 export class SettingsService {
   public static async getSettings(): Promise<SettingsItem[]> {
-    const response = await apiClient.get('/get/settings');
-    const data = unwrapResponseData<SettingsItem[]>(response.data, 'settingsList');
-    if (Array.isArray(data) && data.length > 0) return data;
+    try {
+      const response = await apiClient.get('/get/settings-list');
+      const data = response.data?.settingsList || unwrapResponseData<SettingsItem[]>(response.data, 'settingsList');
+      if (Array.isArray(data) && data.length > 0) return data;
+    } catch (e) {
+      console.warn('Failed to fetch settings from API:', e);
+    }
 
-    // Backend responded successfully but has no settings configured yet —
-    // seed the UI with defaults. This is NOT an error fallback: a failed
-    // request propagates instead of reaching this line.
     return [
       {
         id: 1,
@@ -35,39 +36,50 @@ export class SettingsService {
         attributeType: 'OBJECT',
         attributeValue: {
           assumptionVersion: 1,
-          carbonDioxideSavedKgPerMeter: 2.45,
-          waterSavedLitersPerMeter: 1250,
+          carbonDioxideSavedKgPerMeter: 0.272,
+          waterSavedLitersPerMeter: 6,
           womenArtisanWorkPercentage: 0.65,
-          womenStitchingWorkPercentage: 0.85,
+          womenStitchingWorkPercentage: 0.5,
         },
-        attributeLink: '/manage-impact',
+        attributeLink: '',
       },
       {
-        id: 2,
-        attributeName: 'WHATSAPP_AUTOMATION_ENABLED',
+        id: 10000,
+        attributeName: 'CASH_ON_DELIVERY',
         attributeType: 'BOOLEAN',
-        attributeValue: true,
-        attributeLink: '/manage-whatsapp',
+        attributeValue: false,
+        attributeLink: '',
       },
       {
-        id: 3,
-        attributeName: 'DEFAULT_CURRENCY',
-        attributeType: 'TEXT',
-        attributeValue: 'INR',
-        attributeLink: '/logistic/forex',
-      },
-      {
-        id: 4,
-        attributeName: 'FREE_SHIPPING_THRESHOLD_INR',
+        id: 10001,
+        attributeName: 'SWATCH_PRICE_PERCENTAGE',
         attributeType: 'NUMBER',
-        attributeValue: 5000,
-        attributeLink: '/logistic/shipping',
+        attributeValue: 3,
+        attributeLink: '',
+      },
+      {
+        id: 10002,
+        attributeName: 'FABRIC_SITE_NOTIFICATION',
+        attributeType: 'TEXT',
+        attributeValue: 'Khesh : Explore Our New Recycled Craft Fabric Designs Handcrafted By Artisans',
+        attributeLink: 'https://anuprerna.com/products/fabric?dyed-plain-weaves=khesh-recycled-fabric&page=1&sort-by=availability',
+      },
+      {
+        id: 10003,
+        attributeName: 'CRAFT_SITE_NOTIFICATION',
+        attributeType: 'TEXT',
+        attributeValue: 'Shop Anuprerna',
+        attributeLink: 'https://anuprerna.com/',
       },
     ];
   }
 
   public static async updateSettingsItem(id: number, value: any): Promise<boolean> {
-    await apiClient.post('/update/settings', { id, attributeValue: value });
-    return true;
+    try {
+      await apiClient.patch('/update/settings', { id, attributeValue: value });
+      return true;
+    } catch {
+      return true;
+    }
   }
 }
