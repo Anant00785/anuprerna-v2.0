@@ -79,11 +79,32 @@ export default function UpdateWorkflowTemplatePage({
   const [stepModalOpen, setStepModalOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<StepNode | null>(null);
   const [stepNameInput, setStepNameInput] = useState('');
+  const [feedbackRequired, setFeedbackRequired] = useState(true);
+  const [properties, setProperties] = useState<
+    Array<{ key: string; dataType: string; valueType: string }>
+  >([{ key: 'property1', dataType: 'Text', valueType: 'Required' }]);
 
   const [spModalOpen, setSpModalOpen] = useState(false);
   const [targetStepForSp, setTargetStepForSp] = useState<StepNode | null>(null);
   const [editingSp, setEditingSp] = useState<SubProcessNode | null>(null);
   const [spNameInput, setSpNameInput] = useState('');
+
+  const handleAddProperty = () => {
+    setProperties(prev => [
+      ...prev,
+      { key: `property${prev.length + 1}`, dataType: 'Text', valueType: 'Required' },
+    ]);
+  };
+
+  const handleUpdateProperty = (index: number, field: string, value: string) => {
+    setProperties(prev =>
+      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
+    );
+  };
+
+  const handleRemoveProperty = (index: number) => {
+    setProperties(prev => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -558,51 +579,138 @@ export default function UpdateWorkflowTemplatePage({
         )}
       </div>
 
-      {/* STEP MODAL (ADD / EDIT) */}
+      {/* STEP MODAL (ADD / EDIT) - MATCHING SCREENSHOT */}
       {stepModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 shadow-xl border border-slate-200 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-[#1f2438]">
-                {editingStep ? 'Edit Step' : 'Add Next Step'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setStepModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-200 max-w-2xl w-full space-y-6 animate-in fade-in zoom-in duration-150">
+            {/* ROW 1: STEP NAME & FEEDBACK REQUIRED */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 max-w-xs">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Step Name
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={stepNameInput}
+                  onChange={e => setStepNameInput(e.target.value)}
+                  placeholder="iron man"
+                  className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:border-[#585c82] text-slate-800"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 sm:pt-6">
+                <label
+                  htmlFor="feedbackRequired"
+                  className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                >
+                  Feedback Required ?
+                </label>
+                <input
+                  id="feedbackRequired"
+                  type="checkbox"
+                  checked={feedbackRequired}
+                  onChange={e => setFeedbackRequired(e.target.checked)}
+                  className="w-4 h-4 text-[#585c82] rounded border-slate-300 focus:ring-[#585c82] cursor-pointer"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Step Name *
-              </label>
-              <input
-                type="text"
-                autoFocus
-                value={stepNameInput}
-                onChange={e => setStepNameInput(e.target.value)}
-                placeholder="e.g. Fabric Embroidery"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:border-[#585c82]"
-              />
+            {/* SECTION 2: ADD PROPERTIES PURPLE BANNER */}
+            <div className="space-y-4">
+              <div className="bg-[#585c82] text-white px-4 py-2.5 rounded-lg flex items-center justify-between shadow-xs">
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  ADD PROPERTIES
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddProperty}
+                  className="w-5 h-5 rounded-full border border-white/80 flex items-center justify-center hover:bg-white/20 transition-colors"
+                  title="Add Property"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* PROPERTIES ROWS */}
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                {properties.map((prop, idx) => (
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Key
+                      </label>
+                      <input
+                        type="text"
+                        value={prop.key}
+                        onChange={e => handleUpdateProperty(idx, 'key', e.target.value)}
+                        placeholder="property1"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-[#585c82]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Data Type
+                      </label>
+                      <select
+                        value={prop.dataType}
+                        onChange={e => handleUpdateProperty(idx, 'dataType', e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-[#585c82]"
+                      >
+                        <option value="Text">Text</option>
+                        <option value="Number">Number</option>
+                        <option value="Boolean">Boolean</option>
+                        <option value="Date">Date</option>
+                        <option value="File">File</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Value Type
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={prop.valueType}
+                          onChange={e => handleUpdateProperty(idx, 'valueType', e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-[#585c82]"
+                        >
+                          <option value="Required">Required</option>
+                          <option value="Optional">Optional</option>
+                        </select>
+                        {properties.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveProperty(idx)}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                            title="Remove Property"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setStepModalOpen(false)}
-                className="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Cancel
-              </button>
+            {/* ACTION BUTTON */}
+            <div className="flex items-center justify-center gap-4 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleSaveStep}
-                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#585c82] hover:bg-[#484c70] rounded-lg shadow-xs"
+                className="w-64 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-[#585c82] hover:bg-[#484c68] rounded-lg shadow-xs transition-colors"
               >
-                Save Step
+                {editingStep ? 'UPDATE STEP' : 'ADD STEP'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStepModalOpen(false)}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+              >
+                Cancel
               </button>
             </div>
           </div>
