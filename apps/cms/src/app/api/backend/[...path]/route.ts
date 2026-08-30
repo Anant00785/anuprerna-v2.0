@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+const BACKEND_URL = (process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://loom-v2.anuprerna.com' : 'http://localhost:3000')).replace(/\/$/, '');
 const FALLBACK_URL = 'https://loom-v2.anuprerna.com';
 
 async function handleProxy(request: NextRequest, params: { path?: string[] }) {
@@ -10,21 +10,32 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
 
   // Handle auth route mapping: NestJS uses /auth/authenticate
   const isAuth = targetPath === 'authenticate/email' || targetPath === 'authenticate';
-  const nestPath = isAuth ? 'auth/authenticate' : targetPath;
+  const nestPath = isAuth && BACKEND_URL.includes('localhost') ? 'auth/authenticate' : targetPath;
 
   const targetUrl = `${BACKEND_URL}/${nestPath}${search}`;
   const fallbackUrl = isAuth ? `${FALLBACK_URL}/authenticate/email${search}` : `${FALLBACK_URL}/${targetPath}${search}`;
 
-  const headers = new Headers(request.headers);
-  headers.delete('host');
+  const headers = new Headers();
+  request.headers.forEach((value, key) => {
+    const k = key.toLowerCase();
+    if (
+      ![
+        'host',
+        'content-length',
+        'connection',
+        'transfer-encoding',
+        'x-forwarded-host',
+        'x-forwarded-proto',
+        'x-forwarded-port',
+        'x-forwarded-for',
+      ].includes(k)
+    ) {
+      headers.set(key, value);
+    }
+  });
+
   headers.set('origin', 'https://anuprerna.com');
   headers.set('referer', 'https://anuprerna.com/');
-
-  // Remove internal Next.js headers
-  headers.delete('x-forwarded-host');
-  headers.delete('x-forwarded-proto');
-  headers.delete('x-forwarded-port');
-  headers.delete('x-forwarded-for');
 
   const tableExplorerToken = process.env.LOOM_TABLE_EXPLORER_TOKEN;
   if (tableExplorerToken) {
@@ -43,13 +54,19 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
   try {
     let backendResponse: Response;
     try {
-      // 1. Primary: Migrated NestJS Backend API
-      backendResponse = await fetch(targetUrl, {
+      const isLocal = BACKEND_URL.includes('localhost') || BACKEND_URL.includes('127.0.0.1');
+      const fetchOptions: RequestInit = {
         method: request.method,
         headers: headers,
         body: body,
         redirect: 'follow',
-      });
+      };
+
+      if (isLocal) {
+        fetchOptions.signal = AbortSignal.timeout(2500);
+      }
+
+      backendResponse = await fetch(targetUrl, fetchOptions);
 
       // If 404 on primary, or if auth fails on primary local DB, attempt fallback to Loom production backend
       if ((backendResponse.status === 404 || (isAuth && backendResponse.status === 401)) && BACKEND_URL !== FALLBACK_URL) {
@@ -60,7 +77,6 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
           redirect: 'follow',
         });
       } else if (backendResponse.ok && targetPath.includes('preview-list') && BACKEND_URL !== FALLBACK_URL) {
-        // If local preview-list has 0 products, fetch from Loom production
         const clone = backendResponse.clone();
         try {
           const json = await clone.json();
@@ -81,7 +97,7 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
         }
       }
     } catch (primaryErr) {
-      // Fallback to legacy backend if primary server connection fails
+      // Fallback to production backend if primary server connection fails or times out
       backendResponse = await fetch(fallbackUrl, {
         method: request.method,
         headers: headers,
@@ -91,11 +107,9 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
     }
 
     const responseHeaders = new Headers(backendResponse.headers);
-    // Delete content-encoding and content-length because Node fetch decompresses the ArrayBuffer
     responseHeaders.delete('content-encoding');
     responseHeaders.delete('content-length');
 
-    // Ensure browser CORS allows client access
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
