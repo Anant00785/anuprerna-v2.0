@@ -419,18 +419,18 @@ export default function UpdateWorkflowTemplatePage({
                       <div
                         onMouseEnter={() => setHoveredStepId(step.id)}
                         onMouseLeave={() => setHoveredStepId(null)}
-                        className="relative w-full h-24 bg-[#f0f4f9] border border-[#585c82]/30 rounded-lg flex items-center justify-center p-4 shadow-2xs text-center group cursor-pointer hover:border-[#585c82] transition-colors"
+                        className="relative w-full h-24 bg-[#f0f4f9] border border-slate-300/80 rounded-lg flex items-center justify-center p-4 shadow-2xs text-center group cursor-pointer hover:border-[#585c82] transition-colors"
                       >
                         <span className="text-[#1f2438] text-xs font-bold leading-snug">
                           {step.name}
                         </span>
 
-                        {/* FLOATING TOP-RIGHT ACTION CAPSULE (EDIT & DELETE) */}
+                        {/* FLOATING TOP-RIGHT ACTION TAB / NOTCH (EDIT & DELETE) */}
                         <div
-                          className={`absolute -top-3 -right-2 flex items-center gap-1 bg-white border border-slate-200 shadow-md rounded-full px-2 py-1 z-20 transition-all ${
+                          className={`absolute -top-3.5 right-3 flex items-center gap-1.5 bg-white border border-slate-200/90 shadow-xs rounded-full px-2 py-0.5 z-20 transition-all ${
                             isStepHovered || step.name === 'Fabric Embroidery'
                               ? 'opacity-100 scale-100'
-                              : 'opacity-0 scale-90 pointer-events-none'
+                              : 'opacity-0 scale-95 pointer-events-none'
                           }`}
                         >
                           <button
@@ -439,7 +439,7 @@ export default function UpdateWorkflowTemplatePage({
                               e.stopPropagation();
                               openEditStepModal(step);
                             }}
-                            className="text-slate-600 hover:text-slate-900 p-0.5"
+                            className="text-slate-500 hover:text-slate-900 p-0.5 transition-colors"
                             title="Edit Step"
                           >
                             <Edit2 className="w-3 h-3" />
@@ -450,24 +450,24 @@ export default function UpdateWorkflowTemplatePage({
                               e.stopPropagation();
                               handleDeleteStep(step.id);
                             }}
-                            className="text-slate-600 hover:text-rose-600 p-0.5"
+                            className="text-slate-500 hover:text-rose-600 p-0.5 transition-colors"
                             title="Delete Step"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
 
-                        {/* FLOATING RIGHT SIDE '+' BUTTON (ADD NEXT STEP) */}
+                        {/* FLOATING RIGHT SIDE '+' CIRCLE BUTTON (ADD NEXT STEP) */}
                         <button
                           type="button"
                           onClick={e => {
                             e.stopPropagation();
                             openAddStepModal();
                           }}
-                          className={`absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border border-slate-300 shadow-sm flex items-center justify-center text-slate-600 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-20 ${
+                          className={`absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-500 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-20 ${
                             isStepHovered || step.name === 'Fabric Embroidery'
                               ? 'opacity-100 scale-100'
-                              : 'opacity-0 scale-90 pointer-events-none'
+                              : 'opacity-0 scale-95 pointer-events-none'
                           }`}
                           title="Add Next Step"
                         >
