@@ -7,6 +7,16 @@ export class WorkflowService {
     return unwrapResponseData<any[]>(response.data, 'workflowTemplateList');
   }
 
+  public static async getWorkflowTemplateById(id: string | number): Promise<any> {
+    const response = await apiClient.get(`/get/workflow-template/${id}`);
+    return unwrapResponseData<any>(response.data, 'workflowTemplate');
+  }
+
+  public static async updateWorkflowTemplate(payload: any): Promise<any> {
+    const response = await apiClient.post('/update/workflow-template', payload);
+    return response.data;
+  }
+
   public static async getWorkflows(status: string = 'active'): Promise<any[]> {
     const response = await apiClient.get(`/get/workflow-list/${status}`);
     return unwrapResponseData<any[]>(response.data, 'workflowList');

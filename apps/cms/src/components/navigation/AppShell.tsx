@@ -47,14 +47,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Protected Dashboard Layout
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-[#f1f5f9]">
-      <ProductionWarningBanner />
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-[#edf1f7]">
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <Navbar />
-          <Breadcrumbs />
-          <main className="p-6 flex-1">{children}</main>
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-[#edf1f7]">
+          <div className="flex items-center justify-between px-8 pt-5 pb-3">
+            <Breadcrumbs />
+            <Navbar />
+          </div>
+          <main className="px-8 py-2 flex-1">{children}</main>
         </div>
       </div>
     </div>

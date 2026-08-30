@@ -10,6 +10,7 @@ const schema = z.object({
   NEXT_PUBLIC_AUTH0_DOMAIN: z.string().min(1).default("dev-cxnfeuu6gvepp7qu.us.auth0.com"),
   NEXT_PUBLIC_AUTH0_CLIENT_ID: z.string().min(1).default("iW2PThISjeDP6I1dGoTgsoWDGwneBXPP"),
   NEXT_PUBLIC_RAZORPAY_KEY: z.string().min(1).default("rzp_test_TPvtsOM52j6QKA"),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).default("pk_test_51S3WzdSRioYtxltc2tRZZ1GG4SKTJ04W7xwwEUqay0NHGzywN5nTgPdy8oR91QRHDWT0JXIFb04CHm3yyZvU0sTu00ddfP9480"),
 });
 
 
@@ -27,5 +28,6 @@ export const env = schema.parse({
   NEXT_PUBLIC_AUTH0_DOMAIN: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "dev-cxnfeuu6gvepp7qu.us.auth0.com",
   NEXT_PUBLIC_AUTH0_CLIENT_ID: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "iW2PThISjeDP6I1dGoTgsoWDGwneBXPP",
   NEXT_PUBLIC_RAZORPAY_KEY: process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_TPvtsOM52j6QKA",
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_51S3WzdSRioYtxltc2tRZZ1GG4SKTJ04W7xwwEUqay0NHGzywN5nTgPdy8oR91QRHDWT0JXIFb04CHm3yyZvU0sTu00ddfP9480",
 });
 

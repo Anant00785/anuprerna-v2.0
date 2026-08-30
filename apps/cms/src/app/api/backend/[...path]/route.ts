@@ -51,14 +51,34 @@ async function handleProxy(request: NextRequest, params: { path?: string[] }) {
         redirect: 'follow',
       });
 
-      // If 404 on primary, attempt fallback
-      if (backendResponse.status === 404 && BACKEND_URL !== FALLBACK_URL) {
+      // If 404 on primary, or if auth fails on primary local DB, attempt fallback to Loom production backend
+      if ((backendResponse.status === 404 || (isAuth && backendResponse.status === 401)) && BACKEND_URL !== FALLBACK_URL) {
         backendResponse = await fetch(fallbackUrl, {
           method: request.method,
           headers: headers,
           body: body,
           redirect: 'follow',
         });
+      } else if (backendResponse.ok && targetPath.includes('preview-list') && BACKEND_URL !== FALLBACK_URL) {
+        // If local preview-list has 0 products, fetch from Loom production
+        const clone = backendResponse.clone();
+        try {
+          const json = await clone.json();
+          const list = json.productPreviewList || json.fabricOverviewList || json.products || [];
+          if (!list || list.length === 0) {
+            const fbRes = await fetch(fallbackUrl, {
+              method: request.method,
+              headers: headers,
+              body: body,
+              redirect: 'follow',
+            });
+            if (fbRes.ok) {
+              backendResponse = fbRes;
+            }
+          }
+        } catch {
+          // ignore json parse error
+        }
       }
     } catch (primaryErr) {
       // Fallback to legacy backend if primary server connection fails

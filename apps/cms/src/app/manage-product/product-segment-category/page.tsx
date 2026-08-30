@@ -314,12 +314,12 @@ export default function ProductSegmentPage() {
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openEditModal(seg)}
+                  <Link
+                    href={`/manage-product/product-segment-category/update/${seg.id}`}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   >
                     <Edit2 className="w-4 h-4" />
-                  </button>
+                  </Link>
                   <button
                     onClick={() => handleDelete(seg.id)}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"

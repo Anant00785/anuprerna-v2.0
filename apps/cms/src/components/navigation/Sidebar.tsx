@@ -61,7 +61,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="wv-sidebar__nav">
+      <div className="wv-sidebar__nav no-scrollbar">
         <Link
           href="/dashboard"
           className={`wv-sidebar__item ${isActive('/dashboard') ? 'wv-sidebar__item--active' : ''}`}

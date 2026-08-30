@@ -105,6 +105,16 @@ export class ProductService {
     }
   }
 
+  public static async getFinishedProductById(id: number | string): Promise<any> {
+    try {
+      const response = await apiClient.get(`/get/finished-product/${id}`);
+      const prod = unwrapResponseData<any>(response.data, 'finishedProduct');
+      return prod || response.data?.product || response.data;
+    } catch {
+      return null;
+    }
+  }
+
   public static async getFabricProducts(): Promise<any[]> {
     try {
       const response = await apiClient.get('/get/fabric-overview-list');

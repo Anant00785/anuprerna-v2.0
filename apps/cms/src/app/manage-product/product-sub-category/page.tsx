@@ -356,12 +356,12 @@ export default function ProductSubCategoryPage() {
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditModal(sub)}
+                    <Link
+                      href={`/manage-product/product-sub-category/update/${sub.id}`}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
-                    </button>
+                    </Link>
                     <button
                       onClick={() => handleDelete(sub.id)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"

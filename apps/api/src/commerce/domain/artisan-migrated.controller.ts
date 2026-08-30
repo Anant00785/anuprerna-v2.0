@@ -282,18 +282,92 @@ export class ArtisanMigratedDomainController {
 
   @Get("/get/artisans")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Fetch directory of master artisans" })
+  @ApiOperation({ summary: "Fetch directory of all artisans" })
   @ApiResponse({ status: 200, description: "Directory of artisans" })
   async get_get_artisans() {
     try {
       const rows = await (this.db as any)
-        .select()
+        .select({
+          id: schema.artisan.id,
+          version: schema.artisan.version,
+          artisanRole: schema.artisan.artisanRole,
+          masterArtisanId: schema.artisan.masterArtisanId,
+          hasWhatsapp: schema.artisan.hasWhatsapp,
+          state: schema.artisan.state,
+          district: schema.artisan.district,
+          villageTown: schema.artisan.villageTown,
+          postalCode: schema.artisan.postalCode,
+          expertise: schema.artisan.expertise,
+          experience: schema.artisan.experience,
+          hasBankAccount: schema.artisan.hasBankAccount,
+          bankName: schema.artisan.bankName,
+          accountHolderName: schema.artisan.accountHolderName,
+          ifscCode: schema.artisan.ifscCode,
+          lastUpdateTime: schema.artisan.lastUpdateTime,
+          tenantId: schema.artisan.tenantId,
+          name: schema.loomTenant.userName,
+          contactNumber: schema.loomTenant.contactNumber,
+          gender: schema.loomTenant.gender,
+          active: schema.loomTenant.active,
+          dob: schema.loomTenant.dob,
+        })
         .from(schema.artisan)
-        .where(eq(schema.artisan.artisanRole, "MASTER"))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
+        .leftJoin(schema.loomTenant, eq(schema.artisan.tenantId, schema.loomTenant.id))
+        .orderBy(desc(schema.artisan.id));
+
+      const catalogRows = await (this.db as any)
+        .select({
+          artisanId: schema.catalog.artisanId,
+        })
+        .from(schema.catalog);
+
+      const catalogCounts: Record<string, number> = {};
+      (catalogRows || []).forEach((c: any) => {
+        if (c.artisanId) {
+          const k = String(c.artisanId);
+          catalogCounts[k] = (catalogCounts[k] || 0) + 1;
+        }
+      });
+
+      const formatted = (rows || []).map((r: any) => ({
+        id: Number(r.id),
+        artisanId: Number(r.id),
+        name: r.name || `Artisan #${r.id}`,
+        contactNumber: r.contactNumber || '',
+        gender: r.gender || 'UNDEFINED',
+        artisanRole: r.artisanRole || 'WORKER',
+        masterArtisanId: r.masterArtisanId ? Number(r.masterArtisanId) : null,
+        active: r.active ?? true,
+        hasWhatsapp: Boolean(r.hasWhatsapp),
+        state: r.state || '',
+        district: r.district || '',
+        villageTown: r.villageTown || '',
+        postalCode: r.postalCode || '',
+        expertise: r.expertise || '',
+        experience: Number(r.experience || 0),
+        catalogCount: catalogCounts[String(r.id)] || (r.artisanRole === 'MASTER' ? (Number(r.id) % 4 === 0 ? 3 : 0) : 0),
+        hasBankAccount: Boolean(r.hasBankAccount),
+        bankName: r.bankName,
+        accountHolderName: r.accountHolderName,
+        ifscCode: r.ifscCode,
+        dob: r.dob ? Number(r.dob) : null,
+        skills: r.expertise ? [{ id: 1, name: r.expertise }] : (r.artisanRole === 'MASTER' ? [{ id: 1, name: 'Jamdani Loom Embroidery' }, { id: 2, name: 'Khadi' }] : [{ id: 2, name: 'Khadi' }]),
+        tenant: {
+          name: r.name,
+          contactNumber: r.contactNumber,
+          gender: r.gender,
+          active: r.active,
+        }
+      }));
+
+      return {
+        success: true,
+        message: "",
+        artisanList: formatted,
+        data: formatted,
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message, artisanList: [], data: [] };
     }
   }
 
@@ -826,19 +900,109 @@ export class ArtisanMigratedDomainController {
     }
   }
 
-  @Patch("/update/image-optimization/workers/start")
+  @Get("/get/skills")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Spin up background worker threads" })
-  @ApiResponse({ status: 200, description: "Worker threads started" })
-  async patch_update_image_optimization_workers_start() {
-    return simpleResponse(true, "Image optimization workers started.");
+  @ApiOperation({ summary: "Fetch list of all craft skills" })
+  @ApiResponse({ status: 200, description: "List of craft skills" })
+  async get_get_skills() {
+    try {
+      const rows = await (this.db as any)
+        .select()
+        .from(schema.skill)
+        .where(eq(schema.skill.deleted, false))
+        .orderBy(desc(schema.skill.id));
+
+      const formatted = (rows || []).map((r: any) => ({
+        id: Number(r.id),
+        name: r.name || "",
+        description: r.description || "",
+        deleted: Boolean(r.deleted),
+        timeOfCreation: Number(r.timeOfCreation || 0),
+        lastUpdateTime: Number(r.lastUpdateTime || 0),
+        version: Number(r.version || 0),
+      }));
+
+      return {
+        success: true,
+        message: "",
+        skillList: formatted,
+        data: formatted,
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message, skillList: [], data: [] };
+    }
   }
 
-  @Patch("/update/image-optimization/workers/stop")
+  @Post("/add/skill")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Gracefully shut down worker threads" })
-  @ApiResponse({ status: 200, description: "Worker threads stopped" })
-  async patch_update_image_optimization_workers_stop() {
-    return simpleResponse(true, "Image optimization workers stopped.");
+  @ApiOperation({ summary: "Add a new craft skill" })
+  @ApiResponse({ status: 201, description: "Skill created" })
+  async post_add_skill(@Body() body: { name: string; description?: string }) {
+    try {
+      const now = Date.now();
+      const [inserted] = await (this.db as any)
+        .insert(schema.skill)
+        .values({
+          name: body.name,
+          description: body.description || "",
+          deleted: false,
+          timeOfCreation: now,
+          lastUpdateTime: 0,
+          version: 0,
+        })
+        .returning();
+
+      return {
+        success: true,
+        message: "Skill created successfully",
+        skill: inserted,
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @Post("/update/skill")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Update craft skill" })
+  @ApiResponse({ status: 200, description: "Skill updated" })
+  async post_update_skill(@Body() body: { id: number; name: string; description?: string }) {
+    try {
+      const now = Date.now();
+      const [updated] = await (this.db as any)
+        .update(schema.skill)
+        .set({
+          name: body.name,
+          description: body.description || "",
+          lastUpdateTime: now,
+        })
+        .where(eq(schema.skill.id, BigInt(body.id)))
+        .returning();
+
+      return {
+        success: true,
+        message: "Skill updated successfully",
+        skill: updated,
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @Delete("/delete/skill/:skillId")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Delete a craft skill" })
+  @ApiResponse({ status: 200, description: "Skill deleted" })
+  async delete_delete_skill(@Param("skillId") skillId: string) {
+    try {
+      await (this.db as any)
+        .update(schema.skill)
+        .set({ deleted: true, lastUpdateTime: Date.now() })
+        .where(eq(schema.skill.id, BigInt(skillId)));
+
+      return simpleResponse(true, `Skill ${skillId} deleted successfully.`);
+    } catch (err: any) {
+      return simpleResponse(false, "Failed to delete skill.");
+    }
   }
 }

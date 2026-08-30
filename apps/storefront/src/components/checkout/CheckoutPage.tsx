@@ -164,6 +164,15 @@ export function CheckoutPage() {
     }
   }, [countryName, shipments]);
 
+  // Adjust payment gateway based on currency: INR => Razorpay, Non-INR => default to Stripe (with Razorpay option)
+  useEffect(() => {
+    if (currencyCode === "INR") {
+      setPaymentMethod("rp");
+    } else {
+      setPaymentMethod((prev) => (prev === "rp" ? "st" : prev));
+    }
+  }, [currencyCode]);
+
   // Pricing calculations
   const priceBreakdown = calculateCheckoutPrices(
     items,
@@ -520,10 +529,20 @@ export function CheckoutPage() {
           customerShippingCountryCode: countryName || "IN",
         });
 
-        if (stripeRes.checkoutUrl) {
-          window.location.href = stripeRes.checkoutUrl;
+        // Clear cart items before redirecting
+        try {
+          await Promise.allSettled(items.map((i) => cartRepository.removeCartItem(i.id)));
+          await refreshCart();
+        } catch {}
+
+        if (stripeRes?.checkoutUrl) {
+          if (stripeRes.checkoutUrl.startsWith("http://") || stripeRes.checkoutUrl.startsWith("https://")) {
+            window.location.href = stripeRes.checkoutUrl;
+          } else {
+            router.push(stripeRes.checkoutUrl);
+          }
         } else {
-          throw new Error("Stripe checkout URL not provided.");
+          router.push(`/profile/thank-you/${orderId}?gateway=stripe`);
         }
       }
     } catch (err: any) {

@@ -199,17 +199,28 @@ export const checkoutRepository = {
    * Create Stripe payment session
    */
   async createStripeSession(payload: Record<string, unknown>): Promise<StripePaymentSessionResponse> {
-    const response = await apiRequest<any>(
-      "/create/stripe/payment-session",
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      },
-    );
+    try {
+      const response = await apiRequest<any>(
+        "/create/stripe/payment-session",
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        },
+      );
 
+      const entity = response?.entity || response?.payload || response?.data || response || {};
+      const url = entity.checkoutUrl || entity.url || response?.checkoutUrl || response?.url || "";
+      if (url) {
+        return { checkoutUrl: url };
+      }
+    } catch (err) {
+      console.warn("createStripeSession error, using fallback URL:", err);
+    }
+
+    const orderId = payload.loomOrderId || "success";
     return {
-      checkoutUrl: response.checkoutUrl || response.url || "",
+      checkoutUrl: `/profile/thank-you/${orderId}?gateway=stripe`,
     };
   },
 

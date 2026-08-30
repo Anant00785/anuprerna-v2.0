@@ -351,13 +351,13 @@ export default function FilterPageSeoPage() {
                             >
                               <Copy className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => openEditModal(item)}
+                            <Link
+                              href={`/filter-page-seo/update/${item.id}`}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100"
                               title="Edit SEO Config"
                             >
                               <Edit2 className="w-4 h-4" />
-                            </button>
+                            </Link>
                             <button
                               onClick={() => setDeletingId(item.id)}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
