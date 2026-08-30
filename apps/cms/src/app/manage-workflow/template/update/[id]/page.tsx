@@ -579,10 +579,10 @@ export default function UpdateWorkflowTemplatePage({
         )}
       </div>
 
-      {/* STEP MODAL (ADD / EDIT) - MATCHING SCREENSHOT */}
+      {/* STEP MODAL (ADD / EDIT) - EXACT MATCH WITH SCREENSHOT */}
       {stepModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-200 max-w-2xl w-full space-y-6 animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 sm:p-8 shadow-2xl border border-slate-200/80 max-w-2xl w-full space-y-6 animate-in fade-in zoom-in duration-150">
             {/* ROW 1: STEP NAME & FEEDBACK REQUIRED */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex-1 max-w-xs">
@@ -594,8 +594,7 @@ export default function UpdateWorkflowTemplatePage({
                   autoFocus
                   value={stepNameInput}
                   onChange={e => setStepNameInput(e.target.value)}
-                  placeholder="iron man"
-                  className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:border-[#585c82] text-slate-800"
+                  className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-md outline-none focus:border-[#585c82] text-slate-800 bg-white"
                 />
               </div>
 
