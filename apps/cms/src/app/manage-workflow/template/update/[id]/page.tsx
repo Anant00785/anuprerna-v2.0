@@ -495,20 +495,39 @@ export default function UpdateWorkflowTemplatePage({
                               <div
                                 onMouseEnter={() => setHoveredSpId(sp.id)}
                                 onMouseLeave={() => setHoveredSpId(null)}
-                                className="relative w-28 h-28 flex items-center justify-center my-1 select-none cursor-pointer group"
+                                className="relative w-28 h-28 flex items-center justify-center my-2 select-none cursor-pointer group"
                               >
+                                {/* TOP '+' CIRCLE BUTTON ON DIAMOND (MATCHING SCREENSHOT) */}
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    openAddSpModal(step);
+                                  }}
+                                  className={`absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-20 ${
+                                    isSpHovered || sp.name === 'Sampling Completion'
+                                      ? 'opacity-100 scale-100'
+                                      : 'opacity-0 scale-90 pointer-events-none'
+                                  }`}
+                                  title="Add Milestone"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+
                                 {/* ROTATED DIAMOND BACKGROUND */}
-                                <div className="absolute inset-2 bg-[#6f769b] transform rotate-45 rounded-sm shadow-md border border-[#585c82] group-hover:bg-[#585c82] transition-colors" />
+                                <div className="absolute inset-2 bg-[#8087ab] transform rotate-45 rounded-sm shadow-md border border-[#6b7296] group-hover:bg-[#6b7296] transition-colors" />
 
                                 {/* NON-ROTATED TEXT OVERLAY */}
                                 <div className="relative z-10 text-white text-[10px] font-semibold text-center px-3 leading-tight max-w-[85px] drop-shadow-sm">
                                   {sp.name}
                                 </div>
 
-                                {/* FLOATING ACTIONS ON DIAMOND */}
+                                {/* FLOATING ACTIONS ON RIGHT SIDE OF DIAMOND (MATCHING SCREENSHOT) */}
                                 <div
-                                  className={`absolute -top-1 -right-1 flex items-center gap-1 bg-white border border-slate-200 shadow-md rounded-full px-1.5 py-0.5 z-20 transition-all ${
-                                    isSpHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
+                                  className={`absolute top-1/2 -translate-y-1/2 -right-5 flex items-center gap-1.5 bg-white border border-slate-200/90 shadow-xs rounded-full px-2 py-1 z-20 transition-all ${
+                                    isSpHovered || sp.name === 'Sampling Completion'
+                                      ? 'opacity-100 scale-100'
+                                      : 'opacity-0 scale-90 pointer-events-none'
                                   }`}
                                 >
                                   <button
@@ -517,10 +536,10 @@ export default function UpdateWorkflowTemplatePage({
                                       e.stopPropagation();
                                       openEditSpModal(step, sp);
                                     }}
-                                    className="text-slate-600 hover:text-slate-900 p-0.5"
+                                    className="text-slate-600 hover:text-slate-900 p-0.5 transition-colors"
                                     title="Edit Milestone"
                                   >
-                                    <Edit2 className="w-2.5 h-2.5" />
+                                    <Edit2 className="w-3 h-3" />
                                   </button>
                                   <button
                                     type="button"
@@ -528,10 +547,10 @@ export default function UpdateWorkflowTemplatePage({
                                       e.stopPropagation();
                                       handleDeleteSp(step.id, sp.id);
                                     }}
-                                    className="text-slate-600 hover:text-rose-600 p-0.5"
+                                    className="text-slate-600 hover:text-rose-600 p-0.5 transition-colors"
                                     title="Delete Milestone"
                                   >
-                                    <Trash2 className="w-2.5 h-2.5" />
+                                    <Trash2 className="w-3 h-3" />
                                   </button>
                                 </div>
                               </div>
