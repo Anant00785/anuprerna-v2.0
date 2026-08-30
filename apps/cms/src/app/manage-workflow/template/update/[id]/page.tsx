@@ -388,7 +388,7 @@ export default function UpdateWorkflowTemplatePage({
       </div>
 
       {/* BOTTOM VISUAL WORKFLOW CANVAS CARD */}
-      <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xs border border-slate-200/80 overflow-hidden">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xs border border-slate-200/80">
         <h2 className="text-sm font-bold text-[#1f2438] text-center mb-8">
           Update Template
         </h2>
@@ -404,7 +404,7 @@ export default function UpdateWorkflowTemplatePage({
             </button>
           </div>
         ) : (
-          <div className="w-full overflow-x-auto pb-8">
+          <div className="w-full overflow-x-auto pt-6 pb-8">
             <div className="inline-flex items-start gap-0 min-w-max mx-auto justify-center w-full px-4">
               {localSteps.map((step, stepIdx) => {
                 const subprocesses = step.subprocesses || step.subProcesses || [];
@@ -419,15 +419,15 @@ export default function UpdateWorkflowTemplatePage({
                       <div
                         onMouseEnter={() => setHoveredStepId(step.id)}
                         onMouseLeave={() => setHoveredStepId(null)}
-                        className="relative w-full h-24 bg-[#f0f4f9] border border-slate-300/80 rounded-lg flex items-center justify-center p-4 shadow-2xs text-center group cursor-pointer hover:border-[#585c82] transition-colors"
+                        className="relative w-full h-24 bg-[#f0f4f9] border border-slate-300 rounded-lg flex items-center justify-center p-4 shadow-2xs text-center group cursor-pointer hover:border-[#585c82] transition-colors"
                       >
                         <span className="text-[#1f2438] text-xs font-bold leading-snug">
                           {step.name}
                         </span>
 
-                        {/* FLOATING TOP-RIGHT ACTION TAB / NOTCH (EDIT & DELETE) */}
+                        {/* FLOATING TOP-RIGHT ACTION TAB / NOTCH (EDIT & DELETE) - NEVER CLIPPED */}
                         <div
-                          className={`absolute -top-3.5 right-3 flex items-center gap-1.5 bg-white border border-slate-200/90 shadow-xs rounded-full px-2 py-0.5 z-20 transition-all ${
+                          className={`absolute -top-4 right-2 flex items-center gap-2 bg-white border border-slate-300 shadow-md rounded-full px-2.5 py-1 z-30 transition-all ${
                             isStepHovered || step.name === 'Fabric Embroidery'
                               ? 'opacity-100 scale-100'
                               : 'opacity-0 scale-95 pointer-events-none'
@@ -439,10 +439,10 @@ export default function UpdateWorkflowTemplatePage({
                               e.stopPropagation();
                               openEditStepModal(step);
                             }}
-                            className="text-slate-500 hover:text-slate-900 p-0.5 transition-colors"
+                            className="text-slate-700 hover:text-black p-0.5 transition-colors flex items-center justify-center"
                             title="Edit Step"
                           >
-                            <Edit2 className="w-3 h-3" />
+                            <Edit2 className="w-3.5 h-3.5 stroke-[2]" />
                           </button>
                           <button
                             type="button"
@@ -450,10 +450,10 @@ export default function UpdateWorkflowTemplatePage({
                               e.stopPropagation();
                               handleDeleteStep(step.id);
                             }}
-                            className="text-slate-500 hover:text-rose-600 p-0.5 transition-colors"
+                            className="text-slate-700 hover:text-rose-600 p-0.5 transition-colors flex items-center justify-center"
                             title="Delete Step"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5 stroke-[2]" />
                           </button>
                         </div>
 
@@ -464,14 +464,14 @@ export default function UpdateWorkflowTemplatePage({
                             e.stopPropagation();
                             openAddStepModal();
                           }}
-                          className={`absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-500 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-20 ${
+                          className={`absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-slate-300 shadow-sm flex items-center justify-center text-slate-700 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-30 ${
                             isStepHovered || step.name === 'Fabric Embroidery'
                               ? 'opacity-100 scale-100'
                               : 'opacity-0 scale-95 pointer-events-none'
                           }`}
                           title="Add Next Step"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-4 h-4 stroke-[2.5]" />
                         </button>
                       </div>
 
