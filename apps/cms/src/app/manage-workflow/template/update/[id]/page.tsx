@@ -425,10 +425,10 @@ export default function UpdateWorkflowTemplatePage({
                           {step.name}
                         </span>
 
-                        {/* FLOATING TOP-RIGHT ACTION TAB / NOTCH (EDIT & DELETE) - NEVER CLIPPED */}
+                        {/* FLOATING TOP-RIGHT ACTION TAB / NOTCH (EDIT & DELETE) - ONLY ON HOVER */}
                         <div
-                          className={`absolute -top-4 right-2 flex items-center gap-2 bg-white border border-slate-300 shadow-md rounded-full px-2.5 py-1 z-30 transition-all ${
-                            isStepHovered || step.name === 'Fabric Embroidery'
+                          className={`absolute -top-4 right-2 flex items-center gap-2 bg-white border border-slate-300 shadow-md rounded-full px-2.5 py-1 z-30 transition-all duration-200 ${
+                            isStepHovered
                               ? 'opacity-100 scale-100'
                               : 'opacity-0 scale-95 pointer-events-none'
                           }`}
@@ -457,15 +457,15 @@ export default function UpdateWorkflowTemplatePage({
                           </button>
                         </div>
 
-                        {/* FLOATING RIGHT SIDE '+' CIRCLE BUTTON (ADD NEXT STEP) */}
+                        {/* FLOATING RIGHT SIDE '+' CIRCLE BUTTON (ADD NEXT STEP) - ONLY ON HOVER */}
                         <button
                           type="button"
                           onClick={e => {
                             e.stopPropagation();
                             openAddStepModal();
                           }}
-                          className={`absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-slate-300 shadow-sm flex items-center justify-center text-slate-700 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-30 ${
-                            isStepHovered || step.name === 'Fabric Embroidery'
+                          className={`absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-slate-300 shadow-sm flex items-center justify-center text-slate-700 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all duration-200 z-30 ${
+                            isStepHovered
                               ? 'opacity-100 scale-100'
                               : 'opacity-0 scale-95 pointer-events-none'
                           }`}
@@ -497,15 +497,15 @@ export default function UpdateWorkflowTemplatePage({
                                 onMouseLeave={() => setHoveredSpId(null)}
                                 className="relative w-28 h-28 flex items-center justify-center my-2 select-none cursor-pointer group"
                               >
-                                {/* TOP '+' CIRCLE BUTTON ON DIAMOND (MATCHING SCREENSHOT) */}
+                                {/* TOP '+' CIRCLE BUTTON ON DIAMOND - ONLY ON HOVER */}
                                 <button
                                   type="button"
                                   onClick={e => {
                                     e.stopPropagation();
                                     openAddSpModal(step);
                                   }}
-                                  className={`absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all z-20 ${
-                                    isSpHovered || sp.name === 'Sampling Completion'
+                                  className={`absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:bg-[#585c82] hover:text-white hover:border-[#585c82] transition-all duration-200 z-20 ${
+                                    isSpHovered
                                       ? 'opacity-100 scale-100'
                                       : 'opacity-0 scale-90 pointer-events-none'
                                   }`}
@@ -522,10 +522,10 @@ export default function UpdateWorkflowTemplatePage({
                                   {sp.name}
                                 </div>
 
-                                {/* FLOATING ACTIONS ON RIGHT SIDE OF DIAMOND (MATCHING SCREENSHOT) */}
+                                {/* FLOATING ACTIONS ON RIGHT SIDE OF DIAMOND - ONLY ON HOVER */}
                                 <div
-                                  className={`absolute top-1/2 -translate-y-1/2 -right-5 flex items-center gap-1.5 bg-white border border-slate-200/90 shadow-xs rounded-full px-2 py-1 z-20 transition-all ${
-                                    isSpHovered || sp.name === 'Sampling Completion'
+                                  className={`absolute top-1/2 -translate-y-1/2 -right-5 flex items-center gap-1.5 bg-white border border-slate-200/90 shadow-xs rounded-full px-2 py-1 z-20 transition-all duration-200 ${
+                                    isSpHovered
                                       ? 'opacity-100 scale-100'
                                       : 'opacity-0 scale-90 pointer-events-none'
                                   }`}
