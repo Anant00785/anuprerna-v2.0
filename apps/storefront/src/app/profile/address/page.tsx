@@ -1,41 +1,34 @@
-'use client';
+import { cookies } from 'next/headers';
+import { loomGet } from '@/lib/loom/client';
+import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
+import AddressBookClient, { Address } from '@/components/profile/AddressBookClient';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { AddressBook } from '@/components/profile/AddressBook';
-import { ProfileDataState } from '@/components/profile/ProfileDataState';
-import { profileRepository } from '@/lib/api/repositories/profile.repository';
-import { useAuthStore } from '@/stores/auth.store';
-import { AddressItem } from '@/types/domain/profile';
+export const metadata = {
+  title: 'My Addresses | Anuprerna',
+  robots: { index: false, follow: false },
+};
 
-// Was a server component rendering `mockAddresses` — two invented addresses shown
-// to every customer. Loom's address payload already matches `AddressItem` field
-// for field (see fabric's `address/interface/address.ts`), so no mapping is needed.
-export default function AddressPage() {
-  const { jwt } = useAuthStore();
-  const [addresses, setAddresses] = useState<AddressItem[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function AddressPage() {
+  const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
+  if (!token) return null;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const list = await profileRepository.getAddressList(jwt || undefined);
-      setAddresses(list as unknown as AddressItem[]);
-    } catch (err: any) {
-      setError(err?.message || 'Could not load your addresses.');
-    } finally {
-      setLoading(false);
-    }
-  }, [jwt]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  let addresses: Address[] = [];
+  try {
+    const res = await loomGet<{ addressList?: Address[] }>('/get/address-list', { token });
+    addresses = res?.addressList ?? [];
+  } catch {
+    // empty state
+  }
 
   return (
-    <ProfileDataState loading={loading} error={error} onRetry={load}>
-      {addresses && <AddressBook initialAddresses={addresses} />}
-    </ProfileDataState>
+    <>
+      <meta name="robots" content="noindex" />
+
+      <h1 className="text-2xl font-semibold text-center uppercase tracking-wide text-gray-900 mb-8">
+        Address
+      </h1>
+
+      <AddressBookClient addresses={addresses} />
+    </>
   );
 }

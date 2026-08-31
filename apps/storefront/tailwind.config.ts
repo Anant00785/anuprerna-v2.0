@@ -1,58 +1,28 @@
-import type { Config } from "tailwindcss";
-import typography from "@tailwindcss/typography";
-
+import type { Config } from 'tailwindcss';
 const config: Config = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/ui/src/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ['./src/**/*.{ts,tsx}', './app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './contexts/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      screens: { xs: '420px' },
+      // FIX 1: Use the --font-jost CSS variable injected by next/font/google.
+      // Falls back through system-ui → sans-serif if the variable is not yet
+      // resolved (e.g. CSS extraction pass before hydration).
+      fontFamily: { sans: ['var(--font-jost)', 'system-ui', 'sans-serif'] },
       colors: {
-        fb: {
-          primary: "#D4A373",
-          secondary: "#BC9D81",
-          accent: "#D4A373",
-          accentBg: "#fffbf8",
-          topNotifyBg: "#fbf4e8",
-          textBlack: "#302e2e",
-          textGrey: "#3c3c3c",
-          primaryBrown: "#7D5A20",
-          borderGray: "#D1D4DB",
-          somewhatWhite: "#fefefe",
-        },
-        anuprerna: {
-          50: "#8D7961",
-          100: "#B7A990",
-          200: "#F0EEE9",
-          250: "#28282D",
-          300: "#efeee9",
-          350: "#f6f6f6",
-          400: "#808080",
-          10: "#a7c957",
-          20: "#f6bd60",
-          gold: "#856637",
-          darkGold: "#7D5A20",
-          taupe: "#A6957A",
-          taupeHover: "#938368",
-          cream: "#FAF8F5",
-          wholesaleBg: "#EFF0F7",
-          iconDark: "#1E2530",
-        },
-        golden: "#FFD700",
-        lightBrown: "#D4B996",
-        lightPurple: "#E6E6FA",
-        teal: "#008080",
-        accentLink: "#948467",
+        clay:   '#7D5B20',
+        clayd:  '#6c5b48',
+        bark:   '#8E7862',
+        sand:   '#F0EEE9',
+        cream:  '#fffcf7',
+        // wholesale-section gradient palette (from fabric theme)
+        primary:        '#cdbfa3',
+        secondary:      '#e7d9da',
+        'soft-lavender':'#d6d2e8',
+        'light-blue':   '#cdd9e8',
       },
-      fontFamily: {
-        sans: ["var(--font-mulish)", "sans-serif"],
-        serif: ["var(--font-dm-serif)", "serif"],
-        inter: ["var(--font-inter)", "sans-serif"],
-        jost: ["var(--font-jost)", "sans-serif"],
-      },
+      maxWidth: { 'screen-xl': '1280px' },
     },
   },
-  plugins: [typography],
+  plugins: [],
 };
 export default config;

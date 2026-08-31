@@ -1,62 +1,34 @@
-import { TopBar } from "@/components/navigation/TopBar";
-import { Header } from "@/components/navigation/Header";
-import { HeroSection } from "@/components/home/HeroSection";
-import { ManufacturingProcess } from "@/components/home/ManufacturingProcess";
-import { WholesaleProgram } from "@/components/home/WholesaleProgram";
-import { FeaturedProducts } from "@/components/home/FeaturedProducts";
-import { ArtisanFlowShowcase } from "@/components/home/ArtisanFlowShowcase";
-import { AllCraftsSection } from "@/components/home/AllCraftsSection";
-import { AllCollaborationsSection } from "@/components/home/AllCollaborationsSection";
-import { AllClustersSection } from "@/components/home/AllClustersSection";
-import { AllStoriesSection } from "@/components/home/AllStoriesSection";
-import { PressNewsSection } from "@/components/home/PressNewsSection";
-import { CustomerTestimonials } from "@/components/home/CustomerTestimonials";
-import { Footer } from "@/components/navigation/Footer";
+// Home page -- buyer-mode-aware composition (v1, founder taste review).
+// Section rendering + per-mode ordering now lives in the client component
+// BuyerModeHome (reads useBuyerMode). Mode only changes ORDER/EMPHASIS -- every
+// section is always present and no price ever depends on mode (lib/buyer-mode.ts).
+//   guest/b2c -> shoppable-forward (Hero -> Finished -> Featured -> trust
+//                -> Collaborations -> Reviews -> Manufacturing
+//                -> Wholesale invitation -> Wholesale -> News)
+//   b2b       -> capability-forward (Hero -> Manufacturing -> Wholesale
+//                -> Collaborations -> Featured -> trust -> Reviews
+//                -> Finished -> News)
+// ISR preserved: SSR renders the guest-default order that the cache is keyed on.
+//
+// ManufacturingProcess and Collaborations are SERVER components rendered HERE and
+// handed to BuyerModeHome as slots. Collaborations is async (it fetches the Loom
+// collaboration stories + co-created products with revalidate 3600); importing it
+// into the client component would move that fetch into the browser and defeat the
+// ISR cache, so it is passed through as a child instead.
+// Header + Footer live in app/layout.tsx (shared SiteHeader/SiteFooter).
+import BuyerModeHome from "../components/BuyerModeHome";
+import ManufacturingProcess from "../components/ManufacturingProcess";
+import Collaborations from "../components/Collaborations";
+
+export const dynamic = 'force-dynamic';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-gray-900 font-sans">
-      {/* Top Announcement Bar */}
-      <TopBar />
-
-      {/* Main Navigation Header */}
-      <Header />
-
-      {/* Section 1: Hero Carousel Accordion & Video Showcase */}
-      <HeroSection />
-
-      {/* Section 2: End to End Manufacturing Process */}
-      <ManufacturingProcess />
-
-      {/* Section 3: Wholesale Partners Program */}
-      <WholesaleProgram />
-
-      {/* Section 4: Featured Products Category Tabs & Cards */}
-      <FeaturedProducts />
-
-      {/* Section 5: ArtisanFlow Platform Showcase & Environmental Impact Stats */}
-      <ArtisanFlowShowcase />
-
-      {/* Section 6: All Crafts Grid */}
-      <AllCraftsSection />
-
-      {/* Section 7: All Collaborations Grid */}
-      <AllCollaborationsSection />
-
-      {/* Section 8: All Clusters Grid */}
-      <AllClustersSection />
-
-      {/* Section 9: All Stories Accordion Gallery */}
-      <AllStoriesSection />
-
-      {/* Section 10: We Are In The News (Press) */}
-      <PressNewsSection />
-
-      {/* Section 11: Customer Testimonials */}
-      <CustomerTestimonials />
-
-      {/* Main Footer */}
-      <Footer />
+    <main className="min-h-screen bg-white text-black">
+      <BuyerModeHome
+        manufacturing={<ManufacturingProcess />}
+        collaborations={<Collaborations />}
+      />
     </main>
   );
 }

@@ -1,0 +1,507 @@
+{
+  "fabrics": [
+    {
+      "segmentId": 2935,
+      "segment": "PRINTED DESIGN",
+      "subId": 237264,
+      "name": "DIGITAL PRINT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/96PZ0GYJBQAU772MWNQ1HMFM2MW904135.jpg"
+    },
+    {
+      "segmentId": 3506,
+      "segment": "ORGANIC AND NATURAL",
+      "subId": 16035,
+      "name": "DYEABLE KHADI COTTON",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/TJNUV5A4N7HYHHU46LN0NCED0VO003890.jpg"
+    },
+    {
+      "segmentId": 2935,
+      "segment": "PRINTED DESIGN",
+      "subId": 3549,
+      "name": "HAND BLOCK PRINTING",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/AUHJT3UL1UMPOLTHOQDA5D76CA5X07356.jpg"
+    },
+    {
+      "segmentId": 2560,
+      "segment": "EMBROIDERY TECHNIQUE",
+      "subId": 3514,
+      "name": "HANDLOOM JACQUARD",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/85PU0XICI28HZN40HDDZWS3H9WAL05809.jpg"
+    },
+    {
+      "segmentId": 2935,
+      "segment": "PRINTED DESIGN",
+      "subId": 39472,
+      "name": "HANDPRINTED BATIK",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/3IC401WDVQO2WUMGUG3E4AJ8CQ5S00453.png"
+    },
+    {
+      "segmentId": 3508,
+      "segment": "DYED PLAIN WEAVES",
+      "subId": 3519,
+      "name": "HANDWOVEN MERINO WOOL",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/VWTQAOBYLVQS0JXKJLFUNEEQEH0E09777.jpg"
+    },
+    {
+      "segmentId": 3506,
+      "segment": "ORGANIC AND NATURAL",
+      "subId": 3517,
+      "name": "HEMP BANANA BAMBOO",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/X4O6LTILDET0CT0JDGAE76SD89NM06147.jpg"
+    },
+    {
+      "segmentId": 2933,
+      "segment": "RESIST DYED",
+      "subId": 194943,
+      "name": "IKKAT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OACSBN9MOY2T0KDSCBVPKY26RDYV00233.jpg"
+    },
+    {
+      "segmentId": 2560,
+      "segment": "EMBROIDERY TECHNIQUE",
+      "subId": 2649,
+      "name": "JAMDANI LOOM EMBROIDERY",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/XV85X4K5PSZVQYEAY9CMF6HHF4XG08792.jpg"
+    },
+    {
+      "segmentId": 2560,
+      "segment": "EMBROIDERY TECHNIQUE",
+      "subId": 23520,
+      "name": "KANTHA EMBROIDERY",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/J3U1UVSBL3IAVSXP05DVK7UXJ9DY09982.png"
+    },
+    {
+      "segmentId": 3510,
+      "segment": "INDIAN PREMIUM SILK",
+      "subId": 16875,
+      "name": "MATKA PEACE SILK",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/QN02U614GGYLXT51EO84MWR2Y2B105297.jpg"
+    },
+    {
+      "segmentId": 3510,
+      "segment": "INDIAN PREMIUM SILK",
+      "subId": 52831,
+      "name": "MULBERRY SILK",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/MMOHNKEWZ4T2D5T616WTA7UBAIF408965.jpg"
+    },
+    {
+      "segmentId": 3506,
+      "segment": "ORGANIC AND NATURAL",
+      "subId": 3525,
+      "name": "NATURAL VEGETABLE DYE",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/J0BWYJISAGSSDXGPY2HTLA3ID86A09487.jpg"
+    },
+    {
+      "segmentId": 3506,
+      "segment": "ORGANIC AND NATURAL",
+      "subId": 3523,
+      "name": "ORGANIC KHADI COTTON",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/3U0BQBVKQAB9QEQJ2FGPEOYQHLQS04031.jpg"
+    },
+    {
+      "segmentId": 2935,
+      "segment": "PRINTED DESIGN",
+      "subId": 3551,
+      "name": "SCREEN PRINTING",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/7EKJVP6J32YTJA7B1LHIXC7ATXQH08793.jpg"
+    },
+    {
+      "segmentId": 2933,
+      "segment": "RESIST DYED",
+      "subId": 16687,
+      "name": "SHIBORI",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/N8977ORMO1F2ETQ3VBIMRH3S7YWQ04848.jpg"
+    },
+    {
+      "segmentId": 2933,
+      "segment": "RESIST DYED",
+      "subId": 23298,
+      "name": "TIE - DYE",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/KHJ6GTHXODKIUMOEU18CWMJ7NHHX08405.jpg"
+    },
+    {
+      "segmentId": 3508,
+      "segment": "DYED PLAIN WEAVES",
+      "subId": 3521,
+      "name": "YARN DYED KHADI COTTON",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/4URN3FJOPS9OCWEPJ25LE51MH81U01831.jpg"
+    }
+  ],
+  "apparel": [
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 3527,
+      "name": "BOTTOMS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/T155FWRRARQPO4LQT96MIIR7U61G08576.png"
+    },
+    {
+      "segmentId": 297770,
+      "segment": "KIDS",
+      "subId": 322637,
+      "name": "DRESS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FELFGX4NBPGNNUXZM1LRPGOR06TX09270.png"
+    },
+    {
+      "segmentId": 167890,
+      "segment": "UNISEX",
+      "subId": 297084,
+      "name": "HAT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/NO7WWS52H3C3HMNYR1YBOO6L009C01295.png"
+    },
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 322566,
+      "name": "JACKET",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/8DS07RCLNP0656YIY6KJA3S6O75R06952.png"
+    },
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 489124,
+      "name": "LOUNGEWEAR",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/JZYT103EOMTX09XJXLXKFWIC3EF107582.png"
+    },
+    {
+      "segmentId": 167890,
+      "segment": "UNISEX",
+      "subId": 322696,
+      "name": "PANT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/R8B7XIOL11D1HCG12U96BAO0POC206790.png"
+    },
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 53082,
+      "name": "SAREE",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/P0ADRHOZWL1STGE7VMXIIRZZPIIR05264.png"
+    },
+    {
+      "segmentId": 5505,
+      "segment": "MEN",
+      "subId": 5507,
+      "name": "SHIRT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/4KOYJZY8REB3WLOFZP60R0A8T88P03940.png"
+    },
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 437745,
+      "name": "SHIRTS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/V4FO3I8DKILKYNF2BHVLD1JY8VRX03286.png"
+    },
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 322618,
+      "name": "SKIRTS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/URU6OYCCYZZYF46WRHPXD0WTX8VW05782.png"
+    },
+    {
+      "segmentId": 3512,
+      "segment": "WOMEN",
+      "subId": 3529,
+      "name": "TOPS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/5EO5DKFRAL6DOL2C3KLTYN0SZ91102267.png"
+    },
+    {
+      "segmentId": 5505,
+      "segment": "MEN",
+      "subId": 25007,
+      "name": "T SHIRTS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/DM8TJYLATEIPNS74BFQAYZOC23OD04737.png"
+    },
+    {
+      "segmentId": 167890,
+      "segment": "UNISEX",
+      "subId": 167894,
+      "name": "VESTS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/IT7QAFEYXQEU3ACVFZ3NEYW8TOBF01665.png"
+    }
+  ],
+  "home": [
+    {
+      "segmentId": 23797,
+      "segment": "KITCHENWARE",
+      "subId": 33334,
+      "name": "APRON",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/FPU5QM1S5EYUZUKJSGDCIYN9QFZ000082.png"
+    },
+    {
+      "segmentId": 23799,
+      "segment": "DECOR",
+      "subId": 275487,
+      "name": "BABY QUILTS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/OIJRFGS6729M1UGLH2RJDXRLJALP06411.png"
+    },
+    {
+      "segmentId": 33382,
+      "segment": "HOME LINEN",
+      "subId": 299126,
+      "name": "BED QUILT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/3T252VIY5LHFPRXIV5Q46OZEH02008429.png"
+    },
+    {
+      "segmentId": 23799,
+      "segment": "DECOR",
+      "subId": 297776,
+      "name": "CURTAINS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/ZVUZFTOZJ6RI18M065HGQTCME1EI02952.png"
+    },
+    {
+      "segmentId": 33382,
+      "segment": "HOME LINEN",
+      "subId": 33385,
+      "name": "CUSHION COVER",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/X8M8NY53636L0IE2VQG31O9NR98O07986.jpg"
+    },
+    {
+      "segmentId": 23797,
+      "segment": "KITCHENWARE",
+      "subId": 32888,
+      "name": "FABRIC COASTERS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/2B0PYQGE3DWQZMRGL8MWDNY6TJAR08161.jpg"
+    },
+    {
+      "segmentId": 33382,
+      "segment": "HOME LINEN",
+      "subId": 33432,
+      "name": "LUMBAR CUSHION COVER",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/27GKJDFKH793HBXR7JLQZH14Q6VV00195.jpg"
+    },
+    {
+      "segmentId": 33382,
+      "segment": "HOME LINEN",
+      "subId": 32839,
+      "name": "PILLOW COVER",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/9TQOWF8ZEAIJYKKVM48ZVL6QFIYI03312.png"
+    },
+    {
+      "segmentId": 23799,
+      "segment": "DECOR",
+      "subId": 31810,
+      "name": "SOFA THROW",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/Q7I3VZOZVTYOFTKPGTVD76PLGUX608290.png"
+    },
+    {
+      "segmentId": 23797,
+      "segment": "KITCHENWARE",
+      "subId": 25051,
+      "name": "TABLE NAPKIN",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/59XZP290CHDAWH1IPOXAUE380WPU02829.jpg"
+    },
+    {
+      "segmentId": 23797,
+      "segment": "KITCHENWARE",
+      "subId": 31779,
+      "name": "TABLE PLACEMAT",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/78HBAH3D0ZUYH3NGSXBPRNML9LHB06404.jpg"
+    },
+    {
+      "segmentId": 23797,
+      "segment": "KITCHENWARE",
+      "subId": 31757,
+      "name": "TABLE RUNNER",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/VBMCHG7919BHDT3QO5KVOSUTUR4B09493.jpg"
+    },
+    {
+      "segmentId": 23797,
+      "segment": "KITCHENWARE",
+      "subId": 34294,
+      "name": "TEA TOWEL",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/0Z3HWGNEUC7LOZKUXP19G71KI53L00670.jpg"
+    }
+  ],
+  "accessories": [
+    {
+      "segmentId": 31862,
+      "segment": "BAGS",
+      "subId": 414130,
+      "name": "BUCKET BAGS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/O12DPVP05FQ18GO1Y9PLULJQA4LC03552.jpg"
+    },
+    {
+      "segmentId": 24350,
+      "segment": "FABRIC ENVELOPE",
+      "subId": 33322,
+      "name": "DRAWSTRING POUCH",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/S58D4UOPR3UTPTKLR2CEDO6WJZOO02372.jpg"
+    },
+    {
+      "segmentId": 31862,
+      "segment": "BAGS",
+      "subId": 414147,
+      "name": "FANNYPACK",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/8W735KSTIGIRPWUNAZHRHKR2S14M09943.jpg"
+    },
+    {
+      "segmentId": 31862,
+      "segment": "BAGS",
+      "subId": 411514,
+      "name": "LADY BAGS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/AVRMBB7BAKFMML9OHD3WLEQ558XM08280.jpg"
+    },
+    {
+      "segmentId": 12946,
+      "segment": "SCARF",
+      "subId": 12948,
+      "name": "NECKERCHIEF",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/HMD31252OFCZQ08GK3X0WHDXFONU04019.png"
+    },
+    {
+      "segmentId": 24350,
+      "segment": "FABRIC ENVELOPE",
+      "subId": 24352,
+      "name": "RECTANGULAR ENVELOPE",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/61XJHL0BDUKIPBPUU39N7X1YFUHU02220.jpg"
+    },
+    {
+      "segmentId": 589379,
+      "segment": "SCRUNCHIES",
+      "subId": 589382,
+      "name": "SCRUNCHIES",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/ZBPBGCWMRLITXSJKHSMQXWEDY5YA03107.png"
+    },
+    {
+      "segmentId": 12946,
+      "segment": "SCARF",
+      "subId": 29935,
+      "name": "STOLES",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/6FPSW3EI1ZJ8V4K521TUTX5RUG6004222.jpg"
+    },
+    {
+      "segmentId": 31862,
+      "segment": "BAGS",
+      "subId": 31864,
+      "name": "TOTE BAGS",
+      "image": "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/JMA1172YLBJ145CR2F7DMHSXCDIY03262.png"
+    }
+  ],
+  "reviews": [
+    {
+      "name": "tina dza",
+      "city": "Bangalore",
+      "country": "India",
+      "rating": 5,
+      "text": "What a lovely fabric! The min you touch it, you will know the quality.",
+      "images": [],
+      "createdAt": 1777483936474,
+      "link": ""
+    },
+    {
+      "name": "Sidonie Parashar",
+      "city": "Kolkata",
+      "country": "India",
+      "rating": 5,
+      "text": "Being an admirer of rich Indian textiles, I am pleased that jamdani is being developed beyond the sari. Since I have now switched to kurtas, I bought this to tailor into a kurta and can visualise how elegant the gold dotted white jamdani will look. Please introduce other colour combinations and maybe another design. Thank you. And good luck in promoting other textiles..",
+      "images": [],
+      "createdAt": 1776974545373,
+      "link": ""
+    },
+    {
+      "name": "Amber Plattner",
+      "city": "Colorado Springs",
+      "country": "United States",
+      "rating": 5,
+      "text": "Absolutely gorgeous! Arrived much quicker than I expected as well.",
+      "images": [],
+      "createdAt": 1776528471143,
+      "link": ""
+    },
+    {
+      "name": "Barrett Purdum",
+      "city": "Los Angeles",
+      "country": "United States",
+      "rating": 5,
+      "text": "Absolutely beautiful textile. Very excited to sew it into a shirt.",
+      "images": [],
+      "createdAt": 1775859752057,
+      "link": ""
+    },
+    {
+      "name": "Anu John",
+      "city": "Kerala",
+      "country": "India",
+      "rating": 5,
+      "text": "Hi Team, actually i gifted this item to someone and today I got the feedback,it is really awesome product and I will purchase more items like this from you guys.Thank you so much.",
+      "images": [],
+      "createdAt": 1766016000000,
+      "link": ""
+    },
+    {
+      "name": "martin mehdi",
+      "city": "Toulouse",
+      "country": "France",
+      "rating": 5,
+      "text": "Beautiful fabric like always . I can't imagine better",
+      "images": [],
+      "createdAt": 1765279504903,
+      "link": ""
+    },
+    {
+      "name": "martin mehdi",
+      "city": "Toulouse",
+      "country": "France",
+      "rating": 5,
+      "text": "Beautiful fabric , solid and nice looking . Thank you very much for making this wonder",
+      "images": [],
+      "createdAt": 1765279427967,
+      "link": ""
+    },
+    {
+      "name": "Sujata Ghosh",
+      "city": "",
+      "country": "United States",
+      "rating": 5,
+      "text": "Handloom pieces were good quality - great communication with team and fast shipping!",
+      "images": [
+        "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/SP3893CM9LIH9FM6GQKE8G9QWAAE06820.jpg"
+      ],
+      "createdAt": 1763078400000,
+      "link": "https://www.etsy.com/in-en/listing/1845400016/jamdani-pure-cotton-fabric-gsm-100-55?ref=shop_review&variation0=5090051417"
+    },
+    {
+      "name": "Deepak Jena",
+      "city": "Cuttack",
+      "country": "India",
+      "rating": 5,
+      "text": "Nicely ,medium thicker chequered fabric with superb texture .",
+      "images": [],
+      "createdAt": 1759513389681,
+      "link": ""
+    },
+    {
+      "name": "Deepak Jena",
+      "city": "Cuttack",
+      "country": "India",
+      "rating": 5,
+      "text": "The fabric is absolutely incredible. A nicely structured medium thicker fabric with elegant texture which you can feel by moving your hand on the fabric. The fabric looks so classic.",
+      "images": [],
+      "createdAt": 1759513181964,
+      "link": ""
+    },
+    {
+      "name": "Alice Sinkner",
+      "city": "Ontario",
+      "country": "Canada",
+      "rating": 5,
+      "text": "I recently received my order of handloomed pure Tussar Silk and Ketya Silk, and I am beyond thrilled with the experience. The package arrived right on time, and the moment I unwrapped it, I was utterly captivated by the sheer beauty of the fabrics. The intricate craftsmanship woven into every thread is nothing short of extraordinary.I want to extend my deepest gratitude to everyone involved in creating these delicate and stunning pieces. Your skilled artisans pour such dedication and mastery into their work, preserving the rich heritage of this craft. I am truly in awe of their talent and commitment to excellence.Your work not only delivers breathtaking textiles but also upholds cherished traditions, and I wholeheartedly support your efforts to keep these heritage skills alive. I am already looking forward to ordering more in the future.Thank you once again to your entire team for this remarkable experience.",
+      "images": [],
+      "createdAt": 1756729640714,
+      "link": ""
+    },
+    {
+      "name": "Alice Sinkner",
+      "city": "Ontario",
+      "country": "Canada",
+      "rating": 5,
+      "text": "I recently received my order of handloomed pure Tussar Silk and Ketya Silk, and I am beyond thrilled with the experience. The package arrived right on time, and the moment I unwrapped it, I was utterly captivated by the sheer beauty of the fabrics. The intricate craftsmanship woven into every thread is nothing short of extraordinary.I want to extend my deepest gratitude to everyone involved in creating these delicate and stunning pieces. Your skilled artisans pour such dedication and mastery into their work, preserving the rich heritage of this craft. I am truly in awe of their talent and commitment to excellence.Your work not only delivers breathtaking textiles but also upholds cherished traditions, and I wholeheartedly support your efforts to keep these heritage skills alive. I am already looking forward to ordering more in the future. Thank you once again to your entire team for this remarkable experience.",
+      "images": [],
+      "createdAt": 1756729598306,
+      "link": ""
+    }
+  ],
+  "generatedAt": "2026-06-22T19:44:48.459Z",
+  "source": "loom-v2.anuprerna.com (build-time snapshot via jwt-api)"
+}

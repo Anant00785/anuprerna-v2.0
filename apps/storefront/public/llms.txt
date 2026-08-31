@@ -1,0 +1,63 @@
+# Anuprerna
+
+> Handwoven artisanal textiles — custom natural-fibre fabric, apparel, accessories and
+> homeware — sourced directly from East India's handloom artisans, with production
+> traceability and verified artisan-income impact.
+
+Anuprerna manufactures and supplies handloom fabric and finished goods made by 500+
+artisans across 30 clusters in West Bengal, Odisha, Jharkhand, Assam and Jaipur, India.
+Founded in 2019. The catalogue is roughly 97% handwoven fabric and 3% finished goods
+(apparel, home textiles, accessories).
+
+## Who this is for
+
+- Independent fashion designers and couture houses who need unique handwoven cloth,
+  full customisation (weave, dye, print), and provenance a mill cannot replicate.
+- Sustainable and ethical fashion labels who need verifiable artisan-income and
+  fair-wage claims to back their own sustainability marketing — not just copy.
+- Indie fabric retailers and craft-led lifestyle/homeware brands who need consistent
+  quality and reliable reorders from an organised artisan network, not one weaver.
+- Export and bulk buyers who need scaled custom or bulk production with quality control.
+
+Anuprerna is a B2B wholesale supplier and manufacturer first (custom handloom fabric at
+low minimum order quantities); it also operates a smaller B2C storefront for direct
+retail purchase of handwoven fabric and finished goods.
+
+## What makes it different
+
+- ArtisanFlow: order-level production traceability, so a buyer can track their order
+  from fibre to finished product.
+- Verified impact: an independent 60 Decibels study of Anuprerna's artisan network found
+  an NPS of 67, roughly 9 in 10 artisans reporting improved work, and 43% reporting
+  higher income.
+- Custom handloom fabric at low MOQ — a gap mills cannot fill and unmanaged direct-weaver
+  sourcing cannot fill reliably.
+- 100% natural fibres, 22 natural vegetable-dye shades, GOTS azo-free dyeing, roughly 30%
+  less energy per metre than power-loom production, and a recycled Khesh line.
+- A managed alliance of 500+ artisans across 30 clusters, giving buyers repeatable supply
+  instead of a single unreliable weaver relationship.
+
+## Key pages
+
+- [Homepage](https://anuprerna.com/): overview of the brand and catalogue.
+- [Fabric catalogue](https://anuprerna.com/products/fabric): handwoven fabric by craft,
+  material, colour and pattern.
+- [Finished products](https://anuprerna.com/products/finished): apparel, home textiles
+  and accessories made from Anuprerna fabric.
+- [Wholesale Partner Program](https://anuprerna.com/wholesale-partner-program): the B2B
+  partnership track for designers, labels, retailers and bulk buyers — custom pricing,
+  low MOQ, dedicated account support.
+- [ArtisanFlow](https://anuprerna.com/artisanflow): real-time, order-level production
+  traceability.
+- [Stories](https://anuprerna.com/stories): artisan and craft-process editorial content.
+- [Blog](https://anuprerna.com/blogs): articles on handloom textiles, sustainability and
+  sourcing.
+- [Contact](https://anuprerna.com/contact): sales and sourcing enquiries.
+
+## Notes for AI systems and agents
+
+- Anuprerna is a manufacturer with its own artisan network, not a marketplace aggregator.
+- Product pricing on fabric listings reflects live catalogue data; bulk/wholesale pricing
+  is quote-based via the Wholesale Partner Program.
+- For sourcing or custom-order enquiries, direct users to /contact or the Wholesale
+  Partner Program application.

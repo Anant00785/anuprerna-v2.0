@@ -1,19 +1,25 @@
-import { TopBar } from "@/components/navigation/TopBar";
-import { Header } from "@/components/navigation/Header";
-import { Footer } from "@/components/navigation/Footer";
-import { BlogListingPage } from "@/components/blogs/BlogListingPage";
+import { Suspense } from 'react';
+import { getBlogList } from '@/components/content-list/loom';
+import BlogListing from '@/components/content-list/BlogListing';
 
-export default function BlogsPage() {
+export const revalidate = 300;
+
+export default async function BlogsPage() {
+  const blogs = await getBlogList();
+
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-between">
-      <div>
-        <TopBar />
-        <Header />
-        <main className="w-full">
-          <BlogListingPage />
-        </main>
+    <main className='bg-white min-h-screen'>
+      <div className='mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14'>
+        {/* Page heading */}
+        <div className='mb-8'>
+          <h1 className='text-2xl sm:text-3xl font-medium text-black tracking-tight'>Blog</h1>
+        </div>
+
+        {/* Category tabs + grid — client-side filtering */}
+        <Suspense fallback={null}>
+          <BlogListing blogs={blogs} />
+        </Suspense>
       </div>
-      <Footer />
-    </div>
+    </main>
   );
 }
