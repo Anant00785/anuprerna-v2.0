@@ -62,13 +62,24 @@ body { background:#ffffff; color:#000000; -webkit-font-smoothing:antialiased; fo
 
 /* ---- Animated icon button (fb_animate) ---- */
 .fb_animate_icon_button { display:flex; align-items:center; justify-content:center; gap:10px; padding:5px 24px 5px 0; transition:all .5s; width:max-content; }
-.fb_animate { width:20px; height:.5px; position:relative; border-bottom:.5px solid #9c8a6c; }
-.fb_animate b { position:absolute; left:0; top:-3.5px; width:7px; height:7px; background:#efeee9; transform:rotate(45deg); border:.5px solid #9c8a6c; opacity:1; transition:all .5s; }
-.fb_animate span { position:absolute; left:3px; top:-5px; width:0; height:0; border-top:5.4px solid transparent; border-bottom:5.4px solid transparent; border-left:5.4px solid black; opacity:0; transition:all .5s; }
-.fb_animate_icon_button:hover { padding:5px 4px 5px 5px; }
-.fb_animate_icon_button:hover .fb_animate { transition:all .7s; border:.5px solid #000; }
-.fb_animate_icon_button:hover .fb_animate b { left:11px; transition:all .1s; opacity:0; }
-.fb_animate_icon_button:hover .fb_animate span { left:16px; transition:all .5s; opacity:1; }
+.fb_animate { width:22px; height:1px; position:relative; border-bottom:1px solid #9c8a6c; display:inline-block; vertical-align:middle; margin-right:4px; flex-shrink:0; }
+.fb_animate b { position:absolute; left:0; top:-3.5px; width:7px; height:7px; background:#efeee9; transform:rotate(45deg); border:1px solid #9c8a6c; opacity:1; transition:all .35s ease; }
+.fb_animate span { position:absolute; left:3px; top:-5px; width:0; height:0; border-top:5.4px solid transparent; border-bottom:5.4px solid transparent; border-left:5.4px solid #7D5B20; opacity:0; transition:all .35s ease; }
+
+a:hover .fb_animate, button:hover .fb_animate, .group:hover .fb_animate, .fb_animate_icon_button:hover .fb_animate {
+  transition:all .4s ease;
+  border-bottom:1px solid #7D5B20;
+}
+a:hover .fb_animate b, button:hover .fb_animate b, .group:hover .fb_animate b, .fb_animate_icon_button:hover .fb_animate b {
+  left:13px;
+  opacity:0;
+  transition:all .15s ease;
+}
+a:hover .fb_animate span, button:hover .fb_animate span, .group:hover .fb_animate span, .fb_animate_icon_button:hover .fb_animate span {
+  left:17px;
+  opacity:1;
+  transition:all .35s ease;
+}
 
 /* ---- Featured-products card glass view ---- */
 .fb-fp-image { width:100%; max-width:330px; height:400px; object-fit:cover; object-position:top; border-radius:1rem; }

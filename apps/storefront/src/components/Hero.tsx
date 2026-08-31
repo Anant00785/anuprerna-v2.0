@@ -111,10 +111,10 @@ export default function Hero() {
 
           {/* Secondary links — mode-aware: Wholesale link removed in B2C */}
           <div className='mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm sm:text-base'>
-            <Link href='/products/fabric' className='text-[#7D5B20] hover:text-[#6c5b48] underline-offset-4 hover:underline inline-flex items-center gap-1'>
+            <Link href='/products/fabric' className='group text-[#7D5B20] hover:text-[#6c5b48] underline-offset-4 hover:underline inline-flex items-center gap-1.5'>
               <i className='fb_animate'><b/><span/></i> Fabrics
             </Link>
-            <Link href='/products/finished' className='text-[#7D5B20] hover:text-[#6c5b48] underline-offset-4 hover:underline inline-flex items-center gap-1'>
+            <Link href='/products/finished' className='group text-[#7D5B20] hover:text-[#6c5b48] underline-offset-4 hover:underline inline-flex items-center gap-1.5'>
               <i className='fb_animate'><b/><span/></i> Finished Goods
             </Link>
             {isB2C ? (
