@@ -30,23 +30,17 @@ const OPTIONS: { value: BuyerMode; label: string }[] = [
 
 export default function BuyerModeToggle({ className = '' }: { className?: string }) {
   const { mode, setMode, lockedByAccount } = useBuyerMode();
-  // SIGNED IN => the account decides, and this toggle must not pretend otherwise.
-  // Trade pricing is gated server-side on the stored buyer type, so a toggle that
-  // appeared to switch a signed-in retail buyer to Business would produce a
-  // business-looking page the server then refuses to fill — misleading in exactly
-  // the place it matters most. It stays visible (it is how you SEE which state
-  // you are in) but is disabled and says why.
   return (
     <div
-      className={'inline-flex items-center gap-1.5 text-[12px] ' + className}
+      className={'inline-flex items-center gap-2 text-[13px] ' + className}
       aria-label='Shopping mode (test)'
       data-testid='buyer-mode-toggle'
       data-locked={lockedByAccount ? 'account' : 'off'}
     >
-      <span className='hidden sm:inline text-black/50'>
+      <span className='text-gray-500 font-normal select-none'>
         {lockedByAccount ? 'Your account:' : 'View as:'}
       </span>
-      <div className='inline-flex overflow-hidden rounded-full border border-bark/30'>
+      <div className='inline-flex items-center rounded-full border border-gray-300 bg-white p-0.5 shadow-2xs'>
         {OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -60,8 +54,10 @@ export default function BuyerModeToggle({ className = '' }: { className?: string
             onClick={() => setMode(opt.value)}
             aria-pressed={mode === opt.value}
             className={
-              'px-2.5 py-0.5 font-medium transition-colors ' +
-              (mode === opt.value ? 'bg-clay text-white' : 'text-black/60 hover:bg-sand') +
+              'px-3 py-1 rounded-full text-xs sm:text-[13px] font-medium transition-all ' +
+              (mode === opt.value
+                ? 'bg-[#7D5B20] text-white shadow-xs'
+                : 'text-gray-700 hover:text-black hover:bg-gray-100/70') +
               (lockedByAccount ? ' cursor-not-allowed opacity-70' : '')
             }
           >

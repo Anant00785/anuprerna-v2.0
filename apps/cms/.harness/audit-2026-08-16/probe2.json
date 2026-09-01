@@ -1,0 +1,187 @@
+{
+ "cols": {
+  "heads": [
+   {
+    "t": "TO DO",
+    "x": 477,
+    "w": 299.328125
+   },
+   {
+    "t": "IN PROGRESS",
+    "x": 784.328125,
+    "w": 299.328125
+   },
+   {
+    "t": "DONE",
+    "x": 1091.65625,
+    "w": 299.34375
+   }
+  ],
+  "cards": [
+   {
+    "t": "Yarn Processing",
+    "x": 285,
+    "y": 898,
+    "w": 338
+   },
+   {
+    "t": "Yarn Processing",
+    "x": 324,
+    "y": 1203,
+    "w": 101
+   },
+   {
+    "t": "Yarn Processing",
+    "x": 1104,
+    "y": 1208,
+    "w": 271
+   },
+   {
+    "t": "Yarn Processing",
+    "x": 1124,
+    "y": 1208,
+    "w": 251
+   },
+   {
+    "t": "Yarn Processing",
+    "x": 1124,
+    "y": 1208,
+    "w": 92
+   },
+   {
+    "t": "Processed Yarn QC",
+    "x": 1104,
+    "y": 1269,
+    "w": 271
+   },
+   {
+    "t": "Processed Yarn QC",
+    "x": 1124,
+    "y": 1269,
+    "w": 251
+   },
+   {
+    "t": "Processed Yarn QC",
+    "x": 1124,
+    "y": 1269,
+    "w": 110
+   },
+   {
+    "t": "Complete Production",
+    "x": 796,
+    "y": 1348,
+    "w": 268
+   },
+   {
+    "t": "Complete Production",
+    "x": 816,
+    "y": 1348,
+    "w": 248
+   },
+   {
+    "t": "Complete Production",
+    "x": 816,
+    "y": 1348,
+    "w": 120
+   },
+   {
+    "t": "Fabric Initial Sample",
+    "x": 1104,
+    "y": 1348,
+    "w": 271
+   },
+   {
+    "t": "Fabric Initial Sample",
+    "x": 1124,
+    "y": 1348,
+    "w": 251
+   },
+   {
+    "t": "Fabric Initial Sample",
+    "x": 1124,
+    "y": 1348,
+    "w": 115
+   },
+   {
+    "t": "Washing",
+    "x": 485,
+    "y": 1452,
+    "w": 270
+   },
+   {
+    "t": "Washing",
+    "x": 503,
+    "y": 1452,
+    "w": 252
+   },
+   {
+    "t": "Washing",
+    "x": 503,
+    "y": 1452,
+    "w": 48
+   },
+   {
+    "t": "Base Fabric QC",
+    "x": 485,
+    "y": 1512,
+    "w": 270
+   },
+   {
+    "t": "Base Fabric QC",
+    "x": 503,
+    "y": 1512,
+    "w": 252
+   },
+   {
+    "t": "Base Fabric QC",
+    "x": 503,
+    "y": 1512,
+    "w": 88
+   },
+   {
+    "t": "Sampling Completion",
+    "x": 485,
+    "y": 1590,
+    "w": 270
+   },
+   {
+    "t": "Sampling Completion",
+    "x": 503,
+    "y": 1590,
+    "w": 252
+   },
+   {
+    "t": "Sampling Completion",
+    "x": 503,
+    "y": 1590,
+    "w": 121
+   },
+   {
+    "t": "QC Fabric",
+    "x": 485,
+    "y": 1650,
+    "w": 270
+   },
+   {
+    "t": "QC Fabric",
+    "x": 503,
+    "y": 1650,
+    "w": 252
+   },
+   {
+    "t": "QC Fabric",
+    "x": 503,
+    "y": 1650,
+    "w": 57
+   }
+  ]
+ },
+ "i2": "Weave\nANUPRERNA CMS\nDashboard\n1\n\nPRODUCTS\n\n2\n✓4\nListings\n2\n✓1\nCategories\nSegments\nSub-categories\n✓2\nSKU Groups\nSpecial Status\nFilters\nProfiles\n✓1\n\nCUSTOMERS\n\n1\n✓2\nUsers\n1\nReviews\n✓1\nOrder Feedback\n✓1\n\nCOMMERCE\n\n2\n✓2\nOrders\n✓1\nCustom Orders\n2\nCustom Products\nInventory\nLogistics\nWholesale\n✓1\n\nJOB\n\n2\nProduction Jobs\n1\nAll Jobs\nJobs Templates\nJobs Feedback\n1\nTraceability\n\nARTISANS\n\nArtisans\nSkills\nCatalog\n\nCONTENT\n\n1\nContent\n1\nStory Review\n\nOPERATIONS\n\nReports\nCron Jobs\nAI Embeddings\nWhatsApp\nTable Explorer\nPage Feedback\n12\n✓11\nSettings\nRebuild Map\nImpact Factor\nQA Center\nCode Review\nWorkflow\n/\nProduction\n/\nHui Jin-112589015-JKD1000087\nA\nAdmin\n\nDRAFT — Workflow preview, for review\n\nProduction / traceability spine ported from Loom. Read-only — money & job logic still needs Amit's verification before launch.\n\nGeometric Blue Jamdani Pure Cotton 55 GSM Fabric 87\nINITIATED\n\nSKU JKD1000087 · Fabri",
+ "i2url": "http://localhost:3010/artisanflow/workflow/instance/114027735",
+ "expanded": [
+  "Ready & dispatch history\n2 ready · 0 dispatch · latest 13 Aug 2026\n\nREADY\n(2)\n\n50.00 METER\non 13 Aug 2026\n#166662493\n37.00 METER\non 28 Jul 2026\n#159988694\n\nDISPATCHED\n(0)\n\nNone recorded.",
+  "Ready & dispatch history\n1 ready · 1 dispatch · latest 13 Jul 2026\n\nREADY\n(1)\n\n50.00 METER\non 13 Jul 2026\n#152709488\n\nDISPATCHED\n(1)\n\n50.00 METER\non 13 Jul 2026\n#152709671\nvia DTDC\ntrack\npkg PACKAGE",
+  "Ready & dispatch history\n1 ready · 1 dispatch · latest 6 Jul 2026\n\nREADY\n(1)\n\n50.00 METER\non 6 Jul 2026\n#148911294\n\nDISPATCHED\n(1)\n\n50.00 METER\non 6 Jul 2026\n#148911427\nvia DTDC\ntrack\npkg PACKAGE",
+  "Ready & dispatch history\n2 ready · 0 dispatch · latest 25 Jul 2026\n\nREADY\n(2)\n\n25.00 METER\non 25 Jul 2026\n#158609419\n25.00 METER\non 25 Jul 2026\n#158609422\n\nDISPATCHED\n(0)\n\nNone recorded."
+ ]
+}

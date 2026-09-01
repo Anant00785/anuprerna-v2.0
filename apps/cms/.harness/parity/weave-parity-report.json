@@ -1,0 +1,1568 @@
+{
+  "generatedAt": "2026-07-05T18:14:16.449Z",
+  "summary": {
+    "controllerGap": {
+      "present": 15,
+      "partial": 9,
+      "missing": 14,
+      "total": 38
+    },
+    "featureGap": {
+      "present": 4,
+      "partial": 10,
+      "missing": 1,
+      "total": 15
+    },
+    "extraSandboxItems": 24,
+    "tableExplorerOnlyEntities": [
+      "artisan",
+      "artisan-skill-mapping",
+      "blog-content",
+      "blog-content-category",
+      "blog-content-section",
+      "blog-content-type",
+      "catalog",
+      "catalog-item",
+      "catalog-item-media",
+      "catalog-pdf",
+      "custom-product",
+      "element-feedback",
+      "inventory-adjustment",
+      "inventory-adjustment-item",
+      "inventory-adjustment-reason",
+      "inventory-restock-request",
+      "loyalty-program-config",
+      "loyalty-program-config-audit-log",
+      "order-review-scheduled-email",
+      "product",
+      "product-fabric",
+      "product-finished",
+      "product-image-gallery-seo",
+      "product-size-profile",
+      "product-vector",
+      "product-zoho-relation",
+      "purchase-order-feedback",
+      "review",
+      "step-element-artisan-mapping",
+      "story-content",
+      "story-content-category",
+      "story-content-section",
+      "story-product-mapping",
+      "subprocess-element-artisan-mapping",
+      "super-user",
+      "temp-product-meta",
+      "user-role",
+      "workflow",
+      "workflow-artisan-mapping",
+      "workflow-custom-order-mapping",
+      "workflow-template"
+    ]
+  },
+  "controllerGap": {
+    "FabricProductController": {
+      "domain": "products",
+      "status": "PARTIAL",
+      "total": 4,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/fabric-product/{productId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/fabric-product/slug/{productSlug}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/v2/fabric-product/slug/{productSlug}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/fabric-overview-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/fabric-product/slug/{productSlug}",
+        "/get/v2/fabric-product/slug/{productSlug}",
+        "/get/fabric-overview-list"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/fabric-product/{productId}"
+    },
+    "FinishedProductController": {
+      "domain": "products",
+      "status": "PARTIAL",
+      "total": 2,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/finished-product/{productId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/finished-product/slug/{productSlug}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/finished-product/slug/{productSlug}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/finished-product/{productId}"
+    },
+    "CustomProductController": {
+      "domain": "products",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/custom-product/{productId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/custom-product",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/custom-product/{productId}"
+    },
+    "ProductController": {
+      "domain": "products",
+      "status": "MISSING",
+      "total": 2,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/product-gist-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/related-products/id/{csv}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/product-gist-list",
+        "/get/related-products/id/{csv}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/product-gist-list"
+    },
+    "ProductPreviewController": {
+      "domain": "products",
+      "status": "MISSING",
+      "total": 2,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/product-preview-list/{category}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/product-preview-list/csv/{commaSeparatedCSVList}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/product-preview-list/{category}",
+        "/get/product-preview-list/csv/{commaSeparatedCSVList}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/product-preview-list/{category}"
+    },
+    "FabricPreviewController": {
+      "domain": "products",
+      "status": "PRESENT",
+      "total": 1,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/fabric-preview-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/fabric-preview-list"
+    },
+    "FinishedPreviewController": {
+      "domain": "products",
+      "status": "PRESENT",
+      "total": 1,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/finished-preview-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/finished-preview-list"
+    },
+    "OrderController": {
+      "domain": "orders",
+      "status": "PARTIAL",
+      "total": 5,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/customer/order/{orderId}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/super-user/order/{orderId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/order-list/v2",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/order-list/all",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/orders/status/processing",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/customer/order/{orderId}",
+        "/get/customer/order-list/v2",
+        "/get/customer/order-list/all",
+        "/get/customer/orders/status/processing"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/customer/order/{orderId}"
+    },
+    "OrderPreviewController": {
+      "domain": "orders",
+      "status": "PARTIAL",
+      "total": 2,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/customer/order-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/super-user/order-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/customer/order-list"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/customer/order-list"
+    },
+    "OrderFulfillmentController": {
+      "domain": "orders",
+      "status": "MISSING",
+      "total": 2,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/order/{orderId}/fulfillment-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/order/{orderId}/fulfillment-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/super-user/order/{orderId}/fulfillment-list",
+        "/get/customer/order/{orderId}/fulfillment-list"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/order/{orderId}/fulfillment-list"
+    },
+    "OrderReadyController": {
+      "domain": "orders",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/order/{orderId}/ready-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/super-user/order/{orderId}/ready-list"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/order/{orderId}/ready-list"
+    },
+    "CustomOrderController": {
+      "domain": "orders",
+      "status": "PARTIAL",
+      "total": 2,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/custom-order/{orderId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/custom-order/{orderId}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/customer/custom-order/{orderId}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/custom-order/{orderId}"
+    },
+    "CustomOrderPreviewController": {
+      "domain": "orders",
+      "status": "PRESENT",
+      "total": 1,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/custom-order-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/custom-order-list"
+    },
+    "CustomOrderFulfillmentController": {
+      "domain": "orders",
+      "status": "MISSING",
+      "total": 2,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/custom-order/{orderId}/fulfillment-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/custom-order/{orderId}/fulfillment-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/super-user/custom-order/{orderId}/fulfillment-list",
+        "/get/customer/custom-order/{orderId}/fulfillment-list"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/custom-order/{orderId}/fulfillment-list"
+    },
+    "CustomOrderReadyController": {
+      "domain": "orders",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/custom-order/{orderId}/ready-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/super-user/custom-order/{orderId}/ready-list"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/custom-order/{orderId}/ready-list"
+    },
+    "PurchaseOrderFeedbackController": {
+      "domain": "orders",
+      "status": "PRESENT",
+      "total": 3,
+      "found": 3,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/order/feedback/{orderId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/super-user/order/feedback/{feedbackId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/order/feedback-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/order/feedback/{orderId}"
+    },
+    "LoyaltyProgramInfoController": {
+      "domain": "orders",
+      "status": "MISSING",
+      "total": 2,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/order/loyalty/info",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customer/order-list/loyalty",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/order/loyalty/info",
+        "/get/customer/order-list/loyalty"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/order/loyalty/info"
+    },
+    "ImpactFactorController": {
+      "domain": "orders",
+      "status": "PRESENT",
+      "total": 1,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/impact/order/{orderId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/impact/order/{orderId}"
+    },
+    "CustomerController": {
+      "domain": "customers_tenants",
+      "status": "PARTIAL",
+      "total": 5,
+      "found": 3,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/customer/profile",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customers",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/loyalty-eligible/customers",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/loyalty-program/customers/metrics",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/customers/whatsapp-status",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/customer/profile",
+        "/get/loyalty-eligible/customers"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/customer/profile"
+    },
+    "TenantController": {
+      "domain": "customers_tenants",
+      "status": "PRESENT",
+      "total": 1,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/tenant/profile/{uId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/tenant/profile/{uId}"
+    },
+    "SuperUserController": {
+      "domain": "customers_tenants",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/super-user/profile",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/super-user/profile"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/super-user/profile"
+    },
+    "WorkflowController": {
+      "domain": "workflow",
+      "status": "PARTIAL",
+      "total": 9,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/workflow-list/{status}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/artisan/workflow-list/{status}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/artisan/workflow/dashboard",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/artisan/workflow/{workflowId}/assigned-element-details",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/master/{masterId}/worker/{artisanId}/bpm-details",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/master/{masterId}/worker/{artisanId}/workflow/{workflowId}/assigned-element-details",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/order/{orderId}/workflow-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/workflow/{workflowId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/order/{orderId}/workflow/{orderItemId}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/artisan/workflow-list/{status}",
+        "/get/artisan/workflow/dashboard",
+        "/get/artisan/workflow/{workflowId}/assigned-element-details",
+        "/get/master/{masterId}/worker/{artisanId}/bpm-details",
+        "/get/master/{masterId}/worker/{artisanId}/workflow/{workflowId}/assigned-element-details",
+        "/get/order/{orderId}/workflow-list",
+        "/get/order/{orderId}/workflow/{orderItemId}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/workflow-list/{status}"
+    },
+    "CustomWorkflowController": {
+      "domain": "workflow",
+      "status": "PARTIAL",
+      "total": 5,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/custom-workflow-list/{status}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/artisan/custom-workflow-list/{status}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/custom-order/{orderId}/workflow-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/custom-workflow/{workflowId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/custom-order/{orderId}/workflow/{orderItemId}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/artisan/custom-workflow-list/{status}",
+        "/get/custom-order/{orderId}/workflow-list",
+        "/get/custom-order/{orderId}/workflow/{orderItemId}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/custom-workflow-list/{status}"
+    },
+    "WorkflowTemplateController": {
+      "domain": "workflow",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/workflow-template-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/workflow-template/{templateId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/workflow-template-list"
+    },
+    "StepElementController": {
+      "domain": "workflow",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/artisan/step-element-list/{status}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/artisan/step-element-list/{status}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/artisan/step-element-list/{status}"
+    },
+    "SubProcessElementController": {
+      "domain": "workflow",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/artisan/subprocess-element-list/{status}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/artisan/subprocess-element-list/{status}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/artisan/subprocess-element-list/{status}"
+    },
+    "ElementFeedbackController": {
+      "domain": "workflow",
+      "status": "PARTIAL",
+      "total": 3,
+      "found": 1,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/element/feedback-list",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/custom-workflow/element/feedback",
+          "found": false,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/element/feedback/{feedbackId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/element/feedback-list",
+        "/get/custom-workflow/element/feedback"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/element/feedback-list"
+    },
+    "StepElementArtisanAssignmentController": {
+      "domain": "workflow",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/step-element/{stepId}/artisan-assignments",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/step-element/{stepId}/artisan-assignments"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/step-element/{stepId}/artisan-assignments"
+    },
+    "SubProcessElementArtisanAssignmentController": {
+      "domain": "workflow",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/subprocess-element/{subProcessId}/artisan-assignments",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/subprocess-element/{subProcessId}/artisan-assignments"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/subprocess-element/{subProcessId}/artisan-assignments"
+    },
+    "BadgeProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/badge-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/badge-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/badge-profile-list"
+    },
+    "FabricProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/fabric-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/fabric-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/fabric-profile-list"
+    },
+    "FinishProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/finish-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/finish-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/finish-profile-list"
+    },
+    "FinishProfileItemController": {
+      "domain": "profiles",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/usage/finish-profile-item/{finishItemId}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/usage/finish-profile-item/{finishItemId}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/usage/finish-profile-item/{finishItemId}"
+    },
+    "MadeToOrderProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/made-to-order-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/made-to-order-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/made-to-order-profile-list"
+    },
+    "SizeProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/size-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/size-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/size-profile-list"
+    },
+    "SizeProfileOptionController": {
+      "domain": "profiles",
+      "status": "MISSING",
+      "total": 1,
+      "found": 0,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/usage/size-profile-option/{sizeProfileOptionId}",
+          "found": false,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [
+        "/get/usage/size-profile-option/{sizeProfileOptionId}"
+      ],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/usage/size-profile-option/{sizeProfileOptionId}"
+    },
+    "VolumeDiscountProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/volume-discount-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/volume-discount-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/volume-discount-profile-list"
+    },
+    "CustomSizeProfileController": {
+      "domain": "profiles",
+      "status": "PRESENT",
+      "total": 2,
+      "found": 2,
+      "teCovered": 0,
+      "endpoints": [
+        {
+          "path": "/get/custom-size-profile-list",
+          "found": true,
+          "coveredViaTableExplorer": false
+        },
+        {
+          "path": "/get/custom-size-profile/{profileId}",
+          "found": true,
+          "coveredViaTableExplorer": false
+        }
+      ],
+      "missingEndpoints": [],
+      "tableExplorerEndpoints": [],
+      "samplePath": "/get/custom-size-profile-list"
+    }
+  },
+  "featureGap": [
+    {
+      "liveItem": "Dashboard",
+      "liveSection": "Top-level",
+      "sandboxMatch": "Dashboard",
+      "status": "PRESENT",
+      "relatedEndpoints": [],
+      "foundEndpoints": [],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": []
+    },
+    {
+      "liveItem": "Manage User",
+      "liveSection": "PEOPLE & CRAFT",
+      "sandboxMatch": "Users",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/super-user/order-list",
+        "/get/super-user/order/",
+        "/get/super-user/order/",
+        "/get/super-user/order/",
+        "/get/super-user/custom-order-list",
+        "/get/super-user/custom-order/",
+        "/get/super-user/custom-order/",
+        "/get/super-user/custom-order/",
+        "/get/super-user/order/feedback/",
+        "/get/super-user/review",
+        "/get/table-explorer/data/super-user",
+        "/get/table-explorer/data/user-role"
+      ],
+      "foundEndpoints": [
+        "/get/super-user/order-list",
+        "/get/super-user/order/",
+        "/get/super-user/order/",
+        "/get/super-user/order/",
+        "/get/super-user/custom-order-list",
+        "/get/super-user/custom-order/",
+        "/get/super-user/custom-order/",
+        "/get/super-user/custom-order/",
+        "/get/super-user/order/feedback/",
+        "/get/super-user/review"
+      ],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/super-user",
+        "/get/table-explorer/data/user-role"
+      ]
+    },
+    {
+      "liveItem": "Manage Artisans",
+      "liveSection": "PEOPLE & CRAFT",
+      "sandboxMatch": "Artisans",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/artisan",
+        "/get/artisans",
+        "/get/artisan",
+        "/get/catalog-list/artisan/",
+        "/get/catalog-pdf-generation-list/artisan/",
+        "/get/table-explorer/data/artisan",
+        "/get/table-explorer/data/artisan-skill-mapping",
+        "/get/table-explorer/data/step-element-artisan-mapping",
+        "/get/table-explorer/data/subprocess-element-artisan-mapping",
+        "/get/table-explorer/data/workflow-artisan-mapping"
+      ],
+      "foundEndpoints": [
+        "/get/artisan",
+        "/get/artisans",
+        "/get/artisan"
+      ],
+      "missingEndpoints": [
+        "/get/catalog-list/artisan/",
+        "/get/catalog-pdf-generation-list/artisan/"
+      ],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/artisan",
+        "/get/table-explorer/data/artisan-skill-mapping",
+        "/get/table-explorer/data/step-element-artisan-mapping",
+        "/get/table-explorer/data/subprocess-element-artisan-mapping",
+        "/get/table-explorer/data/workflow-artisan-mapping"
+      ]
+    },
+    {
+      "liveItem": "Manage Whatsapp",
+      "liveSection": "PEOPLE & CRAFT",
+      "sandboxMatch": "WhatsApp",
+      "status": "PRESENT",
+      "relatedEndpoints": [
+        "/get/customers/whatsapp-status",
+        "/get/table-explorer/data/whatsapp-notification-history"
+      ],
+      "foundEndpoints": [
+        "/get/customers/whatsapp-status",
+        "/get/table-explorer/data/whatsapp-notification-history"
+      ],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": []
+    },
+    {
+      "liveItem": "Manage Content",
+      "liveSection": "PRODUCTS & CONTENT",
+      "sandboxMatch": "Content",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/blog-content-types",
+        "/get/blog-content-category-list",
+        "/get/blog-content-list",
+        "/get/story-content-category-list",
+        "/get/story-content-list",
+        "/get/story-content/",
+        "/get/blog-content/",
+        "/get/table-explorer/data/blog-content",
+        "/get/table-explorer/data/blog-content-category",
+        "/get/table-explorer/data/blog-content-section",
+        "/get/table-explorer/data/blog-content-type",
+        "/get/table-explorer/data/story-content",
+        "/get/table-explorer/data/story-content-category",
+        "/get/table-explorer/data/story-content-section"
+      ],
+      "foundEndpoints": [
+        "/get/blog-content-types",
+        "/get/blog-content-category-list",
+        "/get/blog-content-list",
+        "/get/story-content-category-list",
+        "/get/story-content-list",
+        "/get/story-content/",
+        "/get/blog-content/"
+      ],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/blog-content",
+        "/get/table-explorer/data/blog-content-category",
+        "/get/table-explorer/data/blog-content-section",
+        "/get/table-explorer/data/blog-content-type",
+        "/get/table-explorer/data/story-content",
+        "/get/table-explorer/data/story-content-category",
+        "/get/table-explorer/data/story-content-section"
+      ]
+    },
+    {
+      "liveItem": "Manage Product",
+      "liveSection": "PRODUCTS & CONTENT",
+      "sandboxMatch": "Listings",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/story/product-previews/",
+        "/get/product-specific-size-profile-list",
+        "/get/product-specific-size-profile/",
+        "/get/usage/product-specific-size-profile-option/",
+        "/check/unique-product/name/",
+        "/check/unique-product/sku/",
+        "/get/product-preview-list",
+        "/get/product-gist-list",
+        "/get/product-gist-list",
+        "/get/finished-product/",
+        "/get/fabric-product/",
+        "/get/custom-product",
+        "/get/custom-product/{productId}",
+        "/get/table-explorer/data/custom-product",
+        "/get/table-explorer/data/product",
+        "/get/table-explorer/data/product-fabric",
+        "/get/table-explorer/data/product-finished",
+        "/get/table-explorer/data/product-image-gallery-seo",
+        "/get/table-explorer/data/product-size-profile",
+        "/get/table-explorer/data/product-vector",
+        "/get/table-explorer/data/product-zoho-relation",
+        "/get/table-explorer/data/story-product-mapping",
+        "/get/table-explorer/data/temp-product-meta"
+      ],
+      "foundEndpoints": [
+        "/get/finished-product/",
+        "/get/fabric-product/",
+        "/get/custom-product",
+        "/get/custom-product/{productId}"
+      ],
+      "missingEndpoints": [
+        "/get/story/product-previews/",
+        "/get/product-specific-size-profile-list",
+        "/get/product-specific-size-profile/",
+        "/get/usage/product-specific-size-profile-option/",
+        "/check/unique-product/name/",
+        "/check/unique-product/sku/",
+        "/get/product-preview-list",
+        "/get/product-gist-list",
+        "/get/product-gist-list"
+      ],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/custom-product",
+        "/get/table-explorer/data/product",
+        "/get/table-explorer/data/product-fabric",
+        "/get/table-explorer/data/product-finished",
+        "/get/table-explorer/data/product-image-gallery-seo",
+        "/get/table-explorer/data/product-size-profile",
+        "/get/table-explorer/data/product-vector",
+        "/get/table-explorer/data/product-zoho-relation",
+        "/get/table-explorer/data/story-product-mapping",
+        "/get/table-explorer/data/temp-product-meta"
+      ]
+    },
+    {
+      "liveItem": "Manage Catalogs",
+      "liveSection": "PRODUCTS & CONTENT",
+      "sandboxMatch": "Catalog",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/catalog/",
+        "/get/catalog-list",
+        "/get/catalog-list/artisan/",
+        "/get/catalog-item/",
+        "/get/catalog-pdf-generation-list/artisan/",
+        "/get/catalog-pdf-generation/",
+        "/get/table-explorer/data/catalog",
+        "/get/table-explorer/data/catalog-item",
+        "/get/table-explorer/data/catalog-item-media",
+        "/get/table-explorer/data/catalog-pdf"
+      ],
+      "foundEndpoints": [
+        "/get/catalog/",
+        "/get/catalog-list",
+        "/get/catalog-pdf-generation/"
+      ],
+      "missingEndpoints": [
+        "/get/catalog-list/artisan/",
+        "/get/catalog-item/",
+        "/get/catalog-pdf-generation-list/artisan/"
+      ],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/catalog",
+        "/get/table-explorer/data/catalog-item",
+        "/get/table-explorer/data/catalog-item-media",
+        "/get/table-explorer/data/catalog-pdf"
+      ]
+    },
+    {
+      "liveItem": "Manage Logistics",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Logistics",
+      "status": "PRESENT",
+      "relatedEndpoints": [],
+      "foundEndpoints": [],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": []
+    },
+    {
+      "liveItem": "Manage Inventory",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Inventory",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/inventory-adjustment-reason",
+        "/get/inventory-adjustment",
+        "/get/inventory-restock-request",
+        "/get/table-explorer/data/inventory-adjustment",
+        "/get/table-explorer/data/inventory-adjustment-item",
+        "/get/table-explorer/data/inventory-adjustment-reason",
+        "/get/table-explorer/data/inventory-restock-request"
+      ],
+      "foundEndpoints": [
+        "/get/inventory-adjustment-reason",
+        "/get/inventory-adjustment",
+        "/get/inventory-restock-request"
+      ],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/inventory-adjustment",
+        "/get/table-explorer/data/inventory-adjustment-item",
+        "/get/table-explorer/data/inventory-adjustment-reason",
+        "/get/table-explorer/data/inventory-restock-request"
+      ]
+    },
+    {
+      "liveItem": "Manage Feedbacks",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Order Feedback",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/element/feedback",
+        "/get/custom-workflow/element/feedback",
+        "/get/order/feedback-list",
+        "/get/super-user/order/feedback/",
+        "/get/table-explorer/data/element-feedback",
+        "/get/table-explorer/data/purchase-order-feedback"
+      ],
+      "foundEndpoints": [
+        "/get/element/feedback",
+        "/get/order/feedback-list",
+        "/get/super-user/order/feedback/"
+      ],
+      "missingEndpoints": [
+        "/get/custom-workflow/element/feedback"
+      ],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/element-feedback",
+        "/get/table-explorer/data/purchase-order-feedback"
+      ]
+    },
+    {
+      "liveItem": "Manage Reviews",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Reviews",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/story/product-previews/",
+        "/get/product-preview-list",
+        "/get/fabric-preview-list",
+        "/get/finished-preview-list",
+        "/get/super-user/review",
+        "/get/table-explorer/data/order-review-scheduled-email",
+        "/get/table-explorer/data/review"
+      ],
+      "foundEndpoints": [
+        "/get/fabric-preview-list",
+        "/get/finished-preview-list",
+        "/get/super-user/review"
+      ],
+      "missingEndpoints": [
+        "/get/story/product-previews/",
+        "/get/product-preview-list"
+      ],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/order-review-scheduled-email",
+        "/get/table-explorer/data/review"
+      ]
+    },
+    {
+      "liveItem": "Manage Workflow",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Workflow",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/workflow/",
+        "/get/workflow-template/",
+        "/get/workflow-template-list",
+        "/get/workflow-list/{status}",
+        "/get/custom-workflow-list/{status}",
+        "/get/custom-workflow/",
+        "/get/custom-workflow/element/feedback",
+        "/get/table-explorer/data/workflow",
+        "/get/table-explorer/data/workflow-artisan-mapping",
+        "/get/table-explorer/data/workflow-custom-order-mapping",
+        "/get/table-explorer/data/workflow-template"
+      ],
+      "foundEndpoints": [
+        "/get/workflow/",
+        "/get/workflow-template/",
+        "/get/workflow-template-list",
+        "/get/workflow-list/{status}",
+        "/get/custom-workflow-list/{status}",
+        "/get/custom-workflow/"
+      ],
+      "missingEndpoints": [
+        "/get/custom-workflow/element/feedback"
+      ],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/workflow",
+        "/get/table-explorer/data/workflow-artisan-mapping",
+        "/get/table-explorer/data/workflow-custom-order-mapping",
+        "/get/table-explorer/data/workflow-template"
+      ]
+    },
+    {
+      "liveItem": "Artisan Payments",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": null,
+      "status": "MISSING",
+      "relatedEndpoints": [],
+      "foundEndpoints": [],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": []
+    },
+    {
+      "liveItem": "Wholesale Program",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Wholesale",
+      "status": "PARTIAL",
+      "relatedEndpoints": [
+        "/get/loyalty-program/customers/metrics",
+        "/get/table-explorer/data/loyalty-program-config",
+        "/get/table-explorer/data/loyalty-program-config-audit-log"
+      ],
+      "foundEndpoints": [
+        "/get/loyalty-program/customers/metrics"
+      ],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": [
+        "/get/table-explorer/data/loyalty-program-config",
+        "/get/table-explorer/data/loyalty-program-config-audit-log"
+      ]
+    },
+    {
+      "liveItem": "Impact Factor",
+      "liveSection": "OPERATIONS",
+      "sandboxMatch": "Impact Factor",
+      "status": "PRESENT",
+      "relatedEndpoints": [
+        "/get/impact/order/"
+      ],
+      "foundEndpoints": [
+        "/get/impact/order/"
+      ],
+      "missingEndpoints": [],
+      "tableExplorerOnlyEndpoints": []
+    }
+  ],
+  "extraSandboxItems": [
+    "Categories",
+    "Segments",
+    "Sub-categories",
+    "SKU Groups",
+    "Special Status",
+    "Filters",
+    "Profiles",
+    "Loyalty",
+    "Orders",
+    "Production",
+    "Custom Orders",
+    "Custom Products",
+    "Workflow Feedback",
+    "Traceability",
+    "Skills",
+    "Story Review",
+    "Reports",
+    "Cron Jobs",
+    "AI Embeddings",
+    "Table Explorer",
+    "Page Feedback",
+    "Settings",
+    "Rebuild Map",
+    "Data Sync"
+  ],
+  "navDiff": {
+    "liveNavMissingFromSandbox": [
+      "Artisan Payments"
+    ],
+    "liveNavPartialInSandbox": [
+      {
+        "item": "Manage User",
+        "sandboxMatch": "Users",
+        "missingEndpoints": [],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/super-user",
+          "/get/table-explorer/data/user-role"
+        ]
+      },
+      {
+        "item": "Manage Artisans",
+        "sandboxMatch": "Artisans",
+        "missingEndpoints": [
+          "/get/catalog-list/artisan/",
+          "/get/catalog-pdf-generation-list/artisan/"
+        ],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/artisan",
+          "/get/table-explorer/data/artisan-skill-mapping",
+          "/get/table-explorer/data/step-element-artisan-mapping",
+          "/get/table-explorer/data/subprocess-element-artisan-mapping",
+          "/get/table-explorer/data/workflow-artisan-mapping"
+        ]
+      },
+      {
+        "item": "Manage Content",
+        "sandboxMatch": "Content",
+        "missingEndpoints": [],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/blog-content",
+          "/get/table-explorer/data/blog-content-category",
+          "/get/table-explorer/data/blog-content-section",
+          "/get/table-explorer/data/blog-content-type",
+          "/get/table-explorer/data/story-content",
+          "/get/table-explorer/data/story-content-category",
+          "/get/table-explorer/data/story-content-section"
+        ]
+      },
+      {
+        "item": "Manage Product",
+        "sandboxMatch": "Listings",
+        "missingEndpoints": [
+          "/get/story/product-previews/",
+          "/get/product-specific-size-profile-list",
+          "/get/product-specific-size-profile/",
+          "/get/usage/product-specific-size-profile-option/",
+          "/check/unique-product/name/",
+          "/check/unique-product/sku/",
+          "/get/product-preview-list",
+          "/get/product-gist-list",
+          "/get/product-gist-list"
+        ],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/custom-product",
+          "/get/table-explorer/data/product",
+          "/get/table-explorer/data/product-fabric",
+          "/get/table-explorer/data/product-finished",
+          "/get/table-explorer/data/product-image-gallery-seo",
+          "/get/table-explorer/data/product-size-profile",
+          "/get/table-explorer/data/product-vector",
+          "/get/table-explorer/data/product-zoho-relation",
+          "/get/table-explorer/data/story-product-mapping",
+          "/get/table-explorer/data/temp-product-meta"
+        ]
+      },
+      {
+        "item": "Manage Catalogs",
+        "sandboxMatch": "Catalog",
+        "missingEndpoints": [
+          "/get/catalog-list/artisan/",
+          "/get/catalog-item/",
+          "/get/catalog-pdf-generation-list/artisan/"
+        ],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/catalog",
+          "/get/table-explorer/data/catalog-item",
+          "/get/table-explorer/data/catalog-item-media",
+          "/get/table-explorer/data/catalog-pdf"
+        ]
+      },
+      {
+        "item": "Manage Inventory",
+        "sandboxMatch": "Inventory",
+        "missingEndpoints": [],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/inventory-adjustment",
+          "/get/table-explorer/data/inventory-adjustment-item",
+          "/get/table-explorer/data/inventory-adjustment-reason",
+          "/get/table-explorer/data/inventory-restock-request"
+        ]
+      },
+      {
+        "item": "Manage Feedbacks",
+        "sandboxMatch": "Order Feedback",
+        "missingEndpoints": [
+          "/get/custom-workflow/element/feedback"
+        ],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/element-feedback",
+          "/get/table-explorer/data/purchase-order-feedback"
+        ]
+      },
+      {
+        "item": "Manage Reviews",
+        "sandboxMatch": "Reviews",
+        "missingEndpoints": [
+          "/get/story/product-previews/",
+          "/get/product-preview-list"
+        ],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/order-review-scheduled-email",
+          "/get/table-explorer/data/review"
+        ]
+      },
+      {
+        "item": "Manage Workflow",
+        "sandboxMatch": "Workflow",
+        "missingEndpoints": [
+          "/get/custom-workflow/element/feedback"
+        ],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/workflow",
+          "/get/table-explorer/data/workflow-artisan-mapping",
+          "/get/table-explorer/data/workflow-custom-order-mapping",
+          "/get/table-explorer/data/workflow-template"
+        ]
+      },
+      {
+        "item": "Wholesale Program",
+        "sandboxMatch": "Wholesale",
+        "missingEndpoints": [],
+        "tableExplorerOnlyEndpoints": [
+          "/get/table-explorer/data/loyalty-program-config",
+          "/get/table-explorer/data/loyalty-program-config-audit-log"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,419 @@
+{
+ "template": {
+  "url": "https://weave.bloomscorp.com/manage-workflow/template/view/490267",
+  "textLen": 1055,
+  "text": "🌸\nAnuprerna\n‹\n🏠\nDashboard\n🧑‍🤝‍🧑\nPEOPLE & CRAFT\n👥\nManage User\n🧵\nManage Artisans\n›\n🙌\nManage Skills\n📲\nManage Whatsapp\n›\n✅\nConsent Manager\n📋\nAudit Log\n🛍️\nPRODUCTS & CONTENT\n✍️\nManage Content\n›\n📖\nManage Story\n✏️\nManage Blog\n🎨\nManage Product\n›\n📂\nCategory\n🗂️\nSegment\n📁\nSub Category\n🎯\nProfile\n🔧\nFilters\n📦\nSKU Groups\n🌟\nSpecial Status\n🏷️\nTag\n✅\nFinished Product\n🪡\nFabric Product\n📚\nManage Catalogs\n🔎\nFilter Page SEO\n⚡\nOPERATIONS\n🚚\nManage Logistics\n🗄️\nManage Inventory\n💬\nManage Feedbacks\n⭐\nManage Reviews\n🌿\nManage Workflow\n›\n💸\nArtisan Payments\n💎\nWholesale Program\n🌱\nImpact Factor\n🛠️\nTOOLS & ADMIN\n⏰\nCron Jobs\n📊\nReport Center\n🤖\nAI Embeddings\n📧\nEmail Audit Log\n📈\nAds Conversion\n🔍\nTable Explorer\n🩺\nDiagnostics\n🪄\nSquish Studio\n⚙️\nSettings\n🚪\nLogout\nhome\n/\nManage Workflow\n/\nTemplate\n/\nView\n/\n490267\nYARN -> FABRIC : DYED YARN TO FABRIC MANFUACTURING\nYarn Processing\nYarn Processing\nProcessed Yarn QC\nYarn Weaving\nFabric Initial Sample\nComplete Production\nFabric Finishing\nWashing\n• Comments on the Quality: string, deferred\nQC Fabric",
+  "headings": [
+   "YARN -> FABRIC : DYED YARN TO FABRIC MANFUACTURING"
+  ],
+  "buttons": [
+   "‹",
+   "🚪\nLogout"
+  ],
+  "tables": [],
+  "selects": [],
+  "inputs": [],
+  "docScrollW": 1440,
+  "innerW": 1440,
+  "overflow": false,
+  "mobile": {
+   "sw": 390,
+   "iw": 390
+  }
+ },
+ "instance": {
+  "url": "https://weave.bloomscorp.com/manage-workflow/custom-process/view/133044983",
+  "textLen": 1623,
+  "text": "🌸\nAnuprerna\n‹\n🏠\nDashboard\n🧑‍🤝‍🧑\nPEOPLE & CRAFT\n👥\nManage User\n🧵\nManage Artisans\n›\n🙌\nManage Skills\n📲\nManage Whatsapp\n›\n✅\nConsent Manager\n📋\nAudit Log\n🛍️\nPRODUCTS & CONTENT\n✍️\nManage Content\n›\n📖\nManage Story\n✏️\nManage Blog\n🎨\nManage Product\n›\n📂\nCategory\n🗂️\nSegment\n📁\nSub Category\n🎯\nProfile\n🔧\nFilters\n📦\nSKU Groups\n🌟\nSpecial Status\n🏷️\nTag\n✅\nFinished Product\n🪡\nFabric Product\n📚\nManage Catalogs\n🔎\nFilter Page SEO\n⚡\nOPERATIONS\n🚚\nManage Logistics\n🗄️\nManage Inventory\n💬\nManage Feedbacks\n⭐\nManage Reviews\n🌿\nManage Workflow\n›\n💸\nArtisan Payments\n💎\nWholesale Program\n🌱\nImpact Factor\n🛠️\nTOOLS & ADMIN\n⏰\nCron Jobs\n📊\nReport Center\n🤖\nAI Embeddings\n📧\nEmail Audit Log\n📈\nAds Conversion\n🔍\nTable Explorer\n🩺\nDiagnostics\n🪄\nSquish Studio\n⚙️\nSettings\n🚪\nLogout\nhome\n/\nManage Workflow\n/\nCustom Process\n/\nView\n/\n133044983\nRAJ VARDHAN-132440539-SAK097000C : RAJ VARDHAN FABRIC WORKFLOW\nProcess Status: INITIATED\nEstimated Start Date: 03-06-2026\nEstimated End Date: 11-09-2026\nAssociated Product:\nPlain Red Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\nSAK097000C\nStatus:\nPending/Created\nIn Progress/Initiated\nHalted\nCompleted\nengineering\nARTISAN ASSIGNMENT\n1 assigned | Fabric workflow\nsave\nSave\nexpand_less\nAvg Work Hours Per Metre\nAdd Artisan\nadd\nAdd\nA\nAnuprerna Fabric\nMetres\nBase Pay / m\nclose\nsticky_note_2Add Note\nYarn Processing\nYarn Processing\nfeedback\nProcessed Yarn QC\nYarn Weaving\nedit\nengineering\nfeedback\nFabric Initial Sample\nComplete Production\nedit\nFabric Finishing\nedit\nWashing\nedit\nfeedback\nBase Fabric QC\nedit\nFabric Dyeing\nedit\nfeedback\nSampling Completion\nedit\nfeedback\nQC Fabric\nedit",
+  "headings": [
+   "RAJ VARDHAN-132440539-SAK097000C : RAJ VARDHAN FABRIC WORKFLOW"
+  ],
+  "buttons": [
+   "‹",
+   "🚪\nLogout",
+   "save\nSave",
+   "expand_less",
+   "add\nAdd",
+   "close",
+   "sticky_note_2Add Note",
+   "View Feedback",
+   "View Feedback"
+  ],
+  "tables": [],
+  "selects": [],
+  "inputs": [
+   {
+    "type": "number",
+    "ph": "0.00",
+    "val": "2"
+   },
+   {
+    "type": "text",
+    "ph": "Search artisan by name...",
+    "val": ""
+   },
+   {
+    "type": "number",
+    "ph": "0.00",
+    "val": "50"
+   },
+   {
+    "type": "number",
+    "ph": "0.00",
+    "val": ""
+   }
+  ],
+  "docScrollW": 1440,
+  "innerW": 1440,
+  "overflow": false,
+  "mobile": {
+   "sw": 390,
+   "iw": 390
+  }
+ },
+ "jobs": {
+  "url": "https://weave.bloomscorp.com/manage-workflow/custom-process",
+  "textLen": 32869,
+  "text": "🌸\nAnuprerna\n‹\n🏠\nDashboard\n🧑‍🤝‍🧑\nPEOPLE & CRAFT\n👥\nManage User\n🧵\nManage Artisans\n›\n🙌\nManage Skills\n📲\nManage Whatsapp\n›\n✅\nConsent Manager\n📋\nAudit Log\n🛍️\nPRODUCTS & CONTENT\n✍️\nManage Content\n›\n📖\nManage Story\n✏️\nManage Blog\n🎨\nManage Product\n›\n📂\nCategory\n🗂️\nSegment\n📁\nSub Category\n🎯\nProfile\n🔧\nFilters\n📦\nSKU Groups\n🌟\nSpecial Status\n🏷️\nTag\n✅\nFinished Product\n🪡\nFabric Product\n📚\nManage Catalogs\n🔎\nFilter Page SEO\n⚡\nOPERATIONS\n🚚\nManage Logistics\n🗄️\nManage Inventory\n💬\nManage Feedbacks\n⭐\nManage Reviews\n🌿\nManage Workflow\n›\n💸\nArtisan Payments\n💎\nWholesale Program\n🌱\nImpact Factor\n🛠️\nTOOLS & ADMIN\n⏰\nCron Jobs\n📊\nReport Center\n🤖\nAI Embeddings\n📧\nEmail Audit Log\n📈\nAds Conversion\n🔍\nTable Explorer\n🩺\nDiagnostics\n🪄\nSquish Studio\n⚙️\nSettings\n🚪\nLogout\nhome\n/\nManage Workflow\n/\nCustom Process\nMANAGE CUSTOM PROCESS\nTOTAL COUNT (148)\nadd_circle\nINITIATED\nCREATED\nCOMPLETED\nOrder #\tOrder Date\tEst. Delivery (From)\tEst. Delivery (To)\tName\tDescription\tAssociated Product\t\n\n119463428\nschedule\nengineering\nAssigned\n\t06 May 2026\t01 Jan 1970\t01 Jan 1970\tHui Jin-119463428-SKD0920014\tHui Jin fabric workflow\t\nPlain Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric (SKD0920014)\n\t\nvisibility\n\n\n112589015\nschedule\nengineering\nAssigned\n\t15 Apr 2026\t01 Jan 1970\t01 Jan 1970\tHui Jin-112589015-JKD1000087\tHui Jin fabric workflow\t\nGeometric Blue Jamdani Pure Cotton 55 GSM Fabric 87 (JKD1000087)\n\t\nvisibility\n\n\n136118601\nschedule\nengineering\nAssigned\n\t10 Jun 2026\t01 Jan 1970\t01 Jan 1970\tHui Jin-136118601-SAK0960003\tHui Jin fabric workflow\t\nPlain Natural Pure Mulberry Double Plyed Silk 64 GSM Handwoven Fabric (SAK0960003)\n\t\nvisibility\n\n\n120974539\nschedule\nengineering\nAssigned\n\t09 May 2026\t01 Jan 1970\t01 Jan 1970\tHui Jin-120974539-JPD1000362\tHui Jin fabric workflow\t\nCircle White Base Jamdani Pure Cotton 55 GSM Handwoven Fabric (JPD1000362)\n\t\nvisibility\n\n\n119463428\nschedule\nengineering\nAssigned\n\t06 May 2026\t01 Jan 1970\t01 Jan 1970\tHui Jin-119463428-SAK0910003\tHui Jin fabric workflow\t\nPlain Natural Tussar Silk Cotton Blend 97 GSM Handwoven Fabric (SAK0910003)\n\t\nvisibility\n\n\n5606105\nschedule\n\t24 Apr 2025\t10 Jun 2025\t24 Jun 2025\tAmit Singha-5606105-K20250318\tAmit Singha finished workflow\t\nkate@marlowgoods.com (K20250318)\n\t\nvisibility\n\n\n21000426\nschedule\n\t25 Jun 2025\t31 Jul 2025\t13 Aug 2025\tSUMMERRAYS LIFESTYLE PRIVATE LIMITED-21000426-KAK0740016\tSUMMERRAYS LIFESTYLE PRIVATE LIMITED fabric workflow\t\nWhite Mulmul Khadi Cotton 72 GSM Fabric - Bleached White & Dyeable (KAK0740016)\n\t\nvisibility\n\n\n21000426\nschedule\n\t25 Jun 2025\t31 Jul 2025\t13 Aug 2025\tSUMMERRAYS LIFESTYLE PRIVATE LIMITED-21000426-KAK0750003\tSUMMERRAYS LIFESTYLE PRIVATE LIMITED fabric workflow\t\nWhite Muslin Khadi Cotton 120 GSM Fabric - Bleached White & Dyeable 03 (KAK0750003)\n\t\nvisibility\n\n\n33792897\nschedule\n\t02 Aug 2025\t08 Oct 2025\t14 Oct 2025\tMallika Darak-33792897-Custom fabric ZariSilk\tMallika Darak fabric workflow\t\nCustom fabric ZariSilk (Custom fabric ZariSilk)\n\t\nvisibility\n\n\n53539357\nschedule\nengineering\nAssigned\n\t05 Nov 2025\t02 Feb 2026\t16 Feb 2026\tAmit Singha-53539357-KPT20250325\tAmit Singha finished workflow\t\nKai perlman trouser (KPT20250325)\n\t\nvisibility\n\n\n53539357\nschedule\nengineering\nAssigned\n\t05 Nov 2025\t02 Feb 2026\t16 Feb 2026\tAmit Singha-53539357-DSG086000J\tAmit Singha fabric workflow\t\nStripe Light Blue Natural Indigo Dyed 62 GSM Handwoven Fabric (DSG086000J)\n\t\nvisibility\n\n\n88321374\nschedule\n\t05 Feb 2026\t16 Mar 2026\t20 Feb 2026\tDana Mirghani-88321374-AS20260216\tDana Mirghani finished workflow\t\nArushi Sample (AS20260216)\n\t\nvisibility\n\n\n53545462\nschedule\n\t05 Nov 2025\t02 Feb 2026\t23 Feb 2026\tAmit Singha-53545462-Ziva Custom Fabric\tAmit Singha fabric workflow\t\nZiva Custom Fabric (Ziva Custom Fabric)\n\t\nvisibility\n\n\n53536211\nschedule\n\t05 Nov 2025\t15 Feb 2026\t27 Feb 2026\tAmit Singha-53536211-CSD1260081\tAmit Singha fabric workflow\t\nPlain Blue Khadi Cotton 95 GSM Handwoven Fabric (CSD1260081)\n\t\nvisibility\n\n\n53544084\nschedule\n\t05 Nov 2025\t02 Jan 2026\t28 Feb 2026\tAmit Singha-53544084-CF320250312\tAmit Singha fabric workflow\t\nCustom Fabric 3 (CF320250312)\n\t\nvisibility\n\n\n88338752\nschedule\nengineering\nAssigned\n\t20 Feb 2026\t28 Mar 2026\t31 Mar 2026\tDye-Work Co-88338752-CPC20260216\tDye-Work Co finished workflow\t\nCatherine Pillow Cover (CPC20260216)\n\t\nvisibility\n\n\n93003473\nengineering\nAssigned\n\t24 Feb 2026\t25 Mar 2026\t31 Mar 2026\tNeha Anand-93003473-MT20260226\tNeha Anand finished workflow\t\nMolten tunic (MT20260226)\n\t\nvisibility\n\n\n88338752\nschedule\nengineering\nAssigned\n\t20 Feb 2026\t28 Mar 2026\t31 Mar 2026\tDye-Work Co-88338752-CBB20260216\tDye-Work Co finished workflow\t\nCatherine Baby Book (CBB20260216)\n\t\nvisibility\n\n\n88338752\nschedule\nengineering\nAssigned\n\t20 Feb 2026\t28 Mar 2026\t31 Mar 2026\tDye-Work Co-88338752-CEP20260216\tDye-Work Co finished workflow\t\nCatherine envelope pouch (CEP20260216)\n\t\nvisibility\n\n\n86113297\n\t11 Feb 2026\t13 Apr 2026\t20 Apr 2026\tliu yuze-86113297-CFIS20260211\tliu yuze fabric workflow\t\nCUSTOM FABRIC IN STOCK (CFIS20260211)\n\t\nvisibility\n\n\n104484465\nschedule\nengineering\nAssigned\n\t26 Mar 2026\t23 Jun 2026\t30 Jun 2026\tHui Jin-104484465-MJCF-KC20260327\tHui Jin fabric workflow\t\nMr. Jin Custom Fabric - Kantha Custom (MJCF-KC20260327)\n\t\nvisibility\n\n\n132959851\nschedule\nengineering\nAssigned\n\t28 May 2026\t06 Jul 2026\t10 Jul 2026\tDIVA THEA-132959851-MJ20260608\tDIVA THEA finished workflow\t\nMARYORI JUMPSUIT (MJ20260608)\n\t\nvisibility\n\n\n114334971\nschedule\nengineering\nAssigned\n\t13 Apr 2026\t13 Jul 2026\t20 Jul 2026\tSheetal Srivastava-114334971-SP20260616\tSheetal Srivastava finished workflow\t\nSTRAIGHT PANT (SP20260616)\n\t\nvisibility\n\n\n114334971\nschedule\nengineering\nAssigned\n\t13 Apr 2026\t13 Jul 2026\t20 Jul 2026\tSheetal Srivastava-114334971-GD20260616\tSheetal Srivastava finished workflow\t\nGATHERED DRESS (GD20260616)\n\t\nvisibility\n\n\n114334971\nschedule\nengineering\nAssigned\n\t13 Apr 2026\t13 Jul 2026\t20 Jul 2026\tSheetal Srivastava-114334971-BDS20260616\tSheetal Srivastava finished workflow\t\nBUTTON DOWN SHIRT (BDS20260616)\n\t\nvisibility\n\n\n114334971\nschedule\nengineering\nAssigned\n\t13 Apr 2026\t13 Jul 2026\t20 Jul 2026\tSheetal Srivastava-114334971-SD20260616\tSheetal Srivastava finished workflow\t\nSHIFT DRESS (SD20260616)\n\t\nvisibility\n\n\n120466914\nschedule\nengineering\nAssigned\n\t08 May 2026\t15 Jul 2026\t21 Jul 2026\tSULTAN ANSARI-120466914-SA-CF20260508\tSULTAN ANSARI fabric workflow\t\nSultan Ansari - Custom Fabric (SA-CF20260508)\n\t\nvisibility\n\n\n114097764\nschedule\nengineering\nAssigned\n\t17 Apr 2026\t17 Jul 2026\t24 Jul 2026\tHui Jin-114097764-SC20260421\tHui Jin fabric workflow\t\nSAK0940009-Dark Color (SC20260421)\n\t\nvisibility\n\n\n114661888\nschedule\nengineering\nAssigned\n\t21 Apr 2026\t21 Jul 2026\t28 Jul 2026\tHui Jin-114661888-JUR1000385\tHui Jin fabric workflow\t\nWhite Base Cream Jamdani Buti Pure Cotton 55 GSM Handwoven Fabric (JUR1000385)\n\t\nvisibility\n\n\n129582673\nschedule\nengineering\nAssigned\n\t25 May 2026\t25 Jul 2026\t30 Jul 2026\tHui Jin-129582673-CFIWBWZ20260528\tHui Jin fabric workflow\t\nCustom fabric In white by white zari (CFIWBWZ20260528)\n\t\nvisibility\n\n\n139093088\nschedule\n\t17 Jun 2026\t31 Jul 2026\t05 Aug 2026\tShivangi Musaddi-139093088-WKCFBW&DK1T20260617\tShivangi Musaddi fabric workflow\t\nWHITE KHADI COTTON FABRIC BLEACHED WHITE & DYEABLE KAK0770001-CAPPUCCINO 19-1220 TCX (WKCFBW&DK1T20260617)\n\t\nvisibility\n\n\n139093088\nschedule\n\t17 Jun 2026\t31 Jul 2026\t05 Aug 2026\tShivangi Musaddi-139093088-WKC1GFBW&D1T20260617\tShivangi Musaddi fabric workflow\t\nWhite Khadi Cotton 159 GSM Fabric Bleached White & Dyeable-KAK0750001 17-1044 TCX (WKC1GFBW&D1T20260617)\n\t\nvisibility\n\n\n139093088\nschedule\n\t17 Jun 2026\t31 Jul 2026\t05 Aug 2026\tShivangi Musaddi-139093088-WKC1GFBW&DKT20260617\tShivangi Musaddi fabric workflow\t\nWhite Khadi Cotton 159 GSM Fabric Bleached White & Dyeable KAK0750001-19-1227 TCX (WKC1GFBW&DKT20260617)\n\t\nvisibility\n\n\n139093088\nschedule\n\t17 Jun 2026\t31 Jul 2026\t05 Aug 2026\tShivangi Musaddi-139093088-WKC1GFBW&DKD1T20260617\tShivangi Musaddi fabric workflow\t\nWhite Khadi Cotton 159 GSM Fabric Bleached White & Dyeable KAK0750001-ARCTIC DUSK 18-1705 TCX (WKC1GFBW&DKD1T20260617)\n\t\nvisibility\n\n\n139093088\nschedule\n\t17 Jun 2026\t31 Jul 2026\t05 Aug 2026\tShivangi Musaddi-139093088-WKC1GFBW&DKB1T20260617\tShivangi Musaddi fabric workflow\t\nWhite Khadi Cotton 159 GSM Fabric Bleached White & Dyeable KAK0750001-DRESS BLUE 19-4024 TCX (WKC1GFBW&DKB1T20260617)\n\t\nvisibility\n\n\n126910392\nschedule\nengineering\nAssigned\n\t23 May 2026\t03 Aug 2026\t07 Aug 2026\tHui Jin-126910392-KAK0810001\tHui Jin fabric workflow\t\nWhite Check Cotton 60 GSM Handwoven Fabric | Bleached White & Dyeable (KAK0810001)\n\t\nvisibility\n\n\n126915600\nschedule\nengineering\nAssigned\n\t23 May 2026\t03 Aug 2026\t08 Aug 2026\tHui Jin-126915600-SAK0940009\tHui Jin fabric workflow\t\nPlain Natural Tussar & Ketya Silk Blend 80 GSM Handwoven Fabric 09 (SAK0940009)\n\t\nvisibility\n\n\n126952068\nschedule\nengineering\nAssigned\n\t23 May 2026\t03 Aug 2026\t08 Aug 2026\tHui Jin-126952068-CFUWSWBSZM20260523\tHui Jin fabric workflow\t\nCustom Fabric unit White stripes white base Silver Zari motif (CFUWSWBSZM20260523)\n\t\nvisibilit",
+  "headings": [
+   "MANAGE CUSTOM PROCESS"
+  ],
+  "buttons": [
+   "‹",
+   "🚪\nLogout"
+  ],
+  "tables": [
+   {
+    "headers": [
+     "Order #",
+     "Order Date",
+     "Est. Delivery (From)",
+     "Est. Delivery (To)",
+     "Name",
+     "Description",
+     "Associated Product",
+     ""
+    ],
+    "rows": 148,
+    "firstRow": [
+     "119463428\nschedule\nengineering\nAssigned",
+     "06 May 2026",
+     "01 Jan 1970",
+     "01 Jan 1970",
+     "Hui Jin-119463428-SKD0920014",
+     "Hui Jin fabric workflow",
+     "Plain Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabr",
+     "visibility"
+    ]
+   }
+  ],
+  "selects": [],
+  "inputs": [],
+  "docScrollW": 1440,
+  "innerW": 1440,
+  "overflow": false,
+  "mobile": {
+   "sw": 390,
+   "iw": 390
+  }
+ },
+ "order": {
+  "url": "https://weave.bloomscorp.com/logistic/custom-order/view/132440539",
+  "textLen": 17092,
+  "text": "🌸\nAnuprerna\n‹\n🏠\nDashboard\n🧑‍🤝‍🧑\nPEOPLE & CRAFT\n👥\nManage User\n🧵\nManage Artisans\n›\n🙌\nManage Skills\n📲\nManage Whatsapp\n›\n✅\nConsent Manager\n📋\nAudit Log\n🛍️\nPRODUCTS & CONTENT\n✍️\nManage Content\n›\n📖\nManage Story\n✏️\nManage Blog\n🎨\nManage Product\n›\n📂\nCategory\n🗂️\nSegment\n📁\nSub Category\n🎯\nProfile\n🔧\nFilters\n📦\nSKU Groups\n🌟\nSpecial Status\n🏷️\nTag\n✅\nFinished Product\n🪡\nFabric Product\n📚\nManage Catalogs\n🔎\nFilter Page SEO\n⚡\nOPERATIONS\n🚚\nManage Logistics\n🗄️\nManage Inventory\n💬\nManage Feedbacks\n⭐\nManage Reviews\n🌿\nManage Workflow\n›\n💸\nArtisan Payments\n💎\nWholesale Program\n🌱\nImpact Factor\n🛠️\nTOOLS & ADMIN\n⏰\nCron Jobs\n📊\nReport Center\n🤖\nAI Embeddings\n📧\nEmail Audit Log\n📈\nAds Conversion\n🔍\nTable Explorer\n🩺\nDiagnostics\n🪄\nSquish Studio\n⚙️\nSettings\n🚪\nLogout\nhome\n/\nLogistic\n/\nCustom Order\n/\nView\n/\n132440539\n\nDETAIL\n\nLINK WITH ZOHOEDIT ORDERCANCEL ORDER\n\nOrder #132440539\n\nPLACED\n\nZoho Order #\n\n29-05-2026 @ 12:00 AM\n\nSubtotal (INR)\n\n1,765,426.47\n\nWholesale Program Discount Applied (INR)\n\nN/A\n\nTotal (INR)\n\n1,765,426.47\n\nedit\nADJUST PRICING\n\nSHIPPING CHARGES (INR)\n\n17,499.53\n\nAdjusted Total (INR)\n\n1,782,926.00\n\nsticky_note_2\nGLOBAL NOTE\nSAVE\nSEND CONFIRMATION E-MAIL\nPARTIAL FULFILLMENT\nPARTIAL READY\ninventory\nPARTIAL READY\ncheck_circle\n\nReady #166662493\n\nReceived: Aug 13, 2026\n\nEDIT\n\nCheck Brown White Olive Pure Khadi 140 GSM Handwoven Fabric 36\n\nSKU: DRG1200736\n\nCustom Order Item #132440552\n\n50 METER\n\nReady\n\nReady #166211976\n\nReceived: Aug 8, 2026\n\nEDIT\n\nMatty Check Blue & White Pure Khadi 208 GSM Handspun & Handwoven Fabric\n\nSKU: DRG1200310\n\nCustom Order Item #132440557\n\n12 METER\n\nReady\n\nReady #163836343\n\nReceived: Aug 6, 2026\n\nEDIT\n\nHerringbone Multicolor 165 GSM Khadi Cotton Handwoven Fabric\n\nSKU: HNB4000066\n\nCustom Order Item #132440546\n\n50 METER\n\nReady\n\nCream Twill Pure Wool 210 GSM Handwoven Fabric\n\nSKU: WNB6000007\n\nCustom Order Item #132440560\n\n50 METER\n\nReady\n\nReady #163419293\n\nReceived: Aug 5, 2026\n\nEDIT\n\nMatty Check Blue & White Pure Khadi 208 GSM Handspun & Handwoven Fabric\n\nSKU: DRG1200310\n\nCustom Order Item #132440557\n\n12 METER\n\nReady\n\nReady #161989500\n\nReceived: Aug 1, 2026\n\nEDIT\n\nPlain Red Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000C\n\nCustom Order Item #132440540\n\n1 METER\n\nReady\n\nPlain Gold Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000A\n\nCustom Order Item #132440543\n\n1 METER\n\nReady\n\nReady #161854504\n\nReceived: Aug 1, 2026\n\nEDIT\n\nDenim Twill Blue Khadi Cotton 350 GSM Handwoven Fabric\n\nSKU: DML5000067\n\nCustom Order Item #132440547\n\n13 METER\n\nReady\n\nReady #160752408\n\nReceived: Jul 30, 2026\n\nEDIT\n\nCheck Red & Black Pure Cotton 146 GSM Handwoven Fabric\n\nSKU: DND1200272\n\nCustom Order Item #132440556\n\n50 METER\n\nReady\n\nReady #159988694\n\nReceived: Jul 28, 2026\n\nEDIT\n\nHoundstooth Check Pure Khadi 181 GSM Handspun & Handwoven Fabric\n\nSKU: DRG1200309\n\nCustom Order Item #132440544\n\n25 METER\n\nReady\n\nCheck Brown White Olive Pure Khadi 140 GSM Handwoven Fabric 36\n\nSKU: DRG1200736\n\nCustom Order Item #132440552\n\n37 METER\n\nReady\n\nMatty Check Blue & White Pure Khadi 208 GSM Handspun & Handwoven Fabric\n\nSKU: DRG1200310\n\nCustom Order Item #132440557\n\n25 METER\n\nReady\n\nReady #158609419\n\nReceived: Jul 25, 2026\n\nEDIT\n\nCheck Cream Brown Pure Wool 220 GSM Handwoven Fabric\n\nSKU: WML6000008\n\nCustom Order Item #132440561\n\n25 METER\n\nReady\n\nPlain Blue Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000G\n\nCustom Order Item #132440550\n\n1 METER\n\nReady\n\nReady #158609422\n\nReceived: Jul 25, 2026\n\nEDIT\n\nCheck Cream Brown Pure Wool 220 GSM Handwoven Fabric\n\nSKU: WML6000008\n\nCustom Order Item #132440561\n\n25 METER\n\nReady\n\nReady #155045188\n\nReceived: Jul 18, 2026\n\nEDIT\n\nWhite Base Multicolor Futki Khadi Cotton 170 GSM Handwoven Fabric\n\nSKU: DKD1250092\n\nCustom Order Item #132440541\n\n46 METER\n\nReady\n\nReady #153101776\n\nReceived: Jul 14, 2026\n\nEDIT\n\nDenim Twill Blue Khadi Cotton 350 GSM Handwoven Fabric\n\nSKU: DML5000067\n\nCustom Order Item #132440547\n\n62 METER\n\nReady\n\nReady #152709488\n\nReceived: Jul 13, 2026\n\nEDIT\n\n2s Single Kala cotton yarn\n\nSKU: 2SKCY20260602\n\nCustom Order Item #132448589\n\n50 METER\n\nReady\n\nReady #148911294\n\nReceived: Jul 6, 2026\n\nEDIT\n\n2/40 fine yarn natural indigo dyed\n\nSKU: 2FYNID20260602\n\nCustom Order Item #132450307\n\n50 METER\n\nReady\n\nlocal_shipping\nPARTIAL SHIPMENTS\ncheck_circle\n\nShipment #152709671 | DTDC\n\nDispatched: Jul 13, 2026\n\nTracking: https://www.aftership.com/track/dtdc/D10...\n\nZoho Package ID: PACKAGE\n\nEDIT\n\n2s Single Kala cotton yarn\n\nSKU: 2SKCY20260602\n\nCustom Order Item #132448589\n\n50 METER\n\nReady: 50 METER\n\nFulfilled\n\nShipment #148911427 | DTDC\n\nDispatched: Jul 6, 2026\n\nTracking: https://www.aftership.com/track/dtdc/D10...\n\nZoho Package ID: PACKAGE\n\nEDIT\n\n2/40 fine yarn natural indigo dyed\n\nSKU: 2FYNID20260602\n\nCustom Order Item #132450307\n\n50 METER\n\nReady: 50 METER\n\nFulfilled\n\ninventory_2\nFULL SHIPMENTS\n\nShipment | DTDC\n\nDispatched: Jul 13, 2026\n\nTracking: https://www.aftership.com/track/dtdc/D10...\n\nZoho Package ID: PACKAGE\n\nEDIT\n\n2s Single Kala cotton yarn\n\nSKU: 2SKCY20260602\n\nCustom Order Item #132448589\n\n50 METER\n\nShipped\n\nShipment | DTDC\n\nDispatched: Jul 6, 2026\n\nTracking: https://www.aftership.com/track/dtdc/D10...\n\nZoho Package ID: PACKAGE\n\nEDIT\n\n2/40 fine yarn natural indigo dyed\n\nSKU: 2FYNID20260602\n\nCustom Order Item #132450307\n\n50 METER\n\nShipped\n\nMADE TO ORDER ITEMS\n\nSTATUS: PROCESSING\n+ ADD ITEMS\n\nPlain Red Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000C\n\nedit\npublished_with_changes\n\nPrice: INR 1,168.50\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 1 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-SAK097000C\n\nIn Progress: 1 /8\n\nCompleted: 3 /8\n\nWhite Base Multicolor Futki Khadi Cotton 170 GSM Handwoven Fabric\n\nSKU: DKD1250092\n\nedit\npublished_with_changes\n\nPrice: INR 830.32\n\nQty: 46 METER\n\nPartial Shipments: 0\n\nReady: 46 METER\n\nFulfilled: 0 METER | Remaining: 46 METER\n\nWorkflow: Raj Vardhan-132440539-DKD1250092\n\nIn Progress: 0 /1\n\nCompleted: 1 /1\n\nBlack Kantha Embroidered Khadi & Cotton 140 GSM Handwoven Fabric\n\nSKU: KMD3000026\n\nedit\npublished_with_changes\n\nPrice: INR 993.70\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 0 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-KMD3000026\n\nIn Progress: 1 /6\n\nCompleted: 4 /6\n\nsticky_note_2\nNote: Aug 13 : Mariam will dispatch the Kantha fabric within 4-5 days\n\nPlain Gold Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000A\n\nedit\npublished_with_changes\n\nPrice: INR 1,168.50\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 1 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-SAK097000A\n\nIn Progress: 1 /8\n\nCompleted: 3 /8\n\nHoundstooth Check Pure Khadi 181 GSM Handspun & Handwoven Fabric\n\nSKU: DRG1200309\n\nedit\npublished_with_changes\n\nPrice: INR 903.73\n\nQty: 75 METER\n\nPartial Shipments: 0\n\nReady: 25 METER\n\nFulfilled: 0 METER | Remaining: 75 METER\n\nWorkflow: Raj Vardhan-132440539-DRG1200309\n\nIn Progress: 1 /6\n\nCompleted: 3 /6\n\nCheck Green Kantha Embroidered Pure Cotton 153 GSM Handwoven Fabric\n\nSKU: KMD3000006\n\nedit\npublished_with_changes\n\nPrice: INR 870.20\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 0 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-KMD3000006\n\nIn Progress: 1 /6\n\nCompleted: 4 /6\n\nsticky_note_2\nNote: Aug 13 : Mariam will dispatch the Kantha fabric within 4-5 days\n\nHerringbone Multicolor 165 GSM Khadi Cotton Handwoven Fabric\n\nSKU: HNB4000066\n\nedit\npublished_with_changes\n\nPrice: INR 885.23\n\nQty: 75 METER\n\nPartial Shipments: 0\n\nReady: 50 METER\n\nFulfilled: 0 METER | Remaining: 75 METER\n\nWorkflow: Raj Vardhan-132440539-HNB4000066\n\nIn Progress: 1 /6\n\nCompleted: 4 /6\n\nDenim Twill Blue Khadi Cotton 350 GSM Handwoven Fabric\n\nSKU: DML5000067\n\nedit\npublished_with_changes\n\nPrice: INR 1,028.60\n\nQty: 75 METER\n\nPartial Shipments: 0\n\nReady: 75 METER\n\nFulfilled: 0 METER | Remaining: 75 METER\n\nWorkflow: Raj Vardhan-132440539-DML5000067\n\nIn Progress: 0 /6\n\nCompleted: 6 /6\n\nStripe Green Kantha Embroidered Pure Khadi 140 GSM Handwoven Fabric\n\nSKU: KMD3000025\n\nedit\npublished_with_changes\n\nPrice: INR 1,079.20\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 0 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-KMD3000025\n\nIn Progress: 1 /6\n\nCompleted: 4 /6\n\nsticky_note_2\nNote: Aug 13 : Mariam will dispatch the Kantha fabric within 4-5 days\n\nPlain Blue Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000G\n\nedit\npublished_with_changes\n\nPrice: INR 1,168.50\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 1 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-SAK097000G\n\nIn Progress: 1 /8\n\nCompleted: 3 /8\n\nPlain Green Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\n\nSKU: SAK097000H\n\nedit\npublished_with_changes\n\nPrice: INR 1,168.50\n\nQty: 50 METER\n\nPartial Shipments: 0\n\nReady: 0 METER\n\nFulfilled: 0 METER | Remaining: 50 METER\n\nWorkflow: Raj Vardhan-132440539-SAK097000H\n\nIn Pr",
+  "headings": [
+   "Custom order impact"
+  ],
+  "buttons": [
+   "‹",
+   "🚪\nLogout",
+   "LINK WITH ZOHO",
+   "EDIT ORDER",
+   "CANCEL ORDER",
+   "edit\nADJUST PRICING",
+   "SAVE",
+   "SEND CONFIRMATION E-MAIL",
+   "PARTIAL FULFILLMENT",
+   "PARTIAL READY",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "EDIT",
+   "recycling\nRecalculate impact"
+  ],
+  "tables": [
+   {
+    "headers": [
+     "WORKFLOW",
+     "ORDER ITEM",
+     "TYPE",
+     "STATUS",
+     "PENDING REASON",
+     "FABRIC",
+     "CO2",
+     "WATER",
+     "ARTISAN",
+     "WOMEN ARTISAN",
+     "STITCHING",
+     "WOMEN STITCHING",
+     "TOTAL",
+     "VERSION",
+     "UPDATED"
+    ],
+    "rows": 24,
+    "firstRow": [
+     "#133044983",
+     "#132440540",
+     "FABRIC",
+     "COMPLETE",
+     "-",
+     "50 m",
+     "13.6 kg",
+     "300 L",
+     "100 hrs",
+     "65 hrs",
+     "0 hrs",
+     "N/A",
+     "100 hrs",
+     "v1",
+     "13-08-2026 12:42 PM"
+    ]
+   }
+  ],
+  "selects": [],
+  "inputs": [
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   },
+   {
+    "type": "checkbox",
+    "ph": "",
+    "val": "on"
+   }
+  ],
+  "docScrollW": 1440,
+  "innerW": 1440,
+  "overflow": false,
+  "mobile": {
+   "sw": 390,
+   "iw": 390
+  }
+ },
+ "instance2": {
+  "url": "https://weave.bloomscorp.com/manage-workflow/custom-process/view/114027735",
+  "textLen": 1569,
+  "text": "🌸\nAnuprerna\n‹\n🏠\nDashboard\n🧑‍🤝‍🧑\nPEOPLE & CRAFT\n👥\nManage User\n🧵\nManage Artisans\n›\n🙌\nManage Skills\n📲\nManage Whatsapp\n›\n✅\nConsent Manager\n📋\nAudit Log\n🛍️\nPRODUCTS & CONTENT\n✍️\nManage Content\n›\n📖\nManage Story\n✏️\nManage Blog\n🎨\nManage Product\n›\n📂\nCategory\n🗂️\nSegment\n📁\nSub Category\n🎯\nProfile\n🔧\nFilters\n📦\nSKU Groups\n🌟\nSpecial Status\n🏷️\nTag\n✅\nFinished Product\n🪡\nFabric Product\n📚\nManage Catalogs\n🔎\nFilter Page SEO\n⚡\nOPERATIONS\n🚚\nManage Logistics\n🗄️\nManage Inventory\n💬\nManage Feedbacks\n⭐\nManage Reviews\n🌿\nManage Workflow\n›\n💸\nArtisan Payments\n💎\nWholesale Program\n🌱\nImpact Factor\n🛠️\nTOOLS & ADMIN\n⏰\nCron Jobs\n📊\nReport Center\n🤖\nAI Embeddings\n📧\nEmail Audit Log\n📈\nAds Conversion\n🔍\nTable Explorer\n🩺\nDiagnostics\n🪄\nSquish Studio\n⚙️\nSettings\n🚪\nLogout\nhome\n/\nManage Workflow\n/\nCustom Process\n/\nView\n/\n114027735\nHUI JIN-112589015-JKD1000087 : HUI JIN FABRIC WORKFLOW\nProcess Status: INITIATED\nEstimated Start Date: 21-04-2026\nEstimated End Date: 17-11-2026\nAssociated Product:\nGeometric Blue Jamdani Pure Cotton 55 GSM Fabric 87\nJKD1000087\nStatus:\nPending/Created\nIn Progress/Initiated\nHalted\nCompleted\nengineering\nARTISAN ASSIGNMENT\n1 assigned | Fabric workflow\nsave\nSave\nexpand_less\nAvg Work Hours Per Metre\nAdd Artisan\nadd\nAdd\nA\nAnuprerna Fabric\nMetres\nBase Pay / m\nclose\nsticky_note_2Add Note\nYarn Processing\nYarn Processing\nengineering\nfeedback\nProcessed Yarn QC\nYarn Weaving\nedit\nengineering\nfeedback\nFabric Initial Sample\nschedule\nComplete Production\nedit\nFabric Finishing\nedit\nschedule\nWashing\nedit\nengineering\nfeedback\nschedule\nQC Fabric\nedit",
+  "headings": [
+   "HUI JIN-112589015-JKD1000087 : HUI JIN FABRIC WORKFLOW"
+  ],
+  "buttons": [
+   "‹",
+   "🚪\nLogout",
+   "save\nSave",
+   "expand_less",
+   "add\nAdd",
+   "close",
+   "sticky_note_2Add Note",
+   "View Feedback",
+   "View Feedback"
+  ],
+  "tables": [],
+  "selects": [],
+  "inputs": [
+   {
+    "type": "number",
+    "ph": "0.00",
+    "val": "8"
+   },
+   {
+    "type": "text",
+    "ph": "Search artisan by name...",
+    "val": ""
+   },
+   {
+    "type": "number",
+    "ph": "0.00",
+    "val": "1000"
+   },
+   {
+    "type": "number",
+    "ph": "0.00",
+    "val": ""
+   }
+  ],
+  "docScrollW": 1440,
+  "innerW": 1440,
+  "overflow": false,
+  "mobile": {
+   "sw": 390,
+   "iw": 390
+  }
+ },
+ "hub": {
+  "url": "https://weave.bloomscorp.com/manage-workflow",
+  "textLen": 984,
+  "text": "🌸\nAnuprerna\n‹\n🏠\nDashboard\n🧑‍🤝‍🧑\nPEOPLE & CRAFT\n👥\nManage User\n🧵\nManage Artisans\n›\n🙌\nManage Skills\n📲\nManage Whatsapp\n›\n✅\nConsent Manager\n📋\nAudit Log\n🛍️\nPRODUCTS & CONTENT\n✍️\nManage Content\n›\n📖\nManage Story\n✏️\nManage Blog\n🎨\nManage Product\n›\n📂\nCategory\n🗂️\nSegment\n📁\nSub Category\n🎯\nProfile\n🔧\nFilters\n📦\nSKU Groups\n🌟\nSpecial Status\n🏷️\nTag\n✅\nFinished Product\n🪡\nFabric Product\n📚\nManage Catalogs\n🔎\nFilter Page SEO\n⚡\nOPERATIONS\n🚚\nManage Logistics\n🗄️\nManage Inventory\n💬\nManage Feedbacks\n⭐\nManage Reviews\n🌿\nManage Workflow\n›\n💸\nArtisan Payments\n💎\nWholesale Program\n🌱\nImpact Factor\n🛠️\nTOOLS & ADMIN\n⏰\nCron Jobs\n📊\nReport Center\n🤖\nAI Embeddings\n📧\nEmail Audit Log\n📈\nAds Conversion\n🔍\nTable Explorer\n🩺\nDiagnostics\n🪄\nSquish Studio\n⚙️\nSettings\n🚪\nLogout\nhome\n/\nManage Workflow\naccount_tree\nManage Template\nprecision_manufacturing\nManage Process\nprecision_manufacturing\nManage Custom Process\npayments\nArtisan Payments\nforum\nManage Feedback\nforum\nManage Custom Feedback",
+  "headings": [
+   "Manage Template",
+   "Manage Process",
+   "Manage Custom Process",
+   "Artisan Payments",
+   "Manage Feedback",
+   "Manage Custom Feedback"
+  ],
+  "buttons": [
+   "‹",
+   "🚪\nLogout"
+  ],
+  "tables": [],
+  "selects": [],
+  "inputs": [],
+  "docScrollW": 1440,
+  "innerW": 1440,
+  "overflow": false,
+  "mobile": {
+   "sw": 390,
+   "iw": 390
+  }
+ },
+ "_consoleErrors": [
+  "ERROR TypeError: Cannot read properties of undefined (reading 'name')\n    at template (https://weave.bloomscorp.com/chunk-IKZ6LJXM.js:4:60395)\n    at Nd (https:",
+  "ERROR TypeError: Cannot read properties of undefined (reading 'name')\n    at template (https://weave.bloomscorp.com/chunk-IKZ6LJXM.js:4:60395)\n    at Nd (https:",
+  "ERROR TypeError: Cannot read properties of undefined (reading 'name')\n    at template (https://weave.bloomscorp.com/chunk-IKZ6LJXM.js:4:60395)\n    at Nd (https:",
+  "ERROR TypeError: Cannot read properties of undefined (reading 'name')\n    at template (https://weave.bloomscorp.com/chunk-IKZ6LJXM.js:4:60395)\n    at Nd (https:",
+  "ERROR TypeError: Cannot read properties of undefined (reading 'name')\n    at template (https://weave.bloomscorp.com/chunk-IKZ6LJXM.js:4:60395)\n    at Nd (https:",
+  "ERROR TypeError: Cannot read properties of undefined (reading 'name')\n    at template (https://weave.bloomscorp.com/chunk-IKZ6LJXM.js:4:60395)\n    at Nd (https:",
+  "Failed to load resource: the server responded with a status of 404 ()"
+ ]
+}

@@ -1,11 +1,10 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
-import { AppShell } from '@/components/navigation/AppShell';
+import type { Metadata } from "next";
+import "./globals.css";
+import PageFeedbackWidget from "@/components/feedback/PageFeedbackWidget";
 
 export const metadata: Metadata = {
-  title: 'Weave Admin Dashboard',
-  description: 'Anuprerna Weave Platform Admin & Operations Center',
+  title: "Weave — Anuprerna CMS",
+  description: "Internal CMS for Anuprerna Artisan Alliance",
 };
 
 export default function RootLayout({
@@ -16,11 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <AppShell>{children}</AppShell>
-        </AuthProvider>
+        {children}
+        <PageFeedbackWidget />
       </body>
     </html>
   );
 }
-

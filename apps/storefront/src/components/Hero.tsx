@@ -110,19 +110,25 @@ export default function Hero() {
           </div>
 
           {/* Secondary links — mode-aware: Wholesale link removed in B2C */}
-          <div className='mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm sm:text-base'>
-            <Link href='/products/fabric' className='group text-[#7D5B20] hover:text-[#6c5b48] underline-offset-4 hover:underline inline-flex items-center gap-1.5'>
+          <div className='mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:text-base'>
+            <Link
+              href='/products/fabric'
+              className='group border border-[#8E7862] hover:border-[#6c5b48] bg-[#fffcf7] hover:bg-white rounded-lg px-4 py-1.5 text-[#7D5B20] hover:text-[#6c5b48] transition inline-flex items-center gap-1.5 shadow-2xs'
+            >
               <i className='fb_animate'><b/><span/></i> Fabrics
             </Link>
-            <Link href='/products/finished' className='group text-[#7D5B20] hover:text-[#6c5b48] underline-offset-4 hover:underline inline-flex items-center gap-1.5'>
+            <Link
+              href='/products/finished'
+              className='group border border-[#8E7862] hover:border-[#6c5b48] bg-[#fffcf7] hover:bg-white rounded-lg px-4 py-1.5 text-[#7D5B20] hover:text-[#6c5b48] transition inline-flex items-center gap-1.5 shadow-2xs'
+            >
               <i className='fb_animate'><b/><span/></i> Finished Goods
             </Link>
             {isB2C ? (
-              <Link href='/wholesale-partner-program' className='text-gray-600 hover:text-[#7D5B20] underline-offset-4 hover:underline'>
+              <Link href='/wholesale-partner-program' className='text-gray-600 hover:text-[#7D5B20] underline-offset-4 hover:underline ml-1'>
                 Talk to us
               </Link>
             ) : (
-              <Link href='/wholesale-partner-program' className='text-gray-600 hover:text-[#7D5B20] underline-offset-4 hover:underline'>
+              <Link href='/wholesale-partner-program' className='text-gray-600 hover:text-[#7D5B20] underline-offset-4 hover:underline ml-1'>
                 Talk to us &middot; Wholesale
               </Link>
             )}

@@ -1,0 +1,29 @@
+{
+  "sections": [
+    {
+      "label": "Top-level",
+      "items": ["Dashboard"]
+    },
+    {
+      "label": "PEOPLE & CRAFT",
+      "items": ["Manage User", "Manage Artisans", "Manage Whatsapp"]
+    },
+    {
+      "label": "PRODUCTS & CONTENT",
+      "items": ["Manage Content", "Manage Product", "Manage Catalogs"]
+    },
+    {
+      "label": "OPERATIONS",
+      "items": [
+        "Manage Logistics",
+        "Manage Inventory",
+        "Manage Feedbacks",
+        "Manage Reviews",
+        "Manage Workflow",
+        "Artisan Payments",
+        "Wholesale Program",
+        "Impact Factor"
+      ]
+    }
+  ]
+}

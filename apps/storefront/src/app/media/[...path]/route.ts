@@ -21,9 +21,6 @@ import { LOOM_BASE_URL } from '@/lib/loom/config';
 
 export const runtime = 'nodejs';
 
-// Redirect status codes the backend uses for its live-original fallback.
-const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
-
 export async function GET(
   _req: Request,
   ctx: { params: Promise<{ path: string[] }> },
@@ -37,35 +34,34 @@ export async function GET(
   const upstreamUrl = LOOM_BASE_URL + '/media/' + encoded;
   const s3FallbackUrl = `https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/${rawPath}`;
 
-  let upstream: Response | null = null;
   try {
-    upstream = await fetch(upstreamUrl, { redirect: 'manual' });
+    let res = await fetch(upstreamUrl, { redirect: 'follow' });
+    if (!res.ok) {
+      res = await fetch(s3FallbackUrl, { redirect: 'follow' });
+    }
+    if (res.ok && res.body) {
+      const headers: Record<string, string> = {
+        'Content-Type': res.headers.get('content-type') || 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Access-Control-Allow-Origin': '*',
+      };
+      return new Response(res.body, { status: 200, headers });
+    }
   } catch {
-    return Response.redirect(s3FallbackUrl, 302);
+    try {
+      const fbRes = await fetch(s3FallbackUrl, { redirect: 'follow' });
+      if (fbRes.ok && fbRes.body) {
+        const headers: Record<string, string> = {
+          'Content-Type': fbRes.headers.get('content-type') || 'image/jpeg',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
+        };
+        return new Response(fbRes.body, { status: 200, headers });
+      }
+    } catch {
+      // ignore
+    }
   }
 
-  // Pass the fallback redirect (302 -> live Bloomscorp) through untouched.
-  if (upstream && REDIRECT_STATUSES.has(upstream.status)) {
-    const location = upstream.headers.get('location');
-    return new Response(null, {
-      status: upstream.status,
-      headers: location ? { Location: location } : { Location: s3FallbackUrl },
-    });
-  }
-
-  if (!upstream || upstream.status !== 200 || !upstream.body) {
-    return Response.redirect(s3FallbackUrl, 302);
-  }
-
-  // Stream the backend response straight through, preserving Content-Type and
-  // the long-lived immutable cache header the backend set.
-  const headers: Record<string, string> = {
-    'Content-Type': upstream.headers.get('content-type') || 'application/octet-stream',
-    'Cache-Control':
-      upstream.headers.get('cache-control') || 'public, max-age=31536000, immutable',
-  };
-  const len = upstream.headers.get('content-length');
-  if (len) headers['Content-Length'] = len;
-
-  return new Response(upstream.body, { status: 200, headers });
+  return Response.redirect(s3FallbackUrl, 302);
 }

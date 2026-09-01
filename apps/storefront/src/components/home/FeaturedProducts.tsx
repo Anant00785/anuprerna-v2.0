@@ -225,7 +225,7 @@ export function FeaturedProducts() {
           <Link
             href={activeTabKey === "fabrics" ? "/products/fabric" : "/products/finished"}
             target="_blank"
-            className="text-lg sm:text-3xl py-2 fb_animate_icon_button text-gray-900 font-medium inline-flex items-center"
+            className="group border border-[#8E7862] hover:border-[#6c5b48] bg-[#fffcf7] hover:bg-white rounded-lg px-4 py-1.5 text-sm sm:text-base text-[#7D5B20] hover:text-[#6c5b48] transition inline-flex items-center gap-1.5 shadow-2xs w-fit my-2"
           >
             <i className="fb_animate">
               <b></b>

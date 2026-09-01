@@ -1,6 +1,5 @@
-import LoginPage from './login/page';
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return <LoginPage />;
+export default function RootPage() {
+  redirect("/dashboard");
 }
-

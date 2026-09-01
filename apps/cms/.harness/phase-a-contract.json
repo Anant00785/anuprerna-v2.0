@@ -1,0 +1,49 @@
+{
+  "phase": "A",
+  "version": "0.1.0",
+  "description": "Phase A foundation contract — shell, login, design system. Etsy-calm aesthetic: warm off-white, serif headings, spacious layout, one coherent visual language.",
+  "baseUrl": "http://localhost:3010",
+  "routes": [
+    { "path": "/login",     "label": "Login page" },
+    { "path": "/dashboard", "label": "Dashboard placeholder" },
+    { "path": "/listings",  "label": "Listings placeholder" }
+  ],
+  "principles": {
+    "no_overflow": {
+      "description": "No horizontal page overflow at 1280px or 1440px viewport width",
+      "gate": "hard"
+    },
+    "no_console_errors": {
+      "description": "No unhandled JS errors or React hydration errors in console",
+      "gate": "hard"
+    },
+    "shell_present": {
+      "description": "Dashboard and Listings pages show the AppShell: left sidebar with nav items, top bar with user area. All 12 nav routes present (Dashboard, Listings, Content, Users, Orders, Inventory, Reviews, Artisans, Loyalty, Reports, Workflow, Settings).",
+      "gate": "hard"
+    },
+    "login_form": {
+      "description": "Login page has email input, password input, and submit button. No shell/sidebar on login page — centered card layout.",
+      "gate": "hard"
+    },
+    "etsy_calm": {
+      "description": "Visual language is calm and warm: off-white/warm canvas background (#FAF9F7 range), serif font for headings (Playfair Display), amber/brass accent color, generous whitespace, NOT generic dark-admin.",
+      "gate": "soft"
+    },
+    "spacious_layout": {
+      "description": "Content area has ample padding (min 24px). Nav items have sufficient hit area (min 32px height). No cramped text.",
+      "gate": "soft"
+    },
+    "nav_active_state": {
+      "description": "Currently active nav item is visually distinguished (warm amber background tint on the active item).",
+      "gate": "soft"
+    },
+    "datalist_structure": {
+      "description": "Listings page shows a DataList with: search input, filter button, Add button, table with checkboxes and columns (Product, Category, Type, Price, Stock, Status), pagination area.",
+      "gate": "hard"
+    },
+    "loading_not_stuck": {
+      "description": "No page shows Loading... indefinitely. All placeholder pages render immediately.",
+      "gate": "hard"
+    }
+  }
+}

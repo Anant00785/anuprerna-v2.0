@@ -35,7 +35,10 @@ export default function FeaturedProducts() {
         <div className='my-5 lg:my-0 lg:flex-[30%] mx-2 lg:mx-0'>
           <h2 className='text-3xl sm:text-4xl'>Our</h2>
           <h2 className='text-3xl sm:text-4xl text-[#7D5B20] font-medium mb-3'>Featured Products</h2>
-          <Link href='/products/finished' className='text-lg sm:text-3xl py-2 fb_animate_icon_button'>
+          <Link
+            href={t.finished ? '/products/finished' : '/products/fabric'}
+            className='group border border-[#8E7862] hover:border-[#6c5b48] bg-[#fffcf7] hover:bg-white rounded-lg px-4 py-1.5 text-sm sm:text-base text-[#7D5B20] hover:text-[#6c5b48] transition inline-flex items-center gap-1.5 shadow-2xs w-fit my-2'
+          >
             <i className='fb_animate'><b/><span/></i> Discover More
           </Link>
         </div>

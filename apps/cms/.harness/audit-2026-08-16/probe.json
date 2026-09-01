@@ -1,0 +1,34 @@
+{
+ "disclosureCount": 14,
+ "orderTextLen": 9446,
+ "item_132450307": "NOT FOUND IN TEXT",
+ "item_132448589": "NOT FOUND IN TEXT",
+ "hasNoteMariam": false,
+ "noteMentions": 0,
+ "tableHeaders": [
+  "ITEM",
+  "PRICE",
+  "ARTISAN",
+  "ORDERED",
+  "READY",
+  "DISPATCHED",
+  "WORKFLOW",
+  "STAGES",
+  ""
+ ],
+ "scrolledRight": {
+  "sl": 354,
+  "sw": 1112,
+  "cw": 758
+ },
+ "tableCount": 1,
+ "h2h3": [
+  "Custom Order #132440539",
+  "Production",
+  "Pricing"
+ ],
+ "instanceText": "Weave\nANUPRERNA CMS\nDashboard\n1\n\nPRODUCTS\n\n2\n✓4\nListings\n2\n✓1\nCategories\nSegments\nSub-categories\n✓2\nSKU Groups\nSpecial Status\nFilters\nProfiles\n✓1\n\nCUSTOMERS\n\n1\n✓2\nUsers\n1\nReviews\n✓1\nOrder Feedback\n✓1\n\nCOMMERCE\n\n2\n✓2\nOrders\n✓1\nCustom Orders\n2\nCustom Products\nInventory\nLogistics\nWholesale\n✓1\n\nJOB\n\n2\nProduction Jobs\n1\nAll Jobs\nJobs Templates\nJobs Feedback\n1\nTraceability\n\nARTISANS\n\nArtisans\nSkills\nCatalog\n\nCONTENT\n\n1\nContent\n1\nStory Review\n\nOPERATIONS\n\nReports\nCron Jobs\nAI Embeddings\nWhatsApp\nTable Explorer\nPage Feedback\n12\n✓11\nSettings\nRebuild Map\nImpact Factor\nQA Center\nCode Review\nWorkflow\n/\nProduction\n/\nRaj Vardhan-132440539-SAK097000C\nA\nAdmin\n\nDRAFT — Workflow preview, for review\n\nProduction / traceability spine ported from Loom. Read-only — money & job logic still needs Amit's verification before launch.\n\nPlain Red Natural Ketya Silk Cotton Blend 150 GSM Handwoven Fabric\nINITIATED\n\nSKU SAK097000C · Fabrics · Custom Order #132440539\n\nOrder line: 50 METER\n\nTemplate: Yarn -> Base fabric -> Print/dye\n\nEdit job\nTraceability\nCustom Order\n\nOn schedule\n\nCurrent stage: Yarn Weaving · Next: Yarn Weaving › Complete Production · due in 4d\n\nPLANNED\n\n12 Sept 2026\n\nPROJECTED\n\n12 Sept 2026\n\nProgress\n38% · 1/4 stages done · 1 in progress · 3/8 tasks\n\nARTISAN ASSIGNMENT (2)\n\nA\nAnuprerna Fabric\n50 METER\nJob level\nB\nBudhadeb Dutta\nTask: Fabric Initial Sample · 50 METER\nOrder line:\n50 METER\nCommitted at job level: 50 METER\n\nAssignments are mirrored from live Loom; last mirror sync 17 Jul 2026 (job & stage) · 27 Jul 2026 (task). A name here can lag live.\n\nsandbox-only write: refusing to edit a live-synced custom workflow — this job was synced from live Loom, so the sandbox refuses to rewrite its row.\n\n2 hrs/metre average\n\nSCHEDULE · MOVE OR EXTEND\n\nJob starts\nEnds\n29 Aug 2026\nSTAGE\tSTARTS\tDAYS\tENDS\nYarn Processing\t3 Jun 2026\t\t11 Jun 2026\nYarn Weaving\t11 Jun 2026\t\t5 Aug 2026\nFabric Finishing\t5 Aug 2026\t\t15 Aug 2026\nFabric Dyeing\t15 Aug 2026\t\t29 Aug 2026\n\nsandbox-only write: refusing to edit a live-synced custom workflow — this job was synced from live Loom, so the sandbox refuses to rewrite its row.\n\nPRODUCTION PIPELINE · LIVE STATUS\n\nWork runs top-to-bottom · start with the card marked Next up, or drag it right\nSandbox test DB only\nTO DO\nIN PROGRESS\nDONE\n\nYarn Processing\n\nPRIMARY\n29d late\nYarn Processing\nDone 9 Jul 2026\nProcessed Yarn QC\nDone 9 Jul 2026\nAPPROVED\n2\n\nYarn Weaving\n\nComplete Production\nDue in 4d\nNEXT UPMark done\nFabric Initial Sample\nDone 21 Jul 2026\nAPPROVED\nBD\n3\n\nFabric Finishing\n\nWashing\nDue in 9d\nBase Fabric QC\nDue in 13d\n4\n\nFabric Dyeing\n\nSampling Completion\nDue in 23d\nQC Fabric\nDue in 27d\nFeedback",
+ "instanceHasHalted": false,
+ "instance2Artisans": "ARTISANS\n\nArtisans\nSkills\nCatalog\n\nCONTENT\n\n1\nContent\n1\nStory Review\n\nOPERATIONS\n\nReports\nCron Jobs\nAI Embeddings\nWhatsApp\nTable Explorer\nPage Feedback\n12\n✓11\nSettings\nRebuild Map\nImpact Factor\nQA Center\nCode Review\nWorkflow\n/\nProduction\n/\nHui Jin-112589015-JKD1000087\nA\nAdmin\n\nDRAFT — Workflow preview, for review\n\nProduction / traceability spine ported from Loom. Read-only — money & job logic still needs Amit's verification before launch.\n\nGeometric Blue Jamdani Pure Cotton 55 GSM Fabric 87\nINITIATED\n\nSKU JKD1000087 · Fabrics · Custom Order #112589015\n\nOrder line: 1000 METER\n\nTemplate: Yarn -> Fabric\n\nEdit job\nTraceability\nCustom Order\n\nOn schedule\n\nCurrent stage: Yarn Weaving · Next: Yarn W",
+ "consoleErrors": []
+}
