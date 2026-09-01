@@ -133,10 +133,30 @@ export class RegisterRequestDto {
   @IsString()
   contactNumber?: string;
 
-  @ApiPropertyOptional({ example: "ROLE_CUSTOMER", description: "Optional role (e.g. ROLE_CUSTOMER, ROLE_SUPER_USER)." })
+  @ApiPropertyOptional({ example: "ROLE_CUSTOMER", description: "Optional role (e.g. ROLE_CUSTOMER, ROLE_SUPER_USER, ROLE_WHOLESALE)." })
   @IsOptional()
   @IsString()
   role?: string;
+
+  @ApiPropertyOptional({ example: "b2c", description: "Buyer Type: b2c (Individual) or b2b (Business)." })
+  @IsOptional()
+  @IsString()
+  buyerType?: string;
+
+  @ApiPropertyOptional({ example: "myself", description: "Buyer Choice: myself or business." })
+  @IsOptional()
+  @IsString()
+  buyerChoice?: string;
+
+  @ApiPropertyOptional({ example: "Studio Studio LLP", description: "Company / Business Name." })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional({ example: "19AAACH7409R1ZZ", description: "GST Number or Tax ID." })
+  @IsOptional()
+  @IsString()
+  gstNumber?: string;
 }
 
 /** Swagger schema for Email specific registration. */
@@ -160,6 +180,26 @@ export class RegisterEmailRequestDto {
   @IsOptional()
   @IsString()
   contactNumber?: string;
+
+  @ApiPropertyOptional({ example: "b2c", description: "Buyer Type: b2c (Individual) or b2b (Business)." })
+  @IsOptional()
+  @IsString()
+  buyerType?: string;
+
+  @ApiPropertyOptional({ example: "myself", description: "Buyer Choice: myself or business." })
+  @IsOptional()
+  @IsString()
+  buyerChoice?: string;
+
+  @ApiPropertyOptional({ example: "Studio Studio LLP", description: "Company / Business Name." })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional({ example: "19AAACH7409R1ZZ", description: "GST Number or Tax ID." })
+  @IsOptional()
+  @IsString()
+  gstNumber?: string;
 
   @ApiPropertyOptional({ description: "Optional nested tenant object from Loom clients." })
   @IsOptional()

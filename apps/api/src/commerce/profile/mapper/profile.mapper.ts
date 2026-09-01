@@ -80,5 +80,9 @@ export function mapTenantProfile(row: any): any {
     email: row.email ?? "",
     phone: row.contactNumber ?? row.phone ?? "",
     contactNumber: row.contactNumber ?? row.phone ?? "",
+    buyerType: row.buyerType || (row.roles?.includes('ROLE_WHOLESALE') ? 'b2b' : 'b2c'),
+    buyerChoice: row.buyerChoice || (row.buyerType === 'b2b' ? 'business' : 'myself'),
+    companyName: row.companyName || "",
+    gstNumber: row.gstNumber || row.gstin || "",
   };
 }
