@@ -11,6 +11,7 @@ import CodeSignIn from './CodeSignIn';
 // The SAME question the code lane asks after verification — one component,
 // so the two account-creating lanes cannot ask two different questions.
 import BuyerTypeQuestion, { type SourcingChoice } from '@/components/account/BuyerTypeQuestion';
+import { useBuyerMode } from '@/components/BuyerModeProvider';
 
 // Hero image URL — same asset the live Angular site uses
 const AUTH_HERO = 'https://anuprerna.com/assets/img/auth.jpeg';
@@ -515,6 +516,7 @@ export default function AuthShell() {
   const codeMode = params.get('mode') === 'code' && !!invitedEmail;
 
   const [step, setStep] = useState<Step>(codeMode ? 'code' : invitedEmail ? 'email' : 'landing');
+  const { mode: currentBuyerMode, setMode: setBuyerMode } = useBuyerMode();
 
   // AUTO-REDIRECT, WITH ONE EXCEPTION.
   //
@@ -590,18 +592,50 @@ export default function AuthShell() {
   const cardContent = (
     <>
       {/* Brand mark */}
-      <div className='flex items-center gap-3 mb-6'>
+      <div className='flex items-center gap-3 mb-5'>
         <div className='w-9 h-9 rounded-full border border-clay flex items-center justify-center shrink-0'>
           <span className='text-clay font-semibold text-base leading-none'>A</span>
         </div>
         <span className='text-xs font-medium tracking-[.22em] text-clay uppercase'>Anuprerna</span>
       </div>
 
+      {/* Account Type Selector: Personal vs Business */}
+      <div className='mb-6 p-1 bg-[#F5F2ED] rounded-xl flex items-center border border-bark/15 shadow-inner'>
+        <button
+          type='button'
+          onClick={() => setBuyerMode('b2c')}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+            currentBuyerMode !== 'b2b'
+              ? 'bg-white text-[#7D5B20] shadow-sm font-semibold'
+              : 'text-black/55 hover:text-black'
+          }`}
+        >
+          <span className='material-symbols-outlined text-[16px]'>person</span>
+          For myself
+        </button>
+        <button
+          type='button'
+          onClick={() => setBuyerMode('b2b')}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+            currentBuyerMode === 'b2b'
+              ? 'bg-[#7D5B20] text-white shadow-sm font-semibold'
+              : 'text-black/55 hover:text-black'
+          }`}
+        >
+          <span className='material-symbols-outlined text-[16px]'>domain</span>
+          For my business
+        </button>
+      </div>
+
       {step === 'landing' && (
         <>
-          <h1 className='text-2xl font-medium text-black mb-1'>Welcome</h1>
-          <p className='text-sm text-black/55 mb-8'>
-            Continue with your email — we&apos;ll send you a sign-in code, or you can use a password if you have one.
+          <h1 className='text-2xl font-medium text-black mb-1'>
+            {currentBuyerMode === 'b2b' ? 'Business Wholesale Sign In' : 'Welcome'}
+          </h1>
+          <p className='text-sm text-black/55 mb-6'>
+            {currentBuyerMode === 'b2b'
+              ? 'Sign in to access wholesale volume pricing, sample swatches, and bulk ordering.'
+              : "Continue with your email — we'll send you a sign-in code, or you can use a password if you have one."}
           </p>
 
           <div className='space-y-3'>

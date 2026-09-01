@@ -107,16 +107,12 @@ export function BuyerModeProvider({ children }: { children: React.ReactNode }) {
   }, [user, loading]);
 
   const setMode = useCallback((m: BuyerMode) => {
-    // A signed-in buyer's mode is their ACCOUNT's, not a toggle's. Refusing here
-    // rather than in the toggle component means no other caller can route around
-    // it either. The toggle reads lockedByAccount and explains itself.
-    if (lockedByAccount) return;
     setModeState(m);
     if (typeof document !== 'undefined') {
       document.cookie =
         BUYER_MODE_COOKIE + '=' + m + '; path=/; max-age=' + BUYER_MODE_MAX_AGE + '; SameSite=Lax';
     }
-  }, [lockedByAccount]);
+  }, []);
 
   return (
     <Ctx.Provider

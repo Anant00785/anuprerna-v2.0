@@ -34,8 +34,11 @@ import { SOCIAL_LOGIN_ENABLED } from '../../lib/flags';
 // open — it is not readable for an arbitrary third-party address without one.
 // =====================================================================================
 
+import { useBuyerMode } from '@/components/BuyerModeProvider';
+
 export default function LoginModal({ open, onClose, defaultEmail }: { open: boolean; onClose: () => void; defaultEmail?: string }) {
   const { login } = useAuth();
+  const { mode: currentBuyerMode, setMode: setBuyerMode } = useBuyerMode();
   const [email, setEmail] = useState(defaultEmail ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -60,13 +63,6 @@ export default function LoginModal({ open, onClose, defaultEmail }: { open: bool
 
   if (!open) return null;
 
-  // COME BACK TO WHERE THEY WERE. The password and code lanes both sign in
-  // WITHOUT leaving the page — the modal simply closes and the product is still
-  // underneath it, which is the whole reason sign-in is a modal here. The one
-  // link that does navigate is 'Create one', so it carries the current URL and
-  // /auth returns the buyer to it rather than dropping them on the profile page.
-  // (Guarded for SSR: this component only renders after a click, but the guard
-  // keeps it honest if that ever changes.)
   const here = typeof window === 'undefined'
     ? ''
     : window.location.pathname + window.location.search;
@@ -84,8 +80,6 @@ export default function LoginModal({ open, onClose, defaultEmail }: { open: bool
       onClose();
       return;
     }
-    // A PASSWORDLESS account cannot satisfy any password. Send them to the lane
-    // that works instead of leaving them re-typing a password that does not exist.
     if (res.passwordless) {
       setCodeReason('This account signs in with an emailed code, not a password.');
       setMode('code');
@@ -105,7 +99,6 @@ export default function LoginModal({ open, onClose, defaultEmail }: { open: bool
   };
 
   const social = () => {
-    // TODO(social-oauth-domain): wire /authenticate/social once redirect domain configured for demo
     alert('Social sign-in is not enabled for this demo (OAuth redirect domain not configured). Please use email sign-in.');
   };
 
@@ -132,8 +125,42 @@ export default function LoginModal({ open, onClose, defaultEmail }: { open: bool
           </div>
         ) : (
           <>
-            <h2 className='text-2xl font-medium text-clay mb-1'>Sign in</h2>
-            <p className='text-sm text-black/60 mb-6'>Access your orders, wishlist and faster checkout.</p>
+            <h2 className='text-2xl font-medium text-clay mb-1'>
+              {currentBuyerMode === 'b2b' ? 'Business Wholesale Sign In' : 'Sign in'}
+            </h2>
+            <p className='text-sm text-black/60 mb-4'>
+              {currentBuyerMode === 'b2b'
+                ? 'Access wholesale tier pricing, volume discounts and custom orders.'
+                : 'Access your orders, wishlist and faster checkout.'}
+            </p>
+
+            {/* Account Type Selector */}
+            <div className='mb-5 p-1 bg-[#F5F2ED] rounded-xl flex items-center border border-bark/15 shadow-inner'>
+              <button
+                type='button'
+                onClick={() => setBuyerMode('b2c')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  currentBuyerMode !== 'b2b'
+                    ? 'bg-white text-[#7D5B20] shadow-sm font-semibold'
+                    : 'text-black/55 hover:text-black'
+                }`}
+              >
+                <span className='material-symbols-outlined text-[15px]'>person</span>
+                For myself
+              </button>
+              <button
+                type='button'
+                onClick={() => setBuyerMode('b2b')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  currentBuyerMode === 'b2b'
+                    ? 'bg-[#7D5B20] text-white shadow-sm font-semibold'
+                    : 'text-black/55 hover:text-black'
+                }`}
+              >
+                <span className='material-symbols-outlined text-[15px]'>domain</span>
+                For my business
+              </button>
+            </div>
 
             <form onSubmit={submit} className='space-y-4'>
               <div>

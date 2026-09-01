@@ -146,12 +146,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <SiteFooter />
             <CookieConsent />
             {feedbackEnabled && <PageFeedbackWidget />}
-              {/* Buyer-mode switcher: global, unobtrusive fixed control (desktop).
-                 Mounted here in the layout (not SiteHeader) to avoid the busy header
-                 edit-lane; flips B2C<->B2B session mode. See BuyerModeToggle TODO. */}
-              <div className='fixed bottom-4 left-4 z-[110] hidden lg:flex items-center rounded-full border border-gray-300 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur'>
-                <BuyerModeToggle />
-              </div>
             </BuyerModeProvider>
           </CurrencyProvider>
         </AuthProvider>
