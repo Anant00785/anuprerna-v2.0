@@ -52,13 +52,13 @@ function WholesaleInvitation() {
             <span className='font-semibold'>Buying for a business?</span>{' '}
             <span className='text-white/90'>Log in as a wholesale buyer for bulk pricing, pre-order &amp; MOQ.</span>
           </p>
-          <button
-            type='button'
-            onClick={() => setMode('b2b')}
-            className='inline-flex items-center gap-2 whitespace-nowrap bg-white text-[#7D5B20] px-6 py-3 rounded-lg font-semibold hover:bg-[#fffcf7] transition-colors shadow-sm'>
+          <a
+            href='/auth'
+            className='inline-flex items-center gap-2 whitespace-nowrap bg-white text-[#7D5B20] px-6 py-3 rounded-lg font-semibold hover:bg-[#fffcf7] transition-colors shadow-sm'
+          >
             <span className='material-symbols-outlined text-[18px]'>storefront</span>
             Log in as a wholesale buyer
-          </button>
+          </a>
         </div>
       </div>
     </section>

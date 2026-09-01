@@ -98,13 +98,12 @@ export function BuyerModeProvider({ children }: { children: React.ReactNode }) {
       wasAuthedRef.current = true;
       const bt: BuyerMode = (user as { buyerType?: unknown }).buyerType === 'b2b' ? 'b2b' : 'b2c';
       setModeFromAuth(bt);
-    } else if (wasAuthedRef.current) {
-      // transitioned authenticated -> logged out: revert to guest.
+    } else {
+      // Not signed in: always standard normal retail website
       wasAuthedRef.current = false;
       setModeFromAuth(DEFAULT_BUYER_MODE);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading]);
+  }, [user, loading, setModeFromAuth]);
 
   const setMode = useCallback((m: BuyerMode) => {
     setModeState(m);
