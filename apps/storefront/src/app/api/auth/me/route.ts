@@ -57,9 +57,20 @@ export async function GET() {
     const profile = (res?.entity ??
       (res as Record<string, unknown>)?.customer ??
       res) as Record<string, unknown>;
-    // Authenticated buyer-mode = profile.buyerType; absent (live pass-through) => b2c.
+    const tenant = (profile?.tenant ?? profile) as Record<string, unknown>;
+    const name = (tenant?.name ?? profile?.name ?? '') as string;
+    const email = (tenant?.email ?? profile?.email ?? '') as string;
     const buyerMode = profile?.buyerType === 'b2b' ? 'b2b' : 'b2c';
-    const response = NextResponse.json({ authenticated: true, profile });
+
+    const normalizedProfile = {
+      ...profile,
+      name,
+      firstName: name.split(' ')[0] || 'Member',
+      email,
+      buyerType: buyerMode,
+    };
+
+    const response = NextResponse.json({ authenticated: true, profile: normalizedProfile });
     response.cookies.set(BUYER_MODE_COOKIE, buyerMode, {
       httpOnly: false, // client BuyerModeProvider reads this via document.cookie
       secure: true,

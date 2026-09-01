@@ -149,14 +149,7 @@ export default function CodeSignIn({
     setBusy(true);
     const res = await loginWithCode(email, code);
     if (res.ok) {
-      const owed = await whatIsOwed();
       setBusy(false);
-      if (owed.name || owed.optIn) {
-        setNameOwed(owed.name);
-        setOptInOwed(owed.optIn);
-        setStep('declare');
-        return;
-      }
       onSuccess();
       return;
     }

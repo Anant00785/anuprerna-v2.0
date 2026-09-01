@@ -22,11 +22,7 @@ export function isWrapperToken(token: string | undefined | null): boolean {
     const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const json = Buffer.from(b64, 'base64').toString('utf8');
     const payload = JSON.parse(json) as Record<string, unknown>;
-    const hasCustomerId =
-      typeof payload.customerId === 'number' ||
-      (typeof payload.customerId === 'string' && payload.customerId.trim() !== '');
-    const hasRoles = Array.isArray(payload.roles);
-    return hasCustomerId && hasRoles;
+    return Boolean(payload && typeof payload === 'object');
   } catch {
     return false;
   }
