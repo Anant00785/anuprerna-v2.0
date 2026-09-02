@@ -51,6 +51,7 @@ export async function POST(req: Request) {
     email,
     name,
     phone,
+    password,
     buyerType,
     companyName,
     gstNumber,

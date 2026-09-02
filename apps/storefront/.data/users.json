@@ -1,0 +1,31 @@
+[
+  {
+    "email": "anantkr10000@gmail.com",
+    "name": "Anant Kumar",
+    "phone": "+91 9876543210",
+    "buyerType": "b2c"
+  },
+  {
+    "email": "support@anuprerna.com",
+    "name": "Amit Singha",
+    "phone": "+91 9895923232",
+    "buyerType": "b2b"
+  },
+  {
+    "email": "user_1788337527557@example.com",
+    "name": "Rohit Sharma",
+    "phone": "+91 9123456780",
+    "buyerType": "b2b",
+    "companyName": "Sharma Textiles",
+    "gstNumber": "07AAAAA0000A1Z5"
+  },
+  {
+    "email": "user_1788337580511@example.com",
+    "name": "Rohit Sharma",
+    "phone": "+91 9123456780",
+    "password": "Password@123",
+    "buyerType": "b2b",
+    "companyName": "Sharma Textiles",
+    "gstNumber": "07AAAAA0000A1Z5"
+  }
+]
