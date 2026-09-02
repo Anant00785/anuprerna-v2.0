@@ -145,7 +145,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
             <SiteFooter />
             <CookieConsent />
-            {feedbackEnabled && <PageFeedbackWidget />}
+            <PageFeedbackWidget />
             </BuyerModeProvider>
           </CurrencyProvider>
         </AuthProvider>

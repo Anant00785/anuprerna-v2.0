@@ -279,9 +279,8 @@ export default function PageFeedbackWidget() {
     }
   }
 
-  // Storefront auth gate: render nothing until a logged-in customer is known,
-  // and never on the auth screens.
-  if (loading || pathname.startsWith('/auth')) return null;
+  // Never render on the auth screens.
+  if (pathname.startsWith('/auth')) return null;
 
   const visible = (items ?? []).filter((it) => it.status !== 'resolved');
   const pendingCount = (items ?? []).filter((it) => it.status === 'pending').length;
@@ -292,27 +291,26 @@ export default function PageFeedbackWidget() {
 
   return (
     <>
-      {/* Floating launcher */}
+      {/* Floating launcher matching user screenshot */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label='Page feedback'
-          title='Page feedback'
-          className='fixed bottom-6 right-6 z-[95] flex items-center gap-2 rounded-full bg-clay px-4 py-2.5 text-sm font-medium text-cream shadow-lg transition-shadow hover:shadow-xl'
+          aria-label='Feedback'
+          title='Give Feedback'
+          className='fixed bottom-6 right-6 z-[95] inline-flex items-center gap-2 rounded-full border border-[#E8DFD1] bg-[#FAF7F2] hover:bg-[#F3EDE2] px-4 py-2 text-xs sm:text-sm font-medium text-[#7D5B20] shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer'
         >
-          {/* Icon wrapper -- relative so the badge can sit absolute on top-right */}
-          <span className='relative'>
-            <span className='material-symbols-outlined text-[18px] leading-none'>feedback</span>
-            {openCount > 0 && (
-              <span
-                className={`absolute -top-2 -right-2.5 inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full ${fabColor} text-white text-[10px] font-semibold leading-none`}
-                aria-label={`${openCount} open feedback items`}
-              >
-                {openCount}
-              </span>
-            )}
+          <span className='material-symbols-outlined text-[18px] leading-none text-[#7D5B20]'>
+            chat_bubble_outline
           </span>
-          Feedback
+          <span className='font-normal text-[#5C4217]'>Feedback</span>
+          {openCount > 0 && (
+            <span
+              className={`inline-flex items-center justify-center min-w-[1rem] h-[1rem] px-1 rounded-full ${fabColor} text-white text-[9px] font-semibold leading-none`}
+              aria-label={`${openCount} open feedback items`}
+            >
+              {openCount}
+            </span>
+          )}
         </button>
       )}
 
