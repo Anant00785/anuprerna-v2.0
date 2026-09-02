@@ -385,28 +385,6 @@ export default function PageFeedbackWidget() {
                       )}
                     </div>
 
-                    {/* Submitter Name / Email */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="Your Name"
-                          className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:border-[#7D5B20]"
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="Your Email"
-                          className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:border-[#7D5B20]"
-                        />
-                      </div>
-                    </div>
-
                     {error && (
                       <p className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
                         {error}
