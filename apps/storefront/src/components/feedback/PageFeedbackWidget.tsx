@@ -53,7 +53,6 @@ function getReadablePageName(pathname: string, docTitle?: string): string {
   if (pathname.startsWith('/story') || pathname.startsWith('/about')) return 'Our Story & Artisans';
   if (pathname.startsWith('/custom-sourcing')) return 'Custom Sourcing';
   
-  // Clean up path segment
   const segment = pathname.split('/').filter(Boolean).pop() || 'Page';
   return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
 }
@@ -63,6 +62,7 @@ export default function PageFeedbackWidget() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'compose' | 'list'>('compose');
+  const [listScope, setListScope] = useState<'page' | 'all'>('page');
   const [items, setItems] = useState<FeedbackRow[] | null>(null);
 
   // Auto-detected page metadata
@@ -93,15 +93,16 @@ export default function PageFeedbackWidget() {
 
   const loadFeedbacks = useCallback(async () => {
     try {
-      const r = await fetch(`/api/feedback?route=${encodeURIComponent(pathname)}`, {
-        cache: 'no-store',
-      });
+      const url = listScope === 'page'
+        ? `/api/feedback?route=${encodeURIComponent(pathname)}`
+        : `/api/feedback`;
+      const r = await fetch(url, { cache: 'no-store' });
       const d = (await r.json()) as { feedback: FeedbackRow[] };
       setItems(d.feedback ?? []);
     } catch {
       setItems([]);
     }
-  }, [pathname]);
+  }, [pathname, listScope]);
 
   useEffect(() => {
     if (open) {
@@ -229,7 +230,7 @@ export default function PageFeedbackWidget() {
               <div className='flex items-center justify-between'>
                 <h2 className='text-base font-semibold text-[#7D5B20] flex items-center gap-1.5'>
                   <span className='material-symbols-outlined text-[20px]'>rate_review</span>
-                  Page Feedback
+                  Feedback Drawer
                 </h2>
                 <button
                   onClick={() => setOpen(false)}
@@ -247,7 +248,7 @@ export default function PageFeedbackWidget() {
                 </span>
                 <div className='min-w-0 flex-1'>
                   <div className='flex items-center gap-1.5'>
-                    <span className='text-[10px] font-bold uppercase tracking-wider text-[#A27830]'>Auto-Detected Page:</span>
+                    <span className='text-[10px] font-bold uppercase tracking-wider text-[#A27830]'>Active Page:</span>
                     <span className='font-semibold truncate text-[#5A3E11]'>{detectedTitle}</span>
                   </div>
                   <p className='truncate text-[11px] text-[#7D5B20]/75 font-mono'>{fullUrl}</p>
@@ -266,7 +267,7 @@ export default function PageFeedbackWidget() {
                     : 'border-transparent text-black/60 hover:text-black'
                 }`}
               >
-                Give Feedback
+                Send Feedback
               </button>
               <button
                 type='button'
@@ -277,7 +278,7 @@ export default function PageFeedbackWidget() {
                     : 'border-transparent text-black/60 hover:text-black'
                 }`}
               >
-                Recent Notes ({items?.length ?? 0})
+                View Sent Notes ({items?.length ?? 0})
               </button>
             </div>
 
@@ -289,17 +290,26 @@ export default function PageFeedbackWidget() {
                     <div className='w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto'>
                       <span className='material-symbols-outlined text-2xl'>check_circle</span>
                     </div>
-                    <h3 className='text-base font-semibold text-black'>Thank You for Your Feedback!</h3>
+                    <h3 className='text-base font-semibold text-black'>Feedback &amp; Photo Submitted!</h3>
                     <p className='text-xs text-black/60 leading-relaxed'>
-                      Feedback for <span className='font-semibold text-black/80'>{detectedTitle}</span> has been safely saved to our Neon cloud dashboard.
+                      Your note and photo have been uploaded to Neon S3 Storage &amp; Database.
                     </p>
-                    <button
-                      type='button'
-                      onClick={() => setSubmitted(false)}
-                      className='mt-2 px-4 py-2 rounded-lg bg-[#7D5B20] text-white text-xs font-medium hover:bg-[#684b1a] transition'
-                    >
-                      Write Another Note
-                    </button>
+                    <div className='flex items-center justify-center gap-2 pt-2'>
+                      <button
+                        type='button'
+                        onClick={() => setSubmitted(false)}
+                        className='px-3.5 py-2 rounded-lg bg-[#7D5B20] text-white text-xs font-medium hover:bg-[#684b1a] transition'
+                      >
+                        Send Another Note
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => setActiveTab('list')}
+                        className='px-3.5 py-2 rounded-lg border border-[#7D5B20] text-[#7D5B20] text-xs font-medium hover:bg-[#FAF7F2] transition'
+                      >
+                        View All Feedbacks &rarr;
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className='space-y-4'>
@@ -345,19 +355,19 @@ export default function PageFeedbackWidget() {
                       <label className='block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1.5'>
                         Topic
                       </label>
-                      <div className='flex flex-wrap gap-1.5'>
+                      <div className='flex flex-wrap gap-2'>
                         {CATEGORIES.map((c) => (
                           <button
                             key={c.id}
                             type='button'
                             onClick={() => setCategory(c.id)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all flex items-center gap-1 ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 ${
                               category === c.id
-                                ? 'bg-[#7D5B20] text-white border-[#7D5B20]'
+                                ? 'bg-[#7D5B20] text-white border-[#7D5B20] shadow-xs'
                                 : 'bg-white text-black/70 border-gray-200 hover:bg-gray-50'
                             }`}
                           >
-                            <span className='material-symbols-outlined text-[14px]'>{c.icon}</span>
+                            <span className='material-symbols-outlined text-[15px]'>{c.icon}</span>
                             {c.label}
                           </button>
                         ))}
@@ -367,7 +377,7 @@ export default function PageFeedbackWidget() {
                     {/* Feedback Message */}
                     <div>
                       <label htmlFor='widget-fb-message' className='block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1'>
-                        Message / Suggestion for this page <span className='text-red-500'>*</span>
+                        Message / Suggestion <span className='text-red-500'>*</span>
                       </label>
                       <textarea
                         id='widget-fb-message'
@@ -449,7 +459,7 @@ export default function PageFeedbackWidget() {
                       {submitting ? (
                         <>
                           <span className='material-symbols-outlined animate-spin text-[16px]'>progress_activity</span>
-                          Saving to Neon...
+                          Saving to Neon S3 &amp; DB...
                         </>
                       ) : (
                         <>
@@ -463,9 +473,38 @@ export default function PageFeedbackWidget() {
               </div>
             )}
 
-            {/* Tab 2: Recent List */}
+            {/* Tab 2: Recent List with Filter & Full Picture Previews */}
             {activeTab === 'list' && (
-              <div className='flex-1 overflow-y-auto p-5 space-y-3'>
+              <div className='flex-1 overflow-y-auto p-5 space-y-3.5'>
+                {/* Scope Filter Bar */}
+                <div className='flex items-center justify-between pb-1 border-b border-gray-100 text-xs'>
+                  <span className='font-semibold text-black/60'>Filter Notes:</span>
+                  <div className='inline-flex rounded-lg bg-gray-100 p-0.5'>
+                    <button
+                      type='button'
+                      onClick={() => setListScope('page')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
+                        listScope === 'page'
+                          ? 'bg-white text-[#7D5B20] shadow-xs'
+                          : 'text-black/60 hover:text-black'
+                      }`}
+                    >
+                      This Page
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setListScope('all')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
+                        listScope === 'all'
+                          ? 'bg-white text-[#7D5B20] shadow-xs'
+                          : 'text-black/60 hover:text-black'
+                      }`}
+                    >
+                      All Feedbacks
+                    </button>
+                  </div>
+                </div>
+
                 {items === null ? (
                   <div className='flex items-center justify-center py-10 text-xs text-black/50 gap-2'>
                     <span className='material-symbols-outlined animate-spin text-base'>progress_activity</span>
@@ -474,11 +513,11 @@ export default function PageFeedbackWidget() {
                 ) : items.length === 0 ? (
                   <div className='text-center py-10 space-y-1 text-black/50'>
                     <span className='material-symbols-outlined text-3xl block text-black/30'>forum</span>
-                    <p className='text-xs font-medium'>No notes recorded for this page yet.</p>
+                    <p className='text-xs font-medium'>No feedback recorded yet.</p>
                   </div>
                 ) : (
                   items.map((it) => (
-                    <div key={it.id} className='rounded-xl border border-gray-200 p-3.5 bg-white space-y-2 shadow-xs'>
+                    <div key={it.id} className='rounded-xl border border-gray-200 p-3.5 bg-white space-y-2.5 shadow-xs'>
                       <div className='flex items-center justify-between'>
                         <span className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider ${
                           it.status === 'resolved' ? 'text-emerald-600' : 'text-amber-600'
@@ -489,25 +528,38 @@ export default function PageFeedbackWidget() {
                         <span className='text-[11px] text-black/40'>{relTime(it.createdAt)}</span>
                       </div>
 
-                      <p className='text-xs text-black/80 whitespace-pre-wrap leading-relaxed'>{it.text}</p>
+                      {/* Auto-detected Page Badge */}
+                      <div className='inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-[#FAF0E1] text-[#7D5B20] border border-[#EADBCC]'>
+                        <span className='material-symbols-outlined text-[13px]'>near_me</span>
+                        <span className='truncate max-w-[16rem]'>{it.page_title || it.pageLabel || it.route || 'Page'}</span>
+                      </div>
 
+                      <p className='text-xs text-black/85 whitespace-pre-wrap leading-relaxed'>{it.text}</p>
+
+                      {/* Attached Photos in Full View */}
                       {it.images && it.images.length > 0 && (
-                        <div className='flex gap-2 pt-1'>
-                          {it.images.map((imgUrl, i) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              key={i}
-                              src={imgUrl}
-                              alt='Attachment'
-                              onClick={() => setLightbox(imgUrl)}
-                              className='h-14 w-14 rounded-lg border border-gray-200 object-cover cursor-zoom-in hover:opacity-90'
-                            />
-                          ))}
+                        <div className='pt-1'>
+                          <p className='text-[10px] font-semibold uppercase tracking-wider text-black/40 mb-1 flex items-center gap-1'>
+                            <span className='material-symbols-outlined text-[12px]'>image</span>
+                            Attached Photo (Click to zoom):
+                          </p>
+                          <div className='flex gap-2'>
+                            {it.images.map((imgUrl, i) => (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                key={i}
+                                src={imgUrl}
+                                alt='Attachment'
+                                onClick={() => setLightbox(imgUrl)}
+                                className='h-20 w-auto rounded-lg border border-gray-200 object-cover cursor-zoom-in hover:scale-105 transition-transform'
+                              />
+                            ))}
+                          </div>
                         </div>
                       )}
 
                       <div className='flex items-center justify-between pt-1 border-t border-gray-100 text-[11px] text-black/50'>
-                        <span className='truncate max-w-[12rem]'>{it.pageLabel || it.route || 'Page'}</span>
+                        <span>{it.submitterName || 'Customer'}</span>
                         {it.status !== 'resolved' && (
                           <button
                             type='button'
@@ -530,7 +582,7 @@ export default function PageFeedbackWidget() {
       {/* Image Lightbox */}
       {lightbox && (
         <div
-          className='fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 cursor-pointer'
+          className='fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4 cursor-pointer backdrop-blur-[2px]'
           onClick={() => setLightbox(null)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
