@@ -35,20 +35,47 @@ function clearedSession() {
   return response;
 }
 
+import { decodeTokenPayload } from '@/lib/auth/token-helper';
+import { userStore } from '@/lib/auth/user-store';
+
 export async function GET() {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
   if (!token) return NextResponse.json({ authenticated: false });
 
-  // STALE / FOREIGN COOKIE GUARD. The native cart accepts ONLY a wrapper-minted
-  // JWT (cleartext customerId + roles claims). A pre-native-mint RAW Loom token
-  // (or a cookie from another environment) still validates against the
-  // pass-through READ routes, so the session LOOKS logged in -- yet every native
-  // cart write is denied with 'Authorization has been denied.' Detect that shape
-  // mismatch up front and treat it as logged-out: expire the cookie + reset
-  // buyer-mode so the UI prompts a fresh sign-in instead of stranding the buyer
-  // in a logged-in-but-cart-broken state.
   if (!isWrapperToken(token)) {
     return clearedSession();
+  }
+
+  // 1. Check if token was minted locally with user data
+  const payload = decodeTokenPayload(token);
+  if (payload && (payload.email || payload.sub)) {
+    const email = String(payload.email || payload.sub).trim().toLowerCase();
+    const stored = userStore.get(email);
+    const name = stored?.name || String(payload.name || email.split('@')[0]);
+    const firstName = name.split(' ')[0] || 'Member';
+    const phone = stored?.phone || String(payload.contactNumber || payload.phone || '');
+    const buyerMode = (stored?.buyerType || payload.buyerType) === 'b2b' ? 'b2b' : 'b2c';
+
+    const normalizedProfile = {
+      ...payload,
+      email,
+      name,
+      firstName,
+      contactNumber: phone,
+      phone,
+      buyerType: buyerMode,
+      nameKnown: Boolean(name && name !== email.split('@')[0]),
+    };
+
+    const response = NextResponse.json({ authenticated: true, profile: normalizedProfile });
+    response.cookies.set(BUYER_MODE_COOKIE, buyerMode, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: BUYER_MODE_MAX_AGE,
+    });
+    return response;
   }
 
   try {

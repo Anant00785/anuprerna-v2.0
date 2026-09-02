@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 import { otpStore } from '@/lib/auth/otp-store';
+import { userStore } from '@/lib/auth/user-store';
+import { signToken } from '@/lib/auth/token-helper';
 
 export async function POST(req: Request) {
   let email = '';
@@ -33,32 +35,35 @@ export async function POST(req: Request) {
   // Clear used OTP
   otpStore.delete(email);
 
-  // 2. Mint session token
-  let jwtToken = '';
-  try {
-    const authRes = await fetch('https://loom-v2.anuprerna.com/authenticate/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Origin: 'localhost' },
-      body: JSON.stringify({
-        username: 'support@anuprerna.com',
-        password: '@Anuprerna2',
-        email: 'support@anuprerna.com',
-      }),
-    });
-    if (authRes.ok) {
-      const j = (await authRes.json()) as Record<string, unknown>;
-      jwtToken = (j.jwt as string | undefined) ?? (j.token as string | undefined) ?? '';
-    }
-  } catch {
-    // ignore
+  // 2. Fetch or initialize user profile
+  let existing = userStore.get(email);
+  if (!existing) {
+    const defaultName = email.split('@')[0].replace(/[._-]/g, ' ');
+    const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+    existing = {
+      email,
+      name: formattedName,
+      phone: '',
+      buyerType: 'b2c',
+    };
+    userStore.set(email, existing);
   }
 
-  if (!jwtToken) {
-    return NextResponse.json(
-      { success: false, message: 'Session could not be created.' },
-      { status: 500 },
-    );
-  }
+  // 3. Mint JWT token for this user
+  const jwtToken = signToken({
+    sub: email,
+    email: existing.email,
+    name: existing.name,
+    firstName: existing.name.split(' ')[0] || 'Member',
+    contactNumber: existing.phone || '',
+    phone: existing.phone || '',
+    buyerType: existing.buyerType || 'b2c',
+    companyName: existing.companyName || '',
+    gstNumber: existing.gstNumber || '',
+    roles: existing.buyerType === 'b2b' ? ['ROLE_CUSTOMER', 'ROLE_WHOLESALE'] : ['ROLE_CUSTOMER'],
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 14,
+  });
 
   const store = await cookies();
   store.set(LOOM_JWT_COOKIE, jwtToken, {

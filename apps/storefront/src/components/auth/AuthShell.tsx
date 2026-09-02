@@ -259,33 +259,26 @@ function RegisterStep({
   // recommended path the obvious one without removing the other: the lane is
   // fully functional, one tap away, and the copy never implies passwords are
   // gone.
-  const [wantPassword, setWantPassword] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [wantPassword, setWantPassword] = useState(true);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [demoMsg, setDemoMsg] = useState('');
-  // THE OPTIONAL BUSINESS OPT-IN. This lane creates the account at submit time,
-  // so it belongs in this form. It is a single tick, not a question with
-  // answers: there is no retail option and no "prefer not to say", because
-  // NOT TICKING IT already means both. Untouched, we send nothing and the server
-  // records provenance 'default' — nobody declared anything — which stays
-  // distinguishable from a buyer who later chooses retail in account settings.
   const [business, setBusiness] = useState(false);
   const [sourcing, setSourcing] = useState<SourcingChoice | null>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    // A name is a name. Any non-empty one is valid — the old rule demanded 3+
-    // characters in EACH of two boxes and turned away real people.
     if (!fullName.trim()) {
-      setError('Please tell us your name.');
+      setError('Please enter your full name.');
       return;
     }
-    if (password.length < 8) {
-      setError('Password is required. Minimum 8 characters.');
+    if (password.length < 6) {
+      setError('Password is required. Minimum 6 characters.');
       return;
     }
     if (password !== confirm) {
@@ -300,19 +293,15 @@ function RegisterStep({
         body: JSON.stringify({
           name: fullName.trim().replace(/\s+/g, ' '),
           email,
+          phone: phone.trim(),
           password,
-          // Absent when untouched — the server then records 'default', not retail.
-          ...(business ? { buyerChoice: 'business' } : {}),
+          ...(business ? { buyerChoice: 'business' } : { buyerChoice: 'myself' }),
           ...(business && sourcing ? { sourcing } : {}),
-          // This screen DID put the opt-in in front of them, whatever they did
-          // with it, so it must not be offered again on the next sign-in.
           buyerTypeAsked: true,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
-        setDemoMsg(typeof data?.message === 'string' ? data.message : '');
-        setDone(true);
         onRegistered();
       } else {
         setError(data?.message || 'Registration failed. Please try again.');
@@ -338,73 +327,51 @@ function RegisterStep({
         <BackChevron onClick={onBack} />
         <h3 className='font-medium text-2xl'>Create your account</h3>
       </div>
-      <p className='text-sm text-black/55 mb-4'>
-        You are creating an account with <span className='text-black'>{email}</span>
+      <p className='text-sm text-black/55 mb-5'>
+        Creating account for <span className='text-black font-medium'>{email}</span>
       </p>
 
-      {/* The default we WANT people to take: no password to invent, no password
-          to forget, and the mailbox gets verified on the way in. */}
-      <button
-        type='button'
-        onClick={onUseCode}
-        data-testid='register-use-code'
-        className='w-full rounded-lg bg-clay text-white py-2.5 text-sm font-medium hover:bg-clayd transition flex items-center justify-center gap-2.5'
-      >
-        <span className='material-symbols-outlined text-base'>mail</span>
-        Email me a code instead
-      </button>
-      <p className='mt-2 mb-5 text-xs text-black/45 text-center'>
-        We&apos;ll email a 6-digit code and sign you straight in. Prefer a password? Set one below.
-      </p>
-
-      <div className='relative mb-5'>
-        <div className='absolute inset-0 flex items-center'><div className='w-full border-t border-bark/20' /></div>
-        <div className='relative flex justify-center'>
-          <span className='bg-white px-3 text-xs text-black/40'>or create it with a password</span>
-        </div>
-      </div>
-
-      {/* THE PASSWORD LANE, COLLAPSED. It is not removed and not discouraged in
-          words — it is simply not unfolded until the buyer asks for it, so the
-          screen stops reading as "give us a code AND a password". Its fields,
-          including the name, belong to THIS lane: the code lane collects the
-          same things on its own screen after the code is verified, so nothing is
-          ever typed twice. */}
-      {!wantPassword && (
-        <button
-          type='button'
-          data-testid='register-set-password'
-          onClick={() => setWantPassword(true)}
-          className='w-full rounded-lg border border-bark/40 py-2.5 text-sm font-medium text-black/70 hover:bg-sand transition'
-        >
-          Or set a password instead
-        </button>
-      )}
-
-      <form onSubmit={submit} className={'space-y-4 ' + (wantPassword ? '' : 'hidden')}>
+      <form onSubmit={submit} className='space-y-4'>
         <div>
-          <label htmlFor='r-name' className='block text-sm font-bold mb-1.5'>Your name :</label>
+          <label htmlFor='r-name' className='block text-sm font-semibold mb-1'>Full Name *</label>
           <input
             id='r-name'
             data-testid='register-name'
             type='text'
+            required
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className={inputCls}
-            placeholder='What should we call you?'
+            placeholder='e.g. Anant Kumar'
             autoComplete='name'
           />
         </div>
+
         <div>
-          <label htmlFor='r-pw' className='block text-sm font-bold mb-1.5'>Password :</label>
-          <div className='w-full border border-bark/40 rounded-lg flex items-center justify-between pr-2 focus-within:border-clay transition'>
+          <label htmlFor='r-phone' className='block text-sm font-semibold mb-1'>Phone Number</label>
+          <input
+            id='r-phone'
+            data-testid='register-phone'
+            type='tel'
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={inputCls}
+            placeholder='+91 98765 43210'
+            autoComplete='tel'
+          />
+        </div>
+
+        <div>
+          <label htmlFor='r-pw' className='block text-sm font-semibold mb-1'>Password *</label>
+          <div className='w-full border border-bark/40 rounded-lg flex items-center justify-between pr-2 focus-within:border-clay transition bg-white'>
             <input
               id='r-pw'
               type={showPw ? 'text' : 'password'}
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className='w-full px-3 py-2.5 text-sm outline-none bg-transparent placeholder:text-black/35'
-              placeholder='Enter your password'
+              placeholder='Enter password (min. 6 characters)'
               autoComplete='new-password'
             />
             <button
@@ -417,16 +384,18 @@ function RegisterStep({
             </button>
           </div>
         </div>
+
         <div>
-          <label htmlFor='r-cpw' className='block text-sm font-bold mb-1.5'>Confirm Password :</label>
-          <div className='w-full border border-bark/40 rounded-lg flex items-center justify-between pr-2 focus-within:border-clay transition'>
+          <label htmlFor='r-cpw' className='block text-sm font-semibold mb-1'>Confirm Password *</label>
+          <div className='w-full border border-bark/40 rounded-lg flex items-center justify-between pr-2 focus-within:border-clay transition bg-white'>
             <input
               id='r-cpw'
               type={showConfirm ? 'text' : 'password'}
+              required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className='w-full px-3 py-2.5 text-sm outline-none bg-transparent placeholder:text-black/35'
-              placeholder='Re-Enter your password'
+              placeholder='Re-enter password'
               autoComplete='new-password'
             />
             <button
@@ -442,9 +411,8 @@ function RegisterStep({
             <p className='text-red-500 text-xs mt-1'>Confirm Password does not match with Password</p>
           )}
         </div>
-        {/* Secondary to the account fields above it, deliberately: it is an
-            opt-in, not a decision the buyer has to make to get an account. */}
-        <div className='pt-3 border-t border-bark/20'>
+
+        <div className='pt-2 border-t border-bark/15'>
           <BuyerTypeQuestion
             variant='inline'
             business={business}
@@ -453,16 +421,30 @@ function RegisterStep({
             onSourcingChange={setSourcing}
           />
         </div>
+
         {error && <p className='text-sm text-red-600'>{error}</p>}
+
         <button
           type='submit'
           disabled={busy}
           data-testid='register-submit'
-          className='w-full rounded-lg bg-clay text-white py-2.5 text-sm font-medium hover:bg-clayd transition disabled:opacity-60'
+          className='w-full rounded-lg bg-clay text-white py-2.5 text-sm font-semibold hover:bg-clayd transition disabled:opacity-60 cursor-pointer shadow-sm'
         >
-          {busy ? 'Creating account…' : 'Sign Up'}
+          {busy ? 'Creating account…' : 'Create Account & Sign In'}
         </button>
       </form>
+
+      <div className='mt-4 pt-4 border-t border-bark/15 text-center'>
+        <button
+          type='button'
+          onClick={onUseCode}
+          data-testid='register-use-code'
+          className='text-xs text-clay font-medium hover:underline inline-flex items-center gap-1 cursor-pointer'
+        >
+          <span className='material-symbols-outlined text-[14px]'>mail</span>
+          Or sign in using 6-digit email code instead
+        </button>
+      </div>
 
       {done && (
         <div className='mt-5 px-3 py-2 shadow flex gap-3 items-center border border-clay/20 rounded-lg'>
@@ -682,7 +664,7 @@ export default function AuthShell() {
         <RegisterStep
           email={email}
           onBack={() => setStep('email')}
-          onRegistered={() => {}}
+          onRegistered={handleLoginSuccess}
           onUseCode={() => setStep('code')}
         />
       )}
