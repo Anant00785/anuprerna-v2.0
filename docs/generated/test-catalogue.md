@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**612 tests across 83 files.**
+**577 tests across 75 files.**
 
 - `apps/api` — 52 files, 335 tests
-- `apps/cms` — 15 files, 93 tests
-- `apps/storefront` — 15 files, 182 tests
+- `apps/cms` — 3 files, 33 tests
+- `apps/storefront` — 19 files, 207 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -493,102 +493,28 @@
 - LFS_SERVER_ENDPOINT uses NEXT_PUBLIC_LFS_SERVER_ENDPOINT when set, else the bloomscorp default
 - dead flags (FAKE_API, BYPASS_AUTH, MAINTENANCE_MODE, SECURE_CONNECT) are static constants with no env wiring
 
-### `apps/cms/src/services/artisan-service.test.ts` — 5
-- sends includeInactive as a query param and normalizes tenant-nested fields
-- has no try/catch: a success:false envelope propagates as a thrown error
-- nests name/contactNumber/gender/dob/active under tenant in the request body
-- nulls masterArtisanId when artisanRole is MASTER
-- converts a dd/mm/yyyy string to an epoch timestamp, and passes numbers through
-
-### `apps/cms/src/services/catalog-service.test.ts` — 4
-- getCatalogListByArtisan hits the correct path-param URL and unwraps 
-- getCatalogById unwraps the singular 
-- propagates a rejected backend response as a thrown error
-- generateCatalogPdfByArtisan POSTs to the artisan-scoped endpoint and unwraps the generation record
-
-### `apps/cms/src/services/content-service.test.ts` — 5
-- hits /get/blog-content-types and unwraps blogContentTypeList
-- createBlog posts the partial payload as-is
-- getBlogById sends the id in the path and unwraps the single-object blogContent key
-- has no try/catch: a success:false envelope on getStories propagates as a thrown error
-- hits /get/faqs and unwraps faqList, even though no page calls it yet
-
-### `apps/cms/src/services/inventory-service.test.ts` — 4
-- getInventoryAdjustments sends offset/limit/sku as query params and unwraps 
-- getWarehouseById unwraps the singular 
-- propagates a rejected response from getRestockRequests
-- updateRestockRequestStatus PATCHes the exact payload shape
-
-### `apps/cms/src/services/logistic-service.test.ts` — 10
-- maps a UI tab status through ORDER_API_STATUS_MAP and sends it as the query param
-- normalizes a raw backend order into the CustomerOrder shape
-- propagates request failures instead of masking them as an empty array (consistent with deleteOrder)
-- URL-encodes the keyword and sends offset/pageSize as pageNumber/pageSize
-- has no try/catch: an errored DELETE propagates to the caller
-- falls back to DEFAULT_SHIPMENTS when the backend returns an empty list
-- propagates a request failure instead of silently falling back to DEFAULT_SHIPMENTS
-- posts the payload to /add/shipment and propagates a failure instead of reporting fake success
-- resolves with the backend response body on success
-- normalizes currency/rate/markup field aliases from the backend
-
-### `apps/cms/src/services/loyalty-service.test.ts` — 6
-- builds an email-only query when email is provided
-- builds a tenure+amount query when email is absent
-- sends the active flag and unwraps customerList
-- has no try/catch: a success:false envelope propagates as a thrown error
-- posts the config payload as-is to /enable/loyalty-program
-- flags a discount over 100% (pure function, no network)
-
-### `apps/cms/src/services/product-service.test.ts` — 5
-- getColors hits 
-- getSegments returns [] when the response is not an array (defensive fallback)
-- propagates an error-envelope rejection from the backend
-- createColor trims name/hex and POSTs the expected payload shape
-- getFinishedProducts falls back to 
-
-### `apps/cms/src/services/report-service.test.ts` — 2
-- POSTs the config to /download/report/:type as a blob request
-- uses the filename from the content-disposition header when present
-
-### `apps/cms/src/services/review-service.test.ts` — 6
-- sends the exact path and query params, and unwraps the reviewList envelope
-- has no try/catch: a success:false envelope propagates as a thrown error
-- addReview posts the payload as-is to /add/review
-- updateReview issues a PATCH to /update/super-user/review with the payload
-- defaults to status=PENDING, pageNumber=0, pageSize=50 when called with no args
-- does not manually set Content-Type on the FormData body, so the request resolves instead of hanging
-
-### `apps/cms/src/services/settings-service.test.ts` — 5
-- getSettings unwraps 
-- getSettings propagates a backend error instead of silently returning hardcoded fallback data
-- getSettings also falls back when the backend returns an empty settingsList array
-- updateSettingsItem propagates the failure instead of reporting false success
-- updateSettingsItem resolves true when the backend request succeeds
-
-### `apps/cms/src/services/user-service.test.ts` — 4
-- getCustomers hits 
-- getUserByUID hits the path-param URL and unwraps the 
-- propagates a rejected response from getCartOverviewList
-- registerCustomer POSTs the given payload verbatim to 
-
-### `apps/cms/src/services/workflow-service.test.ts` — 4
-- getWorkflows defaults status to 
-- getCustomWorkflows passes a caller-supplied status through to the URL
-- getArtisanPayments unwraps 
-- propagates a rejected response from getWorkflowFeedback
-
 ## apps/storefront
 
-### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 9
+### `apps/storefront/src/components/pdp/customization.test.tsx` — 7
+- renders default fabric and viewable fabric cards
+- calls onSelectFabric when an alternate fabric is clicked
+- renders default fabric from product itself when madeToOrderFabric is undefined
+- renders finish swatches and allows toggling finishes
+- renders selected finish chips with remove trigger
+- renders standard size buttons and selects size on click
+- expands custom size form when Custom Size is clicked
+
+### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 10
 - maps a fabric row, deriving the product from fabricProductPreview.product
 - exposes the PREVIEW id as productId, since that is what /add/cart-item binds to
 - recomputes the unit price from the preview product plus makingCharge, as Loom stores no price
 - falls back to finishedProductPreview when the row is a finished product
 - degrades to a placeholder product when neither preview is present
+- keeps IN_STOCK orderType and minOrderQuantity = 1 when volume discount profile has pre-order tiers
 - aggregates count and subtotal across the cartItemList
 - charges nothing on an empty cart rather than the flat shipping rate
 - defaults to an empty cart when called with no argument
-- applies flat 150 shipping under the 2000 threshold and free shipping over it
+- applies flat 150 estimated shipping for non-empty carts
 
 ### `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.test.ts` — 16
 - returns the placeholder for a missing/empty path
@@ -692,12 +618,31 @@
 - issues a DELETE to delete/address/:id
 - unwraps the legacy {success,message,orderList} envelope into an Order[]
 
-### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 34
-- sets calculatedPrice from price, no discount fields untouched
-- computes discounted price when max_discount fields present
+### `apps/storefront/src/lib/cart/cart-helpers.test.ts` — 5
+- calculates available stock for in-stock fabric product
+- clamps requested quantity when exceeding available stock (e.g. ordered 10 when stock is 9)
+- enforces 0.5 meter increment step for fabrics
+- enforces MOQ for Pre-Order products
+- returns 0.5 meter MOQ for IN_STOCK items even when minOrderQuantity is attached to params
+
+### `apps/storefront/src/lib/checkout/checkout-calculations.test.ts` — 7
+- calculates shipping charge based on baseAmount and excess quantity per shipment option
+- calculates shipping charge based on baseAmount + excess qty * additionalAmount
+- supports explicit free shipping when flag is passed
+- computes 100% advance for in-stock orders
+- computes 50% advance for made-to-order items plus shipping
+- applies coupon percentage discounts correctly
+- formats dates properly
+
+### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 37
+- sets calculatedPrice from price for fabric products, no discount fields untouched
+- does NOT compute discounted price from max_discount fields (wholesale-only in Angular)
+- preserves API-provided calculatedDiscountedPrice when present
 - returns no discounted price when max_discount_product_price is absent
-- treats a missing discount percentage as zero, not as a free product
 - defaults price-less product to calculatedPrice 0
+- calculates finished product price as basePrice + (fabricPrice * consumedFabric)
+- uses made_to_order_fabric_price when present for finished product
+- falls back to product.price as fabric price when no MTO fabric price for finished product
 - builds a toggle cohort with a single inactive option
 - groups sub-category options under their parent segment
 - splits csv values, dedupes, and resolves display names from metadata
@@ -790,6 +735,10 @@
 - falls back to DEFAULT_FOREX_LIST when the response
 - characterizes failure: both requests erroring falls back to DEFAULT_RATES/DEFAULT_FOREX_LIST, no throw, isLoading cleared
 - sets isLoading true synchronously while the fetch is in flight
+
+### `apps/storefront/src/stores/wishlist.store.test.ts` — 2
+- toggles a product SKU in wishlist
+- parses CSV wishlist from customer profile
 
 ## packages/types
 

@@ -13,7 +13,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import type { ListingRow } from "@/lib/types";
+import type { ListingRow, ListingStatus } from "@/lib/types";
 import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
 
 export const dynamic = "force-dynamic";

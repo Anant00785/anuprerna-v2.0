@@ -30,6 +30,8 @@ export default tseslint.config(
       "@typescript-eslint/ban-ts-comment": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",
+      "no-empty": "warn",
+      "prefer-const": "warn",
     },
   },
 );

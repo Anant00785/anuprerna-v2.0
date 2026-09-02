@@ -9,6 +9,7 @@
 // deny case: same shell, a friendlier "no longer available" message, and a
 // reused RelatedProducts grid of similar items from the same category so the
 // visitor isn't dead-ended -- see app/product/[category]/[slug]/page.tsx.
+import Link from 'next/link';
 import type { CatalogueProduct } from '@/components/catalogue/types';
 import RelatedProducts from '@/components/product/RelatedProducts';
 
@@ -38,9 +39,9 @@ export default function UnavailableShell({
     <main className='min-h-screen bg-white'>
       <div className='border-b border-sand'>
         <div className='mx-auto max-w-screen-xl px-4 py-3 text-xs text-black/50 flex items-center gap-1.5'>
-          <a href='/' className='hover:text-clay transition-colors'>Home</a>
+          <Link href='/' className='hover:text-clay transition-colors'>Home</Link>
           <span className='material-symbols-outlined text-[12px]'>chevron_right</span>
-          <a href={backHref} className='hover:text-clay transition-colors'>{backLabel}</a>
+          <Link href={backHref} className='hover:text-clay transition-colors'>{backLabel}</Link>
         </div>
       </div>
       <div className='mx-auto max-w-screen-xl px-4 py-20 text-center'>
@@ -48,13 +49,13 @@ export default function UnavailableShell({
         <p className='text-black/60 max-w-md mx-auto mb-8'>
           {message ?? 'This page is temporarily unavailable. Please explore our collection or check back shortly.'}
         </p>
-        <a
+        <Link
           href={backHref}
           className='inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium text-white'
           style={{ background: '#8E7862' }}
         >
           {backLabel}
-        </a>
+        </Link>
 
         {relatedProducts && relatedProducts.length > 0 && (
           <div className='mt-16 text-left'>

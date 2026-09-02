@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Img from '@/components/ui/Img';
 import CardPrice from './CardPrice';
 import type { SeoProduct } from './loom';
@@ -123,12 +124,12 @@ export default function WholesalerCityPage({ city, slug, products }: WholesalerC
               >
                 Request a Quote (RFQ)
               </a>
-              <a
+              <Link
                 href="/products/fabric?category=swatchkit"
                 className="inline-flex items-center px-6 py-3 border-2 border-white text-white rounded-full font-medium hover:bg-white/10 transition-colors"
               >
                 Order a SwatchKit
-              </a>
+              </Link>
             </div>
 
             {/* Stats */}
