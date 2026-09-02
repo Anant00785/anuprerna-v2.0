@@ -2,15 +2,14 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { authenticateEmail } from '@/lib/loom/endpoints';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
+import { userStore } from '@/lib/auth/user-store';
 
-// POST { email, password } -> authenticates against Loom, stores the JWT in an
-// httpOnly cookie, and returns only { success }. The JWT NEVER reaches the browser.
 export async function POST(req: Request) {
   let email = '';
   let password = '';
   try {
     const body = await req.json();
-    email = String(body?.email ?? body?.username ?? '');
+    email = String(body?.email ?? body?.username ?? '').trim().toLowerCase();
     password = String(body?.password ?? '');
   } catch {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
@@ -19,18 +18,45 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
   }
 
+  // 1. Try local NestJS backend authentication
+  try {
+    const nestRes = await fetch('http://127.0.0.1:3000/authenticate/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'localhost' },
+      body: JSON.stringify({ username: email, password, email }),
+    });
+    if (nestRes.ok) {
+      const data = await nestRes.json();
+      const jwtToken = (data.jwt as string | undefined) ?? (data.token as string | undefined) ?? '';
+      if (jwtToken) {
+        if (!userStore.has(email)) {
+          const defaultName = email === 'anantkr10000@gmail.com' ? 'Anant Kumar' : email.split('@')[0];
+          userStore.set(email, {
+            email,
+            name: defaultName,
+            phone: '',
+            buyerType: 'b2c',
+          });
+        }
+        const store = await cookies();
+        store.set(LOOM_JWT_COOKIE, jwtToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 14, // 14 days
+        });
+        return NextResponse.json({ success: true });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Fallback to remote Loom authentication
   const result = await authenticateEmail(email, password);
   if (!result.ok) {
-    // 503 when the backend/tunnel is unreachable or erroring (do NOT blame the user's
-    // password during an outage); 401 for a genuine credential rejection.
     const status = result.code === 'unavailable' ? 503 : 401;
-    // PASS `passwordless` THROUGH. This route used to swallow it, which is why the
-    // checkout sign-in modal could not branch: an account that signs in with an
-    // emailed code has NO password that could ever be right, and without this flag
-    // the UI could only show a generic failure in front of a box that can never be
-    // satisfied. It is not an existence oracle — it is only ever returned after a
-    // password attempt against that same address, and it describes the account the
-    // caller just tried to open.
     return NextResponse.json(
       { success: false, message: result.message, passwordless: result.passwordless === true },
       { status },
@@ -40,7 +66,7 @@ export async function POST(req: Request) {
   const store = await cookies();
   store.set(LOOM_JWT_COOKIE, result.jwt, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 14, // 14 days

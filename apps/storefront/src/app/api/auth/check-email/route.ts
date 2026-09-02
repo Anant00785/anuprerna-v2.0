@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
 import { loomPost } from '@/lib/loom/client';
+import { userStore } from '@/lib/auth/user-store';
 
-// POST { email } -> Loom /check-email/tenant
-// Mirrors the live Angular tenant-verification step (TenantVerificationTransmissionService.verifyTenant).
-// Returns the branching flags the email-first auth flow needs:
-//   registered:    an account exists for this email
-//   emailVerified: that account has a verified email
-// Loom response shape: { entity: { registered, emailVerified }, success }.
 export async function POST(req: Request) {
   let email = '';
   try {
@@ -20,6 +15,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'Email is required.' }, { status: 400 });
   }
 
+  // 1. Check local NestJS backend first
+  try {
+    const nestRes = await fetch(`http://127.0.0.1:3000/check-email/tenant?email=${encodeURIComponent(email)}`);
+    if (nestRes.ok) {
+      const nestData = await nestRes.json();
+      if (nestData?.registered || nestData?.isRegistered || nestData?.entity?.registered) {
+        return NextResponse.json({
+          success: true,
+          registered: true,
+          emailVerified: true,
+          passwordless: false,
+        });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Check local user store
+  if (userStore.has(email)) {
+    return NextResponse.json({
+      success: true,
+      registered: true,
+      emailVerified: true,
+      passwordless: false,
+    });
+  }
+
   try {
     const data = await loomPost<{
       entity?: { registered?: boolean; emailVerified?: boolean; passwordless?: boolean };
@@ -30,10 +53,6 @@ export async function POST(req: Request) {
       success: true,
       registered: entity.registered === true,
       emailVerified: entity.emailVerified === true,
-      // ADDITIVE, and it was being dropped here: AuthShell branches on it to send
-      // a PASSWORDLESS account straight to the code step instead of a password box
-      // it can never satisfy. The backend has returned it since the code lane
-      // shipped; this route simply never forwarded it, so the branch was dead.
       passwordless: entity.passwordless === true,
     });
   } catch (e: unknown) {
