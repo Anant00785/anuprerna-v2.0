@@ -21,11 +21,8 @@ interface FeedbackRow {
 }
 
 const CATEGORIES = [
-  { id: 'fabric', label: 'Fabric Quality', icon: 'texture' },
-  { id: 'artisan', label: 'Artisan Craft', icon: 'palette' },
-  { id: 'website', label: 'Website Experience', icon: 'devices' },
-  { id: 'delivery', label: 'Delivery / Order', icon: 'local_shipping' },
-  { id: 'suggestion', label: 'Suggestion', icon: 'lightbulb' },
+  { id: 'ui', label: 'UI / UX', icon: 'devices' },
+  { id: 'bug', label: 'Issue / Bug', icon: 'pest_control' },
 ];
 
 function relTime(iso: string): string {
@@ -75,7 +72,7 @@ export default function PageFeedbackWidget() {
   // Form State
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [category, setCategory] = useState('website');
+  const [category, setCategory] = useState('ui');
   const [message, setMessage] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);

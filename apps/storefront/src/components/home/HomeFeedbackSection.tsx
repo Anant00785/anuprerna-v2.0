@@ -4,18 +4,15 @@ import { useState, useRef, FormEvent } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const CATEGORIES = [
-  { id: 'fabric', label: 'Fabric & Quality', icon: 'texture' },
-  { id: 'artisan', label: 'Artisan Craftsmanship', icon: 'palette' },
-  { id: 'website', label: 'Website Experience', icon: 'devices' },
-  { id: 'delivery', label: 'Shipping & Delivery', icon: 'local_shipping' },
-  { id: 'suggestion', label: 'Idea / Suggestion', icon: 'lightbulb' },
+  { id: 'ui', label: 'UI / UX', icon: 'devices' },
+  { id: 'bug', label: 'Issue / Bug', icon: 'pest_control' },
 ];
 
 export default function HomeFeedbackSection() {
   const { user } = useAuth();
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [category, setCategory] = useState('fabric');
+  const [category, setCategory] = useState('ui');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');

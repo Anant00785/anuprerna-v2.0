@@ -21,10 +21,7 @@ interface FeedbackRow {
 }
 
 const CATEGORIES = [
-  { id: "admin", label: "CMS Feature", icon: "Settings" },
-  { id: "products", label: "Catalog / Inventory", icon: "Package" },
-  { id: "orders", label: "Orders / Workflow", icon: "Truck" },
-  { id: "ui", label: "UI / Experience", icon: "Layout" },
+  { id: "ui", label: "UI / UX", icon: "Layout" },
   { id: "bug", label: "Issue / Bug", icon: "AlertTriangle" },
 ];
 
@@ -72,7 +69,7 @@ export default function PageFeedbackWidget() {
   // Form State
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [category, setCategory] = useState("admin");
+  const [category, setCategory] = useState("ui");
   const [message, setMessage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
