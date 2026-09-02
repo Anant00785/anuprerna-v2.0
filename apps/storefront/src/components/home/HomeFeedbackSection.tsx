@@ -262,35 +262,7 @@ export default function HomeFeedbackSection() {
                 )}
               </div>
 
-              {/* User details */}
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <div>
-                  <label htmlFor='fb-name' className='block text-xs font-bold uppercase tracking-wider text-black/60 mb-1.5'>
-                    Your Name <span className='text-black/40 font-normal'>(Optional)</span>
-                  </label>
-                  <input
-                    id='fb-name'
-                    type='text'
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={user?.name ? String(user.name) : 'e.g. Aditi Roy'}
-                    className='w-full rounded-xl border border-gray-300 p-2.5 text-sm outline-none focus:border-[#7D5B20] transition placeholder:text-black/35'
-                  />
-                </div>
-                <div>
-                  <label htmlFor='fb-email' className='block text-xs font-bold uppercase tracking-wider text-black/60 mb-1.5'>
-                    Email Address <span className='text-black/40 font-normal'>(Optional)</span>
-                  </label>
-                  <input
-                    id='fb-email'
-                    type='email'
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={user?.email ? String(user.email) : 'name@example.com'}
-                    className='w-full rounded-xl border border-gray-300 p-2.5 text-sm outline-none focus:border-[#7D5B20] transition placeholder:text-black/35'
-                  />
-                </div>
-              </div>
+              {/* End of inputs */}
 
               {error && (
                 <div className='p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2'>
