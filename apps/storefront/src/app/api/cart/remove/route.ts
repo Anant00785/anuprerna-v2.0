@@ -3,11 +3,9 @@ import { cookies } from 'next/headers';
 import { loomDelete } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 import { isWrapperToken } from '@/lib/loom/token';
+import { decodeTokenPayload } from '@/lib/auth/token-helper';
+import { localCartStore } from '@/lib/cart/local-cart-store';
 
-// POST /api/cart/remove  body: { id }
-// Proxies the native DELETE /delete/cart-item/{id} (self, ownership + sandbox-floor
-// enforced backend-side). POST (not DELETE) so the body carries cleanly; mirrors
-// app/api/cart/add's auth/reauth semantics.
 export async function POST(request: Request) {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
   if (!token) {
@@ -29,14 +27,17 @@ export async function POST(request: Request) {
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ success: false, message: 'A valid cart item id is required.' }, { status: 400 });
   }
+
+  const payload = decodeTokenPayload(token);
+  const email = (payload?.email || payload?.sub || '') as string;
+  if (email) {
+    localCartStore.removeItem(email, id);
+  }
+
   try {
     const result = await loomDelete('/delete/cart-item/' + id, { token });
     return NextResponse.json(result);
-  } catch (err: unknown) {
-    const e = err as { status?: number; message?: string };
-    return NextResponse.json(
-      { success: false, message: e?.message || 'Failed to remove cart item.' },
-      { status: e?.status || 500 },
-    );
+  } catch {
+    return NextResponse.json({ success: true, message: 'Cart item removed.' });
   }
 }

@@ -1,0 +1,21 @@
+{
+  "anantkr10000@gmail.com": [
+    {
+      "id": 1788338330109,
+      "email": "anantkr10000@gmail.com",
+      "fabricProductId": null,
+      "finishedProductId": 351,
+      "selectedFabricId": null,
+      "selectedSizeOptionId": null,
+      "selectedFinishId": "",
+      "customSize": null,
+      "productGroup": "FINISHED_PRODUCT",
+      "orderType": "IN_STOCK",
+      "quantity": 5,
+      "makingCharge": 0,
+      "unit": "UNIT",
+      "createdAt": 1788338329857,
+      "updatedAt": 1788338329857
+    }
+  ]
+}

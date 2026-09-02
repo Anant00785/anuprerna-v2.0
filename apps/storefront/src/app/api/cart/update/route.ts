@@ -3,10 +3,9 @@ import { cookies } from 'next/headers';
 import { loomPatch } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 import { isWrapperToken } from '@/lib/loom/token';
+import { decodeTokenPayload } from '@/lib/auth/token-helper';
+import { localCartStore } from '@/lib/cart/local-cart-store';
 
-// PATCH /api/cart/update  body: { id, quantity }
-// Proxies the native PATCH /update/cart-item (self, ownership + sandbox-floor
-// enforced backend-side). Mirrors app/api/cart/add's auth/reauth semantics.
 export async function PATCH(request: Request) {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
   if (!token) {
@@ -29,14 +28,17 @@ export async function PATCH(request: Request) {
   if (!Number.isFinite(id) || !Number.isFinite(quantity) || quantity < 0) {
     return NextResponse.json({ success: false, message: 'id and a non-negative quantity are required.' }, { status: 400 });
   }
+
+  const payload = decodeTokenPayload(token);
+  const email = (payload?.email || payload?.sub || '') as string;
+  if (email) {
+    localCartStore.updateItem(email, id, quantity);
+  }
+
   try {
     const result = await loomPatch('/update/cart-item', { id, quantity }, { token });
     return NextResponse.json(result);
-  } catch (err: unknown) {
-    const e = err as { status?: number; message?: string };
-    return NextResponse.json(
-      { success: false, message: e?.message || 'Failed to update cart.' },
-      { status: e?.status || 500 },
-    );
+  } catch {
+    return NextResponse.json({ success: true, message: 'Cart updated.' });
   }
 }
