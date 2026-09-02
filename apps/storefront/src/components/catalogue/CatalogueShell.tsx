@@ -162,7 +162,8 @@ function num(v: string | null): number | null {
  * Hydrate FilterState from LIVE URL params.
  * Accepts both live format and the old demo format for backward compat.
  */
-function hydrateLiveParams(sp: URLSearchParams): { state: FilterState; sort: SortKey; page: number } | null {
+function hydrateLiveParams(sp: URLSearchParams | null): { state: FilterState; sort: SortKey; page: number } | null {
+  if (!sp) return null;
   // Check if any relevant params are present
   const hasParams =
     sp.has('calculatedPrice') || sp.has('gsm') || sp.has('total_quantity') ||
