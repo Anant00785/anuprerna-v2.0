@@ -60,6 +60,7 @@ export interface FeedbackRecord {
   message: string;
   image_url?: string | null;
   page_url?: string | null;
+  page_title?: string | null;
   status?: string;
   created_at?: string | Date;
 }
@@ -105,8 +106,8 @@ export async function uploadFeedbackImageToNeon(
 export async function saveFeedbackToNeon(feedback: FeedbackRecord): Promise<number> {
   const pool = getNeonPool();
   const query = `
-    INSERT INTO customer_feedbacks (name, email, rating, category, message, image_url, page_url, status)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO customer_feedbacks (name, email, rating, category, message, image_url, page_url, page_title, status)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING id;
   `;
   const values = [
@@ -117,6 +118,7 @@ export async function saveFeedbackToNeon(feedback: FeedbackRecord): Promise<numb
     feedback.message,
     feedback.image_url || null,
     feedback.page_url || '/',
+    feedback.page_title || null,
     feedback.status || 'new',
   ];
 
@@ -130,7 +132,7 @@ export async function saveFeedbackToNeon(feedback: FeedbackRecord): Promise<numb
 export async function getFeedbacksFromNeon(limit = 100): Promise<FeedbackRecord[]> {
   const pool = getNeonPool();
   const query = `
-    SELECT id, name, email, rating, category, message, image_url, page_url, status, created_at
+    SELECT id, name, email, rating, category, message, image_url, page_url, page_title, status, created_at
     FROM customer_feedbacks
     ORDER BY created_at DESC
     LIMIT $1;

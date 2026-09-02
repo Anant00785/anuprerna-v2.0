@@ -36,8 +36,10 @@ export async function GET() {
     id: `neon_${r.id}`,
     app: "storefront" as const,
     route: r.page_url || "/",
-    pageLabel: `Customer Feedback • ${r.category.toUpperCase()}`,
-    text: `⭐ Rating: ${r.rating}/5 Stars (${r.category})\n\n${r.message}`,
+    pageLabel: r.page_title
+      ? `${r.page_title} • ${(r.category || 'general').toUpperCase()}`
+      : `Customer Feedback • ${(r.category || 'general').toUpperCase()}`,
+    text: `⭐ Rating: ${r.rating || 5}/5 Stars (${r.category || 'general'})\n\n${r.message}`,
     images: r.image_url ? [r.image_url] : [],
     submitterName: r.name || "Customer",
     submitterEmail: r.email || "",

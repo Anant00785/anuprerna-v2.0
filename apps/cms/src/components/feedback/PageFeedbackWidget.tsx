@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, FormEvent } from "react";
 import { usePathname } from "next/navigation";
-import { MessageSquare, X, Star, CheckCircle, Image as ImageIcon } from "lucide-react";
+import { MessageSquare, X, Star, CheckCircle, Image as ImageIcon, Compass } from "lucide-react";
 
 type Status = "pending" | "claude_done" | "resolved";
 
@@ -10,6 +10,7 @@ interface FeedbackRow {
   id: string;
   route: string;
   pageLabel?: string;
+  page_title?: string;
   text: string;
   images: string[];
   submitterName: string | null;
@@ -41,18 +42,37 @@ function relTime(iso: string): string {
   return new Date(ts).toLocaleDateString();
 }
 
+function getReadableCmsPageName(pathname: string, docTitle?: string): string {
+  if (docTitle && docTitle.trim() && !docTitle.includes("404")) {
+    const clean = docTitle.replace(/\|.*$/g, "").replace(/- Weave.*$/gi, "").trim();
+    if (clean && clean.length > 1 && clean !== "Weave") return clean;
+  }
+  if (pathname === "/" || pathname === "") return "CMS Dashboard";
+  if (pathname.startsWith("/products")) return "Product Management";
+  if (pathname.startsWith("/orders")) return "Orders & Invoices";
+  if (pathname.startsWith("/feedback")) return "Customer Feedbacks";
+  if (pathname.startsWith("/artisans")) return "Artisans & Clusters";
+  if (pathname.startsWith("/inventory")) return "Fabric Inventory";
+  if (pathname.startsWith("/analytics")) return "Sales Analytics";
+  
+  const segment = pathname.split("/").filter(Boolean).pop() || "Page";
+  return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+}
+
 export default function PageFeedbackWidget() {
   const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"compose" | "list">("compose");
   const [items, setItems] = useState<FeedbackRow[] | null>(null);
 
+  // Auto-detected page metadata
+  const [detectedTitle, setDetectedTitle] = useState("CMS Dashboard");
+  const [fullUrl, setFullUrl] = useState("/");
+
   // Form State
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [category, setCategory] = useState("admin");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -61,6 +81,15 @@ export default function PageFeedbackWidget() {
   const [error, setError] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-detect page title & URL
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const pageTitle = getReadableCmsPageName(pathname, document.title);
+      setDetectedTitle(pageTitle);
+      setFullUrl(window.location.pathname + window.location.search);
+    }
+  }, [pathname, open]);
 
   const loadFeedbacks = useCallback(async () => {
     try {
@@ -110,12 +139,13 @@ export default function PageFeedbackWidget() {
 
     try {
       const formData = new FormData();
-      formData.append("name", name.trim() || "CMS Admin");
-      formData.append("email", email.trim() || "admin@anuprerna.com");
+      formData.append("name", "CMS Admin");
+      formData.append("email", "admin@anuprerna.com");
       formData.append("rating", String(rating));
       formData.append("category", category);
       formData.append("message", message.trim());
-      formData.append("pageUrl", pathname);
+      formData.append("pageUrl", fullUrl || pathname);
+      formData.append("pageTitle", detectedTitle);
 
       if (imageFile) {
         formData.append("image", imageFile);
@@ -192,22 +222,33 @@ export default function PageFeedbackWidget() {
           <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] transition-opacity" onClick={() => setOpen(false)} />
 
           <aside className="relative z-10 flex h-full w-full max-w-md flex-col bg-white shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#EFEEE9] bg-[#FAF7F2] px-5 py-4">
-              <div>
+            {/* Header with Auto-Detected Page */}
+            <div className="border-b border-[#EFEEE9] bg-[#FAF7F2] px-5 py-4">
+              <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-[#7D5B20] flex items-center gap-2">
                   <MessageSquare className="w-4 h-4" />
                   Page Feedback
                 </h2>
-                <p className="max-w-[18rem] truncate text-xs text-black/50 font-mono mt-0.5">{pathname}</p>
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                  className="rounded-full p-1.5 text-black/50 hover:bg-black/5 hover:text-black transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="rounded-full p-1.5 text-black/50 hover:bg-black/5 hover:text-black transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              {/* Auto-detected Page Indicator */}
+              <div className="mt-2.5 flex items-center gap-2 rounded-lg bg-[#FAF0E1] border border-[#EADBCC] px-2.5 py-1.5 text-xs text-[#7D5B20]">
+                <Compass className="w-4 h-4 shrink-0 text-[#7D5B20]" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#A27830]">Auto-Detected Page:</span>
+                    <span className="font-semibold truncate text-[#5A3E11]">{detectedTitle}</span>
+                  </div>
+                  <p className="truncate text-[11px] text-[#7D5B20]/75 font-mono">{fullUrl}</p>
+                </div>
+              </div>
             </div>
 
             {/* Navigation Tabs */}
@@ -246,7 +287,7 @@ export default function PageFeedbackWidget() {
                     </div>
                     <h3 className="text-base font-semibold text-black">Thank You for Your Feedback!</h3>
                     <p className="text-xs text-black/60 leading-relaxed">
-                      Your review and attached photos have been safely saved to our Neon cloud dashboard.
+                      Feedback for <span className="font-semibold text-black/80">{detectedTitle}</span> has been safely saved to our Neon cloud dashboard.
                     </p>
                     <button
                       type="button"
@@ -319,7 +360,7 @@ export default function PageFeedbackWidget() {
                     {/* Feedback Message */}
                     <div>
                       <label htmlFor="cms-fb-message" className="block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1">
-                        Message / Suggestion <span className="text-red-500">*</span>
+                        Message / Suggestion for this page <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         id="cms-fb-message"
@@ -327,7 +368,7 @@ export default function PageFeedbackWidget() {
                         required
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Tell us what you liked or how we can improve this page..."
+                        placeholder={`Tell us what you liked or how we can improve ${detectedTitle}...`}
                         className="w-full rounded-lg border border-gray-300 p-2.5 text-xs sm:text-sm outline-none focus:border-[#7D5B20] focus:ring-1 focus:ring-[#7D5B20] transition placeholder:text-black/35"
                       />
                     </div>
@@ -446,7 +487,7 @@ export default function PageFeedbackWidget() {
                       )}
 
                       <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-[11px] text-black/50">
-                        <span>{it.submitterName || "Customer"}</span>
+                        <span className="truncate max-w-[12rem]">{it.pageLabel || it.route || "Page"}</span>
                         {it.status !== "resolved" && (
                           <button
                             type="button"

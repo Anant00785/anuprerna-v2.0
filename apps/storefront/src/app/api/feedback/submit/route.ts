@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     let category = 'general';
     let message = '';
     let pageUrl = '/';
+    let pageTitle = '';
     let imageUrl: string | null = null;
 
     if (contentType.includes('multipart/form-data')) {
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
       category = String(formData.get('category') || 'general').trim();
       message = String(formData.get('message') || '').trim();
       pageUrl = String(formData.get('pageUrl') || '/').trim();
+      pageTitle = String(formData.get('pageTitle') || '').trim();
 
       const imageFile = formData.get('image') as File | null;
       if (imageFile && imageFile.size > 0) {
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
       category = String(body.category || 'general').trim();
       message = String(body.message || '').trim();
       pageUrl = String(body.pageUrl || '/').trim();
+      pageTitle = String(body.pageTitle || '').trim();
 
       if (body.imageBase64) {
         const matches = body.imageBase64.match(/^data:(.+);base64,(.+)$/);
@@ -57,13 +60,14 @@ export async function POST(req: NextRequest) {
     }
 
     const feedbackId = await saveFeedbackToNeon({
-      name: name || 'Anonymous User',
+      name: name || 'Valued Customer',
       email: email || null,
       rating: Math.min(5, Math.max(1, rating)),
       category,
       message,
       image_url: imageUrl,
       page_url: pageUrl,
+      page_title: pageTitle || null,
       status: 'new',
     });
 
@@ -71,6 +75,8 @@ export async function POST(req: NextRequest) {
       success: true,
       id: feedbackId,
       imageUrl,
+      pageUrl,
+      pageTitle,
       message: 'Feedback submitted successfully to Neon!',
     });
   } catch (error: unknown) {

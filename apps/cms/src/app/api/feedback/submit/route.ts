@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     let category = "cms";
     let message = "";
     let pageUrl = "/";
+    let pageTitle = "";
     let imageUrl: string | null = null;
 
     if (contentType.includes("multipart/form-data")) {
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
       category = String(formData.get("category") || "cms").trim();
       message = String(formData.get("message") || "").trim();
       pageUrl = String(formData.get("pageUrl") || "/").trim();
+      pageTitle = String(formData.get("pageTitle") || "").trim();
 
       const imageFile = formData.get("image") as File | null;
       if (imageFile && imageFile.size > 0) {
@@ -79,6 +81,7 @@ export async function POST(req: NextRequest) {
       category = String(body.category || "cms").trim();
       message = String(body.message || "").trim();
       pageUrl = String(body.pageUrl || "/").trim();
+      pageTitle = String(body.pageTitle || "").trim();
 
       if (body.imageBase64) {
         const matches = body.imageBase64.match(/^data:(.+);base64,(.+)$/);
@@ -96,18 +99,19 @@ export async function POST(req: NextRequest) {
 
     const pool = getNeonPool();
     const query = `
-      INSERT INTO customer_feedbacks (name, email, rating, category, message, image_url, page_url, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO customer_feedbacks (name, email, rating, category, message, image_url, page_url, page_title, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id;
     `;
     const values = [
-      name || "Admin User",
+      name || "CMS Admin",
       email || null,
       Math.min(5, Math.max(1, rating)),
       category,
       message,
       imageUrl || null,
       pageUrl || "/",
+      pageTitle || null,
       "new",
     ];
 
@@ -117,6 +121,8 @@ export async function POST(req: NextRequest) {
       success: true,
       id: res.rows[0]?.id,
       imageUrl,
+      pageUrl,
+      pageTitle,
       message: "Feedback submitted successfully to Neon!",
     });
   } catch (error: unknown) {
