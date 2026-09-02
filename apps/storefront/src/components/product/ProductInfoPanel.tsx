@@ -21,6 +21,7 @@ import Img from '@/components/ui/Img';
 import LogisticsBlock from './LogisticsBlock';
 import { effectiveOrderProfile, orderTypeSuffix } from './order-profile';
 import { estimatedDeliveryString } from './delivery';
+import { useBuyerMode } from '@/components/BuyerModeProvider';
 
 interface ProductInfoPanelProps {
   product: ProductDetail;
@@ -247,6 +248,8 @@ export default function ProductInfoPanel({
 }: ProductInfoPanelProps) {
   const { formatCode } = useCurrency();
   const { user, loading: authLoading } = useAuth();
+  const { mode: buyerMode } = useBuyerMode();
+  const isBusiness = buyerMode === 'b2b';
   // Bulk DATA (pre-order/volume tiers/MOQ box) is UNIVERSAL (guest/b2c/b2b),
   // matching live anuprerna.com — buyer mode never gates or changes it.
   const [cartRefresh, setCartRefresh] = useState(0);
@@ -490,14 +493,12 @@ export default function ProductInfoPanel({
     inStockQty,
     customized: isCustomChosen,
   });
-  // MOQ shown + enforced must AGREE with the "MOQ: from N" box (deriveMoq), which
-  // for an out-of-stock made-to-order product prefers the smallest volume-discount
-  // tier over the raw MTO-profile MOQ. Floor the Add-to-Cart default at the same
-  // value so the quoted minimum and the qty stepper can never disagree. Math.max
-  // never lowers a legitimate order-profile floor (e.g. a pre-order tier min).
-  const moqValue = orderProfile.orderType !== 'in-stock' && moq.minTier != null
+  // In Retail mode (b2c/guest), individual shoppers can buy 1 pc / 1 unit even for made-to-order items.
+  // Minimum Order Quantity (MOQ >= 5) only applies in Business Mode (B2B wholesale).
+  const rawMoq = orderProfile.orderType !== 'in-stock' && moq.minTier != null
     ? Math.max(orderProfile.moq, moq.minTier)
     : orderProfile.moq;
+  const moqValue = isBusiness ? (rawMoq > 0 ? rawMoq : 1) : 1;
   // Optional bulk / pre-order entry points for IN-STOCK items — shown openly as
   // info (NOT a hard floor): retail can still buy any qty off the shelf.
   // Quantity FACTS, kept for everybody: the wrapper preserves both numbers in
@@ -811,34 +812,33 @@ export default function ProductInfoPanel({
         />
       )}
 
-      {/* MOQ + lead time + returns -- universal (guest/b2c/b2b), matching live. */}
+      {/* MOQ + lead time + returns */}
       <div className='flex flex-col gap-2 rounded-xl border border-sand bg-cream px-4 py-3 text-sm'>
         <div className='flex items-start gap-2'>
           <span className='material-symbols-outlined text-[18px] text-clay'>inventory_2</span>
-          {/* Order-model-aware: in-stock = retail (NO hard MOQ; bulk is OPTIONAL,
-              framed "bulk discounts from {min}"); made-to-order = B2B hard MOQ
-              using the MINIMUM tier (~25m), never the top 1000m slab. */}
-          {inStock ? (
+          {isBusiness ? (
             <span className='text-black/70'>
-              <span className='font-semibold text-black'>In stock:</span>{' '}
-              order any quantity off the shelf
-              {moq.minTier != null ? (
-                <span className='text-black/50'>
-                  {' '}· bulk discounts from {moq.minTier} {unit}
+              <span className='font-semibold text-black'>Wholesale MOQ:</span>{' '}
+              {moq.generic ? (
+                'Bulk wholesale MOQ applies'
+              ) : (
+                <span>
+                  from {moq.minTier || 5} {unit}
+                  {moq.sample ? <span className='text-black/50'> · {moq.sample} sample</span> : null}
                 </span>
-              ) : null}
+              )}
             </span>
           ) : (
             <span className='text-black/70'>
-              <span className='font-semibold text-black'>MOQ:</span>{' '}
-              {moq.generic ? (
-                'Low MOQ — bulk & sample available'
-              ) : (
-                <span>
-                  from {moq.minTier} {unit}
-                  {moq.sample ? <span className='text-black/50'> · {moq.sample}</span> : null}
-                </span>
-              )}
+              <span className='font-semibold text-black'>Order Quantity:</span>{' '}
+              <span>
+                From 1 {unit} (No minimum order for retail)
+                {moq.minTier != null ? (
+                  <span className='text-black/50'>
+                    {' '}· bulk wholesale discounts from {moq.minTier} {unit}
+                  </span>
+                ) : null}
+              </span>
             </span>
           )}
         </div>

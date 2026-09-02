@@ -174,6 +174,17 @@ export const profileRepository = {
    */
   async getAddressList(jwtToken?: string): Promise<Address[]> {
     try {
+      const res = await fetch("/api/profile/addresses", {
+        headers: getAuthHeaders(jwtToken),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list = data?.addressList || data?.payload || data?.content;
+        if (Array.isArray(list)) return list;
+      }
+    } catch {}
+
+    try {
       const headers = getAuthHeaders(jwtToken);
       const response = await apiRequest<{ addressList?: Address[]; payload?: Address[]; content?: Address[] } | Address[]>(
         "get/address-list",
@@ -190,6 +201,20 @@ export const profileRepository = {
    * Add a new address
    */
   async addAddress(address: Address, jwtToken?: string): Promise<Address> {
+    try {
+      const res = await fetch("/api/profile/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders(jwtToken) },
+        body: JSON.stringify(address),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success) {
+          return (data?.entity || data?.address || { ...address, id: data?.id || Date.now() }) as Address;
+        }
+      }
+    } catch {}
+
     const headers = getAuthHeaders(jwtToken);
     return apiRequest<Address>("add/address", {
       method: "POST",
@@ -202,6 +227,20 @@ export const profileRepository = {
    * Update an existing address
    */
   async updateAddress(address: Address, jwtToken?: string): Promise<Address> {
+    try {
+      const res = await fetch("/api/profile/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders(jwtToken) },
+        body: JSON.stringify(address),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success) {
+          return (data?.entity || data?.address || { ...address, id: data?.id || Date.now() }) as Address;
+        }
+      }
+    } catch {}
+
     const headers = getAuthHeaders(jwtToken);
     return apiRequest<Address>("update/address", {
       method: "POST",

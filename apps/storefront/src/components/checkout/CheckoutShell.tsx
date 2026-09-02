@@ -663,19 +663,21 @@ export default function CheckoutShell() {
   }, [finalizeOrder]);
 
   // ---- TERMINAL ACTION — the REAL checkout sequence -------------------------
-  const placeOrder = async () => {
+  const placeOrder = async (preferredGateway?: string) => {
     if (payBusy) return;
+    setPayBusy(true);
     setPayError('');
     if (!shippingAddress) {
       setPayError('Add a shipping address before paying.');
       setStep('shipping');
+      setPayBusy(false);
       return;
     }
     if (items.length === 0) {
       setPayError('Your cart is empty.');
+      setPayBusy(false);
       return;
     }
-    setPayBusy(true);
     const post = async (url: string, body: unknown) => {
       const r = await fetch(url, {
         method: 'POST',
@@ -705,7 +707,10 @@ export default function CheckoutShell() {
 
       // 2. open a payment session
       setPayLabel('Opening a secure payment…');
-      const session = await post('/api/checkout/payment-session', { orderId });
+      const session = await post('/api/checkout/payment-session', {
+        orderId,
+        provider: preferredGateway || (currency === 'INR' ? 'razorpay' : 'stripe'),
+      });
       if (!session.ok || session.data.success !== true) {
         setPayError('Could not start the payment. Your order is saved and unpaid.');
         setPayBusy(false);

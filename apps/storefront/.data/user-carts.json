@@ -1,21 +1,41 @@
 {
   "anantkr10000@gmail.com": [
     {
-      "id": 1788338330109,
+      "id": 1788339186939,
       "email": "anantkr10000@gmail.com",
       "fabricProductId": null,
-      "finishedProductId": 351,
+      "finishedProductId": 82647,
+      "selectedFabricId": null,
+      "selectedSizeOptionId": 115314,
+      "selectedFinishId": "",
+      "customSize": {},
+      "productGroup": "finished",
+      "orderType": "IN_STOCK",
+      "quantity": 1,
+      "makingCharge": 1500,
+      "unit": "UNIT",
+      "price": 1500,
+      "createdAt": 1788339186606,
+      "updatedAt": 1788339186606
+    }
+  ],
+  "rahul_textiles@example.com": [
+    {
+      "id": 1788338943471,
+      "email": "rahul_textiles@example.com",
+      "fabricProductId": 1001,
+      "finishedProductId": null,
       "selectedFabricId": null,
       "selectedSizeOptionId": null,
       "selectedFinishId": "",
       "customSize": null,
-      "productGroup": "FINISHED_PRODUCT",
+      "productGroup": "FABRIC",
       "orderType": "IN_STOCK",
-      "quantity": 5,
+      "quantity": 3,
       "makingCharge": 0,
-      "unit": "UNIT",
-      "createdAt": 1788338329857,
-      "updatedAt": 1788338329857
+      "unit": "METER",
+      "createdAt": 1788338942717,
+      "updatedAt": 1788338942717
     }
   ]
 }

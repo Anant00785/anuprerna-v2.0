@@ -1,93 +1,156 @@
 'use client';
 
-// =====================================================================================
-// PaymentMethodPanel — the PAYMENT step of a real checkout.
-//
-// WHAT CHANGED (2026-08-16, real-checkout lane). This panel used to be a static
-// picture: Razorpay/Stripe logos, the caption "no session is started in TEST
-// MODE", and a button labelled "Submit Enquiry" that only flipped local state.
-//
-// It now drives the real sequence. Clicking Pay runs, in order:
-//   POST /api/checkout/order            create the order (status PENDING)
-//   POST /api/checkout/payment-session  open a payment session via the provider
-//   POST /api/checkout/sandbox-gateway  the MOCKED third party signs a callback
-//   POST /api/checkout/payment-callback verify -> order PAID -> confirmation
-//
-// The provider shown is whatever the backend's PaymentProvider seam reports
-// (`provider` prop, from the session response) — this panel never picks a
-// gateway, it only describes the one the server chose:
-//   'sandbox'  no third-party script, no egress; the sequence, the handles and
-//              the signature check are still the real ones.
-//   'razorpay' REAL Razorpay test mode (INR). Payment happens in Razorpay's own
-//              modal, opened over this page.
-//   'stripe'   REAL Stripe test mode (non-INR). Payment happens on Stripe's own
-//              hosted page; the buyer is redirected there and back.
-// In every case NO CARD FIELD EXISTS IN THIS APPLICATION, and the order is only
-// marked paid after a server-side check against the gateway.
-// =====================================================================================
+import { useState } from 'react';
 
 interface Props {
   isINR: boolean;
   /** Amount to be collected now, already formatted for display. */
   amountLabel: string;
-  /** Payment provider in force, as reported by the SERVER (payment-mode before
-   *  the order, the order's recorded provider after it). '' = not yet known —
-   *  render that as unknown, never as a default. */
+  /** Payment provider in force */
   provider: string;
   busy: boolean;
   busyLabel: string;
   error: string;
-  onPay: () => void;
+  onPay: (selectedProvider?: string) => void;
 }
 
 export default function PaymentMethodPanel({ isINR, amountLabel, provider, busy, busyLabel, error, onPay }: Props) {
-  const sandbox = provider === 'sandbox';
-  const known = provider === 'sandbox' || provider === 'razorpay' || provider === 'stripe';
-  // NAMED FROM THE PROVIDER, not inferred from the currency. `isINR` still picks
-  // the payment-method list (a display nicety), but the gateway NAME — the thing
-  // a buyer reads as a promise about who takes their card — comes from the
-  // server's answer only.
-  const gatewayName =
-    provider === 'razorpay' ? 'Razorpay'
-    : provider === 'stripe' ? 'Stripe'
-    : 'Checking payment provider…';
-  const gatewayMethods = isINR ? 'UPI | Card | Wallet | Net Banking' : 'MASTERCARD | VISA | AMEX';
-  // How the buyer will actually be asked for payment, so the Pay button is not
-  // a surprise. Razorpay opens over the page; Stripe navigates away and back.
-  const handoff =
-    provider === 'razorpay' ? 'Razorpay will open a secure window over this page to take your payment.'
-    : provider === 'stripe' ? 'You will be taken to Stripe\u2019s secure payment page, then brought straight back here.'
-    : '';
+  const [selectedGateway, setSelectedGateway] = useState<'stripe' | 'razorpay'>(isINR ? 'razorpay' : 'stripe');
+
+  const activeProvider = isINR ? 'razorpay' : selectedGateway;
 
   return (
     <div className='space-y-5'>
       <h2 className='text-sm font-semibold uppercase tracking-[.08em] text-clay'>Payment Method</h2>
 
-      <div className='rounded-xl border border-clay/15 bg-[#f6f2ea] p-5'>
-        <div className='flex items-center gap-3'>
-          <div className='flex h-10 w-10 items-center justify-center rounded-md border border-clay/15 bg-white'>
-            <span className='text-[10px] font-bold leading-none text-blue-700'>{isINR ? 'RP' : 'ST'}</span>
-          </div>
-          <div>
-            <p className='text-sm font-semibold text-clay' data-testid='gateway-name'>
-              {sandbox ? 'Sandbox payment provider (offline mock)' : gatewayName}
+      <div className='space-y-3'>
+        {isINR ? (
+          /* Domestic INR: Razorpay */
+          <div
+            onClick={() => setSelectedGateway('razorpay')}
+            className='rounded-xl border border-[#ca9b6d] ring-1 ring-[#ca9b6d] bg-white p-5 cursor-pointer transition-all shadow-xs'
+          >
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-3'>
+                <input
+                  type='radio'
+                  name='paymentGateway'
+                  checked={true}
+                  readOnly
+                  className='accent-[#ca9b6d] w-4 h-4 cursor-pointer'
+                />
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm font-bold text-gray-900'>Razorpay</span>
+                  <svg className='w-5 h-5 text-[#0c2340]' viewBox='0 0 24 24' fill='currentColor'>
+                    <path
+                      d='M22.436 0l-11.91 7.773-1.174 4.276 6.625-4.324-4.908 16.275h4.153l7.214-24zM1.564 24l5.632-18.665 4.316-2.817-4.135 13.708 4.908-3.204-2.148 10.978h-8.573z'
+                      fill='#0284c7'
+                    />
+                  </svg>
+                </div>
+              </div>
+              <span className='text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200'>
+                UPI &amp; Cards
+              </span>
+            </div>
+
+            <p className='text-xs text-gray-600 mt-2 ml-7'>
+              Credit/Debit Card, UPI, Net Banking, Wallets
             </p>
-            <p className='text-xs text-clayd/70'>{gatewayMethods}</p>
+
+            <div className='bg-[#f8f9fa] border border-gray-100 rounded-lg p-3 mt-3 ml-7 text-xs text-gray-500 leading-relaxed'>
+              Secure payment powered by Razorpay. All major Indian cards, UPI apps &amp; banks accepted.
+            </div>
           </div>
-        </div>
-        {sandbox && (
-          <p className='mt-3 text-xs italic text-clayd/70'>
-            Sandbox gateway: the order, the payment session, the signed callback and the paid
-            order are all real and persisted — only the card network is simulated. No card is
-            charged and no money moves.
-          </p>
-        )}
-        {known && !sandbox && handoff && (
-          <p className='mt-3 text-xs text-clayd/70' data-testid='gateway-handoff'>{handoff}</p>
+        ) : (
+          /* International (USD, EUR, GBP, etc.): Show BOTH Stripe and Razorpay */
+          <>
+            {/* 1. Stripe Option */}
+            <div
+              onClick={() => setSelectedGateway('stripe')}
+              className={`rounded-xl border p-5 cursor-pointer transition-all ${
+                selectedGateway === 'stripe'
+                  ? 'border-[#ca9b6d] ring-1 ring-[#ca9b6d] bg-white shadow-xs'
+                  : 'border-gray-200 hover:border-gray-300 bg-[#fafafa]'
+              }`}
+            >
+              <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-3'>
+                  <input
+                    type='radio'
+                    name='paymentGateway'
+                    checked={selectedGateway === 'stripe'}
+                    onChange={() => setSelectedGateway('stripe')}
+                    className='accent-[#ca9b6d] w-4 h-4 cursor-pointer'
+                  />
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-bold text-gray-900'>Credit / Debit Card (Stripe)</span>
+                  </div>
+                </div>
+                <span className='text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-200'>
+                  Stripe
+                </span>
+              </div>
+
+              <p className='text-xs text-gray-600 mt-2 ml-7'>
+                Visa, MasterCard, American Express, Discover, Apple Pay
+              </p>
+
+              {selectedGateway === 'stripe' && (
+                <div className='bg-[#f8f9fa] border border-gray-100 rounded-lg p-3 mt-3 ml-7 text-xs text-gray-500 leading-relaxed'>
+                  Secure international payment powered by Stripe. You will be taken to Stripe&apos;s secure payment window.
+                </div>
+              )}
+            </div>
+
+            {/* 2. Razorpay International Option */}
+            <div
+              onClick={() => setSelectedGateway('razorpay')}
+              className={`rounded-xl border p-5 cursor-pointer transition-all ${
+                selectedGateway === 'razorpay'
+                  ? 'border-[#ca9b6d] ring-1 ring-[#ca9b6d] bg-white shadow-xs'
+                  : 'border-gray-200 hover:border-gray-300 bg-[#fafafa]'
+              }`}
+            >
+              <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-3'>
+                  <input
+                    type='radio'
+                    name='paymentGateway'
+                    checked={selectedGateway === 'razorpay'}
+                    onChange={() => setSelectedGateway('razorpay')}
+                    className='accent-[#ca9b6d] w-4 h-4 cursor-pointer'
+                  />
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-bold text-gray-900'>Razorpay (International)</span>
+                    <svg className='w-5 h-5 text-[#0c2340]' viewBox='0 0 24 24' fill='currentColor'>
+                      <path
+                        d='M22.436 0l-11.91 7.773-1.174 4.276 6.625-4.324-4.908 16.275h4.153l7.214-24zM1.564 24l5.632-18.665 4.316-2.817-4.135 13.708 4.908-3.204-2.148 10.978h-8.573z'
+                        fill='#0284c7'
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <span className='text-xs font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded border border-sky-200'>
+                  Razorpay
+                </span>
+              </div>
+
+              <p className='text-xs text-gray-600 mt-2 ml-7'>
+                International Cards, Net Banking, Multi-Currency Wallets
+              </p>
+
+              {selectedGateway === 'razorpay' && (
+                <div className='bg-[#f8f9fa] border border-gray-100 rounded-lg p-3 mt-3 ml-7 text-xs text-gray-500 leading-relaxed'>
+                  Secure payment powered by Razorpay. A secure Razorpay modal will open to complete checkout.
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
-      {/* G7 — 4 policy links (Privacy / Return / T&C / International Orders) */}
+      {/* Policy links */}
       <div className='flex flex-wrap gap-x-4 gap-y-1 text-xs text-clayd/60'>
         <a href='/content/policies/privacy-policy/173823' target='_blank' rel='noopener' className='underline underline-offset-2 hover:text-clay'>Privacy Policy</a>
         <a href='/return-policy' target='_blank' rel='noopener' className='underline underline-offset-2 hover:text-clay'>Return Policy</a>
@@ -103,10 +166,10 @@ export default function PaymentMethodPanel({ isINR, amountLabel, provider, busy,
 
       <button
         type='button'
-        onClick={onPay}
+        onClick={() => onPay(activeProvider)}
         disabled={busy}
         data-testid='pay-now'
-        className='flex w-full items-center justify-center gap-2 rounded-md bg-clay/80 px-4 py-3.5 text-sm font-semibold uppercase tracking-[.08em] text-white transition hover:bg-clay disabled:opacity-60'
+        className='flex w-full items-center justify-center gap-2 rounded-md bg-clay/80 px-4 py-3.5 text-sm font-semibold uppercase tracking-[.08em] text-white transition hover:bg-clay disabled:opacity-60 cursor-pointer'
       >
         {busy ? busyLabel : 'Pay ' + amountLabel}
         {!busy && <span className='material-symbols-outlined text-[18px]'>lock</span>}
