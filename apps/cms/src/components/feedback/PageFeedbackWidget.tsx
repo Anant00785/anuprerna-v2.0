@@ -1,26 +1,8 @@
 "use client";
 
-/**
- * Page-Feedback widget for Weave (mirrors the assistance-app FeedbackWidget,
- * adapted to Weave's design tokens + the NestJS sandbox REST feedback API).
- *
- * - Floating launcher -> right slide-out panel titled "Page Feedback".
- * - Textarea + paste/drop image zone (max 2, downscaled base64 data-URLs).
- * - Below: this route's pending feedback, newest first, with thumbnails
- *   (lightbox), relative timestamps, and status.
- * - Owner (amit@anuprerna.com) / submitter can mark-done / confirm / edit /
- *   delete; other users can only edit/delete their OWN items.
- * - Logged-in only: renders nothing until /api/auth/me returns authenticated.
- *
- * All backend traffic goes through same-origin Next proxy routes
- * (/api/feedback, /api/feedback/:id) which inject identity server-side —
- * this matches Weave's existing "client calls /api/* routes" pattern.
- */
-
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, FormEvent } from "react";
 import { usePathname } from "next/navigation";
-import { MessageSquare, X } from "lucide-react";
-import { displayName } from "@/lib/feedback-classify";
+import { MessageSquare, X, Star, CheckCircle, Image as ImageIcon } from "lucide-react";
 
 type Status = "pending" | "claude_done" | "resolved";
 
@@ -37,12 +19,13 @@ interface FeedbackRow {
   updatedAt: string;
 }
 
-interface Me {
-  authenticated: boolean;
-  email: string;
-  name: string;
-  isOwner: boolean;
-}
+const CATEGORIES = [
+  { id: "admin", label: "CMS Feature", icon: "Settings" },
+  { id: "products", label: "Catalog / Inventory", icon: "Package" },
+  { id: "orders", label: "Orders / Workflow", icon: "Truck" },
+  { id: "ui", label: "UI / Experience", icon: "Layout" },
+  { id: "bug", label: "Issue / Bug", icon: "AlertTriangle" },
+];
 
 function relTime(iso: string): string {
   const ts = new Date(iso).getTime();
@@ -58,282 +41,146 @@ function relTime(iso: string): string {
   return new Date(ts).toLocaleDateString();
 }
 
-/** Status color config — drives per-card badge and FAB badge */
-function statusConfig(status: Status): { dot: string; label: string; badge: string } {
-  if (status === "pending") {
-    return {
-      dot: "bg-red-500",
-      label: "Pending",
-      badge: "text-red-600 bg-red-100 border border-red-300",
-    };
-  }
-  if (status === "claude_done") {
-    return {
-      dot: "bg-amber-500",
-      label: "Fixed — confirm",
-      badge: "text-amber-600 bg-amber-100 border border-amber-300",
-    };
-  }
-  return {
-    dot: "bg-emerald-500",
-    label: "Resolved",
-    badge: "text-emerald-600 bg-emerald-100 border border-emerald-300",
-  };
-}
-
-// Read a File, downscale (longest side <= 1200px) and re-encode as a small
-// JPEG data-URL so the base64 stays well under the sandbox row budget.
-async function fileToDataUrl(file: File): Promise<string> {
-  const raw = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-  return await new Promise<string>((resolve) => {
-    const img = new window.Image();
-    img.onload = () => {
-      const MAX = 1200;
-      let { width, height } = img;
-      if (width > MAX || height > MAX) {
-        const s = Math.min(MAX / width, MAX / height);
-        width = Math.round(width * s);
-        height = Math.round(height * s);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return resolve(raw);
-      ctx.drawImage(img, 0, 0, width, height);
-      try {
-        resolve(canvas.toDataURL("image/jpeg", 0.8));
-      } catch {
-        resolve(raw);
-      }
-    };
-    img.onerror = () => resolve(raw);
-    img.src = raw;
-  });
-}
-
 export default function PageFeedbackWidget() {
   const pathname = usePathname() || "/";
-  const [me, setMe] = useState<Me | null>(null);
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"compose" | "list">("compose");
   const [items, setItems] = useState<FeedbackRow[] | null>(null);
-  const [text, setText] = useState("");
-  const [imgs, setImgs] = useState<string[]>([]); // pending new images (data-URLs)
-  const [editKeep, setEditKeep] = useState<string[]>([]); // existing images kept while editing
-  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Form State
+  const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [category, setCategory] = useState("admin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const [openCount, setOpenCount] = useState(0);
-  const [pendingOpenCount, setPendingOpenCount] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const email = (me?.email || "").toLowerCase();
-  const isOwner = !!me?.isOwner;
-
-  const pageLabel = useMemo(() => {
-    if (typeof document !== "undefined" && document.title) return document.title;
-    return pathname;
-  }, [pathname]);
-
-  const fetchCount = useCallback(async () => {
+  const loadFeedbacks = useCallback(async () => {
     try {
       const r = await fetch(`/api/feedback?route=${encodeURIComponent(pathname)}`, {
         cache: "no-store",
       });
       const d = (await r.json()) as { feedback: FeedbackRow[] };
-      const allItems = d.feedback ?? [];
-      setOpenCount(allItems.filter((it) => it.status !== "resolved").length);
-      setPendingOpenCount(allItems.filter((it) => it.status === "pending").length);
-    } catch {
-      /* ignore */
-    }
-  }, [pathname]);
-
-  // Identity gate — only render for logged-in users.
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d: Me) => {
-        if (alive) setMe(d);
-      })
-      .catch(() => {
-        if (alive) setMe({ authenticated: false, email: "", name: "", isOwner: false });
-      });
-    return () => {
-      alive = false;
-    };
-  }, [pathname]);
-
-  const load = useCallback(async () => {
-    setItems(null);
-    try {
-      const r = await fetch(`/api/feedback?route=${encodeURIComponent(pathname)}`, {
-        cache: "no-store",
-      });
-      const d = (await r.json()) as { feedback: FeedbackRow[]; me: Me };
-      if (d.me) setMe(d.me);
-      const feedbackItems = d.feedback ?? [];
-      setItems(feedbackItems);
-      setOpenCount(feedbackItems.filter((it) => it.status !== "resolved").length);
-      setPendingOpenCount(feedbackItems.filter((it) => it.status === "pending").length);
+      setItems(d.feedback ?? []);
     } catch {
       setItems([]);
     }
   }, [pathname]);
 
   useEffect(() => {
-    if (open) load();
-  }, [open, load]);
+    if (open) {
+      loadFeedbacks();
+    }
+  }, [open, loadFeedbacks]);
 
-  // Fetch open count on mount and route change (drives the launcher badge).
-  useEffect(() => {
-    if (!me?.authenticated) return;
-    void fetchCount();
-  }, [me?.authenticated, fetchCount]);
+  const handleFileChange = (file: File | null) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image file must be under 10MB");
+      return;
+    }
+    setError("");
+    setImageFile(file);
 
-  // Escape closes the lightbox.
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox]);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
 
-  async function addFiles(files: File[] | FileList | null) {
-    if (!files) return;
-    const incoming = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    const room = Math.max(0, 2 - (imgs.length + editKeep.length));
-    const picked = incoming.slice(0, room);
-    const urls = await Promise.all(picked.map(fileToDataUrl));
-    setImgs((cur) => [...cur, ...urls].slice(0, 2));
-  }
+  const removeImage = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
-  function removePending(idx: number) {
-    setImgs((cur) => cur.filter((_, i) => i !== idx));
-  }
-
-  function resetForm() {
-    setImgs([]);
-    setText("");
-    setEditingId(null);
-    setEditKeep([]);
-  }
-
-  async function submit() {
-    if (!text.trim() || submitting) return;
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || submitting) return;
     setSubmitting(true);
+    setError("");
+
     try {
-      const images = [...editKeep, ...imgs].slice(0, 2);
-      if (editingId) {
-        const r = await fetch(`/api/feedback/${editingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text.trim(), images }),
-        });
-        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed");
-      } else {
-        const r = await fetch("/api/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ route: pathname, pageLabel, text: text.trim(), images }),
-        });
-        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed");
+      const formData = new FormData();
+      formData.append("name", name.trim() || "CMS Admin");
+      formData.append("email", email.trim() || "admin@anuprerna.com");
+      formData.append("rating", String(rating));
+      formData.append("category", category);
+      formData.append("message", message.trim());
+      formData.append("pageUrl", pathname);
+
+      if (imageFile) {
+        formData.append("image", imageFile);
       }
-      resetForm();
-      await load();
-    } catch (e) {
-      alert("Could not save feedback: " + (e as Error).message);
+
+      const res = await fetch("/api/feedback/submit", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to submit feedback");
+      }
+
+      setSubmitted(true);
+      setMessage("");
+      removeImage();
+      await loadFeedbacks();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to submit feedback");
     } finally {
       setSubmitting(false);
     }
-  }
+  };
 
-  async function patchStatus(id: string, status: Status) {
+  const handleResolve = async (id: string) => {
+    setItems((prev) =>
+      prev === null ? prev : prev.map((it) => (it.id === id ? { ...it, status: "resolved" } : it))
+    );
     try {
-      const r = await fetch(`/api/feedback/${id}`, {
+      await fetch(`/api/feedback/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: "resolved" }),
       });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed");
-      await load();
-    } catch (e) {
-      alert("Could not update: " + (e as Error).message);
+      await loadFeedbacks();
+    } catch {
+      /* ignore */
     }
-  }
+  };
 
-  async function onDelete(id: string) {
-    if (!confirm("Delete this feedback?")) return;
-    try {
-      const r = await fetch(`/api/feedback/${id}`, { method: "DELETE" });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed");
-      await load();
-    } catch (e) {
-      alert("Could not delete: " + (e as Error).message);
-    }
-  }
+  if (pathname.startsWith("/auth")) return null;
 
-  function startEdit(it: FeedbackRow) {
-    resetForm();
-    setEditingId(it.id);
-    setText(it.text);
-    setEditKeep(it.images ?? []);
-  }
-
-  function handlePaste(e: React.ClipboardEvent) {
-    const clip = e.clipboardData?.items;
-    if (!clip) return;
-    const files: File[] = [];
-    for (let i = 0; i < clip.length; i++) {
-      const it = clip[i];
-      if (it.type.startsWith("image/")) {
-        const f = it.getAsFile();
-        if (f) files.push(f);
-      }
-    }
-    if (files.length > 0) {
-      e.preventDefault();
-      addFiles(files);
-    }
-  }
-
-  // Never render for logged-out users or the login screen.
-  if (!me?.authenticated || pathname === "/login") return null;
-
-  const visible = (items ?? []).filter((it) => it.status !== "resolved");
-  const pendingCount = (items ?? []).filter((it) => it.status === "pending").length;
-  const slots = imgs.length + editKeep.length;
-
-  // FAB badge color: red if any pending, amber if only claude_done remain, hidden if none
-  const fabBadgeClass =
-    pendingOpenCount > 0
-      ? "bg-red-600 text-white"
-      : "bg-amber-500 text-white";
+  const visibleItems = (items ?? []).filter((it) => it.status !== "resolved");
+  const pendingCount = visibleItems.length;
 
   return (
     <>
-      {/* Floating launcher */}
+      {/* Floating launcher matching user screenshot */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Page feedback"
-          title="Page feedback"
-          className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-lg transition-shadow hover:shadow-xl"
-          style={{ background: "#FEF3E2", color: "#A86120", border: "1px solid #F5D6A0" }}
+          aria-label="Feedback"
+          title="Give Feedback"
+          className="fixed bottom-6 right-6 z-[95] inline-flex items-center gap-2 rounded-full border border-[#E8DFD1] bg-[#FAF7F2] hover:bg-[#F3EDE2] px-4 py-2 text-xs sm:text-sm font-medium text-[#7D5B20] shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <MessageSquare className="h-4 w-4" />
-          Feedback
-          {openCount > 0 && (
-            <span className={`inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] font-semibold leading-none ${fabBadgeClass}`}>
-              {openCount}
+          <MessageSquare className="w-4 h-4 text-[#7D5B20]" />
+          <span className="font-normal text-[#5C4217]">Feedback</span>
+          {pendingCount > 0 && (
+            <span
+              className="inline-flex items-center justify-center min-w-[1rem] h-[1rem] px-1 rounded-full bg-[#7D5B20] text-white text-[9px] font-semibold leading-none"
+              aria-label={`${pendingCount} open feedback items`}
+            >
+              {pendingCount}
             </span>
           )}
         </button>
@@ -341,154 +188,314 @@ export default function PageFeedbackWidget() {
 
       {/* Slide-over panel */}
       {open && (
-        <div className="fixed inset-0 z-[70]">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} />
-          <aside
-            className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-xl"
-            style={{ borderLeft: "1px solid #E8E4DE" }}
-            onPaste={handlePaste}
-          >
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] transition-opacity" onClick={() => setOpen(false)} />
+
+          <aside className="relative z-10 flex h-full w-full max-w-md flex-col bg-white shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "#E8E4DE" }}>
-              <div className="min-w-0">
-                <h2 className="font-serif text-base font-semibold" style={{ color: "#1A1714" }}>
+            <div className="flex items-center justify-between border-b border-[#EFEEE9] bg-[#FAF7F2] px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-[#7D5B20] flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
                   Page Feedback
                 </h2>
-                <p className="max-w-[18rem] truncate font-mono text-xs" style={{ color: "#AAA39E" }}>
-                  {pathname}
-                </p>
+                <p className="max-w-[18rem] truncate text-xs text-black/50 font-mono mt-0.5">{pathname}</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="rounded-md p-2 hover:bg-stone-100"
-                style={{ color: "#847D77" }}
+                className="rounded-full p-1.5 text-black/50 hover:bg-black/5 hover:text-black transition"
               >
-                <X className="h-5 w-5" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Compose */}
-            <div className="space-y-3 border-b px-5 py-4" style={{ borderColor: "#E8E4DE" }}>
-              {editingId && (
-                <div className="flex items-center justify-between rounded border px-2 py-1 text-xs" style={{ background: "#FEF3E2", borderColor: "#F5D6A0", color: "#A86120" }}>
-                  <span>Editing your feedback…</span>
-                  <button onClick={resetForm} className="underline">cancel</button>
-                </div>
-              )}
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="What should change on this page?"
-                rows={3}
-                className="w-full resize-none rounded-lg border p-2.5 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: "#E8E4DE", color: "#1A1714" }}
-              />
-              {/* Image dropzone */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
-                className="flex flex-wrap items-center gap-2"
-              >
-                {editKeep.map((u, i) => (
-                  <div key={"keep-" + i} className="relative h-14 w-14">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={u} alt="" className="h-14 w-14 rounded border object-cover" style={{ borderColor: "#E8E4DE" }} />
-                    <button onClick={() => setEditKeep((p) => p.filter((_, j) => j !== i))} className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-stone-900 text-[10px] leading-none text-white">x</button>
-                  </div>
-                ))}
-                {imgs.map((u, i) => (
-                  <div key={i} className="relative h-14 w-14">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={u} alt="" className="h-14 w-14 rounded border object-cover" style={{ borderColor: "#E8E4DE" }} />
-                    <button onClick={() => removePending(i)} className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-stone-900 text-[10px] leading-none text-white">x</button>
-                  </div>
-                ))}
-                {slots < 2 && (
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded border border-dashed hover:border-stone-400"
-                    style={{ borderColor: "#D8D3CC", color: "#AAA39E" }}
-                    title="Add image (max 2)"
-                  >
-                    <span className="text-xl leading-none">+</span>
-                    <span className="px-0.5 text-center text-[8px] leading-tight">paste / drop</span>
-                  </button>
-                )}
-                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
-              </div>
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-[#EFEEE9] bg-gray-50/70 text-xs font-medium">
               <button
-                onClick={submit}
-                disabled={!text.trim() || submitting}
-                className="w-full rounded-lg py-2 text-sm font-medium text-white transition-opacity disabled:opacity-40"
-                style={{ background: "#A86120" }}
+                type="button"
+                onClick={() => { setActiveTab("compose"); setSubmitted(false); }}
+                className={`flex-1 py-2.5 text-center transition-colors border-b-2 ${
+                  activeTab === "compose"
+                    ? "border-[#7D5B20] text-[#7D5B20] font-semibold bg-white"
+                    : "border-transparent text-black/60 hover:text-black"
+                }`}
               >
-                {submitting ? "Saving…" : editingId ? "Update feedback" : "Submit feedback"}
+                Give Feedback
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("list")}
+                className={`flex-1 py-2.5 text-center transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+                  activeTab === "list"
+                    ? "border-[#7D5B20] text-[#7D5B20] font-semibold bg-white"
+                    : "border-transparent text-black/60 hover:text-black"
+                }`}
+              >
+                Recent Notes ({items?.length ?? 0})
               </button>
             </div>
 
-            {/* List */}
-            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
-              <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#AAA39E" }}>
-                {items === null ? "Loading…" : pendingCount + " pending"}
-              </div>
-
-              {visible.map((it) => {
-                const mine = !!email && (it.submitterEmail || "").toLowerCase() === email;
-                const canControl = mine || isOwner;
-                const sc = statusConfig(it.status);
-                return (
-                  <div key={it.id} className="space-y-2 rounded-lg border p-3" style={{ borderColor: "#E8E4DE" }}>
-                    {/* Status badge */}
-                    <div className="flex items-center gap-1.5">
-                      <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${sc.dot}`} />
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${sc.badge}`}>
-                        {sc.label}
-                      </span>
+            {/* Tab 1: Compose Form */}
+            {activeTab === "compose" && (
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {submitted ? (
+                  <div className="p-6 text-center space-y-3 bg-[#FAF7F2] rounded-xl border border-[#E9E1D2]">
+                    <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
+                      <CheckCircle className="w-6 h-6" />
                     </div>
-                    <p className="whitespace-pre-wrap text-sm" style={{ color: "#1A1714" }}>{it.text}</p>
-                    {it.images?.length > 0 && (
-                      <div className="flex gap-2">
-                        {it.images.map((u, i) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img key={i} src={u} alt="" onClick={() => setLightbox(u)} className="h-16 w-16 cursor-zoom-in rounded border object-cover" style={{ borderColor: "#E8E4DE" }} />
+                    <h3 className="text-base font-semibold text-black">Thank You for Your Feedback!</h3>
+                    <p className="text-xs text-black/60 leading-relaxed">
+                      Your review and attached photos have been safely saved to our Neon cloud dashboard.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSubmitted(false)}
+                      className="mt-2 px-4 py-2 rounded-lg bg-[#7D5B20] text-white text-xs font-medium hover:bg-[#684b1a] transition"
+                    >
+                      Write Another Note
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Star Rating */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1">
+                        Experience Rating
+                      </label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const active = (hoverRating || rating) >= star;
+                          return (
+                            <button
+                              key={star}
+                              type="button"
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              onClick={() => setRating(star)}
+                              className="p-0.5 transition-transform hover:scale-125 focus:outline-none"
+                            >
+                              <Star
+                                className={`w-6 h-6 transition-colors ${
+                                  active ? "text-amber-400 fill-amber-400" : "text-gray-300"
+                                }`}
+                              />
+                            </button>
+                          );
+                        })}
+                        <span className="ml-2 text-xs font-medium text-black/50">
+                          {rating === 5 && "Outstanding"}
+                          {rating === 4 && "Good"}
+                          {rating === 3 && "Average"}
+                          {rating === 2 && "Needs Work"}
+                          {rating === 1 && "Poor"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Category Selector */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1.5">
+                        Topic
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {CATEGORIES.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setCategory(c.id)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all flex items-center gap-1 ${
+                              category === c.id
+                                ? "bg-[#7D5B20] text-white border-[#7D5B20]"
+                                : "bg-white text-black/70 border-gray-200 hover:bg-gray-50"
+                            }`}
+                          >
+                            {c.label}
+                          </button>
                         ))}
                       </div>
-                    )}
-                    <div className="flex items-center justify-between text-[11px]" style={{ color: "#AAA39E" }}>
-                      <span>{displayName(it.submitterName)} · {relTime(it.createdAt)}</span>
-                      <span className="flex items-center gap-2">
-                        {canControl && it.status === "claude_done" && (
-                          <button onClick={() => patchStatus(it.id, "resolved")} className="font-medium" style={{ color: "#047857" }}>Confirm</button>
-                        )}
-                        {canControl && it.status === "pending" && (
-                          <button onClick={() => patchStatus(it.id, "resolved")} className="hover:underline" style={{ color: "#847D77" }}>Mark done</button>
-                        )}
-                        {canControl && (
-                          <button onClick={() => startEdit(it)} className="hover:underline" style={{ color: "#847D77" }}>Edit</button>
-                        )}
-                        {canControl && (
-                          <button onClick={() => onDelete(it.id)} className="hover:underline" style={{ color: "#B91C1C" }}>Delete</button>
-                        )}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
 
-              {items !== null && visible.length === 0 && (
-                <p className="text-sm" style={{ color: "#AAA39E" }}>No feedback for this page yet.</p>
-              )}
-            </div>
+                    {/* Feedback Message */}
+                    <div>
+                      <label htmlFor="cms-fb-message" className="block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1">
+                        Message / Suggestion <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        id="cms-fb-message"
+                        rows={3}
+                        required
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Tell us what you liked or how we can improve this page..."
+                        className="w-full rounded-lg border border-gray-300 p-2.5 text-xs sm:text-sm outline-none focus:border-[#7D5B20] focus:ring-1 focus:ring-[#7D5B20] transition placeholder:text-black/35"
+                      />
+                    </div>
+
+                    {/* Image Upload Box */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-black/60 mb-1">
+                        Attach Screenshot / Photo
+                      </label>
+
+                      {imagePreview ? (
+                        <div className="relative inline-block border border-gray-200 rounded-lg p-1.5 bg-gray-50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={imagePreview}
+                            alt="Thumbnail"
+                            className="h-20 w-auto rounded object-cover border border-black/10"
+                          />
+                          <button
+                            type="button"
+                            onClick={removeImage}
+                            className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 shadow hover:bg-red-700 transition"
+                            title="Remove image"
+                          >
+                            <X className="w-3.5 h-3.5 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileRef.current?.click()}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const file = e.dataTransfer.files?.[0];
+                            if (file) handleFileChange(file);
+                          }}
+                          className="border border-dashed border-gray-300 hover:border-[#7D5B20] rounded-lg p-3 text-center cursor-pointer bg-gray-50/70 hover:bg-[#FAF7F2] transition"
+                        >
+                          <input
+                            ref={fileRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileChange(file);
+                            }}
+                            className="hidden"
+                          />
+                          <ImageIcon className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                          <span className="text-xs font-medium text-black/70 block">
+                            Click to attach photo or screenshot
+                          </span>
+                          <span className="text-[10px] text-black/40">Uploaded to Neon S3 storage</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Submitter Name / Email */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Your Name"
+                          className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:border-[#7D5B20]"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Your Email"
+                          className="w-full rounded-lg border border-gray-300 p-2 text-xs outline-none focus:border-[#7D5B20]"
+                        />
+                      </div>
+                    </div>
+
+                    {error && (
+                      <p className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                        {error}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={submitting || !message.trim()}
+                      className="w-full py-2.5 rounded-lg bg-[#7D5B20] hover:bg-[#684b1a] text-white font-medium text-xs sm:text-sm transition shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {submitting ? "Saving to Neon..." : "Submit Feedback"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Tab 2: Recent List */}
+            {activeTab === "list" && (
+              <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                {items === null ? (
+                  <div className="flex items-center justify-center py-10 text-xs text-black/50 gap-2">
+                    Loading from Neon...
+                  </div>
+                ) : items.length === 0 ? (
+                  <div className="text-center py-10 space-y-1 text-black/50">
+                    <MessageSquare className="w-8 h-8 text-black/30 mx-auto" />
+                    <p className="text-xs font-medium">No notes recorded for this page yet.</p>
+                  </div>
+                ) : (
+                  items.map((it) => (
+                    <div key={it.id} className="rounded-xl border border-gray-200 p-3.5 bg-white space-y-2 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider ${
+                          it.status === "resolved" ? "text-emerald-600" : "text-amber-600"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${it.status === "resolved" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                          {it.status === "resolved" ? "Resolved" : "Open"}
+                        </span>
+                        <span className="text-[11px] text-black/40">{relTime(it.createdAt)}</span>
+                      </div>
+
+                      <p className="text-xs text-black/80 whitespace-pre-wrap leading-relaxed">{it.text}</p>
+
+                      {it.images && it.images.length > 0 && (
+                        <div className="flex gap-2 pt-1">
+                          {it.images.map((imgUrl, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={i}
+                              src={imgUrl}
+                              alt="Attachment"
+                              onClick={() => setLightbox(imgUrl)}
+                              className="h-14 w-14 rounded-lg border border-gray-200 object-cover cursor-zoom-in hover:opacity-90"
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-[11px] text-black/50">
+                        <span>{it.submitterName || "Customer"}</span>
+                        {it.status !== "resolved" && (
+                          <button
+                            type="button"
+                            onClick={() => handleResolve(it.id)}
+                            className="text-emerald-700 hover:underline font-medium text-[11px]"
+                          >
+                            ✓ Mark Resolved
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </aside>
         </div>
       )}
 
-      {/* Lightbox */}
+      {/* Image Lightbox */}
       {lightbox && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-6" onClick={() => setLightbox(null)}>
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 cursor-pointer"
+          onClick={() => setLightbox(null)}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox} alt="" className="max-h-full max-w-full rounded" />
+          <img src={lightbox} alt="Enlarged preview" className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl object-contain" />
         </div>
       )}
     </>
