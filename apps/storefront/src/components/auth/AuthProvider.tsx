@@ -31,6 +31,16 @@ interface AuthState {
    *  (same cookie, same claims), so everything after this point is the same code
    *  path — including the guest-cart merge below. */
   loginWithCode: (email: string, code: string) => Promise<{ ok: boolean; message?: string; throttled?: boolean }>;
+  register: (payload: {
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+    buyerChoice?: string;
+    companyName?: string;
+    gstNumber?: string;
+    sourcing?: string;
+  }) => Promise<{ ok: boolean; message?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -127,13 +137,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [refresh],
   );
 
+  const register = useCallback(
+    async (payload: {
+      name: string;
+      email: string;
+      phone?: string;
+      password: string;
+      buyerChoice?: string;
+      companyName?: string;
+      gstNumber?: string;
+      sourcing?: string;
+    }) => {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        try { await mergeGuestCartOnLogin(); } catch { /* ignore */ }
+        await refresh();
+        return { ok: true };
+      }
+      return {
+        ok: false,
+        message: data?.message || 'Registration failed.',
+      };
+    },
+    [refresh],
+  );
+
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     setUser(null);
   }, []);
 
   return (
-    <Ctx.Provider value={{ user, loading, login, requestCode, loginWithCode, logout, refresh }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ user, loading, login, requestCode, loginWithCode, register, logout, refresh }}>{children}</Ctx.Provider>
   );
 }
 

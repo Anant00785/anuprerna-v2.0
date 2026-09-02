@@ -246,6 +246,7 @@ function RegisterStep({
    *  than this form collects. */
   onUseCode: () => void;
 }) {
+  const { register } = useAuth();
   // ONE NAME FIELD. The database only ever had one column
   // (relational.loom_tenant.user_name); the first/last split lived in this form
   // and nowhere else, and its "each part is 3+ characters" rule rejected Li Wei,
@@ -260,13 +261,10 @@ function RegisterStep({
   // fully functional, one tap away, and the copy never implies passwords are
   // gone.
   const [phone, setPhone] = useState('');
-  const [wantPassword, setWantPassword] = useState(true);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-  const [demoMsg, setDemoMsg] = useState('');
   const [business, setBusiness] = useState(false);
   const [sourcing, setSourcing] = useState<SourcingChoice | null>(null);
 
@@ -286,30 +284,19 @@ function RegisterStep({
       return;
     }
     setBusy(true);
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: fullName.trim().replace(/\s+/g, ' '),
-          email,
-          phone: phone.trim(),
-          password,
-          ...(business ? { buyerChoice: 'business' } : { buyerChoice: 'myself' }),
-          ...(business && sourcing ? { sourcing } : {}),
-          buyerTypeAsked: true,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.success) {
-        onRegistered();
-      } else {
-        setError(data?.message || 'Registration failed. Please try again.');
-      }
-    } catch {
-      setError('Network error. Please try again.');
-    } finally {
-      setBusy(false);
+    const res = await register({
+      name: fullName.trim().replace(/\s+/g, ' '),
+      email,
+      phone: phone.trim(),
+      password,
+      buyerChoice: business ? 'business' : 'myself',
+      ...(business && sourcing ? { sourcing } : {}),
+    });
+    setBusy(false);
+    if (res.ok) {
+      onRegistered();
+    } else {
+      setError(res.message || 'Registration failed. Please try again.');
     }
   };
 
@@ -445,24 +432,6 @@ function RegisterStep({
           Or sign in using 6-digit email code instead
         </button>
       </div>
-
-      {done && (
-        <div className='mt-5 px-3 py-2 shadow flex gap-3 items-center border border-clay/20 rounded-lg'>
-          <span className='material-symbols-outlined text-clay'>celebration</span>
-          <div className='text-sm text-black/70'>
-            {demoMsg ? (
-              demoMsg
-            ) : (
-              <>
-                Thank You for creating an account. Please check your email inbox / SPAM to verify. In
-                case you have not received any email for verification,{' '}
-                <span className='underline cursor-pointer text-clay' onClick={resend}>here</span> to
-                resend the mail.
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
