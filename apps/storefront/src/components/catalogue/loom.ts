@@ -503,29 +503,32 @@ async function buildFullCatalogue(group: 'fabric' | 'finished'): Promise<FullCat
   };
 }
 
-// Cache-key bumped to v4 to drop any v3 entry that may have BAKED an empty
-// finished catalogue (the "Showing 0" bug). Throw-on-empty above means an empty
-// result is never re-cached.
-const cachedFullCatalogue = unstable_cache(
-  buildFullCatalogue,
-  ['loom-full-catalogue-v6'],
-  { revalidate: 3600, tags: ['loom-catalogue'] },
-);
+const memoryCatalogueCache = new Map<string, { payload: FullCataloguePayload; timestamp: number }>();
+const CATALOGUE_TTL_MS = 1000 * 60 * 60; // 1 hour memory cache
 
-// Public accessor: serve the cached payload when it is good (non-empty), but if
-// the cached path throws (empty-guard) OR somehow yields an empty list, FALL BACK
-// to a fresh, uncached build at request time so the PLP can never render 0.
+// Public accessor: serve from memory cache when valid (fast & bypasses Next.js 2MB limit),
+// falling back to buildFullCatalogue when expired or empty.
 export async function getCachedFullCatalogue(
   group: 'fabric' | 'finished',
 ): Promise<FullCataloguePayload> {
-  try {
-    const cached = await cachedFullCatalogue(group);
-    if (cached.allProducts.length > 0) return cached;
-  } catch {
-    // empty-guard threw — fall through to a fresh build.
+  const cachedMem = memoryCatalogueCache.get(group);
+  if (cachedMem && Date.now() - cachedMem.timestamp < CATALOGUE_TTL_MS && cachedMem.payload.allProducts.length > 0) {
+    return cachedMem.payload;
   }
-  // Fresh, uncached build (also throws on empty, surfacing a real upstream outage
-  // rather than silently rendering an empty catalogue).
+
+  try {
+    const payload = await buildFullCatalogue(group);
+    if (payload.allProducts.length > 0) {
+      memoryCatalogueCache.set(group, { payload, timestamp: Date.now() });
+      return payload;
+    }
+  } catch (err) {
+    if (cachedMem && cachedMem.payload.allProducts.length > 0) {
+      return cachedMem.payload;
+    }
+    throw err;
+  }
+
   return buildFullCatalogue(group);
 }
 
