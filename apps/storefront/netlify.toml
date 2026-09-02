@@ -1,0 +1,6 @@
+[build]
+  command = "pnpm --filter @anuprerna/storefront build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
