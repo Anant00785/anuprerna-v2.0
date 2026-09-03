@@ -1,15 +1,39 @@
+// ---------------------------------------------------------------------------
+// STATUS 2026-09-03: THIS MODULE HAS NO CALLERS.
+//
+// Its only consumers were CheckoutPage.tsx and its eight exclusive children,
+// deleted today as dead code. The LIVE checkout (`/checkout` -> CheckoutShell)
+// prices shipping through a different function entirely,
+// `components/checkout/types.ts` -> shipmentCost(), and posts `shipmentId` for
+// the backend to price.
+//
+// It is kept, for now, because it is the only non-fabricating checkout price
+// helper in the codebase and a new checkout UI would want it — the invented
+// 110/1500 fallbacks are gone, so it is no longer a landmine. If nothing has
+// picked it up, delete it and its spec. See docs/KNOWN-GAPS.md.
+// ---------------------------------------------------------------------------
 import { CartItem } from "@/types/domain/cart";
 import { CheckoutPriceBreakdown, ShipmentOption } from "@/types/domain/checkout";
 
-const DOMESTIC_FREE_SHIPPING_THRESHOLD = 2000;
-const INTERNATIONAL_FREE_SHIPPING_THRESHOLD = 50000; // in INR
+// DELETED 2026-09-03: DOMESTIC_FREE_SHIPPING_THRESHOLD (2000) and
+// INTERNATIONAL_FREE_SHIPPING_THRESHOLD (50000) lived here and were referenced
+// by NOTHING — not by calculateShippingCost, not by any caller, not anywhere in
+// the app. No free-shipping threshold is enforced in this storefront: the only
+// free shipping that exists is the `isExplicitFreeShipping` flag a caller
+// passes in. Two named money constants sitting unused in a pricing module read
+// like a live business rule and are not one. See docs/KNOWN-GAPS.md.
 
 /**
- * Calculates delivery date timestamps from current time + days offset
+ * Delivery date timestamp = now + days offset.
+ *
+ * Returns `undefined` when the backend gave no day count. It used to coerce a
+ * missing offset to 0 with `daysOffset || 0`, which renders as "arriving today"
+ * — a delivery promise nobody made. A missing estimate is absent, not guessed.
  */
-export function calculateDeliveryTimestamp(daysOffset: number): number {
+export function calculateDeliveryTimestamp(daysOffset: number | undefined): number | undefined {
+  if (typeof daysOffset !== "number" || !Number.isFinite(daysOffset)) return undefined;
   const d = new Date();
-  d.setDate(d.getDate() + (daysOffset || 0));
+  d.setDate(d.getDate() + daysOffset);
   return d.getTime();
 }
 
@@ -28,11 +52,22 @@ export function formatDeliveryDate(timestampOrDate: number | Date | string | und
 }
 
 /**
- * Calculates shipping cost for selected shipment option, items by order type, and country.
- * Matches Angular ShippingChargeCalculationService 1:1.
+ * Shipping cost for a CHOSEN shipment option, split by order type.
+ *
+ * `shipment` is REQUIRED. It used to be optional, and an absent one produced
+ *   baseAmount ?? (isDomestic ? 110 : 1500)
+ * — inventing ₹110 / ₹1500 that flowed straight into the order total. Since
+ * `/api/checkout/shipment` now fails loudly, an absent shipment means "we have
+ * no quote", and that must never become a price. Making the parameter required
+ * moves the guarantee into the type system: there is no way to ask this
+ * function for a cost you do not have a quote for.
+ *
+ * `country` no longer selects a fallback rate; it is kept only because the
+ * caller's copy still reads "your delivery address determines the final rate"
+ * and the backend prices the real charge from the shipment record.
  */
 export function calculateShippingCost(
-  shipment: ShipmentOption | undefined,
+  shipment: ShipmentOption,
   items: CartItem[],
   subtotal: number,
   country: string = "India",
@@ -64,10 +99,11 @@ export function calculateShippingCost(
     };
   }
 
-  const isDomestic = country.toLowerCase() === "india";
-  const baseQty = shipment?.baseQuantity ?? (isDomestic ? 5 : 4);
-  const baseAmt = shipment?.baseAmount ?? (isDomestic ? 110 : 1500);
-  const addAmt = shipment?.additionalAmount ?? (isDomestic ? 9 : 80);
+  // Straight off the quote. A `0` here is a real price (free shipping, no
+  // per-unit surcharge) and survives, because nothing substitutes for it.
+  const baseQty = shipment.baseQuantity;
+  const baseAmt = shipment.baseAmount;
+  const addAmt = shipment.additionalAmount;
 
   // Group quantities by order type matching Angular inStockShippingCalculation
   let inStockQty = 0;
@@ -179,6 +215,33 @@ export function calculateCheckoutPrices(
 
   const discountedItemsTotal = Math.max(0, priceAfterWholesale - couponDiscountAmount);
 
+  // NO QUOTE, NO TOTAL. Without a shipment option there is no shipping cost to
+  // add, so every figure downstream of it — the total, the amount payable now,
+  // the balance — is unknown too. Returning items-only numbers here would be
+  // the same defect in a quieter form: an understated total presented as the
+  // real one, and (in the Razorpay path) charged as it.
+  if (!shipment) {
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      volumeDiscountAmount: Math.round(volumeDiscountAmount * 100) / 100,
+      wholesaleDiscountAmount,
+      autoDiscountAmount: 0,
+      couponCode,
+      couponPercentage,
+      couponDiscountAmount,
+      shippingCost: null,
+      isShippingFree: false,
+      hasShippingQuote: false,
+      total: null,
+      advancePay: null,
+      remainingBalance: null,
+      inStockItemsPrice: Math.round(inStockItemsPrice * 100) / 100,
+      madeToOrderItemsPrice: Math.round(madeToOrderItemsPrice * 100) / 100,
+      preOrderItemsPrice: Math.round(preOrderItemsPrice * 100) / 100,
+      containsSwatch,
+    };
+  }
+
   const {
     shippingCost,
     inStockShipmentCost,
@@ -245,6 +308,7 @@ export function calculateCheckoutPrices(
     couponDiscountAmount,
     shippingCost,
     isShippingFree,
+    hasShippingQuote: true,
     total: grandTotal,
     advancePay,
     remainingBalance,

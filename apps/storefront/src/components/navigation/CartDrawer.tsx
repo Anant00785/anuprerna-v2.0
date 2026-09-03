@@ -396,6 +396,10 @@ export function CartDrawer() {
               <div>
                 <span className="text-base font-bold text-[#1f1f1f]">Sub Total</span>
                 <p className="text-xs text-gray-500">including discounts (if any)</p>
+                {/* Says what the number is and is not. Shipping needs a
+                    destination and a delivery method, neither of which the cart
+                    has, so it is not in this figure and is not guessed. */}
+                <p className="text-xs text-gray-500">Shipping calculated at checkout</p>
               </div>
               <span className="text-lg md:text-xl font-bold text-[#1f1f1f]">
                 {currencyCode} {money(cart?.subtotal ?? 0)}

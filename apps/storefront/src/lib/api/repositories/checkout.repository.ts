@@ -81,6 +81,11 @@ export const checkoutRepository = {
           }
           return n;
         };
+        const day = (v: unknown): number | undefined => {
+          if (v === undefined || v === null || v === "") return undefined;
+          const n = Number(v);
+          return Number.isFinite(n) ? n : undefined;
+        };
         return {
           id: Number(item.id),
           name: item.name || (isInternational ? "Pay Duty & Taxes on Delivery (DDU)" : "Regular - By Road"),
@@ -88,8 +93,13 @@ export const checkoutRepository = {
           baseAmount: money(item.baseAmount, item.baseCharge),
           additionalAmount: money(item.additionalAmount, item.perExtraUnitRate),
           baseQuantity: money(item.baseQuantity, item.baseUnitsLimit),
-          estimatedFromDay: Number(item.estimatedFromDay) || (isInternational ? 7 : 5),
-          estimatedToDay: Number(item.estimatedToDay) || (isInternational ? 12 : 7),
+          // ABSENT, not guessed. This used to read
+          //   Number(item.estimatedFromDay) || (isInternational ? 7 : 5)
+          // which invented a delivery window the backend never quoted — and,
+          // being `||`, turned a genuine same-day 0 into 5 or 7 days as well.
+          // A promise nobody made must not be shown to a buyer.
+          estimatedFromDay: day(item.estimatedFromDay),
+          estimatedToDay: day(item.estimatedToDay),
         };
       });
     } catch (err) {

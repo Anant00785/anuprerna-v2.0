@@ -11,6 +11,7 @@ There is no single cart. Which one is live depends only on whether the `loom_jwt
 | | Guest cart | Account cart |
 |---|---|---|
 | Where it lives | `localStorage["anuprerna_guest_cart_v1"]`, browser only | Backend (`relational.cart_item`), reached through `/api/cart/*` |
+| Shipping | Not priced — see below | Not priced — see below |
 | Module | `lib/guest-cart.ts` | `app/api/cart/*` → `lib/loom/client` |
 | Why | The account cart 401s an anonymous caller, so a guest would otherwise have no cart at all | — |
 | Rendering | The cart page renders with **no fetch** — each stored line carries display fields (`name`, `image`, `slug`, `category`) alongside the replayable body | Fetched per request |
@@ -109,14 +110,97 @@ verified **server-side by the backend**, never here.
 
 **The backend is the authority.** `POST /checkout/order` recomputes the subtotal from line prices and
 prices shipping from the chosen shipment record; a client-supplied total is discarded there. The
-storefront's own money modules are for *display*:
+storefront's own money modules are for *display*.
 
-- `lib/checkout/checkout-calculations.ts` — `calculateShippingCost`, `calculateCheckoutPrices`,
-  delivery-date formatting. Tested in `checkout-calculations.test.ts`.
-- `lib/cart/cart-helpers.ts` — available stock, MOQ, quantity clamping, volume-discount pricing.
-  Tested in `cart-helpers.test.ts`.
-- `lib/pdp/pricing-engine.ts` — the PDP price ladder, ported 1:1 from the Angular
-  `ProductInformationService`. **Untested**, and written in `any` throughout. See `docs/KNOWN-GAPS.md`.
+There are **two** client-side shipping calculators, and only one is live:
+
+| | `components/checkout/types.ts` → `shipmentCost()` | `lib/checkout/checkout-calculations.ts` → `calculateShippingCost()` |
+|---|---|---|
+| Used by | `CheckoutShell` (the live `/checkout`) and `OrderSummary` | `CheckoutShipToAndMethod`, `CheckoutShipmentTier`, `CheckoutPriceSummary` — **all inside `CheckoutPage.tsx`, which has zero importers** |
+| Missing shipment | returns `0` | returns nothing — see below |
+| Fabricates? | No. Reads `baseAmount ?? 0` etc. and never substitutes a rate | No, as of 2026-09-03 |
+
+`calculateShippingCost` now takes a **required** `ShipmentOption`. It previously accepted `undefined`
+and answered `baseAmount ?? (isDomestic ? 110 : 1500)` — inventing ₹110/₹1500 that flowed into the
+order total and, through `CheckoutPage`'s Razorpay branch, into the amount actually charged. Making
+the parameter required puts the guarantee in the type system: there is no way to ask for a cost you
+have no quote for.
+
+`calculateCheckoutPrices` still accepts an optional shipment, because a checkout page renders before
+one is chosen. With no shipment it returns an explicit no-quote state:
+
+```
+{ hasShippingQuote: false, shippingCost: null, isShippingFree: false,
+  total: null, advancePay: null, remainingBalance: null }
+```
+
+`null`, not `0` — "we have no quote" is not "free". Every figure downstream of shipping is withheld
+with it, because an items-only "total" presented as the order total is the same defect in a quieter
+form. `CheckoutPriceSummary` renders "No quote available" and a `—` total, and `handlePlaceOrder`
+refuses to submit, sending the buyer back to the shipping step.
+
+`calculateDeliveryTimestamp(undefined)` returns `undefined` rather than today's date — `daysOffset || 0`
+rendered a missing estimate as "arriving today", a promise nobody made. `ShipmentOption.estimatedFromDay`
+/ `estimatedToDay` are now optional and `checkoutRepository` leaves a missing estimate **absent**
+instead of inventing 5/7 (domestic) or 7/12 (international) days, which `||` also applied to a
+genuine same-day `0`.
+
+Other display-only modules: `lib/cart/cart-helpers.ts` (stock, MOQ, quantity clamping, volume
+discount — tested) and `lib/pdp/pricing-engine.ts` (**untested**, `any` throughout — see
+`docs/KNOWN-GAPS.md`).
+
+### The cart does not price shipping, and no longer pretends to
+
+`Cart.estimatedShipping` and `Cart.total` are `number | null`. `mapLegacyCartToDomain` returns
+**`null` for both on a non-empty cart** (`0`/`0` on an empty one, which genuinely costs nothing to
+ship). Shipping needs a destination and a delivery method; the cart has neither.
+
+It previously set `estimatedShipping = 150` — a flat, invented rate applied to every non-empty cart
+regardless of quantity, destination or method — and folded it into `total`. The existing spec
+asserted the `150`, i.e. it pinned the fabrication; it now asserts `null`.
+
+`null`, not `0`, because `0` reads as "free". The cart drawer — the only cart UI, since `/cart`
+redirects to `/checkout` — shows the **subtotal** and the line "Shipping calculated at checkout".
+It never read `total` or `estimatedShipping`, so this was a zero-change fix on the UI side; the
+nulls exist so nobody wires a fabricated total up later.
+
+**Free-shipping thresholds are not enforced anywhere.** `DOMESTIC_FREE_SHIPPING_THRESHOLD = 2000` and
+`INTERNATIONAL_FREE_SHIPPING_THRESHOLD = 50000` sat at the top of `checkout-calculations.ts` and were
+read by nothing; a third, `FREE_SHIPPING_THRESHOLD = 2000`, sat unused in `legacy-cart.adapter.ts`.
+All three are deleted. The only free shipping that exists is the `isExplicitFreeShipping` flag a
+caller passes in, and a quote whose `baseAmount` is genuinely `0`.
+
+**Loom has no free-shipping rule either** — checked directly against the Java source
+(`loom/src/main/java/com/bloomscorp/loom`):
+
+- `DISCOUNT_TYPE.FREE_SHIPPING` (`discount/orm/DISCOUNT_TYPE.java:13`) is an enum constant
+  **referenced by no other Java file**. It is a discount *type* a coupon could carry, never a spend
+  threshold, and nothing applies it.
+- There is no threshold constant anywhere. The `min_order_value` columns in
+  `tenant/nativequery/CustomerNativeQuery.java` are the **loyalty/wholesale programme** minimum,
+  unrelated to shipping.
+
+So the platform simply has no free-shipping rule, in either stack. Nobody should re-add one from
+memory.
+
+> **Bigger finding, same search: live Loom does not price shipping at all.**
+> `Orders.shippingCost` (`order/orm/Orders.java:136`) is a plain stored `Double` written from the
+> request; `OrdersValidator.java:69` only null-checks it, and the one line that would have defaulted
+> it is commented out (`OrdersNormalizer.java:23`). `getBaseAmount`/`getAdditionalAmount`/
+> `getBaseQuantity` appear only in `ShipmentValidator` (is it > 0?) and `ShipmentDAOController`
+> (the CMS editing the row) — **no arithmetic on them exists anywhere in Loom**.
+>
+> The "the backend recomputes shipping from the shipment record and discards a client total" claim
+> in `/api/checkout/order` is true of the **sandbox wrapper's** `CheckoutController`, which is what
+> `LOOM_BASE_URL` resolves to today. It is **not** true of live Loom, which stores what the client
+> sends. That makes the three shipping fabrications removed this week materially worse than
+> "display only" against a live-Loom backend: the invented number would have been the charge.
+> Recorded in `docs/KNOWN-GAPS.md`.
+
+**There is no air-vs-road shipping multiplier** in this storefront — searched for one and the only
+hits are forex rates and a quantity step. Shipping modes are rows in the `shipment` table carrying
+their own `baseAmount` / `additionalAmount` / `baseQuantity`; "Express - By Air" is priced by its own
+row, not by a factor applied to a road rate.
 
 ### `GET /api/checkout/shipment` — fails rather than quoting a price nobody produced
 

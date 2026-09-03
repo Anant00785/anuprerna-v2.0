@@ -12,8 +12,10 @@ export interface ShipmentOption {
   baseAmount: number;
   additionalAmount: number;
   baseQuantity: number;
-  estimatedFromDay: number;
-  estimatedToDay: number;
+  /** ABSENT when the backend did not supply one. Never guessed — a delivery
+   *  estimate the backend did not make is not an estimate. */
+  estimatedFromDay?: number;
+  estimatedToDay?: number;
 }
 
 export interface CheckoutPriceBreakdown {
@@ -25,11 +27,15 @@ export interface CheckoutPriceBreakdown {
   couponCode?: string;
   couponDiscountAmount: number;
   couponPercentage?: number;
-  shippingCost: number;
+  /** `null` means NO SHIPPING QUOTE IS AVAILABLE — not "free", not "zero".
+   *  Every figure that depends on shipping is null with it, so a caller cannot
+   *  accidentally present, or charge, a total that omits an unknown cost. */
+  shippingCost: number | null;
   isShippingFree: boolean;
-  total: number;
-  advancePay: number;
-  remainingBalance: number;
+  hasShippingQuote: boolean;
+  total: number | null;
+  advancePay: number | null;
+  remainingBalance: number | null;
   inStockItemsPrice: number;
   madeToOrderItemsPrice: number;
   preOrderItemsPrice: number;
@@ -60,8 +66,9 @@ export interface AddOrderItem {
   unit: string;
   price: number;
   currency: string;
-  estimatedDeliveryFrom: number;
-  estimatedDeliveryTo: number;
+  /** Omitted when the shipment record carried no day count — never Date.now(). */
+  estimatedDeliveryFrom?: number;
+  estimatedDeliveryTo?: number;
   customization: AddOrderItemCustomization;
   loyaltyOrder?: boolean;
   loyaltyDiscountAmount?: number;

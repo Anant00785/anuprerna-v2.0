@@ -155,3 +155,116 @@ describe("checkout-calculations", () => {
     });
   });
 });
+
+// =====================================================================================
+// NO QUOTE, NO NUMBER.
+//
+// `calculateShippingCost` used to accept `shipment: undefined` and answer with
+//   baseAmount ?? (isDomestic ? 110 : 1500)
+// — an invented figure that flowed into the order total and, via
+// CheckoutPage's Razorpay branch, into the amount actually charged. The route
+// and the repository that feed it now fail loudly, so an absent shipment means
+// "we have no quote", and a quote is the only thing that may become a price.
+// =====================================================================================
+describe("an unquoted shipping cost never becomes a number", () => {
+  it("reports no quote — not zero, not free — when no shipment is selected", () => {
+    const price = calculateCheckoutPrices([sampleInStockItem], undefined, "India");
+
+    expect(price.hasShippingQuote).toBe(false);
+    expect(price.shippingCost).toBeNull();
+    // "free" would be a claim about the price; we do not have one.
+    expect(price.isShippingFree).toBe(false);
+  });
+
+  it("withholds every figure that depends on shipping, rather than understating it", () => {
+    const price = calculateCheckoutPrices([sampleInStockItem], undefined, "India");
+
+    expect(price.total).toBeNull();
+    expect(price.advancePay).toBeNull();
+    expect(price.remainingBalance).toBeNull();
+    // What IS known is still reported.
+    expect(price.subtotal).toBe(1000);
+  });
+
+  it("returns none of the amounts the old fallback invented", () => {
+    const serialized = JSON.stringify(
+      calculateCheckoutPrices([sampleInStockItem, sampleMadeToOrderItem], undefined, "United States")
+    );
+
+    // ₹110 domestic and ₹1500 international were the invented base rates.
+    for (const invented of ["110", "1500"]) {
+      expect(serialized).not.toContain(invented);
+    }
+  });
+
+  it("invents nothing for an international address either", () => {
+    const price = calculateCheckoutPrices([sampleInStockItem], undefined, "United States");
+    expect(price.shippingCost).toBeNull();
+    expect(price.total).toBeNull();
+  });
+
+  it("still prices normally once a quote exists", () => {
+    const price = calculateCheckoutPrices([sampleInStockItem], domesticShipment, "India");
+
+    expect(price.hasShippingQuote).toBe(true);
+    expect(typeof price.shippingCost).toBe("number");
+    expect(typeof price.total).toBe("number");
+  });
+});
+
+describe("a genuine zero is a real price, not a missing one", () => {
+  const freeShipment: ShipmentOption = {
+    id: 9,
+    name: "Free delivery",
+    locationType: "DOMESTIC",
+    baseAmount: 0,
+    additionalAmount: 0,
+    baseQuantity: 0,
+  };
+
+  it("keeps a 0 base amount instead of substituting a default charge", () => {
+    const { shippingCost, isShippingFree } = calculateShippingCost(
+      freeShipment,
+      [sampleInStockItem],
+      1000,
+      "India"
+    );
+
+    expect(shippingCost).toBe(0);
+    expect(isShippingFree).toBe(true);
+  });
+
+  it("reports a free quote as free, and as HAVING a quote", () => {
+    const price = calculateCheckoutPrices([sampleInStockItem], freeShipment, "India");
+
+    expect(price.hasShippingQuote).toBe(true);
+    expect(price.shippingCost).toBe(0);
+    expect(price.isShippingFree).toBe(true);
+    expect(price.total).toBe(1000);
+  });
+
+  it("does not charge a per-unit surcharge the quote priced at 0", () => {
+    const bulk = { ...sampleInStockItem, quantity: 40 };
+    expect(calculateShippingCost(freeShipment, [bulk], 20000, "India").shippingCost).toBe(0);
+  });
+});
+
+describe("calculateDeliveryTimestamp does not guess a delivery date", () => {
+  it("returns undefined for a missing estimate instead of 'today'", () => {
+    expect(calculateDeliveryTimestamp(undefined)).toBeUndefined();
+    expect(calculateDeliveryTimestamp(NaN)).toBeUndefined();
+  });
+
+  it("still honours a real 0 as same-day", () => {
+    const ts = calculateDeliveryTimestamp(0);
+    expect(typeof ts).toBe("number");
+    expect(formatDeliveryDate(ts)).toBe(formatDeliveryDate(new Date()));
+  });
+
+  it("offsets by a real day count", () => {
+    const ts = calculateDeliveryTimestamp(3)!;
+    const expected = new Date();
+    expected.setDate(expected.getDate() + 3);
+    expect(formatDeliveryDate(ts)).toBe(formatDeliveryDate(expected));
+  });
+});

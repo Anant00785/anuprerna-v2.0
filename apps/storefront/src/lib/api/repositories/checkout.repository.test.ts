@@ -39,10 +39,78 @@ describe("checkoutRepository.getShipmentList", () => {
         baseAmount: 150,
         additionalAmount: 50,
         baseQuantity: 1,
-        estimatedFromDay: 5,
-        estimatedToDay: 7,
+        estimatedFromDay: undefined,
+        estimatedToDay: undefined,
       },
     ]);
+  });
+
+  it("passes a real delivery estimate through", async () => {
+    useHandlers(
+      http.get(URL_, () =>
+        HttpResponse.json({
+          shipmentList: [
+            {
+              id: 1,
+              name: "Express",
+              locationType: "DOMESTIC",
+              baseAmount: 200,
+              additionalAmount: 15,
+              baseQuantity: 5,
+              estimatedFromDay: 3,
+              estimatedToDay: 4,
+            },
+          ],
+        })
+      )
+    );
+
+    const [option] = await checkoutRepository.getShipmentList();
+    expect(option.estimatedFromDay).toBe(3);
+    expect(option.estimatedToDay).toBe(4);
+  });
+
+  // The API's synthesized 7-day /track/* ETA was deleted for this same reason.
+  it("leaves a missing delivery estimate ABSENT rather than inventing 5/7 or 7/12 days", async () => {
+    useHandlers(
+      http.get(URL_, () =>
+        HttpResponse.json({
+          shipmentList: [
+            { id: 1, name: "Intl", locationType: "INTERNATIONAL", baseAmount: 3000, additionalAmount: 125, baseQuantity: 4 },
+          ],
+        })
+      )
+    );
+
+    const [option] = await checkoutRepository.getShipmentList();
+
+    expect(option.estimatedFromDay).toBeUndefined();
+    expect(option.estimatedToDay).toBeUndefined();
+  });
+
+  it("keeps a genuine same-day 0 estimate instead of turning it into 5 days", async () => {
+    useHandlers(
+      http.get(URL_, () =>
+        HttpResponse.json({
+          shipmentList: [
+            {
+              id: 1,
+              name: "Same day",
+              locationType: "DOMESTIC",
+              baseAmount: 99,
+              additionalAmount: 0,
+              baseQuantity: 1,
+              estimatedFromDay: 0,
+              estimatedToDay: 0,
+            },
+          ],
+        })
+      )
+    );
+
+    const [option] = await checkoutRepository.getShipmentList();
+    expect(option.estimatedFromDay).toBe(0);
+    expect(option.estimatedToDay).toBe(0);
   });
 
   // The falsy-zero class of bug already fixed twice in the cart adapters:

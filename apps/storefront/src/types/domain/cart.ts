@@ -49,7 +49,14 @@ export interface Cart {
   itemCount: number;
   subtotal: number;
   discount: number;
-  estimatedShipping: number;
-  total: number;
+  /** `null` = NOT YET KNOWN. Shipping cannot be priced until a destination and
+   *  a delivery method are chosen, which happens at checkout. It is never a
+   *  frontend guess: this used to be a flat, invented 150 that ignored
+   *  quantity, destination and method. */
+  estimatedShipping: number | null;
+  /** `null` whenever `estimatedShipping` is — a total that silently omits an
+   *  unknown shipping cost is an understated total, not a total. Show the
+   *  subtotal and "shipping calculated at checkout" instead. */
+  total: number | null;
   currency: string;
 }

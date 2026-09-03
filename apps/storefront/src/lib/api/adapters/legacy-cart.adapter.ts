@@ -4,8 +4,18 @@ import { LegacyCartItemDto, LegacyCartPreviewDto } from "../dto/legacy-springboo
 import { resolveImageUrl } from "./legacy-catalog.adapter";
 import { calculateVDProductPrice, getConsumedFabric } from "@/lib/pdp/pricing-engine";
 
-const FREE_SHIPPING_THRESHOLD = 2000;
-const FLAT_SHIPPING_CHARGE = 150;
+// NO SHIPPING CONSTANTS LIVE HERE ANY MORE.
+//
+// FREE_SHIPPING_THRESHOLD (2000) was declared and read by nothing — no
+// free-shipping threshold is enforced anywhere in this storefront, and none
+// exists in Loom either (checked: DISCOUNT_TYPE.FREE_SHIPPING is a coupon type
+// referenced by no Java code, and Orders.shippingCost is a stored column, not a
+// computed one).
+//
+// FLAT_SHIPPING_CHARGE (150) WAS live, and was a fabrication: every non-empty
+// cart got a flat 150 added into `total`, ignoring quantity, destination and
+// delivery method — none of which the cart knows. The cart genuinely cannot
+// price shipping, so it no longer pretends to.
 
 /**
  * A cart row carries whichever preview matches its `productGroup`; the other is
@@ -334,7 +344,10 @@ export function mapLegacyCartToDomain(cartItemList: LegacyCartItemDto[] = []): C
   const items = cartItemList.map(mapLegacyCartItemToDomain);
   const itemCount = items.reduce((acc, curr) => acc + curr.quantity, 0);
   const subtotal = items.reduce((acc, curr) => acc + curr.totalPrice, 0);
-  const estimatedShipping = items.length === 0 ? 0 : FLAT_SHIPPING_CHARGE;
+  // An EMPTY cart genuinely costs nothing to ship. A non-empty one has no
+  // quote yet — `null`, never a guess and never a misleading 0.
+  const isEmpty = items.length === 0;
+  const estimatedShipping = isEmpty ? 0 : null;
 
   return {
     items,
@@ -342,7 +355,7 @@ export function mapLegacyCartToDomain(cartItemList: LegacyCartItemDto[] = []): C
     subtotal,
     discount: 0,
     estimatedShipping,
-    total: subtotal + estimatedShipping,
+    total: estimatedShipping === null ? null : subtotal + estimatedShipping,
     currency: "INR",
   };
 }

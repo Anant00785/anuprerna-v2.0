@@ -119,15 +119,34 @@ describe("mapLegacyCartToDomain", () => {
     expect(mapLegacyCartToDomain().itemCount).toBe(0);
   });
 
-  it("applies flat 150 estimated shipping for non-empty carts", () => {
+  // REWRITTEN 2026-09-03. This test used to assert `estimatedShipping === 150`
+  // — it was pinning a fabrication, not a behaviour. The cart applied a flat
+  // 150 to every non-empty cart regardless of quantity, destination or delivery
+  // method, and folded it into `total`. None of those inputs exist at cart time.
+  it("reports NO shipping quote for a non-empty cart rather than inventing a flat rate", () => {
     const cheap = mapLegacyCartToDomain([{ ...fabricRow, quantity: 1 }]);
-    expect(cheap.subtotal).toBe(446);
-    expect(cheap.estimatedShipping).toBe(150);
-    expect(cheap.total).toBe(596);
 
+    expect(cheap.subtotal).toBe(446);
+    // null = "not known yet", which is the truth. Not 0 (that would read as
+    // free) and not 150 (that was never a real quote).
+    expect(cheap.estimatedShipping).toBeNull();
+    expect(cheap.total).toBeNull();
+  });
+
+  it("does not scale, or otherwise invent, a rate as the cart grows", () => {
     const expensive = mapLegacyCartToDomain([{ ...fabricRow, quantity: 10 }]);
+
     expect(expensive.subtotal).toBe(4460);
-    expect(expensive.estimatedShipping).toBe(150);
-    expect(expensive.total).toBe(4610);
+    expect(expensive.estimatedShipping).toBeNull();
+    expect(expensive.total).toBeNull();
+  });
+
+  it("returns none of the invented shipping amounts at any cart size", () => {
+    for (const quantity of [1, 3, 10, 40]) {
+      const serialized = JSON.stringify(mapLegacyCartToDomain([{ ...fabricRow, quantity }]));
+      for (const invented of ["150", "110", "1500"]) {
+        expect(serialized).not.toContain(`"estimatedShipping":${invented}`);
+      }
+    }
   });
 });
