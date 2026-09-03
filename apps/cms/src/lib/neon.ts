@@ -8,21 +8,17 @@ const NEON_PG_URL =
 
 const S3_ENDPOINT =
   process.env.NEON_S3_ENDPOINT ||
-  process.env.AWS_ENDPOINT_URL_S3 ||
   "https://br-raspy-sun-ayr5oy8j.storage.c-5.us-east-2.aws.neon.tech";
 
 const S3_ACCESS_KEY =
   process.env.NEON_S3_ACCESS_KEY_ID ||
-  process.env.AWS_ACCESS_KEY_ID ||
   "nak_live_d9db58cbb2c94570a43b92ed9ac4f425";
 
 const S3_SECRET_KEY =
   process.env.NEON_S3_SECRET_ACCESS_KEY ||
-  process.env.AWS_SECRET_ACCESS_KEY ||
   "nsk_live_017a5dbfa3add7a13f3af61b4716c974c962add0991842786c552796d4859712";
 
-const S3_REGION =
-  process.env.NEON_S3_REGION || process.env.AWS_REGION || "us-east-2";
+const S3_REGION = process.env.NEON_S3_REGION || "us-east-2";
 const S3_BUCKET = process.env.NEON_FEEDBACK_BUCKET || "feeback";
 
 let pgPool: Pool | null = null;
