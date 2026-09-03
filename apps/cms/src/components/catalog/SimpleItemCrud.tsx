@@ -391,7 +391,7 @@ export function SimpleItemCrud({
                   color: "#8A4C19",
                 }}
               >
-                Preview — you can edit; saves to the sandbox test DB only (never live). "Validate" previews the payload.
+                Preview — you can edit; saves to the sandbox test DB only (never live). &quot;Validate&quot; previews the payload.
               </div>
             </div>
 

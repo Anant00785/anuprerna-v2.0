@@ -14,10 +14,10 @@ export function useHandlers(...handlers: RequestHandler[]) {
 
 /**
  * The legacy backend always replies 200 with a RainTree envelope; the payload
- * sits under a per-endpoint key that `unwrapResponseData()` discovers by
- * heuristic. Fixtures must use this real shape — mocking a flat array would
- * bypass the unwrapping logic that every CMS response actually goes through.
- * See docs/DATA-FLOW.md.
+ * sits under a per-endpoint key. Fixtures must use this real shape — a flat
+ * array would bypass both `assertEnvelopeOk` (which reads `success`) and the
+ * per-module `pickArray` key lookup that every CMS response goes through.
+ * See docs/frontend/cms/data-layer.md.
  */
 export function envelope<T>(listKey: string, payload: T) {
   return { success: true, message: "", [listKey]: payload };

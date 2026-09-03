@@ -7,6 +7,7 @@
  */
 
 import React from "react";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { WeaveShell } from "@/components/weave/WeaveShell";
 import { Card, CardHeader, CardTitle, KpiStrip, KpiItem } from "@/components/ui";
@@ -156,7 +157,7 @@ export default async function DashboardPage() {
         >
           <strong style={{ color: "#302C28" }}>Open orders KPI:</strong> omitted from the fast dashboard load (the order
           dump is ~46 MB). Visit the{" "}
-          <a href="/orders" className="hover:underline" style={{ color: "#A86120" }}>Orders</a> page for the full count.
+          <Link href="/orders" className="hover:underline" style={{ color: "#A86120" }}>Orders</Link> page for the full count.
           All other KPIs above are live from Loom.
         </div>
       </div>

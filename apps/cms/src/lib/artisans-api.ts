@@ -11,8 +11,7 @@
  *   GET /get/catalog-list                     -> { catalogList: [...] }
  */
 
-import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
-import { classifyHttpFailure, classifyNetworkFailure } from "@/lib/backend-fetch-error";
+import {loomGetJson} from "@/lib/backend-fetch-error";
 import type {
   ArtisanRow,
   SkillRow,
@@ -25,34 +24,11 @@ import type {
 } from "@/types/artisan";
 import type { Result } from "@/lib/result";
 
-const BACKEND =
-  typeof window === "undefined"
-    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
-    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
 
-async function loomGet<T>(path: string, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Origin: "localhost",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const url = `${BACKEND}${path}`;
-  let res: Response;
-  try {
-    res = await fetch(url, { headers, cache: "no-store" });
-  } catch (e) {
-    const classified = classifyNetworkFailure("artisans-api", url, e);
-    console.error(classified.message);
-    throw classified;
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const classified = classifyHttpFailure("artisans-api", url, res.status, text.slice(0, 120));
-    console.error(classified.message);
-    throw classified;
-  }
-  return rewriteBloomscorpUrlsDeep(await res.json()) as T;
-}
+/** Single backend GET for this module. All failure handling — network,
+ *  HTTP, and the `{success:false}` envelope — lives in loomGetJson. */
+const loomGet = <T,>(path: string, token?: string): Promise<T> =>
+  loomGetJson<T>("artisans-api", path, token);
 
 function num(v: unknown): number {
   const n = Number(v);
@@ -114,15 +90,11 @@ function normalizeArtisan(input: Record<string, unknown>): ArtisanRow {
 }
 
 export async function getArtisanList(token?: string): Promise<ArtisanRow[]> {
-  try {
-    const data = await loomGet<{ artisanList?: Record<string, unknown>[] }>(
-      "/get/artisans?includeInactive=true",
-      token,
-    );
-    return (data.artisanList ?? []).map(normalizeArtisan);
-  } catch {
-    return [];
-  }
+  const data = await loomGet<{ artisanList?: Record<string, unknown>[] }>(
+    "/get/artisans?includeInactive=true",
+    token,
+  );
+  return (data.artisanList ?? []).map(normalizeArtisan);
 }
 
 // ── Skills ──────────────────────────────────────────────────────────────────
@@ -139,17 +111,13 @@ function normalizeSkill(input: Record<string, unknown>): SkillRow {
 }
 
 export async function getSkillList(token?: string): Promise<SkillRow[]> {
-  try {
-    const data = await loomGet<{ skillList?: Record<string, unknown>[] }>(
-      "/get/skills",
-      token,
-    );
-    return (data.skillList ?? [])
-      .map(normalizeSkill)
-      .filter((s) => !s.deleted);
-  } catch {
-    return [];
-  }
+  const data = await loomGet<{ skillList?: Record<string, unknown>[] }>(
+    "/get/skills",
+    token,
+  );
+  return (data.skillList ?? [])
+    .map(normalizeSkill)
+    .filter((s) => !s.deleted);
 }
 
 // ── Catalog ─────────────────────────────────────────────────────────────────
@@ -207,15 +175,11 @@ function normalizeCatalog(raw: Record<string, unknown>): ArtisanCatalogRow {
 }
 
 export async function getCatalogList(token?: string): Promise<ArtisanCatalogRow[]> {
-  try {
-    const data = await loomGet<{ catalogList?: Record<string, unknown>[] }>(
-      "/get/catalog-list",
-      token,
-    );
-    return (data.catalogList ?? []).map(normalizeCatalog);
-  } catch {
-    return [];
-  }
+  const data = await loomGet<{ catalogList?: Record<string, unknown>[] }>(
+    "/get/catalog-list",
+    token,
+  );
+  return (data.catalogList ?? []).map(normalizeCatalog);
 }
 
 

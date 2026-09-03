@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { WeaveShell } from "@/components/weave/WeaveShell";
 import { getServiceToken } from "@/lib/loom-service-token";
 import { getStoryList, getBlogList, getFaqList } from "@/lib/content-api";
+import { loadOrBanner } from "@/lib/load-or-banner";
 
 export const dynamic = "force-dynamic";
 const COOKIE = process.env.AUTH_COOKIE_NAME ?? "weave_token";
@@ -13,13 +14,10 @@ export default async function ContentPage() {
   const cookieToken = cookieStore.get(COOKIE)?.value;
   const token = cookieToken ?? (await getServiceToken());
 
-  const [stories, blogs, faqs] = await Promise.all([
-    getStoryList(token),
-    getBlogList(token),
-    getFaqList(token),
-  ]);
-
-  return (
+  return loadOrBanner(
+    () =>
+      Promise.all([getStoryList(token), getBlogList(token), getFaqList(token)]),
+    ([stories, blogs, faqs]) => (
     <WeaveShell
       breadcrumb={
         <div
@@ -166,5 +164,6 @@ export default async function ContentPage() {
 
       </div>
     </WeaveShell>
+    ),
   );
 }

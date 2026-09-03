@@ -69,7 +69,9 @@ export function usePaginatedList<T>({
   // Keep the latest fetcher without making it a fetch dependency (callers pass
   // an inline closure that changes identity every render).
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   const depsKey = JSON.stringify(deps);
 
@@ -82,7 +84,6 @@ export function usePaginatedList<T>({
   // Reset to page 1 whenever the (debounced) search or any dep changes.
   useEffect(() => {
     setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced, depsKey]);
 
   // The abortable fetch.
@@ -106,7 +107,6 @@ export function usePaginatedList<T>({
         setLoading(false);
       });
     return () => ctrl.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, debounced, depsKey, reloadKey]);
 
   const setSearch = useCallback((q: string) => setSearchState(q), []);

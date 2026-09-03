@@ -11,28 +11,16 @@
  *   /get/customers/whatsapp-status                         -> { customerWhatsAppStatusList }
  */
 
-import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
+import { loomGetJson } from "@/lib/backend-fetch-error";
+
 import type { Result } from "./result";
 import type { WhatsAppRow, WhatsAppPreference } from "./admin-api";
 
-const BACKEND =
-  typeof window === "undefined"
-    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
-    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
 
-async function waGet<T>(path: string, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Origin: "localhost",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BACKEND}${path}`, { headers, cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Backend ${res.status} at ${path}: ${text.slice(0, 120)}`);
-  }
-  return rewriteBloomscorpUrlsDeep(await res.json()) as T;
-}
+/** Single backend GET for this module. All failure handling — network,
+ *  HTTP, and the `{success:false}` envelope — lives in loomGetJson. */
+const waGet = <T,>(path: string, token?: string): Promise<T> =>
+  loomGetJson<T>("whatsapp-api", path, token);
 
 // -- Marketing vs Transactional classification --------------------------------
 //

@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getStoryById } from "@/lib/content-api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { BackendFetchError } from "@/lib/backend-fetch-error";
 
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
@@ -29,7 +30,15 @@ export async function GET(
   const cookieToken = cookieStore.get(COOKIE_NAME)?.value;
   const token = cookieToken ?? await getServiceToken();
 
-  const detail = await getStoryById(numericId, token);
+  // A backend refusal/outage is 502 with the real reason — never a 404, which
+  // would tell the caller the record does not exist when we simply couldn't ask.
+  let detail: Awaited<ReturnType<typeof getStoryById>>;
+  try {
+    detail = await getStoryById(numericId, token);
+  } catch (e) {
+    if (!(e instanceof BackendFetchError)) throw e;
+    return NextResponse.json({ error: e.message }, { status: 502 });
+  }
   if (!detail) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

@@ -7,8 +7,7 @@
  * endpoints so api.ts stays stable.
  */
 
-import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
-import { classifyHttpFailure, classifyNetworkFailure } from "@/lib/backend-fetch-error";
+import {loomGetJson} from "@/lib/backend-fetch-error";
 import type {
   CatalogCategory,
   CatalogSegment,
@@ -16,34 +15,11 @@ import type {
   CatalogSimpleItem,
 } from "@/types/catalog";
 
-const BACKEND =
-  typeof window === "undefined"
-    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
-    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
 
-async function catalogGet<T>(path: string, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Origin: "localhost",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const url = `${BACKEND}${path}`;
-  let res: Response;
-  try {
-    res = await fetch(url, { headers, cache: "no-store" });
-  } catch (e) {
-    const classified = classifyNetworkFailure("catalog-api", url, e);
-    console.error(classified.message);
-    throw classified;
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const classified = classifyHttpFailure("catalog-api", url, res.status, text.slice(0, 120));
-    console.error(classified.message);
-    throw classified;
-  }
-  return rewriteBloomscorpUrlsDeep(await res.json()) as T;
-}
+/** Single backend GET for this module. All failure handling — network,
+ *  HTTP, and the `{success:false}` envelope — lives in loomGetJson. */
+const catalogGet = <T,>(path: string, token?: string): Promise<T> =>
+  loomGetJson<T>("catalog-api", path, token);
 
 /** Extract the first array-of-objects from a Loom response envelope. */
 function extractFirstArray<T>(payload: unknown): T[] {
@@ -57,12 +33,8 @@ function extractFirstArray<T>(payload: unknown): T[] {
 }
 
 async function fetchCatalogList<T>(path: string, token?: string): Promise<T[]> {
-  try {
-    const payload = await catalogGet<unknown>(path, token);
-    return extractFirstArray<T>(payload);
-  } catch {
-    return [];
-  }
+  const payload = await catalogGet<unknown>(path, token);
+  return extractFirstArray<T>(payload);
 }
 
 export const getCategoryList    = (token?: string) =>

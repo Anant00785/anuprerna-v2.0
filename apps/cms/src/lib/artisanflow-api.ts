@@ -17,15 +17,10 @@
  * client.
  */
 
-import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
-import { BackendFetchError, classifyHttpFailure, classifyNetworkFailure, rethrowIfSystemic } from "@/lib/backend-fetch-error";
+import {BackendFetchError, loomGetJson, rethrowIfSystemic} from "@/lib/backend-fetch-error";
 
 export { BackendFetchError };
 
-const BACKEND =
-  typeof window === "undefined"
-    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
-    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
 
 // afGet is the ONLY place that talks to the wrapper for this module. Every
 // failure — network-unreachable, 401/403 auth, 5xx, or the sandbox running
@@ -35,30 +30,10 @@ const BACKEND =
 // for callers below that end up swallowing it into a fallback. A genuine
 // 200-with-no-matching-row is NOT an error — it never reaches this catch;
 // callers see it as a normal `undefined` field on the parsed envelope.
-async function afGet<T>(path: string, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Origin: "localhost",
-    Accept: "application/json",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const url = `${BACKEND}${path}`;
-  let res: Response;
-  try {
-    res = await fetch(url, { headers, cache: "no-store" });
-  } catch (e) {
-    const classified = classifyNetworkFailure("artisanflow-api", url, e);
-    console.error(classified.message);
-    throw classified;
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const classified = classifyHttpFailure("artisanflow-api", url, res.status, text.slice(0, 160));
-    console.error(classified.message);
-    throw classified;
-  }
-  return rewriteBloomscorpUrlsDeep(await res.json()) as T;
-}
+/** Single backend GET for this module. All failure handling — network,
+ *  HTTP, and the `{success:false}` envelope — lives in loomGetJson. */
+const afGet = <T,>(path: string, token?: string): Promise<T> =>
+  loomGetJson<T>("artisanflow-api", path, token);
 
 /** Best-effort: pull a named array off an envelope, else the first array found. */
 function pickArray<T>(payload: unknown, ...keys: string[]): T[] {

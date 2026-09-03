@@ -1898,7 +1898,7 @@ function StageRescheduleRow({
         {isChainHead
           ? "This is the first stage, so moving its start moves the whole job."
           : `Moving this stage's start moves it — and every stage after it — by the same number of days. Only the idle time after “${previousStageName}” changes; the gaps further down the chain are kept exactly as they are.`}{" "}
-        Watch the dates on the rails, and the idle-gap lines between them. The stage's
+        Watch the dates on the rails, and the idle-gap lines between them. The stage&apos;s
         own tasks move with it, so its dates keep matching the work inside it.
       </p>
 

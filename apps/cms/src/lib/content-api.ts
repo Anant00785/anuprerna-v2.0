@@ -5,8 +5,7 @@
  * Mirrors the request logic in catalog-api.ts but scoped to content endpoints.
  */
 
-import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
-import { classifyHttpFailure, classifyNetworkFailure } from "@/lib/backend-fetch-error";
+import {loomGetJson} from "@/lib/backend-fetch-error";
 import type {
   StoryPreviewItem,
   StoryCategory,
@@ -15,34 +14,11 @@ import type {
   BlogCategoryItem,
 } from "@/types/content";
 
-const BACKEND =
-  typeof window === "undefined"
-    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
-    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
 
-async function contentGet<T>(path: string, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Origin: "localhost",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const url = `${BACKEND}${path}`;
-  let res: Response;
-  try {
-    res = await fetch(url, { headers, cache: "no-store" });
-  } catch (e) {
-    const classified = classifyNetworkFailure("content-api", url, e);
-    console.error(classified.message);
-    throw classified;
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const classified = classifyHttpFailure("content-api", url, res.status, text.slice(0, 120));
-    console.error(classified.message);
-    throw classified;
-  }
-  return rewriteBloomscorpUrlsDeep(await res.json()) as T;
-}
+/** Single backend GET for this module. All failure handling — network,
+ *  HTTP, and the `{success:false}` envelope — lives in loomGetJson. */
+const contentGet = <T,>(path: string, token?: string): Promise<T> =>
+  loomGetJson<T>("content-api", path, token);
 
 /** Extract the first array-of-objects from a Loom response envelope. */
 function extractFirstArray<T>(payload: unknown): T[] {
@@ -56,12 +32,8 @@ function extractFirstArray<T>(payload: unknown): T[] {
 }
 
 async function fetchContentList<T>(path: string, token?: string): Promise<T[]> {
-  try {
-    const payload = await contentGet<unknown>(path, token);
-    return extractFirstArray<T>(payload);
-  } catch {
-    return [];
-  }
+  const payload = await contentGet<unknown>(path, token);
+  return extractFirstArray<T>(payload);
 }
 
 export const getStoryList = (token?: string) =>
@@ -150,16 +122,12 @@ async function fetchSectionsForParent(
   parentId: number,
   token?: string,
 ): Promise<Record<string, unknown>[]> {
-  try {
-    const payload = await contentGet<unknown>(
-      `/get/table-explorer/data/${table}?page=0&size=5000`,
-      token,
-    );
-    const rows = extractFirstArray<Record<string, unknown>>(payload);
-    return rows.filter((r) => Number(r[parentIdField]) === parentId);
-  } catch {
-    return [];
-  }
+  const payload = await contentGet<unknown>(
+    `/get/table-explorer/data/${table}?page=0&size=5000`,
+    token,
+  );
+  const rows = extractFirstArray<Record<string, unknown>>(payload);
+  return rows.filter((r) => Number(r[parentIdField]) === parentId);
 }
 
 // ── Story detail ───────────────────────────────────────────────────────────
@@ -217,31 +185,27 @@ function normaliseStoryDetail(raw: Record<string, unknown>): StoryDetail {
 
 /** Fetch the full story detail by id (server-side — backend not browser-reachable). */
 export async function getStoryById(id: number, token?: string): Promise<StoryDetail | null> {
-  try {
-    const raw = await contentGet<Record<string, unknown>>(
-      "/get/story-content/" + id,
-      token,
-    );
-    const detail = (raw.storyContent ?? raw) as Record<string, unknown>;
-    if (!detail || !detail.id) return null;
-    const parsed = normaliseStoryDetail(detail);
-    // Prefer the live story_content_section table over the embedded snapshot
-    // whenever it has rows for this story (see fetchSectionsForParent above).
-    const liveSections = await fetchSectionsForParent(
-      "story-content-section",
-      "storyContentId",
-      parsed.id,
-      token,
-    );
-    if (liveSections.length > 0) {
-      parsed.sections = liveSections
-        .map(normaliseContentSection)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-    }
-    return parsed;
-  } catch {
-    return null;
+  const raw = await contentGet<Record<string, unknown>>(
+    "/get/story-content/" + id,
+    token,
+  );
+  const detail = (raw.storyContent ?? raw) as Record<string, unknown>;
+  if (!detail || !detail.id) return null;
+  const parsed = normaliseStoryDetail(detail);
+  // Prefer the live story_content_section table over the embedded snapshot
+  // whenever it has rows for this story (see fetchSectionsForParent above).
+  const liveSections = await fetchSectionsForParent(
+    "story-content-section",
+    "storyContentId",
+    parsed.id,
+    token,
+  );
+  if (liveSections.length > 0) {
+    parsed.sections = liveSections
+      .map(normaliseContentSection)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }
+  return parsed;
 }
 
 // ── Blog detail ────────────────────────────────────────────────────────────
@@ -299,31 +263,27 @@ function normaliseBlogDetail(raw: Record<string, unknown>): BlogDetail {
 
 /** Fetch the full blog detail by id (server-side — backend not browser-reachable). */
 export async function getBlogById(id: number, token?: string): Promise<BlogDetail | null> {
-  try {
-    const raw = await contentGet<Record<string, unknown>>(
-      "/get/blog-content/" + id,
-      token,
-    );
-    const detail = (raw.blogContent ?? raw) as Record<string, unknown>;
-    if (!detail || !detail.id) return null;
-    const parsed = normaliseBlogDetail(detail);
-    // Prefer the live blog_content_section table over the embedded snapshot
-    // whenever it has rows for this blog (see fetchSectionsForParent above).
-    const liveSections = await fetchSectionsForParent(
-      "blog-content-section",
-      "blogContentId",
-      parsed.id,
-      token,
-    );
-    if (liveSections.length > 0) {
-      parsed.sections = liveSections
-        .map(normaliseContentSection)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-    }
-    return parsed;
-  } catch {
-    return null;
+  const raw = await contentGet<Record<string, unknown>>(
+    "/get/blog-content/" + id,
+    token,
+  );
+  const detail = (raw.blogContent ?? raw) as Record<string, unknown>;
+  if (!detail || !detail.id) return null;
+  const parsed = normaliseBlogDetail(detail);
+  // Prefer the live blog_content_section table over the embedded snapshot
+  // whenever it has rows for this blog (see fetchSectionsForParent above).
+  const liveSections = await fetchSectionsForParent(
+    "blog-content-section",
+    "blogContentId",
+    parsed.id,
+    token,
+  );
+  if (liveSections.length > 0) {
+    parsed.sections = liveSections
+      .map(normaliseContentSection)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }
+  return parsed;
 }
 
 // ── FAQ types ──────────────────────────────────────────────────────────────
@@ -386,12 +346,8 @@ function normaliseFaqItem(raw: Record<string, unknown>): FaqItem {
  * Backend envelope: { faq: FaqItem }
  */
 export async function getFaqById(id: number, token?: string): Promise<FaqItem | null> {
-  try {
-    const raw = await contentGet<Record<string, unknown>>("/get/faq/" + id, token);
-    const detail = (raw.faq ?? raw) as Record<string, unknown>;
-    if (!detail || !detail.id) return null;
-    return normaliseFaqItem(detail);
-  } catch {
-    return null;
-  }
+  const raw = await contentGet<Record<string, unknown>>("/get/faq/" + id, token);
+  const detail = (raw.faq ?? raw) as Record<string, unknown>;
+  if (!detail || !detail.id) return null;
+  return normaliseFaqItem(detail);
 }

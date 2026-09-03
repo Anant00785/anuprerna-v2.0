@@ -19,15 +19,10 @@
  *   GET /get/custom-product/{productId}  -> { customProduct: {...} }
  */
 
-import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
-import { classifyHttpFailure, classifyNetworkFailure } from "@/lib/backend-fetch-error";
+import {loomGetJson} from "@/lib/backend-fetch-error";
 import { getSandboxToken } from "@/lib/sandbox-token";
 import type { Result } from "@/lib/result";
 
-const BACKEND =
-  typeof window === "undefined"
-    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
-    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
 
 /**
  * Custom product row. Mirrors the live ICustomProduct interface
@@ -78,29 +73,10 @@ export function groupLabel(group: string): string {
   return group || "—";
 }
 
-async function loomGet<T>(path: string, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Origin: "localhost",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const url = `${BACKEND}${path}`;
-  let res: Response;
-  try {
-    res = await fetch(url, { headers, cache: "no-store" });
-  } catch (e) {
-    const classified = classifyNetworkFailure("custom-products-api", url, e);
-    console.error(classified.message);
-    throw classified;
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const classified = classifyHttpFailure("custom-products-api", url, res.status, text.slice(0, 120));
-    console.error(classified.message);
-    throw classified;
-  }
-  return rewriteBloomscorpUrlsDeep(await res.json()) as T;
-}
+/** Single backend GET for this module. All failure handling — network,
+ *  HTTP, and the `{success:false}` envelope — lives in loomGetJson. */
+const loomGet = <T,>(path: string, token?: string): Promise<T> =>
+  loomGetJson<T>("custom-products-api", path, token);
 
 function num(v: unknown): number {
   const n = Number(v);

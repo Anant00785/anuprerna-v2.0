@@ -12,6 +12,7 @@ import {
 import { getServiceToken } from "@/lib/loom-service-token";
 import type { ProfileType } from "@/types/profiles";
 import { ProfilesClient } from "./ProfilesClient";
+import { loadOrBanner } from "@/lib/load-or-banner";
 
 export const dynamic = "force-dynamic";
 const COOKIE = process.env.AUTH_COOKIE_NAME ?? "weave_token";
@@ -40,8 +41,8 @@ export default async function ProfilesPage({
   const cookieToken = cookieStore.get(COOKIE)?.value;
   const token = cookieToken ?? (await getServiceToken());
 
-  const [badge, volume, size, customSize, fabric, customFinish, madeToOrder] =
-    await Promise.all([
+  return loadOrBanner(
+    () => Promise.all([
       getBadgeProfiles(token),
       getVolumeDiscountProfiles(token),
       getSizeProfiles(token),
@@ -49,18 +50,18 @@ export default async function ProfilesPage({
       getFabricProfiles(token),
       getCustomFinishProfiles(token),
       getMadeToOrderProfiles(token),
-    ]);
-
-  return (
-    <ProfilesClient
-      badge={badge}
-      volume={volume}
-      size={size}
-      customSize={customSize}
-      fabric={fabric}
-      customFinish={customFinish}
-      madeToOrder={madeToOrder}
-      initialTab={initialTab}
-    />
+    ]),
+    ([badge, volume, size, customSize, fabric, customFinish, madeToOrder]) => (
+      <ProfilesClient
+        badge={badge}
+        volume={volume}
+        size={size}
+        customSize={customSize}
+        fabric={fabric}
+        customFinish={customFinish}
+        madeToOrder={madeToOrder}
+        initialTab={initialTab}
+      />
+    ),
   );
 }

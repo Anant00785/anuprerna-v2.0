@@ -23,7 +23,9 @@
  * untouched by this module. Only real fetch/HTTP failures land here.
  */
 
-export type BackendErrorKind = "network" | "auth" | "isolated" | "server";
+import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
+
+export type BackendErrorKind = "network" | "auth" | "isolated" | "server" | "rejected";
 
 export class BackendFetchError extends Error {
   readonly kind: BackendErrorKind;
@@ -100,4 +102,79 @@ export function classifyNetworkFailure(clientLabel: string, url: string, err: un
  */
 export function rethrowIfSystemic(e: unknown): void {
   if (e instanceof BackendFetchError) throw e;
+}
+
+/**
+ * The Loom backend signals a BUSINESS rejection inside the envelope at HTTP
+ * 200: `{ success: false, message: "..." }`. Nothing about the HTTP layer
+ * says anything went wrong, so a caller that only checks `res.ok` reads the
+ * rejection as an ordinary payload with no list key on it — and renders an
+ * EMPTY TABLE. That is the regression this exists to close: a refusal must
+ * never be indistinguishable from "no rows".
+ *
+ * `kind: "rejected"` is deliberately distinct from the four systemic kinds
+ * above: a rejection means the backend was reached and answered, so it is
+ * NOT a config/connectivity fault and callers can tell the two apart.
+ */
+export function assertEnvelopeOk(clientLabel: string, url: string, payload: unknown): void {
+  if (
+    payload !== null &&
+    typeof payload === "object" &&
+    (payload as { success?: unknown }).success === false
+  ) {
+    const raw = (payload as { message?: unknown }).message;
+    const detail = typeof raw === "string" && raw.trim() ? raw.trim() : "Backend rejected the request.";
+    const err = new BackendFetchError("rejected", url, `[${clientLabel}] ${detail}`, 200);
+    console.error(err.message);
+    throw err;
+  }
+}
+
+const BACKEND_BASE =
+  typeof window === "undefined"
+    ? (process.env.BACKEND_URL ?? "http://localhost:8090")
+    : (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8090");
+
+/**
+ * The ONE backend GET every `*-api.ts` module goes through.
+ *
+ * Each module used to carry its own byte-identical copy of this wrapper, and
+ * every copy stopped at `res.ok` — which is why the `{success:false}` envelope
+ * slipped past all of them at once. Keeping a single implementation means the
+ * envelope contract can only be forgotten in one place, not eight.
+ *
+ * Throws BackendFetchError for all four systemic failures AND for an envelope
+ * rejection; `.kind` distinguishes them. Never returns a degraded value.
+ */
+export async function loomGetJson<T>(
+  clientLabel: string,
+  path: string,
+  token?: string,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    Origin: "localhost",
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const url = `${BACKEND_BASE}${path}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { headers, cache: "no-store" });
+  } catch (e) {
+    const classified = classifyNetworkFailure(clientLabel, url, e);
+    console.error(classified.message);
+    throw classified;
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    const classified = classifyHttpFailure(clientLabel, url, res.status, text.slice(0, 160));
+    console.error(classified.message);
+    throw classified;
+  }
+
+  const payload = await res.json();
+  assertEnvelopeOk(clientLabel, url, payload);
+  return rewriteBloomscorpUrlsDeep(payload) as T;
 }

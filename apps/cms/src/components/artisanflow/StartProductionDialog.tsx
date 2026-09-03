@@ -185,7 +185,7 @@ export function StartProductionDialog({ item }: { item: ProductionItemContext })
                 </FormField>
               )}
               <p className="text-[11px]" style={{ color: "#AAA39E" }}>
-                Next, review the stages inherited from the template — day counts and steps can be tweaked before it's created.
+                Next, review the stages inherited from the template — day counts and steps can be tweaked before it&apos;s created.
               </p>
             </div>
 

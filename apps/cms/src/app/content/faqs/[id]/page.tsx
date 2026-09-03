@@ -6,6 +6,7 @@ import { WeaveShell } from "@/components/weave/WeaveShell";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Badge } from "@/components/ui";
 import { getFaqById } from "@/lib/content-api";
+import { BackendFetchError } from "@/lib/backend-fetch-error";
 import { getServiceToken } from "@/lib/loom-service-token";
 import { FaqDetailActions } from "./FaqDetailActions";
 
@@ -34,7 +35,20 @@ export default async function FAQDetailPage({
   const cookieToken = cookieStore.get(COOKIE)?.value;
   const token = cookieToken ?? (await getServiceToken());
 
-  const faq = await getFaqById(numId, token);
+  // getFaqById now throws on a backend refusal/outage instead of returning
+  // null, so the two cases stay distinct: null still means "no such FAQ"
+  // (404), a throw means "we could not ask" (banner naming the reason).
+  let faq: Awaited<ReturnType<typeof getFaqById>>;
+  try {
+    faq = await getFaqById(numId, token);
+  } catch (e) {
+    if (!(e instanceof BackendFetchError)) throw e;
+    return (
+      <WeaveShell>
+        <ErrorBanner message={e.message} />
+      </WeaveShell>
+    );
+  }
   if (!faq) notFound();
 
   return (

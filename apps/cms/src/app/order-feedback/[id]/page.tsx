@@ -186,7 +186,7 @@ export default async function OrderFeedbackDetailPage({ params }: { params: Prom
           <ErrorBanner message={res.error} />
         ) : !res.data ? (
           <div className="rounded-lg border p-8 text-center" style={{ borderColor: "#E8E4DE" }}>
-            <p className="text-sm font-medium" style={{ color: "#1A1714" }}>🔍 We couldn't find this feedback</p>
+            <p className="text-sm font-medium" style={{ color: "#1A1714" }}>🔍 We couldn&apos;t find this feedback</p>
             <p className="mt-1 text-sm" style={{ color: "#847D77" }}>It may have been removed, or the link is out of date.</p>
           </div>
         ) : (

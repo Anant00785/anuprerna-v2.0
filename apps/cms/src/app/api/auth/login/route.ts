@@ -14,22 +14,16 @@ function nameFromEmail(email: string): string {
     .trim() || email;
 }
 
-export async function POST(req: NextRequest) {
-  let body: { email?: string; password?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ success: false, message: "Invalid request body" }, { status: 400 });
-  }
-
-  const { email, password } = body;
-  if (!email || !password) {
-    return NextResponse.json({ success: false, message: "Email and password are required" }, { status: 400 });
-  }
-
-  let token: string | undefined = process.env.SANDBOX_ADMIN_TOKEN;
-
-  // 1. Authenticate with Loom backend
+/**
+ * Ask the Loom backend to verify the credential. Returns its JWT, or undefined
+ * when the credential is rejected or no endpoint could be reached. It never
+ * falls back to a token of its own — "could not verify" and "verified" must not
+ * produce the same result.
+ */
+async function authenticateWithLoom(
+  email: string,
+  password: string,
+): Promise<string | undefined> {
   const authEndpoints = [
     "https://loom-v2.anuprerna.com/authenticate/email",
     `${BACKEND}/authenticate/email`,
@@ -57,14 +51,78 @@ export async function POST(req: NextRequest) {
           (data.jwt as string | undefined) ??
           (data.bearerToken as string | undefined) ??
           (data.token as string | undefined);
-        if (jwt) {
-          token = jwt;
-          break;
-        }
+        if (jwt) return jwt;
       }
     } catch {
-      // Continue to next fallback
+      // Try the next endpoint. Falling out of the loop means "not verified".
     }
+  }
+  return undefined;
+}
+
+/** True only in an explicitly-declared, non-production sandbox. */
+function sandboxLoginEnabled(): boolean {
+  return (
+    process.env.CMS_SANDBOX_LOGIN === "true" &&
+    process.env.NODE_ENV !== "production" &&
+    !!process.env.SANDBOX_ADMIN_TOKEN
+  );
+}
+
+/**
+ * Compare against the ONE configured sandbox credential. Both halves must be
+ * set — an unset password must never match an empty submission.
+ *
+ * ponytail: plain string compare, matching the basic-auth gate in
+ * src/middleware.ts. Move both to crypto.timingSafeEqual together if a timing
+ * oracle on a locally-configured dev secret ever becomes worth closing.
+ */
+function sandboxCredentialMatches(email: string, password: string): boolean {
+  const wantEmail = process.env.CMS_SANDBOX_LOGIN_EMAIL;
+  const wantPassword = process.env.CMS_SANDBOX_LOGIN_PASSWORD;
+  if (!wantEmail || !wantPassword) return false;
+  return email.trim().toLowerCase() === wantEmail.trim().toLowerCase() && password === wantPassword;
+}
+
+export async function POST(req: NextRequest) {
+  let body: { email?: string; password?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ success: false, message: "Invalid request body" }, { status: 400 });
+  }
+
+  const { email, password } = body;
+  if (!email || !password) {
+    return NextResponse.json({ success: false, message: "Email and password are required" }, { status: 400 });
+  }
+
+  // ── Credential check ──────────────────────────────────────────────────────
+  //
+  // FAILS CLOSED. This block used to read:
+  //
+  //     let token = process.env.SANDBOX_ADMIN_TOKEN;
+  //     for (const endpoint of authEndpoints) { ...maybe overwrite token... }
+  //     if (!token) return 401;
+  //
+  // i.e. the sandbox service token was seeded BEFORE any credential was
+  // checked and nothing cleared it when every auth endpoint refused — so with
+  // SANDBOX_ADMIN_TOKEN set, ANY email and ANY password minted a session
+  // cookie holding that token, which middleware.tokenValid() explicitly
+  // accepts. Password auth was decorative: an authentication bypass on an
+  // admin CMS. Now the credential check runs first and its RESULT decides.
+  let token: string | undefined = await authenticateWithLoom(email, password);
+
+  // The sandbox fallback is an ADDITIONAL credential, never a bypass of the
+  // check above. It requires all four of:
+  //   - CMS_SANDBOX_LOGIN=true                (explicit opt-in)
+  //   - NODE_ENV !== "production"             (impossible to enable in prod)
+  //   - CMS_SANDBOX_LOGIN_EMAIL/_PASSWORD set (an actual configured credential)
+  //   - the submitted email+password matching them exactly
+  // Mirrors the PAYMENTS_LIVE_MODE guard in apps/api's env schema: an explicit
+  // flag AND NODE_ENV, both required, defaulting to off.
+  if (!token && sandboxLoginEnabled() && sandboxCredentialMatches(email, password)) {
+    token = process.env.SANDBOX_ADMIN_TOKEN;
   }
 
   if (!token) {
