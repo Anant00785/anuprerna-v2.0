@@ -163,10 +163,26 @@ export const cartRepository = {
    * Loom re-prices the row itself, so quantity is the only thing to send.
    */
   async updateQuantity(item: CartItem, quantity: number): Promise<void> {
+    // The product FK travels alongside because the backend's write validator
+    // demands it and its own read does not always hydrate the preview to
+    // recover it from. It identifies the row's PRODUCT, never its price — the
+    // BFF re-reads the stored row for everything else, so nothing this client
+    // holds can re-price the line.
+    const row = (item.source ?? {}) as {
+      fabricProductPreview?: { id?: number };
+      finishedProductPreview?: { id?: number };
+      fabricProductId?: number;
+      finishedProductId?: number;
+    };
     await mutate("/api/cart/update", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: Number(item.id), quantity }),
+      body: JSON.stringify({
+        id: Number(item.id),
+        quantity,
+        fabricProductId: row.fabricProductPreview?.id ?? row.fabricProductId,
+        finishedProductId: row.finishedProductPreview?.id ?? row.finishedProductId,
+      }),
     });
   },
 

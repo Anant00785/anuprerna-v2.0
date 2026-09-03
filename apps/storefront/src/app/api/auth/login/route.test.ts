@@ -52,6 +52,35 @@ describe("POST /api/auth/login", () => {
     expect(cookie?.options).toMatchObject({ httpOnly: true, sameSite: "lax", path: "/" });
   });
 
+  it("accepts a `token` field as well as `jwt` — our own API names it `token`", async () => {
+    // Legacy Loom answers {jwt}; apps/api's loom-legacy-auth controller answers
+    // {token}. Same signed bearer. Reading only `jwt` made a perfectly good
+    // login against our own backend look like a rejection.
+    useHandlers(
+      http.post(`${LOOM_BASE_URL}/authenticate/email`, () =>
+        HttpResponse.json({ success: true, message: "", token: "our.api.token" })
+      )
+    );
+
+    const res = await post({ email: "buyer@example.com", password: "hunter2" });
+
+    expect(res.status).toBe(200);
+    expect(cookieJar.get(LOOM_JWT_COOKIE)?.value).toBe("our.api.token");
+  });
+
+  it("treats success:false as a rejection even when a token-shaped field is present", async () => {
+    useHandlers(
+      http.post(`${LOOM_BASE_URL}/authenticate/email`, () =>
+        HttpResponse.json({ success: false, message: "Bad credentials", token: "" })
+      )
+    );
+
+    const res = await post({ email: "buyer@example.com", password: "wrong" });
+
+    expect(res.status).toBe(401);
+    expect(cookieJar.get(LOOM_JWT_COOKIE)).toBeUndefined();
+  });
+
   it("answers 401 and sets no session when the backend rejects the credentials", async () => {
     useHandlers(
       http.post(`${LOOM_BASE_URL}/authenticate/email`, () =>

@@ -256,7 +256,19 @@ export async function checkEmailRegistered(email: string): Promise<boolean> {
 
 // ---- Auth ----------------------------------------------------------------
 // NOTE: the field is `username` (not `email`) per the verified live contract.
-export interface AuthSuccess { jwt: string; success?: boolean; [k: string]: unknown }
+export interface AuthSuccess { jwt?: string; token?: string; success?: boolean; [k: string]: unknown }
+
+/**
+ * The signed bearer out of an auth response, whichever name the backend used.
+ * Legacy Loom answers `{jwt}`; our own API's legacy-compat controller answers
+ * `{token}`. A response carrying `success:false` is a rejection even if some
+ * other field happens to look like a token.
+ */
+export function tokenFrom(res: AuthSuccess | null | undefined): string | null {
+  if (!res || res.success === false) return null;
+  const candidate = typeof res.jwt === 'string' && res.jwt ? res.jwt : res.token;
+  return typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
+}
 export interface AuthFailure { success: false; message: string }
 // `code` lets the API route pick the right HTTP status: a genuine credential
 // rejection -> 401, a backend/tunnel outage -> 503.
@@ -276,8 +288,14 @@ export const AUTH_UNAVAILABLE_MESSAGE =
 export async function authenticateEmail(username: string, password: string): Promise<AuthResult> {
   try {
     const res = await loomPost<AuthSuccess>('/authenticate/email', { username, password });
-    if (res && typeof res.jwt === 'string' && res.jwt.length > 0) {
-      return { ok: true, jwt: res.jwt, raw: res };
+    // Legacy Loom names the field `jwt`; our own backend
+    // (apps/api loom-legacy-auth.controller) names it `token`. Both are the
+    // same signed bearer, so accept either rather than making the storefront
+    // care which backend answered — reading only `jwt` made a perfectly good
+    // login from our own API look like a rejection.
+    const issued = tokenFrom(res);
+    if (issued) {
+      return { ok: true, jwt: issued, raw: res };
     }
     // 2xx but no JWT: the backend answered and declined — treat as a rejection.
     const msg = (res as unknown as AuthFailure)?.message || 'Authentication failed.';

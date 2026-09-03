@@ -24,24 +24,13 @@ import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 export async function GET() {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
 
-  // 1. Local NestJS backend first, when one is running. Unchanged from before:
-  // only the fabricated fallback was removed, not the upstream order.
-  try {
-    const nestRes = await fetch('http://127.0.0.1:3000/get/shipment-list', {
-      headers: { Origin: 'localhost', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    });
-    if (nestRes.ok) {
-      const nestData = await nestRes.json();
-      const list = nestData?.shipmentList || nestData?.entity;
-      if (Array.isArray(list) && list.length > 0) {
-        return NextResponse.json({ shipmentList: list, success: true, authenticated: !!token });
-      }
-    }
-  } catch {
-    // Not running / not reachable — fall through to Loom.
-  }
-
-  // 2. Loom.
+  // This used to probe a hardcoded `http://127.0.0.1:3000/get/shipment-list`
+  // first, then fall through to Loom. LOOM_BASE_URL now defaults to that same
+  // backend (apps/api serves the legacy shipment paths), so the probe was the
+  // SAME request twice — and in tests the two collided on one URL. There is one
+  // upstream, reached through the BFF client like every other Loom call, so it
+  // picks up the shared headers, the write-guard and the auth handling instead
+  // of re-implementing them.
   const path = token ? '/get/shipment-list' : '/checkout/shipment-list';
 
   try {

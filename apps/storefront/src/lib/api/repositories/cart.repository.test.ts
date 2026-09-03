@@ -179,7 +179,7 @@ describe("cartRepository.addToCart", () => {
 });
 
 describe("cartRepository.updateQuantity", () => {
-  it("sends ONLY {id, quantity} so Loom re-prices the row itself", async () => {
+  it("sends the quantity and the product FK — never a price", async () => {
     // Re-serialising the row here is what silently dropped volume discounts and
     // wiped fabric/size/customSize selections on every quantity change.
     let body: any;
@@ -204,10 +204,17 @@ describe("cartRepository.updateQuantity", () => {
       25
     );
 
-    expect(body).toEqual({ id: 166340327, quantity: 25 });
-    // The base price must NOT be echoed back — that is what re-priced bulk
-    // lines upward and discarded the tier discount.
+    expect(body).toMatchObject({ id: 166340327, quantity: 25 });
+    // The product FK travels because the backend's write validator requires it
+    // and its read does not always hydrate the preview to recover it from.
+    expect(body.fabricProductId).toBe(163523574);
+    // NO price, and no customisation, is echoed from the client. That is what
+    // re-priced bulk lines upward and wiped fabric/size/customSize selections;
+    // the BFF re-reads the stored row for all of it.
     expect(body).not.toHaveProperty("price");
+    expect(body).not.toHaveProperty("makingCharge");
+    expect(body).not.toHaveProperty("customSize");
+    expect(body).not.toHaveProperty("selectedFabricId");
   });
 
   it("throws on Loom's 200 + {success:false} rejection", async () => {

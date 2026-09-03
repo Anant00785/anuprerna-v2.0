@@ -15,11 +15,10 @@ vi.mock("next/headers", () => ({
 
 const { GET } = await import("./route");
 
-// The route tries a local Nest instance first. In tests it is never running,
-// so give MSW an explicit "nothing here" for it rather than letting the
-// unhandled-request guard fail every case.
-const NEST = "http://127.0.0.1:3000/get/shipment-list";
-const nestDown = () => http.get(NEST, () => HttpResponse.error());
+// There is ONE upstream now. The route used to probe a hardcoded
+// http://127.0.0.1:3000/get/shipment-list before falling through to Loom;
+// LOOM_BASE_URL defaults to that same backend, so the probe was a duplicate of
+// the Loom call and the two handlers collided on a single URL here.
 
 const LIVE_QUOTE = [
   { id: 21209, name: "Regular - By Road", baseAmount: 150, locationType: "DOMESTIC" },
@@ -32,7 +31,6 @@ beforeEach(() => {
 describe("GET /api/checkout/shipment", () => {
   it("returns the guest quote from Loom's unauthenticated path", async () => {
     useHandlers(
-      nestDown(),
       http.get(`${LOOM_BASE_URL}/checkout/shipment-list`, () =>
         HttpResponse.json({ shipmentList: LIVE_QUOTE, success: true })
       )
@@ -51,7 +49,6 @@ describe("GET /api/checkout/shipment", () => {
     sessionCookie = "session-jwt";
     let auth: string | null = null;
     useHandlers(
-      nestDown(),
       http.get(`${LOOM_BASE_URL}/get/shipment-list`, ({ request }) => {
         auth = request.headers.get("authorization");
         return HttpResponse.json({ shipmentList: LIVE_QUOTE });
@@ -72,7 +69,6 @@ describe("GET /api/checkout/shipment", () => {
   // ---------------------------------------------------------------------------
   it("fails with 502 — never a price — when every backend is unreachable", async () => {
     useHandlers(
-      nestDown(),
       http.get(`${LOOM_BASE_URL}/checkout/shipment-list`, () => HttpResponse.error())
     );
 
@@ -87,7 +83,6 @@ describe("GET /api/checkout/shipment", () => {
 
   it("relays the backend's own message on a rejection", async () => {
     useHandlers(
-      nestDown(),
       http.get(`${LOOM_BASE_URL}/checkout/shipment-list`, () =>
         HttpResponse.json({ message: "Shipping is suspended for this region." }, { status: 503 })
       )
@@ -104,7 +99,6 @@ describe("GET /api/checkout/shipment", () => {
 
   it("treats a reachable backend with an EMPTY list as no quote, not as a proceedable checkout", async () => {
     useHandlers(
-      nestDown(),
       http.get(`${LOOM_BASE_URL}/checkout/shipment-list`, () =>
         HttpResponse.json({ shipmentList: [], success: true })
       )
@@ -118,7 +112,6 @@ describe("GET /api/checkout/shipment", () => {
 
   it("returns no hardcoded rupee amount on any failure path", async () => {
     useHandlers(
-      nestDown(),
       http.get(`${LOOM_BASE_URL}/checkout/shipment-list`, () => HttpResponse.error())
     );
 
