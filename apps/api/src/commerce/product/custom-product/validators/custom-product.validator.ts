@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/validator/custom-product.validator.ts
  *
@@ -51,5 +50,3 @@ export function validateCustomProduct(entity: CustomProductInput): boolean {
 export function validateUpdateCustomProduct(entity: CustomProductInput): boolean {
   return typeof entity.id === "number" && Number.isInteger(entity.id) && validateCustomProduct(entity);
 }
-// @ts-nocheck
-// @ts-nocheck

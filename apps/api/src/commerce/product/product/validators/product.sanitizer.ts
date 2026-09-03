@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/core/validators/Product.sanitizer.ts
  *

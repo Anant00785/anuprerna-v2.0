@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProductSizeProfileService } from "../product-size-profile/service/product-size-profile.service.js";
@@ -32,6 +31,7 @@ export class ProductSizeProfileController {
   @ApiQuery({ name: "productId", example: 107260025, description: "Parent Product ID", required: true })
   @ApiQuery({ name: "sizeProfileOptionId", example: 12562710, description: "Size Profile Option ID", required: true })
   @ApiResponse({ status: 200, description: "Consumed fabric value, or null if unresolved." })
+  @RequireGate(GateCode.CODE_SU)
   async getConsumedFabricForImpact(@Query() query: unknown) {
     const { productId, sizeProfileOptionId } = parseConsumedFabricForImpactQuery(query);
     const consumedFabric = await this.productSizeProfileService.retrieveConsumedFabricForImpact(productId, sizeProfileOptionId);
@@ -43,6 +43,7 @@ export class ProductSizeProfileController {
   @ApiOperation({ summary: "List product size profile rows for a given size profile option." })
   @ApiParam({ name: "sizeProfileOptionId", example: 12562710, description: "Size Profile Option ID" })
   @ApiResponse({ status: 200, description: "Matching product size profile rows." })
+  @RequireGate(GateCode.CODE_SU)
   async getProductSizeProfileBySizeOption(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
     const id = parseSizeProfileOptionIdParam(sizeProfileOptionId);
     const rows = await this.productSizeProfileService.getProductSizeProfileBySizeOption(id);
@@ -91,6 +92,7 @@ export class ProductSizeProfileController {
   @ApiOperation({ summary: "Retrieve a single product size profile by id, enriched with its size profile option." })
   @ApiParam({ name: "id", example: 161702936, type: Number })
   @ApiResponse({ status: 200, description: "Product size profile or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getProductSizeProfile(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const profile = await this.productSizeProfileService.retrieveProductSizeProfileById(parsedId);
@@ -148,61 +150,4 @@ export class ProductSizeProfileController {
     return simpleResponse(deleted, deleted ? "Product size profile deleted successfully." : "Failed to delete product size profile.");
   }
 
-  /** getProductSizeProfileBySizeOption(SizeProfileOption option) */
-  @Get("/get/product-size-profile/by-size-option/:sizeProfileOptionId")
-  @ApiOperation({ summary: "List product size profile rows for a given size profile option." })
-  @ApiResponse({ status: 200, description: "Matching product size profile rows." })
-  async getProductSizeProfileBySizeOption(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
-    const id = parseSizeProfileOptionIdParam(sizeProfileOptionId);
-    const rows = await this.productSizeProfileService.getProductSizeProfileBySizeOption(id);
-    return keyedResponse("productSizeProfileList", rows);
-  }
-
-  /**
-   * deleteProductSizeProfileBySizeOption(SizeProfileOption option) —
-   * source always returns true (see service class doc).
-   */
-  @Delete("/delete/product-size-profile/by-size-option/:sizeProfileOptionId")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Delete every product size profile row for a given size profile option." })
-  @ApiResponse({ status: 200, description: "Always reports success (matches source, which always returns true)." })
-  async deleteProductSizeProfileBySizeOption(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
-    const id = parseSizeProfileOptionIdParam(sizeProfileOptionId);
-    const deleted = await this.productSizeProfileService.deleteProductSizeProfileBySizeOption(id);
-    return simpleResponse(deleted, "Product size profile rows deleted successfully.");
-  }
-
-  /**
-   * retrieveConsumedFabricForImpact(Long productId, Long sizeProfileOptionId)
-   * — falls back to the size option's own default consumedFabric when no
-   * product-specific override is set (see service doc).
-   */
-  @Get("/get/product-size-profile/consumed-fabric-for-impact")
-  @ApiOperation({ summary: "Resolve the consumed-fabric value used for impact calculations, for a product/size-option pair." })
-  @ApiResponse({ status: 200, description: "Consumed fabric value, or null if unresolved." })
-  async getConsumedFabricForImpact(@Query() query: unknown) {
-    const { productId, sizeProfileOptionId } = parseConsumedFabricForImpactQuery(query);
-    const consumedFabric = await this.productSizeProfileService.retrieveConsumedFabricForImpact(productId, sizeProfileOptionId);
-    return keyedResponse("consumedFabric", consumedFabric);
-  }
-
-  /** retrieveProductSizeProfileData(int page, int size) */
-  @Get("/get/table-explorer/data/product-size-profile")
-  @ApiOperation({ summary: "Paginated table-explorer projection of product size profiles." })
-  @ApiResponse({ status: 200, description: "Page of product size profile data." })
-  async getProductSizeProfileData(@Query() query: unknown) {
-    const { page, size } = parseTableExplorerPageQuery(query);
-    const data = await this.productSizeProfileService.retrieveProductSizeProfileData(page, size);
-    return keyedResponse("productSizeProfileDataList", data);
-  }
-
-  /** retrieveProductSizeProfileDataById(Long id) */
-  @Get("/get/table-explorer/data/product-size-profile/:id")
-  @ApiOperation({ summary: "Table-explorer projection of a single product size profile." })
-  @ApiResponse({ status: 200, description: "Product size profile data or null." })
-  async getProductSizeProfileDataById(@Param("id") id: string) {
-    const parsedId = BigInt(parseIdParam(id));
-    const data = await this.productSizeProfileService.retrieveProductSizeProfileDataById(parsedId);
-    return keyedResponse("productSizeProfileData", data);
-  }
 }

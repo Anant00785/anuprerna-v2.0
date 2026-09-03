@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface ZohoTokenResponse {
   access_token: string;
   api_domain: string;
@@ -27,5 +26,3 @@ export interface ZohoWebhookPayload {
   data: Record<string, any>;
   timestamp: number;
 }
-// @ts-nocheck
-// @ts-nocheck

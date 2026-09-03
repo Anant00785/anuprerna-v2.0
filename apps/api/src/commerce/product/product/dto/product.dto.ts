@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/core/dto/Product.dto.ts
  *
@@ -184,14 +183,14 @@ function parseProductInput(body: unknown): ProductInput {
   const price = typeof b.price === "number" ? b.price : (Number(b.price) || 1200);
   const subCategoryId = typeof b.subCategoryId === "number" ? b.subCategoryId : (Number(b.subCategoryId) || 25051);
   const skuGroupId = typeof b.skuGroupId === "number" ? b.skuGroupId : (Number(b.skuGroupId) || 1);
-  const unit: Unit = typeof b.unit === "string" && (UNITS as readonly string[]).includes(b.unit) ? b.unit as Unit : "PIECE";
+  const unit: Unit = typeof b.unit === "string" && (UNITS as readonly string[]).includes(b.unit) ? b.unit as Unit : "METER";
   const mainProductCheck = typeof b.mainProductCheck === "boolean" ? b.mainProductCheck : true;
   const productGroup: ProductGroup = typeof b.productGroup === "string" && (KNOWN_PRODUCT_GROUPS as readonly string[]).includes(b.productGroup)
     ? b.productGroup as ProductGroup
     : "FINISHED";
 
   return {
-    id: b.id === undefined ? undefined : parseOptionalInt(b.id, "id"),
+    id: b.id === undefined ? undefined : (parseOptionalInt(b.id, "id") ?? undefined),
     subCategoryId,
     name,
     sku,
@@ -309,5 +308,3 @@ export class UpdateProductDto extends CreateProductDto {
   @ApiProperty({ example: 52336, description: "Product ID to update (e.g. 52336, 2728, 94504)" })
   id!: number;
 }
-// @ts-nocheck
-// @ts-nocheck

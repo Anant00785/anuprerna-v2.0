@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface IPLocationData {
     ip: string;
     country: string;
@@ -7,5 +6,3 @@ export interface IPLocationData {
     longitude?: number;
     currency?: string;
 }
-// @ts-nocheck
-// @ts-nocheck

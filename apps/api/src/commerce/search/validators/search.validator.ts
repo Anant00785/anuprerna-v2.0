@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function validateSearchTerm(term: string): string | null {
   if (typeof term !== "string") {
     return "Search term must be a string.";

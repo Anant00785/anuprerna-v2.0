@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/sanitizer/custom-product.sanitizer.ts
  *
@@ -96,5 +95,3 @@ export function sanitizeCustomProduct<T extends Partial<CustomProductInput>>(ent
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

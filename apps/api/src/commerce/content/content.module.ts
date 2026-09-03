@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/content/content.module.ts
  *

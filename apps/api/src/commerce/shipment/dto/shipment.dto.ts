@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { LocationType } from "../types/shipment.types.js";

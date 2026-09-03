@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/mapper/segment.mapper.ts
  *

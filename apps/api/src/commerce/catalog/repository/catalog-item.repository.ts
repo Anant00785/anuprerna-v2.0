@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
@@ -8,7 +7,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 @Injectable()
 export class CatalogItemRepository {
   constructor(
-    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof catalogItem>,
+    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase,
   ) {}
 
   async findById(id: bigint) {
@@ -20,4 +19,3 @@ export class CatalogItemRepository {
     return this.db.select().from(catalogItem).orderBy(desc(catalogItem.id));
   }
 }
-// @ts-nocheck

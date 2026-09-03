@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { FaqInput, FaqQuestionInput } from "../dto/faq.dto.js";
 
 export function mapFaqQuestionRowToDto(row: any): FaqQuestionInput {
@@ -23,5 +22,3 @@ export function mapFaqRowToDto(row: any, questions: any[] = []): FaqInput {
         faqQuestionList: questions.map(mapFaqQuestionRowToDto)
     };
 }
-// @ts-nocheck
-// @ts-nocheck

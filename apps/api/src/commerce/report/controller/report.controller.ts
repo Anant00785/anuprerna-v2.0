@@ -1,12 +1,12 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Param, Body, Res, UseGuards } from '@nestjs/common';
 import { ReportService } from '../service/report.service.js';
-import { ReportType, ReportConfig } from '../types/report.types.js';
+import { ReportType, parseReportConfig } from '../types/report.types.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
 import { GateCode } from '../../../auth/types/auth.types.js';
 import { Response } from 'express';
 
+/** Ports com.bloomscorp.loom.report.controller.ReportController. */
 @ApiBearerAuth()
 @ApiTags("Reports")
 @Controller('download/report')
@@ -18,15 +18,23 @@ export class ReportController {
   @RequireGate(GateCode.CODE_SU)
   async downloadReport(
     @Param('type') type: string,
-    @Body() config: ReportConfig,
-    @Res() res: Response
+    @Body() body: unknown,
+    @Res() res: Response,
   ) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${type}_report_${timestamp}.pdf`;
-    
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', 'application/pdf');
+    // Java: DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const timestamp =
+      `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+      `_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
-    await this.reportService.generateReport(type as ReportType, config || {}, res);
+    const csv = await this.reportService.renderReport(
+      type.toUpperCase() as ReportType,
+      parseReportConfig(body),
+    );
+
+    res.setHeader('Content-Disposition', `attachment; filename=${type}_report_${timestamp}.csv`);
+    res.setHeader('Content-Type', 'text/csv');
+    res.send(csv);
   }
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/custom-product.module.ts
  *
@@ -41,7 +40,7 @@
  * Replace each `useValue` below with a real provider as the Order module
  * and the Zoho/cron logging infra get migrated.
  */
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { CustomProductService } from "./service/custom-product.service.js";
 import { CustomProductRepository } from "./repository/custom-product.repository.js";
@@ -52,12 +51,26 @@ import {
   SyncErrorLoggerPort,
 } from "./types/custom-product.types.js";
 
-const customOrderItemDummy: CustomOrderItemPort = {
+/**
+ * CustomOrderItemDAOController#updateCustomProductReference has no
+ * counterpart in apps/api (no CustomOrderItem module exists). This is NOT
+ * a silent stub: returning UPDATE_FAILURE makes CustomProductService throw
+ * CustomProductOrderItemSyncError, exactly as source does when the sync
+ * fails, so `updateCustomProduct` fails loudly instead of leaving the
+ * order items stale behind a 200. Tracked in docs/KNOWN-GAPS.md.
+ */
+const customOrderItemNotImplemented: CustomOrderItemPort = {
   updateCustomProductReference: async () => -5, // ActionCode.UPDATE_FAILURE
 };
 
-const syncErrorLoggerDummy: SyncErrorLoggerPort = {
-  logCustomProductOrderItemSyncError: async () => {},
+/** LoomCronManager#scheduleLogTask — a real log line, not a swallowed no-op. */
+const syncErrorLogger: SyncErrorLoggerPort = {
+  logCustomProductOrderItemSyncError: async (customProductId, tenantId) => {
+    new Logger("CustomProduct").error(
+      `CustomOrderItem sync failed for customProduct=${customProductId} tenant=${tenantId} — ` +
+        `CUSTOM_ORDER_ITEM_PORT is not implemented (docs/KNOWN-GAPS.md).`,
+    );
+  },
 };
 
 @Module({
@@ -65,10 +78,9 @@ const syncErrorLoggerDummy: SyncErrorLoggerPort = {
   providers: [
     CustomProductService,
     CustomProductRepository,
-    { provide: CUSTOM_ORDER_ITEM_PORT, useValue: customOrderItemDummy },
-    { provide: SYNC_ERROR_LOGGER_PORT, useValue: syncErrorLoggerDummy },
+    { provide: CUSTOM_ORDER_ITEM_PORT, useValue: customOrderItemNotImplemented },
+    { provide: SYNC_ERROR_LOGGER_PORT, useValue: syncErrorLogger },
   ],
   exports: [CustomProductService, CustomProductRepository],
 })
 export class CustomProductModule {}
-// @ts-nocheck

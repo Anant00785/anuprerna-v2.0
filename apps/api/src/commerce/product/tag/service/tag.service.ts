@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/service/tag.service.ts
  *
@@ -95,4 +94,3 @@ export class TagService {
     }
   }
 }
-// @ts-nocheck

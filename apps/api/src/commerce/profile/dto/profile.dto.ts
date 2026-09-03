@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   AddSizeProfileInput,
   UpdateSizeProfileInput,
@@ -73,5 +72,3 @@ export function parseUpdateCustomerProfileInput(body: any): UpdateCustomerProfil
     phone: body.phone,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

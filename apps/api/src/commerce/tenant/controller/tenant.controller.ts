@@ -17,6 +17,7 @@ export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
   @Get('get/super-user/profile')
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get super-user profile." })
   async getSuperUserProfile(@CurrentTenant() tenant: any) {
     const tenantId = tenant?.id || 1;
@@ -25,6 +26,7 @@ export class TenantController {
   }
 
   @Get('get/tenant/profile/:uId')
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get tenant profile by UID (super-user)." })
   @ApiParam({ name: 'uId', description: 'Tenant User UID', example: '5B6VFO8357', type: String })
   async getTenantProfile(@Param('uId') uId: string) {
@@ -33,11 +35,17 @@ export class TenantController {
   }
 
   @Get('get/customer/profile')
+  @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Get customer profile." })
   async getCustomerProfile(@CurrentTenant() tenant: any) {
     const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
     const profile = await this.tenantService.getCustomerProfile(tenantId);
-    return keyedResponse('profile', profile);
+    // Key is `customer`, NOT `profile`: Loom's CustomerController.getCustomerProfile()
+    // builds through CustomerResponse/CustomerDataResponse, which call
+    // prepareEntity(entity, ResponseParameter.CUSTOMER) where CUSTOMER = "customer".
+    // The storefront reads `response.customer` (lib/api/repositories/profile.repository.ts),
+    // so the old `profile` key rendered an empty profile page.
+    return keyedResponse('customer', profile);
   }
 
   @Post('update/customer/profile')
@@ -46,8 +54,12 @@ export class TenantController {
   @ApiOperation({ summary: "Update customer profile." })
   @ApiBody({ type: UpdateCustomerProfileDto })
   async updateCustomerProfile(@CurrentTenant() tenant: any, @Body() body: any) {
-    const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
-    const profile = await this.tenantService.updateCustomerProfile(tenantId, body);
+    const dto = parseUpdateCustomerProfileInput(body);
+    const errors = validateUpdateCustomerProfile(dto);
+    if (errors.length > 0) throw new BadRequestException(errors.join(', '));
+    const sanitized = sanitizeUpdateCustomerProfile(dto);
+    const tenantId = Number(tenant?.tenantId || tenant?.id);
+    const profile = await this.tenantService.updateCustomerProfile(tenantId, sanitized);
     return {
       success: true,
       message: 'Profile updated successfully',
@@ -58,6 +70,7 @@ export class TenantController {
   }
 
   @Get('get/table-explorer/data/user-role')
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated user roles list." })
   async getUserRoles(@Query() query: any) {
     const filter = parseUserRoleFilterInput(query);
@@ -67,6 +80,7 @@ export class TenantController {
   }
 
   @Get('get/table-explorer/data/user-role/:id')
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get user role by ID." })
   @ApiParam({ name: 'id', description: 'User Role ID', example: 1, type: Number })
   async getUserRoleById(@Param('id') id: string) {

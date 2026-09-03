@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { CatalogItemMediaRepository } from "../repository/catalog-item-media.repository.js";
 
@@ -9,4 +8,3 @@ export class CatalogItemMediaService {
   async create(body: unknown) {}
   async delete(id: bigint) {}
 }
-// @ts-nocheck

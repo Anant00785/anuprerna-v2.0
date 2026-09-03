@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/controller/tag.controller.ts
  *
@@ -54,6 +53,7 @@ export class TagController {
   @Get("/get/tag/list")
   @ApiOperation({ summary: "List every tag." })
   @ApiResponse({ status: 200, description: "Full tag list." })
+  @RequireGate(GateCode.CODE_SUCU)
   async getTagList() {
     const tags = await this.tagService.retrieveTagList();
     return keyedResponse("tagList", tags);
@@ -66,6 +66,7 @@ export class TagController {
   @Get("/get/tag/by-ids")
   @ApiOperation({ summary: "Retrieve multiple tags by id (comma-separated ?ids=1,2,3)." })
   @ApiResponse({ status: 200, description: "Matching tags." })
+  @RequireGate(GateCode.CODE_SUCU)
   async getTagsByIds(@Query("ids") ids: string) {
     const parsedIds = (ids ?? "")
       .split(",")
@@ -80,6 +81,7 @@ export class TagController {
   @Get("/get/tag/:id")
   @ApiOperation({ summary: "Retrieve a single tag by id." })
   @ApiResponse({ status: 200, description: "Tag or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getTagById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const tag = await this.tagService.retrieveTagById(parsedId);
@@ -120,6 +122,7 @@ export class TagController {
   @Get("/get/table-explorer/data/tag")
   @ApiOperation({ summary: "Paginated table-explorer projection of tags." })
   @ApiResponse({ status: 200, description: "Page of tag data." })
+  @RequireGate(GateCode.CODE_SU)
   async getTagData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);
     const data = await this.tagService.retrieveTagData(page, size);
@@ -130,10 +133,10 @@ export class TagController {
   @Get("/get/table-explorer/data/tag/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single tag." })
   @ApiResponse({ status: 200, description: "Tag data or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getTagDataById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const data = await this.tagService.retrieveTagDataById(parsedId);
     return keyedResponse("tagData", data);
   }
 }
-// @ts-nocheck

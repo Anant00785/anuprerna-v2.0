@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { ProfileRepository } from '../repository/profile.repository.js';
 import {
@@ -159,4 +158,3 @@ export class ProfileService {
     return keyedResponse('data', mapTenantProfile(tenant));
   }
 }
-// @ts-nocheck

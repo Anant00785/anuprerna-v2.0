@@ -1,6 +1,5 @@
-// @ts-nocheck
 export interface ProductSEO {
-    id: bigint;
+    id: number;
     name: string;
     metaTitle: string;
     metaDescription: string;
@@ -10,7 +9,7 @@ export interface ProductSEO {
 }
 
 export interface ArticleSEO {
-    id: bigint;
+    id: number;
     slug: string;
     articleType: string;
 }
@@ -24,27 +23,25 @@ export interface FilterSEO {
 }
 
 export interface ProductImageGallerySEOData {
-    id: bigint;
-    version: bigint;
-    productId: bigint;
+    id: number;
+    version: number;
+    productId: number;
     image: string;
     altText: string;
 }
 
 export interface ProductImageData {
-    productId: bigint;
+    productId: number;
     slug: string;
     heroImage: string;
-    additionalImages: string;
+    galleryImages: string;
 }
 
 export interface ProductImageGallerySEO {
-    id: bigint;
-    version: bigint;
-    productId: bigint;
+    id: number;
+    version: number;
+    productId: number;
     image: string;
     altText: string;
     deleted?: boolean;
 }
-// @ts-nocheck
-// @ts-nocheck

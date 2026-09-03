@@ -38,7 +38,7 @@ export function mapBadgeProfile(row: any): any {
   if (!row) return null;
   return {
     id: row.id,
-    name: row.name,
+    name: row.profileName ?? row.name,
     timeOfCreation: row.timeOfCreation,
   };
 }
@@ -48,8 +48,8 @@ export function mapBadgeProfileItem(row: any): any {
   return {
     id: row.id,
     profileId: row.profileId,
-    label: row.label,
-    icon: row.icon,
+    label: row.caption ?? row.label,
+    icon: row.image ?? row.icon,
     sortOrder: row.sortOrder,
   };
 }

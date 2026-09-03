@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { eq, desc } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
@@ -19,4 +18,3 @@ export class CatalogItemMediaRepository {
     return await this.db.select().from(catalogItemMedia).orderBy(desc(catalogItemMedia.id));
   }
 }
-// @ts-nocheck

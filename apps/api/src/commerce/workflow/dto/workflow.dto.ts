@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function parseWorkflowTemplateInput(body: any): any {
   if (!body) throw new Error('Invalid input');
   return {
@@ -25,5 +24,3 @@ export function parseElementFeedbackInput(body: any): any {
     artisanId: body.artisanId ? Number(body.artisanId) : null
   };
 }
-// @ts-nocheck
-// @ts-nocheck

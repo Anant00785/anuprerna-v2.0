@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/dto/tag.dto.ts
  *

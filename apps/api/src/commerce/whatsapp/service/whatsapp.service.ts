@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TransmissionService } from '../../transmission/transmission.service.js';
+import { TransmissionService } from '../../transmission/service/transmission.service.js';
 import { WhatsappRepository } from '../repository/whatsapp.repository.js';
-import { WhatsappOutboundMessage, WhatsappTransferResponse, WhatsappNotificationStatus, WhatsappNotificationEntityType, WhatsappNotificationTriggerType, WhatsappNotificationTenantType } from '../types/whatsapp.types.js';
+import { WhatsappOutboundMessage, WhatsappTransferResponse, WhatsappNotificationEntityType, WhatsappNotificationTriggerType, WhatsappNotificationTenantType } from '../types/whatsapp.types.js';
 import * as schema from '../../../database/schema/schema.js';
 import type { EnvironmentVariables } from '../../../common/config/env.schema.js';
 
@@ -34,7 +33,43 @@ export class WhatsappService {
         return true;
     }
 
-    async sendTemplateMessage(to: string, templateName: string, entityId: number, tenantId: number): Promise<void> {
+    /**
+     * recipient_mobile, from_mobile, template_name, namespace and created_at are
+     * all NOT NULL with no default; the previous insert omitted every one of
+     * them, so no history row could ever be written.
+     */
+    private historyBase(
+        to: string,
+        templateName: string,
+        entityId: number,
+        tenantId: number,
+        entityType: WhatsappNotificationEntityType,
+        triggerType: WhatsappNotificationTriggerType,
+        tenantType: WhatsappNotificationTenantType,
+    ) {
+        return {
+            tenantId,
+            entityId,
+            entityType,
+            triggerType,
+            tenantType,
+            recipientMobile: to,
+            fromMobile: this.config.get('WHATSAPP_MOBILE', { infer: true }) ?? '',
+            templateName,
+            namespace: this.config.get('WHATSAPP_NAMESPACE', { infer: true }) ?? '',
+            createdAt: Date.now(),
+        };
+    }
+
+    async sendTemplateMessage(
+        to: string,
+        templateName: string,
+        entityId: number,
+        tenantId: number,
+        entityType: WhatsappNotificationEntityType = 'ORDER',
+        triggerType: WhatsappNotificationTriggerType = 'ORDER_CONFIRMATION',
+        tenantType: WhatsappNotificationTenantType = 'CUSTOMER',
+    ): Promise<void> {
         const url = `${this.config.get('WHATSAPP_API_URL', { infer: true })}/${this.config.get('WHATSAPP_PHONE_NUMBER_ID', { infer: true })}/messages`;
         const payload: WhatsappOutboundMessage = {
             messaging_product: 'whatsapp',
@@ -50,23 +85,15 @@ export class WhatsappService {
             const response = await this.transmissionService.executePOSTPayload<WhatsappOutboundMessage, WhatsappTransferResponse>(url, undefined, headers, payload);
             if (response && response.messages && response.messages.length > 0) {
                 await this.repository.createHistory({
-                    tenantId,
-                    entityId,
-                    entityType: WhatsappNotificationEntityType.CUSTOMER as any,
-                    triggerType: WhatsappNotificationTriggerType.ALERT as any,
-                    tenantType: WhatsappNotificationTenantType.SYSTEM as any,
-                    status: WhatsappNotificationStatus.SENT as any
+                    ...this.historyBase(to, templateName, entityId, tenantId, entityType, triggerType, tenantType),
+                    status: 'SENT',
                 });
             }
         } catch (error) {
             this.logger.error('Failed to send WhatsApp message', error);
             await this.repository.createHistory({
-                tenantId,
-                entityId,
-                entityType: WhatsappNotificationEntityType.CUSTOMER as any,
-                triggerType: WhatsappNotificationTriggerType.ALERT as any,
-                tenantType: WhatsappNotificationTenantType.SYSTEM as any,
-                status: WhatsappNotificationStatus.FAILED as any
+                ...this.historyBase(to, templateName, entityId, tenantId, entityType, triggerType, tenantType),
+                status: 'POST_FAILED',
             });
         }
     }
@@ -79,4 +106,3 @@ export class WhatsappService {
         return this.repository.getHistoryById(id);
     }
 }
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import * as schema from '../../../database/schema/schema.js';
@@ -17,7 +16,7 @@ export class WorkflowRepository {
   }
 
   async getWorkflowTemplateById(templateId: number) {
-    const res = await this.db.select().from(schema.workflowTemplate).where(eq(schema.workflowTemplate.id, templateId));
+    const res = await this.db.select().from(schema.workflowTemplate).where(eq(schema.workflowTemplate.id, BigInt(templateId)));
     return res[0] || null;
   }
 
@@ -26,11 +25,11 @@ export class WorkflowRepository {
   }
 
   async updateWorkflowTemplate(templateId: number, data: any) {
-    return this.db.update(schema.workflowTemplate).set(data).where(eq(schema.workflowTemplate.id, templateId)).returning();
+    return this.db.update(schema.workflowTemplate).set(data).where(eq(schema.workflowTemplate.id, BigInt(templateId))).returning();
   }
 
   async deleteWorkflowTemplate(templateId: number) {
-    return this.db.delete(schema.workflowTemplate).where(eq(schema.workflowTemplate.id, templateId)).returning();
+    return this.db.delete(schema.workflowTemplate).where(eq(schema.workflowTemplate.id, BigInt(templateId))).returning();
   }
 
   async getTableExplorerWorkflowTemplates(page: number, size: number) {
@@ -40,20 +39,28 @@ export class WorkflowRepository {
   }
 
   // --- Workflows ---
+  private toWorkflowStatus(status: string) {
+    return schema.workflowStatusEnum.enumValues.find((v) => v === status.trim().toUpperCase());
+  }
+
   async getWorkflowsByStatus(status: string) {
-    return this.db.select().from(schema.workflow).where(eq(schema.workflow.status, status));
+    const value = this.toWorkflowStatus(status);
+    if (!value) return [];
+    return this.db.select().from(schema.workflow).where(eq(schema.workflow.status, value));
   }
 
   async getArtisanWorkflowsByStatus(status: string, artisanId: number) {
+    const value = this.toWorkflowStatus(status);
+    if (!value) return [];
     // Assuming artisan mapping exists
     return this.db.select()
       .from(schema.workflow)
       .innerJoin(schema.workflowArtisanMapping, eq(schema.workflow.id, schema.workflowArtisanMapping.workflowId))
-      .where(and(eq(schema.workflow.status, status), eq(schema.workflowArtisanMapping.artisanId, artisanId)));
+      .where(and(eq(schema.workflow.status, value), eq(schema.workflowArtisanMapping.artisanId, artisanId)));
   }
 
   async getWorkflowById(workflowId: number) {
-    const res = await this.db.select().from(schema.workflow).where(eq(schema.workflow.id, workflowId));
+    const res = await this.db.select().from(schema.workflow).where(eq(schema.workflow.id, BigInt(workflowId)));
     return res[0] || null;
   }
 
@@ -62,16 +69,16 @@ export class WorkflowRepository {
   }
 
   async updateWorkflow(workflowId: number, data: any) {
-    return this.db.update(schema.workflow).set(data).where(eq(schema.workflow.id, workflowId)).returning();
+    return this.db.update(schema.workflow).set(data).where(eq(schema.workflow.id, BigInt(workflowId))).returning();
   }
 
   async deleteWorkflow(workflowId: number) {
-    return this.db.delete(schema.workflow).where(eq(schema.workflow.id, workflowId)).returning();
+    return this.db.delete(schema.workflow).where(eq(schema.workflow.id, BigInt(workflowId))).returning();
   }
 
   // --- Step Elements ---
   async updateStepElement(id: number, data: any) {
-    return this.db.update(schema.stepElement).set(data).where(eq(schema.stepElement.id, id)).returning();
+    return this.db.update(schema.stepElement).set(data).where(eq(schema.stepElement.id, BigInt(id))).returning();
   }
   
   // --- Element Feedback ---
@@ -80,13 +87,11 @@ export class WorkflowRepository {
   }
 
   async updateElementFeedback(id: number, data: any) {
-    return this.db.update(schema.elementFeedback).set(data).where(eq(schema.elementFeedback.id, id)).returning();
+    return this.db.update(schema.elementFeedback).set(data).where(eq(schema.elementFeedback.id, BigInt(id))).returning();
   }
 
   async getElementFeedbackById(id: number) {
-    const res = await this.db.select().from(schema.elementFeedback).where(eq(schema.elementFeedback.id, id));
+    const res = await this.db.select().from(schema.elementFeedback).where(eq(schema.elementFeedback.id, BigInt(id)));
     return res[0] || null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Post,
@@ -18,6 +17,7 @@ import { ImageService } from "../service/image.service.js";
 import { validateImageFile } from "../validators/image.validator.js";
 
 import { IsNotEmpty, IsString } from "class-validator";
+import type { UploadedFile as MultipartFile } from "../../product/category/types/category.types.js";
 
 export class DeleteImageDto {
   @ApiProperty({ example: "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/sample.jpg", description: "S3 Image URL to delete" })
@@ -56,7 +56,7 @@ export class ImageController {
     },
   })
   @UseInterceptors(FileInterceptor("imageFile"))
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(@UploadedFile() file: MultipartFile) {
     const error = validateImageFile(file?.mimetype, file?.size);
     if (error) throw new BadRequestException(error);
 

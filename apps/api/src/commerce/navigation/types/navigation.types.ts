@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface StoryContentPreview {
   id: number;
   title: string;
@@ -98,5 +97,3 @@ export interface NavMenuStory {
   storyCategoryName: string;
   optionList: NavMenuStoryOption[];
 }
-// @ts-nocheck
-// @ts-nocheck

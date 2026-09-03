@@ -1,4 +1,3 @@
-// @ts-nocheck
 export enum ProcessingOrderStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",
@@ -17,5 +16,3 @@ export enum PaymentMode {
   CASH_ON_DELIVERY = "CASH_ON_DELIVERY",
   ONLINE = "ONLINE"
 }
-// @ts-nocheck
-// @ts-nocheck

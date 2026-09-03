@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BlogContentTypeInput, BlogContentCategoryInput, BlogContentInput, BlogContentSectionInput } from "../types/blog.types.js";
 
 export function validateBlogContentType(input: BlogContentTypeInput): string | null {
@@ -61,5 +60,3 @@ export function sanitizeBlogContent(input: BlogContentInput): BlogContentInput {
 export function sanitizeBlogContentSection(input: BlogContentSectionInput): BlogContentSectionInput {
   return input; // Add sanitization as needed
 }
-// @ts-nocheck
-// @ts-nocheck

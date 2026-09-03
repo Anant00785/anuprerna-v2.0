@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { CatalogItemRepository } from "../repository/catalog-item.repository.js";
 
@@ -22,4 +21,3 @@ export class CatalogItemService {
   async update(body: unknown) {}
   async delete(id: bigint) {}
 }
-// @ts-nocheck

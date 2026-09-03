@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * migrated/review/types/review.types.ts
  */
@@ -35,5 +34,3 @@ export interface ReviewStatistics {
   twoStarCount: number;
   oneStarCount: number;
 }
-// @ts-nocheck
-// @ts-nocheck

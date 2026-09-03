@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.sanitizer.ts
  *

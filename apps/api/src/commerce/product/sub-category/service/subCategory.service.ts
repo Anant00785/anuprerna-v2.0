@@ -1,12 +1,10 @@
-// @ts-nocheck
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { SubCategoryRepository, OptimisticLockError } from "../repository/subCategory.repository.js";
+import type { ResolvedCreateImages, ResolvedUpdateImages } from "../mapper/subcategory.mapper.js";
 import {
   CreateSubCategoryInput,
   DeleteSubCategoryResult,
   FeaturedSubcategory,
-  ResolvedCreateImages,
-  ResolvedUpdateImages,
   SubCategoryData,
   SubCategoryEntity,
   SubCategoryPreview,

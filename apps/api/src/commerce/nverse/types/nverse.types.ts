@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface LoginRequest {
   email?: string;
   contactNumber?: string;
@@ -23,5 +22,3 @@ export interface PaginationQuery {
   page?: string;
   size?: string;
 }
-// @ts-nocheck
-// @ts-nocheck

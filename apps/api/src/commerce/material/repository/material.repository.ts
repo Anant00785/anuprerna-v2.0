@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import * as schema from '../../../database/schema/schema.js';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
 import { TransmissionException, TransmissionResponse } from '../types/transmission.types.js';
 

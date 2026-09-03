@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.repository.ts
  *

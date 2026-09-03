@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface ProductSearchResult {
   id: bigint;
   sku: string;

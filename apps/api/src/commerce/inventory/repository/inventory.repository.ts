@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
@@ -55,7 +54,7 @@ export class InventoryRepository {
   async findAdjustmentById(id: bigint) {
     const rows = await this.db.select().from(schema.inventoryAdjustment).where(eq(schema.inventoryAdjustment.id, id));
     if (!rows[0]) return null;
-    const items = await this.db.select().from(schema.inventoryAdjustmentItem).where(eq(schema.inventoryAdjustmentItem.inventoryAdjustmentId, id));
+    const items = await this.db.select().from(schema.inventoryAdjustmentItem).where(eq(schema.inventoryAdjustmentItem.inventoryAdjustmentId, Number(id)));
     return { ...rows[0], items };
   }
 
@@ -67,7 +66,7 @@ export class InventoryRepository {
     return await this.db.transaction(async (tx) => {
       const rows = await tx.insert(schema.inventoryAdjustment).values(data).returning();
       const adjustmentId = rows[0].id;
-      const itemsToInsert = items.map(item => ({ ...item, inventoryAdjustmentId: adjustmentId }));
+      const itemsToInsert = items.map(item => ({ ...item, inventoryAdjustmentId: Number(adjustmentId) }));
       await tx.insert(schema.inventoryAdjustmentItem).values(itemsToInsert);
       return rows[0];
     });
@@ -103,5 +102,3 @@ export class InventoryRepository {
     return rows[0] ?? null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

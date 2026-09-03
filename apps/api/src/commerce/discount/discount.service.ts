@@ -1,10 +1,12 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { CommerceDataService } from "../shared/commerce-data.service.js";
 import * as schema from "../../database/schema/schema.js";
 
 @Injectable()
 export class DiscountService extends CommerceDataService {
+  private readonly logger = new Logger(DiscountService.name);
+
   constructor(@Inject(DATABASE_CONNECTION) private readonly database: Database) {
     super(database, "discount");
   }
@@ -25,22 +27,14 @@ export class DiscountService extends CommerceDataService {
           active: Boolean(r.active),
         }));
       }
-    } catch {}
-
-    const list = await super.getAll();
-    if (!list || list.length === 0) {
-      return [
-        {
-          id: "disc_1",
-          name: "WELCOME15",
-          couponCode: "WELCOME15",
-          discountPercentage: 15,
-          minimumOrderValue: 1000,
-          active: true,
-          createdAt: Date.now() - 86400000,
-        },
-      ];
+    } catch (err) {
+      this.logger.warn(`discount table read failed, falling back to the generic commerce_discount table: ${err}`);
     }
-    return list;
+
+    // Previously this returned a fabricated "WELCOME15" 15%-off coupon whenever
+    // the discount table was empty or unreadable — an invented discount served
+    // from a live route as if it were configuration. An empty catalogue is an
+    // empty catalogue.
+    return (await super.getAll()) ?? [];
   }
 }

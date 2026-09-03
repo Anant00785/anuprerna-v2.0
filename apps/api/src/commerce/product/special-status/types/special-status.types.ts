@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.types.ts
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import * as schema from '../../../database/schema/schema.js';
@@ -36,5 +35,3 @@ export class SettingsRepository {
     return mapSettingsRowListToDTOList(rows);
   }
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { ArtisanPaymentRepository } from "../repository/artisanpayment.repository.js";
 

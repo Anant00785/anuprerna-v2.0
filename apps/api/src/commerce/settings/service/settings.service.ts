@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { SettingsRepository } from '../repository/settings.repository.js';
 import { SettingsDTO, UpdateSettingsRequest } from '../types/settings.types.js';
@@ -27,4 +26,3 @@ export class SettingsService {
     return this.settingsRepository.getPaginatedSettings(page, size);
   }
 }
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/cart/types/cart.types.ts
  *
@@ -159,7 +158,7 @@ export interface SizeProfileOptionPort {
 }
 
 export interface FinishProfileItemPort {
-  retrieveEntity(id: number): Promise<{ finishProfile: { displayName: string } } | null>;
+  retrieveEntity(id: bigint): Promise<{ finishProfile: { displayName: string } } | null>;
 }
 
 export interface TenantLookupPort {
@@ -205,5 +204,3 @@ export const SIZE_PROFILE_OPTION_PORT = Symbol("SIZE_PROFILE_OPTION_PORT");
 export const FINISH_PROFILE_ITEM_PORT = Symbol("FINISH_PROFILE_ITEM_PORT");
 export const TENANT_LOOKUP_PORT = Symbol("TENANT_LOOKUP_PORT");
 export const EMAIL_ENCODER_PORT = Symbol("EMAIL_ENCODER_PORT");
-// @ts-nocheck
-// @ts-nocheck

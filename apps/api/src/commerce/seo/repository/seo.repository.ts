@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
@@ -31,7 +30,7 @@ export class SeoRepository {
         }).from(schema.product).limit(500);
 
         return rows.map(r => ({
-            id: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
+            id: Number(r.id),
             name: r.name || '',
             metaTitle: r.metaTitle || '',
             metaDescription: r.metaDescription || '',
@@ -58,7 +57,7 @@ export class SeoRepository {
         
         for (const b of blogRows) {
             articles.push({
-                id: typeof b.id === "bigint" ? Number(b.id) : (b.id ? Number(b.id) : null),
+                id: Number(b.id),
                 slug: b.slug || '',
                 articleType: "BLOG"
             });
@@ -66,7 +65,7 @@ export class SeoRepository {
         
         for (const s of storyRows) {
             articles.push({
-                id: typeof s.id === "bigint" ? Number(s.id) : (s.id ? Number(s.id) : null),
+                id: Number(s.id),
                 slug: s.slug || '',
                 articleType: "STORY"
             });
@@ -110,9 +109,9 @@ export class SeoRepository {
             .offset(offset);
             
         return rows.map(r => ({
-            id: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
-            version: typeof r.version === "bigint" ? Number(r.version) : (r.version ? Number(r.version) : 0),
-            productId: typeof r.productId === "bigint" ? Number(r.productId) : (r.productId ? Number(r.productId) : null),
+            id: Number(r.id),
+            version: Number(r.version),
+            productId: Number(r.productId),
             image: r.image || '',
             altText: r.altText || ''
         }));
@@ -160,7 +159,7 @@ export class SeoRepository {
         }).from(schema.product).limit(500);
 
         return rows.map(r => ({
-            productId: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
+            productId: Number(r.id),
             slug: r.slug || '',
             heroImage: r.heroImage || '',
             galleryImages: r.galleryImages || ''
@@ -179,7 +178,7 @@ export class SeoRepository {
         .limit(500);
 
         return rows.map(r => ({
-            productId: typeof r.id === "bigint" ? Number(r.id) : (r.id ? Number(r.id) : null),
+            productId: Number(r.id),
             slug: r.slug || '',
             heroImage: r.heroImage || '',
             galleryImages: r.galleryImages || ''

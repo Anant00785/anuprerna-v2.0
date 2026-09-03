@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Module } from "@nestjs/common";
 import { TenantController } from "./controller/tenant.controller.js";
 import { TenantService } from "./service/tenant.service.js";

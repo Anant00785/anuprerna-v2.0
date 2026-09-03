@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 import { RolesGuard, RequireGate } from "../../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../../common/response/rain-response.js";
@@ -19,6 +18,7 @@ export class StoryController {
 
   @Get("/get/story-content-category-list")
   @ApiOperation({ summary: "List story content categories." })
+  @RequireGate(GateCode.CODE_SU)
   async getStoryContentCategoryList() {
     const list = await this.storyService.getStoryContentCategories();
     return keyedResponse("storyContentCategories", list);

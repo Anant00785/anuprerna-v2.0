@@ -1,4 +1,3 @@
-// @ts-nocheck
 export enum LocationType {
   DOMESTIC = "DOMESTIC",
   INTERNATIONAL = "INTERNATIONAL",
@@ -27,5 +26,3 @@ export interface ShipmentData {
   estimatedToDay: number;
   locationType: string;
 }
-// @ts-nocheck
-// @ts-nocheck

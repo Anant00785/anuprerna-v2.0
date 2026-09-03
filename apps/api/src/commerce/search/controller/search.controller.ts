@@ -1,6 +1,7 @@
 import { Controller, Get, Param, UseGuards } from "@nestjs/common";
+import { GateCode } from "../../../auth/types/auth.types.js";
 import { ApiBearerAuth, ApiExcludeEndpoint, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
-import { RolesGuard } from "../../../common/auth/roles.guard.js";
+import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { SearchService } from "../service/search.service.js";
 import { validateSearchTerm } from "../validators/search.validator.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
@@ -39,6 +40,7 @@ export class SearchController {
 
   @Get("/reindex")
   @ApiOperation({ summary: "Trigger product catalog reindexing" })
+  @RequireGate(GateCode.CODE_SU)
   async runLuceneReindexing() {
     return simpleResponse(true, "Reindexing successful");
   }
@@ -87,18 +89,21 @@ export class SearchController {
 
   @Get("/reindex/vector")
   @ApiOperation({ summary: "Reindex vector embeddings" })
+  @RequireGate(GateCode.CODE_SU)
   async reindexVector() {
     return simpleResponse(true, "Vector reindexing completed successfully.");
   }
 
   @Get("/reindex/vector/blog")
   @ApiOperation({ summary: "Reindex blog vector embeddings" })
+  @RequireGate(GateCode.CODE_SU)
   async reindexBlogVector() {
     return simpleResponse(true, "Blog vector reindexing completed successfully.");
   }
 
   @Get("/reindex/vector/story")
   @ApiOperation({ summary: "Reindex story vector embeddings" })
+  @RequireGate(GateCode.CODE_SU)
   async reindexStoryVector() {
     return simpleResponse(true, "Story vector reindexing completed successfully.");
   }

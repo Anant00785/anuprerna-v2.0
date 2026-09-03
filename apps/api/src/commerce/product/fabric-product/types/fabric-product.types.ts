@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-product/fabric-product.types.ts
  *
@@ -314,5 +313,3 @@ export const FABRIC_PROFILE_ENRICH_PORT = Symbol("FABRIC_PROFILE_ENRICH_PORT");
 export const SUB_CATEGORY_HIERARCHY_PORT = Symbol("SUB_CATEGORY_HIERARCHY_PORT");
 export const FABRIC_PRODUCT_ZOHO_RELATION_PORT = Symbol("FABRIC_PRODUCT_ZOHO_RELATION_PORT");
 export const ZOHO_ADAPTER_PORT = Symbol("ZOHO_ADAPTER_PORT");
-// @ts-nocheck
-// @ts-nocheck

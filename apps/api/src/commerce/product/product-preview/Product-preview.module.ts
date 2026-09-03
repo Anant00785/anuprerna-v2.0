@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-preview/product-preview.module.ts
  *
@@ -68,7 +67,11 @@
  * per the brief.
  */
 import { Module } from "@nestjs/common";
+import { eq } from "drizzle-orm";
 import { AuthModule } from "../../../auth/auth.module.js";
+import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
+import * as schema from "../../../database/schema/schema.js";
+import { lookupByIds } from "../../shared/db-lookup.js";
 import { FabricPreviewService } from "./service/fabric-preview.service.js";
 import { FabricPreviewRepository } from "./repository/fabric-preview.repository.js";
 import {
@@ -87,50 +90,52 @@ import { NavProductPreviewService } from "./service/nav-product-preview.service.
 import { NavProductPreviewRepository } from "./repository/nav-product-preview.repository.js";
 import {
   COLOR_LOOKUP_PORT as NAV_COLOR_LOOKUP_PORT,
-  ColorLookupPort as NavColorLookupPort,
   MATERIAL_LOOKUP_PORT as NAV_MATERIAL_LOOKUP_PORT,
-  MaterialLookupPort as NavMaterialLookupPort,
   PATTERN_LOOKUP_PORT as NAV_PATTERN_LOOKUP_PORT,
-  PatternLookupPort as NavPatternLookupPort,
 } from "./types/nav-product-preview.types.js";
 import { ProductPreviewService } from "./service/product-preview.service.js";
 import { ProductPreviewRepository } from "./repository/product-preview.repository.js";
 import {
   CATEGORY_LOOKUP_PORT,
-  CategoryLookupPort,
   COLOR_LOOKUP_PORT,
-  ColorLookupPort,
   MATERIAL_LOOKUP_PORT,
-  MaterialLookupPort,
   PATTERN_LOOKUP_PORT,
-  PatternLookupPort,
   SEGMENT_LOOKUP_PORT,
-  SegmentLookupPort,
 } from "./types/product-preview.types.js";
 import { ProductSearchPreviewService } from "./service/product-search-preview.service.js";
 import { ProductSearchPreviewRepository } from "./repository/product-search-preview.repository.js";
 import { ReviewProductPreviewService } from "./service/review-product-preview.service.js";
 import { ReviewProductPreviewRepository } from "./repository/review-product-preview.repository.js";
 
-const materialLookupDummy: MaterialLookupPort | NavMaterialLookupPort = {
-  retrieveByIds: async () => [],
-};
+/** `retrieveByIds` port over one table — a real `WHERE id IN (...)`, not a stub. */
+const bulkLookup = (token: symbol, table: unknown) => ({
+  provide: token,
+  useFactory: (db: Database) => ({ retrieveByIds: lookupByIds(db, table as never) }),
+  inject: [DATABASE_CONNECTION],
+});
 
-const colorLookupDummy: ColorLookupPort | NavColorLookupPort = {
-  retrieveByIds: async () => [],
-};
-
-const patternLookupDummy: PatternLookupPort | NavPatternLookupPort = {
-  retrieveByIds: async () => [],
-};
-
-const categoryLookupDummy: CategoryLookupPort = {
-  retrieveForProduct: async () => null,
-};
-
-const segmentLookupDummy: SegmentLookupPort = {
-  retrieveForProduct: async () => null,
-};
+/**
+ * `retrieveForProduct(productId)` walks product -> sub_category -> segment
+ * (-> category), the same chain source reads via
+ * `product.getSubCategory().getSegment().getCategory()`.
+ */
+const hierarchyLookup = (token: symbol, level: "segment" | "category") => ({
+  provide: token,
+  useFactory: (db: Database) => ({
+    retrieveForProduct: async (productId: number) => {
+      const rows = await db
+        .select({ segment: schema.segment, category: schema.category })
+        .from(schema.product)
+        .innerJoin(schema.subCategory, eq(schema.product.subCategoryId, schema.subCategory.id))
+        .innerJoin(schema.segment, eq(schema.subCategory.segmentId, schema.segment.id))
+        .innerJoin(schema.category, eq(schema.segment.categoryId, schema.category.id))
+        .where(eq(schema.product.id, BigInt(productId)))
+        .limit(1);
+      return rows[0]?.[level] ?? null;
+    },
+  }),
+  inject: [DATABASE_CONNECTION],
+});
 
 @Module({
   imports: [AuthModule],
@@ -168,15 +173,17 @@ const segmentLookupDummy: SegmentLookupPort = {
       inject: [ProductPreviewService],
     },
 
-    // Out-of-scope cross-module ports (Material/Color/Pattern/Category/Segment) — see class doc.
-    { provide: MATERIAL_LOOKUP_PORT, useValue: materialLookupDummy },
-    { provide: COLOR_LOOKUP_PORT, useValue: colorLookupDummy },
-    { provide: PATTERN_LOOKUP_PORT, useValue: patternLookupDummy },
-    { provide: CATEGORY_LOOKUP_PORT, useValue: categoryLookupDummy },
-    { provide: SEGMENT_LOOKUP_PORT, useValue: segmentLookupDummy },
-    { provide: NAV_MATERIAL_LOOKUP_PORT, useValue: materialLookupDummy },
-    { provide: NAV_COLOR_LOOKUP_PORT, useValue: colorLookupDummy },
-    { provide: NAV_PATTERN_LOOKUP_PORT, useValue: patternLookupDummy },
+    // Real lookups over the owning tables — previously `=> []` / `=> null` dummies,
+    // which silently stripped material/colour/pattern names and the
+    // category/segment breadcrumb from every preview payload.
+    bulkLookup(MATERIAL_LOOKUP_PORT, schema.material),
+    bulkLookup(COLOR_LOOKUP_PORT, schema.color),
+    bulkLookup(PATTERN_LOOKUP_PORT, schema.pattern),
+    bulkLookup(NAV_MATERIAL_LOOKUP_PORT, schema.material),
+    bulkLookup(NAV_COLOR_LOOKUP_PORT, schema.color),
+    bulkLookup(NAV_PATTERN_LOOKUP_PORT, schema.pattern),
+    hierarchyLookup(CATEGORY_LOOKUP_PORT, "category"),
+    hierarchyLookup(SEGMENT_LOOKUP_PORT, "segment"),
   ],
   exports: [
     ProductPreviewService,

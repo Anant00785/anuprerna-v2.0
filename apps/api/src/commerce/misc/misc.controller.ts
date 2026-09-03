@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from "@nestjs/common";
+import { RolesGuard } from "../../common/auth/roles.guard.js";
 import { ApiBody, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
 import { IsArray, IsNumber, IsOptional, IsString } from "class-validator";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
@@ -61,19 +62,18 @@ export class ContactUsDto {
 
 @ApiTags("Misc")
 @Controller()
+@UseGuards(RolesGuard)
 export class MiscController {
   constructor(private readonly service: MiscService) {}
-
-  @Get("get/misc")
-  @ApiOperation({ summary: "Get all misc records" })
-  async getAll() {
-    return this.service.getAll();
-  }
 
   @Post("send/contact-us")
   @HttpCode(200)
   @ApiOperation({ summary: "Customer contact form submission (send)" })
   @ApiBody({ type: ContactUsDto })
+  // PUBLIC — no @RequireGate. Loom's MiscController.sendContactUsEmail() has no
+  // getEntity/postEntity gate at all; it validates the body and returns a
+  // RainTreeResponse directly. The storefront's /contact form posts this
+  // anonymously (components/misc-pages/loom.ts).
   async sendContactUs(@Body() body: ContactUsDto) {
     if (!body || !body.name || !body.email) {
       return { success: false, response: "Fill up all necessary fields!" };
@@ -92,11 +92,4 @@ export class MiscController {
     return { success: true, response: "Form submitted successfully!" };
   }
 
-  @Post("create/misc")
-  @HttpCode(200)
-  @ApiOperation({ summary: "Create a misc record" })
-  @ApiBody({ type: CreateCommerceRecordDto })
-  async create(@Body() body: unknown) {
-    return this.service.create(body);
-  }
 }

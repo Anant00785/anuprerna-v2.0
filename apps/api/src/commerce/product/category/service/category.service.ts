@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/category/service/category.service.ts
  *
@@ -114,4 +113,3 @@ export class CategoryService {
     return this.repository.retrieveCategory(size, page * size);
   }
 }
-// @ts-nocheck

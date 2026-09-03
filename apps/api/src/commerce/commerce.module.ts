@@ -8,7 +8,6 @@ import { CustomOrderMigratedDomainController } from "./domain/custom-order-migra
 import { SubCategoryMigratedDomainController } from "./domain/sub-category-migrated.controller.js";
 import { CurrencyLocationDomainController } from "./domain/currency-location.controller.js";
 import { FilterMigratedDomainController } from "./domain/filter-migrated.controller.js";
-import { SegmentMigratedDomainController } from "./domain/segment-migrated.controller.js";
 import { AuthMigratedDomainController } from "./domain/auth-migrated.controller.js";
 import { PaymentMigratedDomainController } from "./domain/payment-migrated.controller.js";
 import { SuperUserDomainController } from "./domain/super-user.controller.js";
@@ -18,6 +17,7 @@ import { NotificationsDomainController } from "./domain/notifications.controller
 import { MiscMigratedDomainController } from "./domain/misc-migrated.controller.js";
 import { ProfilesDomainController } from "./domain/profiles.controller.js";
 import { DiscountMigratedDomainController } from "./domain/discount-migrated.controller.js";
+import { AddressMigratedDomainController } from "./domain/address-migrated.controller.js";
 import { ArtisanMigratedDomainController } from "./domain/artisan-migrated.controller.js";
 import { CatalogMigratedDomainController } from "./domain/catalog-migrated.controller.js";
 import { WorkflowMigratedDomainController } from "./domain/workflow-migrated.controller.js";
@@ -47,19 +47,24 @@ import { OrderModule } from "./order/order.module.js";
 import { PaymentModule } from "./payment/payment.module.js";
 import { DiscountModule } from "./discount/discount.module.js";
 import { InventoryModule } from "./inventory/inventory.module.js";
-import { FeedbackModule } from "./feedback/feedback.module.js";
 import { ReviewModule } from "./review/review.module.js";
 import { LoyaltyprogramModule } from "./loyaltyprogram/loyaltyprogram.module.js";
 import { ForexModule } from "./forex/forex.module.js";
+import { CustomProductModule } from "./custom-product/custom-product.module.js";
+import { CustomWorkflowModule } from "./custom-workflow/custom-workflow.module.js";
 import { IPLocationModule } from "./iplocation/iplocation.module.js";
 import { ShipmentModule } from "./shipment/shipment.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
 import { WhatsappModule } from "./whatsapp/whatsapp.module.js";
 import { SeoModule } from "./seo/seo.module.js";
 import { ImpactModule } from "./impact/impact.module.js";
-import { AiModule } from "./ai/ai.module.js";
 import { CompatibilityModule } from "./compatibility/compatibility.module.js";
 import { MiscModule } from "./misc/misc.module.js";
+import { ProductPreviewModule } from "./product/product-preview/Product-preview.module.js";
+// Service layer extracted out of commerce/domain's inline-Drizzle controllers.
+import { OrderDomainService } from "./domain/order-domain.service.js";
+import { ProductDomainService } from "./domain/product-domain.service.js";
+import { CustomerDomainService } from "./domain/customer-domain.service.js";
 
 @Module({
   controllers: [
@@ -73,7 +78,6 @@ import { MiscModule } from "./misc/misc.module.js";
     SubCategoryMigratedDomainController,
     CurrencyLocationDomainController,
     FilterMigratedDomainController,
-    SegmentMigratedDomainController,
     AuthMigratedDomainController,
     PaymentMigratedDomainController,
     SuperUserDomainController,
@@ -83,6 +87,7 @@ import { MiscModule } from "./misc/misc.module.js";
     MiscMigratedDomainController,
     ProfilesDomainController,
     DiscountMigratedDomainController,
+    AddressMigratedDomainController,
     ArtisanMigratedDomainController,
     CatalogMigratedDomainController,
     WorkflowMigratedDomainController,
@@ -93,7 +98,9 @@ import { MiscModule } from "./misc/misc.module.js";
     ReportsDomainController,
 
                                                                                                                 ],
+  providers: [OrderDomainService, ProductDomainService, CustomerDomainService],
   imports: [
+    ProductPreviewModule,
     AuthModule, 
     SeoModule,
     CartModule,
@@ -113,16 +120,16 @@ import { MiscModule } from "./misc/misc.module.js";
     PaymentModule,
     DiscountModule,
     InventoryModule,
-    FeedbackModule,
     ReviewModule,
     LoyaltyprogramModule,
     ForexModule,
+    CustomProductModule,
+    CustomWorkflowModule,
     IPLocationModule,
     ShipmentModule,
     SettingsModule,
     WhatsappModule,
     ImpactModule,
-    AiModule,
     CompatibilityModule,
     MiscModule,
   ],
@@ -144,17 +151,17 @@ import { MiscModule } from "./misc/misc.module.js";
     PaymentModule,
     DiscountModule,
     InventoryModule,
-    FeedbackModule,
     ReviewModule,
     LoyaltyprogramModule,
     ForexModule,
+    CustomProductModule,
+    CustomWorkflowModule,
     IPLocationModule,
     ShipmentModule,
     SettingsModule,
     WhatsappModule,
     SeoModule,
     ImpactModule,
-    AiModule,
     CompatibilityModule,
     MiscModule,
   ],

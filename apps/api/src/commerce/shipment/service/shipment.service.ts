@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { ShipmentRepository } from "../repository/shipment.repository.js";
 import { ShipmentInput } from "../dto/shipment.dto.js";

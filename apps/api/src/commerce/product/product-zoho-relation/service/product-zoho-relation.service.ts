@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/service/product-zoho-relation.service.ts
  *
@@ -95,6 +94,17 @@ export class ProductZohoRelationService {
   async findByProductIdAndSku(productId: number, sku: string): Promise<ProductZohoRelationView | null> {
     const row = await this.repo.findByProductIdAndSku(productId, sku);
     return row ? toView(toEntity(row)) : null;
+  }
+
+  /** `Product#getProductZohoRelationList()` as read by the product disable flows. */
+  async findAllByProductId(productId: number): Promise<{ id: number }[]> {
+    const rows = await this.repo.findAllByProductId(productId);
+    return rows.map((row) => ({ id: Number(row.id) }));
+  }
+
+  /** ProductZohoRelationDAOController#modifyEntity(relation) after relation.setDisabled(...). */
+  async setDisabled(id: number, disabled: boolean): Promise<void> {
+    await this.repo.update(BigInt(id), { disabled } as never);
   }
 
   /** findProductZohoRelationByZohoItemIdAndSku(String zohoItemId, String sku) */

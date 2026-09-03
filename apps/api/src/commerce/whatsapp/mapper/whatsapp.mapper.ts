@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as schema from '../../../database/schema/schema.js';
 
 export function toWhatsappHistoryDto(row: typeof schema.whatsappNotificationHistory.$inferSelect) {
@@ -11,5 +10,3 @@ export function toWhatsappHistoryDto(row: typeof schema.whatsappNotificationHist
         status: row.status
     };
 }
-// @ts-nocheck
-// @ts-nocheck

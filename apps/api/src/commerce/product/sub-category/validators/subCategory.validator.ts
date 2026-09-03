@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.validator.ts
  *
@@ -44,7 +43,7 @@ function isValidStringLength(value: unknown, min: number, max: number): boolean 
  */
 function isValidOptionalImage(file: UploadedFile | null | undefined): boolean {
   if (file === null || file === undefined) return true;
-  return file.buffer.length > 0 && file.mimeType.startsWith("image/");
+  return file.buffer.length > 0 && file.mimetype.startsWith("image/");
 }
 
 /** SubCategoryValidator#validate(SubCategory entity) equivalent. */

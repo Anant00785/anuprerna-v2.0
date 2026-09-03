@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/cart/repository/cart.repository.ts
  *
@@ -85,15 +84,20 @@ export class OptimisticLockError extends Error {
 export class CartRepository {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
 
-  /** findCartItemByTenant(LoomTenant tenant) */
+  /**
+   * findCartItemByTenant(LoomTenant tenant) — a pure read.
+   *
+   * This used to route the id through `ensureTenantExists`, which on a miss
+   * (a) INSERTed a brand-new guest `loom_tenant` row plus a ROLE_CUSTOMER
+   * grant as a side effect of a GET, and (b) if that failed, fell back to
+   * `SELECT id FROM loom_tenant LIMIT 1` and read THAT tenant's cart — an
+   * arbitrary real customer's cart returned to whoever asked. Source's
+   * `findCartItemByTenant` is a plain derived finder with no such behaviour.
+   * An unknown tenant has an empty cart.
+   */
   async findByTenantId(tenantId: number) {
-    let validTenantId = tenantId;
-    try {
-      validTenantId = await this.ensureTenantExists(tenantId);
-    } catch {
-      // ignore
-    }
-    return this.db.select().from(cartItem).where(eq(cartItem.tenantId, validTenantId));
+    if (!Number.isFinite(tenantId) || tenantId <= 0) return [];
+    return this.db.select().from(cartItem).where(eq(cartItem.tenantId, tenantId));
   }
 
   /** findByClickIdIsNotNullAndClickCapturedAtBetween(Long from, Long to) */
@@ -365,15 +369,10 @@ export class CartRepository {
       console.warn("[CartRepository] ensureTenantExists fallback:", err);
     }
 
-    try {
-      const anyTenant = await this.db.select({ id: loomTenant.id }).from(loomTenant).limit(1);
-      if (anyTenant.length > 0) {
-        return Number(anyTenant[0].id);
-      }
-    } catch {
-      // fallback
-    }
-
+    // No "borrow an arbitrary existing tenant" fallback: returning
+    // `SELECT id FROM loom_tenant LIMIT 1` here attached the caller's cart
+    // item to a stranger's account. If a tenant could be neither found nor
+    // created, hand back the id we were given and let the foreign key decide.
     return tenantId;
   }
 
@@ -496,5 +495,3 @@ function mapRowToCartItemData(row: Record<string, unknown>): CartItemData {
     lastUpdatedAt: Number(row.last_updated_at),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

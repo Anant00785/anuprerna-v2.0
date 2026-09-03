@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function mapSkill(row: any) {
   return {
     id: row.id,
@@ -15,5 +14,3 @@ export function mapArtisanSkillMapping(row: any) {
     level: row.level,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

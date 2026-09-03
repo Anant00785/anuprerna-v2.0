@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-product/fabric-product.module.ts
  *
@@ -13,37 +12,45 @@
  * modules (identical to how auth.module.ts exports `RolesGuard` for other
  * feature modules to depend on).
  *
- * Ten ports are bound to safe dummy implementations rather than left
- * unbound or throwing, same pattern as cart.module.ts / auth.module.ts /
- * product/core/Product.module.ts:
- *  - ColorPort / MaterialPort / PatternPort / TagPort — Color, Material,
- *    Pattern aren't migrated yet; Tag IS marked complete in
- *    MIGRATION_CHECKPOINT.md but its TS output wasn't included in this
- *    task's uploads (see fabric-product.types.ts header) — swap in real
- *    providers as each becomes available.
- *  - MainProductPreviewPort / SizeProfilePreparePort / FabricProfileEnrichPort /
- *    SubCategoryHierarchyPort / FabricProductZohoRelationPort — out of
- *    scope per MIGRATION_CHECKPOINT.md's remaining-domains list
- *    (ProductPreview, Profile domains, SubCategory's hierarchy isn't
- *    exposed anywhere importable yet either, ProductZohoRelation).
- *  - ZohoAdapterPort — external Zoho CRM integration, not present in this
- *    repository at all (same treatment as Auth0ValidationPort).
+ * Cross-module ports are bound to REAL providers, not `async () => null`
+ * dummies: Color/Material/Pattern/Tag resolve against their own tables
+ * (see commerce/shared/db-lookup.ts), MainProductPreview /
+ * SizeProfile(Profile) / SubCategory+Segment / ProductZohoRelation each
+ * bind to the module that owns them, and FabricProfile enrichment is the
+ * two-column read source performs inline.
  *
- * Every dummy returns the "nothing found" / no-op value its own interface
- * contract allows, instead of fabricating another module's behavior.
+ * ZOHO_ADAPTER_PORT is the one exception: no Loom->Zoho item mapping
+ * exists in this repository (ZohoService.syncItem needs a ZohoItemPayload
+ * nothing builds, and triggerFabricProductWorkflow only logs), so it is
+ * bound to a provider that THROWS NotImplementedException naming the port.
+ * A silent no-op there would drop every product from the Zoho catalogue
+ * with a 200 response. Tracked in docs/KNOWN-GAPS.md.
  *
  * DatabaseModule is @Global(), so FabricProductRepository injects
  * DATABASE_CONNECTION directly without this module re-importing it.
  */
-import { Module } from "@nestjs/common";
+import { Module, NotImplementedException } from "@nestjs/common";
+import { eq } from "drizzle-orm";
 import { AuthModule } from "../../../auth/auth.module.js";
+import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
+import * as schema from "../../../database/schema/schema.js";
+import { lookupById } from "../../shared/db-lookup.js";
+import { ProfileModule } from "../../profile/profile.module.js";
+import { ProfileService } from "../../profile/service/profile.service.js";
 import { FabricProductController } from "../controller/fabric-product.controller.js";
 import { ProductCoreModule } from "../product/product.module.js";
+import { ProductPreviewModule } from "../product-preview/Product-preview.module.js";
+import { MainProductPreviewService } from "../product-preview/service/main-product-preview.service.js";
+import { ProductZohoRelationModule } from "../product-zoho-relation/product-zoho-relation.module.js";
+import { ProductZohoRelationService } from "../product-zoho-relation/service/product-zoho-relation.service.js";
+import { SegmentModule } from "../segment/segment.module.js";
+import { SegmentService } from "../segment/service/segment.service.js";
+import { SubCategoryModule } from "../sub-category/subcategory.module.js";
+import { SubCategoryService } from "../sub-category/service/subCategory.service.js";
 import { FabricProductService } from "./service/fabric-product.service.js";
 import { FabricProductRepository } from "./repository/fabric-product.repository.js";
 import {
   COLOR_PORT,
-  ColorPort,
   FABRIC_PRODUCT_ZOHO_RELATION_PORT,
   FABRIC_PROFILE_ENRICH_PORT,
   FabricProductZohoRelationPort,
@@ -51,82 +58,130 @@ import {
   MAIN_PRODUCT_PREVIEW_PORT,
   MATERIAL_PORT,
   MainProductPreviewPort,
-  MaterialPort,
   PATTERN_PORT,
-  PatternPort,
   SIZE_PROFILE_PREPARE_PORT,
   SUB_CATEGORY_HIERARCHY_PORT,
   SizeProfilePreparePort,
   SubCategoryHierarchyPort,
   TAG_PORT,
-  TagPort,
   ZOHO_ADAPTER_PORT,
   ZohoAdapterPort,
 } from "./types/fabric-product.types.js";
 
-const colorDummy: ColorPort = {
-  retrieveEntity: async () => null,
-};
+/** `retrieveEntity(id)` port over one table — a real select-by-id, not a stub. */
+const tableLookup = (token: symbol, table: unknown) => ({
+  provide: token,
+  useFactory: (db: Database) => ({ retrieveEntity: lookupById(db, table as never) }),
+  inject: [DATABASE_CONNECTION],
+});
 
-const materialDummy: MaterialPort = {
-  retrieveEntity: async () => null,
-};
-
-const patternDummy: PatternPort = {
-  retrieveEntity: async () => null,
-};
-
-const tagDummy: TagPort = {
-  retrieveEntity: async () => null,
-};
-
-const mainProductPreviewDummy: MainProductPreviewPort = {
-  prepareRelatedProductList: async () => [],
-};
-
-const sizeProfilePrepareDummy: SizeProfilePreparePort = {
-  prepareSizeProfile: async () => null,
-};
-
-const fabricProfileEnrichDummy: FabricProfileEnrichPort = {
-  retrieveEnrichedItems: async () => [],
-};
-
-const subCategoryHierarchyDummy: SubCategoryHierarchyPort = {
-  retrieveHierarchy: async () => null,
-};
-
-const fabricProductZohoRelationDummy: FabricProductZohoRelationPort = {
-  findAllByProductId: async () => [],
-  setDisabled: async () => undefined,
-};
-
-const zohoAdapterDummy: ZohoAdapterPort = {
-  addFabricProductToZoho: async () => undefined,
-  updateFabricProductToZoho: async () => undefined,
-  reTriggerFabricProductToZohoWorkflow: async () => undefined,
+/**
+ * Every Zoho push is unimplemented — see the class doc and
+ * docs/KNOWN-GAPS.md. Throwing beats a no-op: source treats a failed push
+ * as an error, and a silent success would leave Zoho permanently stale.
+ */
+const zohoNotImplemented = (operation: string) => async (): Promise<never> => {
+  throw new NotImplementedException(
+    `ZOHO_ADAPTER_PORT.${operation} is not implemented — no Loom-product-to-Zoho-item mapping exists ` +
+      `in apps/api (see docs/KNOWN-GAPS.md, "Zoho product sync").`,
+  );
 };
 
 @Module({
-
-  imports: [AuthModule, ProductCoreModule],
-
+  imports: [
+    AuthModule,
+    ProductCoreModule,
+    ProductPreviewModule,
+    ProductZohoRelationModule,
+    ProfileModule,
+    SegmentModule,
+    SubCategoryModule,
+  ],
   controllers: [FabricProductController],
   providers: [
     FabricProductService,
     FabricProductRepository,
-    { provide: COLOR_PORT, useValue: colorDummy },
-    { provide: MATERIAL_PORT, useValue: materialDummy },
-    { provide: PATTERN_PORT, useValue: patternDummy },
-    { provide: TAG_PORT, useValue: tagDummy },
-    { provide: MAIN_PRODUCT_PREVIEW_PORT, useValue: mainProductPreviewDummy },
-    { provide: SIZE_PROFILE_PREPARE_PORT, useValue: sizeProfilePrepareDummy },
-    { provide: FABRIC_PROFILE_ENRICH_PORT, useValue: fabricProfileEnrichDummy },
-    { provide: SUB_CATEGORY_HIERARCHY_PORT, useValue: subCategoryHierarchyDummy },
-    { provide: FABRIC_PRODUCT_ZOHO_RELATION_PORT, useValue: fabricProductZohoRelationDummy },
-    { provide: ZOHO_ADAPTER_PORT, useValue: zohoAdapterDummy },
+
+    tableLookup(COLOR_PORT, schema.color),
+    tableLookup(MATERIAL_PORT, schema.material),
+    tableLookup(PATTERN_PORT, schema.pattern),
+    tableLookup(TAG_PORT, schema.tag),
+
+    {
+      provide: MAIN_PRODUCT_PREVIEW_PORT,
+      useFactory: (previews: MainProductPreviewService): MainProductPreviewPort => ({
+        prepareRelatedProductList: (productId) => previews.prepareRelatedProductList(productId),
+      }),
+      inject: [MainProductPreviewService],
+    },
+    {
+      provide: SIZE_PROFILE_PREPARE_PORT,
+      useFactory: (profile: ProfileService): SizeProfilePreparePort => ({
+        prepareSizeProfile: (sizeProfileId) => profile.getSizeProfile(sizeProfileId),
+      }),
+      inject: [ProfileService],
+    },
+    {
+      /**
+       * Source loads `fabricProfile.fabricProfileItemList` and sets each
+       * item's `fabricPreview.totalQuantity = quantity + externalQuantity`
+       * in place. Same two columns, joined here.
+       */
+      provide: FABRIC_PROFILE_ENRICH_PORT,
+      useFactory: (db: Database): FabricProfileEnrichPort => ({
+        retrieveEnrichedItems: async (fabricProfileId) => {
+          const rows = await db
+            .select({ item: schema.fabricProfileItem, product: schema.product })
+            .from(schema.fabricProfileItem)
+            .innerJoin(schema.product, eq(schema.fabricProfileItem.productId, schema.product.id))
+            .where(eq(schema.fabricProfileItem.profileId, fabricProfileId));
+
+          return rows.map(({ item, product }) => ({
+            ...item,
+            fabricPreview: {
+              ...product,
+              totalQuantity: Number(product.quantity ?? 0) + Number(product.externalQuantity ?? 0),
+            },
+          }));
+        },
+      }),
+      inject: [DATABASE_CONNECTION],
+    },
+    {
+      provide: SUB_CATEGORY_HIERARCHY_PORT,
+      useFactory: (
+        subCategories: SubCategoryService,
+        segments: SegmentService,
+        db: Database,
+      ): SubCategoryHierarchyPort => ({
+        retrieveHierarchy: async (subCategoryId) => {
+          const subCategory = await subCategories.retrieveSubCategory(BigInt(subCategoryId));
+          if (!subCategory) return null;
+          const segment = await segments.retrieveSegmentById(subCategory.segmentId);
+          if (!segment) return { subCategory, segment: null, category: null };
+          const category = await lookupById(db, schema.category)(segment.categoryId);
+          return { subCategory, segment, category };
+        },
+      }),
+      inject: [SubCategoryService, SegmentService, DATABASE_CONNECTION],
+    },
+    {
+      provide: FABRIC_PRODUCT_ZOHO_RELATION_PORT,
+      useFactory: (relations: ProductZohoRelationService): FabricProductZohoRelationPort => ({
+        findAllByProductId: (productId) => relations.findAllByProductId(productId),
+        setDisabled: (relationId, disabled) => relations.setDisabled(relationId, disabled),
+      }),
+      inject: [ProductZohoRelationService],
+    },
+    {
+      provide: ZOHO_ADAPTER_PORT,
+      useValue: {
+        addFabricProductToZoho: zohoNotImplemented("addFabricProductToZoho"),
+        updateFabricProductToZoho: zohoNotImplemented("updateFabricProductToZoho"),
+        reTriggerFabricProductToZohoWorkflow: zohoNotImplemented("reTriggerFabricProductToZohoWorkflow"),
+      } satisfies ZohoAdapterPort,
+    },
   ],
   exports: [FabricProductService, FabricProductRepository],
 })
 export class FabricProductModule {}
-// @ts-nocheck

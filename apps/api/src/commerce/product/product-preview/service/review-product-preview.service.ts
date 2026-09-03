@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/review-product-preview/service/review-product-preview.service.ts
  *

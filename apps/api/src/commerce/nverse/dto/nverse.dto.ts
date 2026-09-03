@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { LoginRequest, OtpSendRequest, OtpVerifyRequest, EmailVerifyRequest } from '../types/nverse.types.js';
 
 export function parseLoginRequest(data: any): LoginRequest {
@@ -37,5 +36,3 @@ export function parsePaginationQuery(query: any) {
     size: isNaN(size) || size < 1 ? 10 : size,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

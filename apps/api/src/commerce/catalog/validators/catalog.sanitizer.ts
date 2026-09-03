@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { CatalogInput } from "../dto/catalog.dto.js";
+import { CreateCatalogDto } from "../dto/catalog.dto.js";
 
 function escapeHtml(str: string): string {
   return str
@@ -10,8 +9,6 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-export function sanitizeCatalog(input: CatalogInput): CatalogInput {
+export function sanitizeCatalog(input: CreateCatalogDto): CreateCatalogDto {
   return { ...input, name: escapeHtml(input.name.trim()) };
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,8 +1,12 @@
-// @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../../database/schema/schema.js';
+
+/** skill.id is a bigserial; route params arrive as strings. */
+function toSkillId(value: string): bigint | null {
+  return /^\d+$/.test(value.trim()) ? BigInt(value.trim()) : null;
+}
 
 @Injectable()
 export class SkillRepository {
@@ -13,7 +17,9 @@ export class SkillRepository {
   }
 
   async getSkillById(skillId: string) {
-    const result = await this.db.select().from(schema.skill).where(eq(schema.skill.id, skillId)).limit(1);
+    const id = toSkillId(skillId);
+    if (id === null) return undefined;
+    const result = await this.db.select().from(schema.skill).where(eq(schema.skill.id, id)).limit(1);
     return result[0];
   }
 
@@ -23,17 +29,19 @@ export class SkillRepository {
   }
 
   async updateSkill(id: string, data: any) {
-    const result = await this.db.update(schema.skill).set(data).where(eq(schema.skill.id, id)).returning();
+    const skillId = toSkillId(id);
+    if (skillId === null) return undefined;
+    const result = await this.db.update(schema.skill).set(data).where(eq(schema.skill.id, skillId)).returning();
     return result[0];
   }
 
   async deleteSkill(skillId: string) {
-    await this.db.delete(schema.skill).where(eq(schema.skill.id, skillId));
+    const id = toSkillId(skillId);
+    if (id === null) return;
+    await this.db.delete(schema.skill).where(eq(schema.skill.id, id));
   }
 
   async getArtisanSkillMappings(limit: number, offset: number) {
     return this.db.select().from(schema.artisanSkillMapping).limit(limit).offset(offset);
   }
 }
-// @ts-nocheck
-// @ts-nocheck

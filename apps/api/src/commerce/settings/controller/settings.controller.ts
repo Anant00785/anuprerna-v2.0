@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Patch, Param, Body, Query, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { SettingsService } from '../service/settings.service.js';
@@ -18,6 +17,11 @@ export class SettingsController {
   @Get('get/settings-list')
   @ApiOperation({ summary: "Get all global application settings." })
   @ApiResponse({ status: 200, description: "List of settings." })
+  // PUBLIC — no @RequireGate. Loom's SettingsController.getSettingsList() calls
+  // response.buildList() DIRECTLY (never getEntity/CODE_*), unlike its sibling
+  // getSettings(), which does use getEntity(..., CODE_SUCU, ...). The storefront
+  // fetches this during SSR with no bearer token (catalogue/loom.ts), so a gate
+  // here 401s every page render.
   async getAllSettings() {
     try {
       const settings = await this.settingsService.getAllSettings();
@@ -29,6 +33,7 @@ export class SettingsController {
 
   @UseGuards(RolesGuard)
     @Get('get/settings/:settingId')
+    @RequireGate(GateCode.CODE_SUCU)
   async getSettingById(@Param('settingId') settingId: string) {
     try {
       const id = BigInt(settingId);
@@ -67,6 +72,7 @@ export class SettingsController {
 
   @UseGuards(RolesGuard)
     @Get('get/table-explorer/data/settings')
+    @RequireGate(GateCode.CODE_SU)
   async getPaginatedSettings(@Query('page') page: string = '0', @Query('size') size: string = '10') {
     try {
       const p = parseInt(page, 10);
@@ -80,6 +86,7 @@ export class SettingsController {
 
   @UseGuards(RolesGuard)
     @Get('get/table-explorer/data/settings/:id')
+    @RequireGate(GateCode.CODE_SU)
   async getSettingExplorerById(@Param('id') idParam: string) {
     try {
       const id = BigInt(idParam);

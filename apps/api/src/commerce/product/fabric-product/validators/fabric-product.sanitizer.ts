@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-product/fabric-product.sanitizer.ts
  *
@@ -29,5 +28,3 @@ export function sanitizeFabricProduct<T extends Partial<FabricProductInput>>(ent
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

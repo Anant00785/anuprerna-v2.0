@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -55,6 +54,7 @@ export class CatalogApiController {
   @ApiOperation({ summary: "Retrieve a catalog by ID (super-user)." })
   @ApiParam({ name: "catalogId", description: "Catalog ID", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Catalog by ID" })
+  @RequireGate(GateCode.CODE_SU)
   async getCatalog(@Param("catalogId") catalogId: string) {
     try {
       const [row] = await (this.db as any)
@@ -71,6 +71,7 @@ export class CatalogApiController {
   @Get("/get/catalog-list")
   @ApiOperation({ summary: "List all catalogs." })
   @ApiResponse({ status: 200, description: "List of all catalogs" })
+  @RequireGate(GateCode.CODE_SUCU)
   async getCatalogList() {
     try {
       const rows = await (this.db as any)
@@ -88,6 +89,7 @@ export class CatalogApiController {
   @ApiOperation({ summary: "List catalogs by artisan ID." })
   @ApiParam({ name: "artisanId", description: "Artisan ID", example: 101, type: Number })
   @ApiResponse({ status: 200, description: "Catalogs by artisan ID" })
+  @RequireGate(GateCode.CODE_SUCU)
   async getCatalogListByArtisan(@Param("artisanId") artisanId: string) {
     try {
       const rows = await (this.db as any)
@@ -113,6 +115,7 @@ export class CatalogApiController {
   @ApiOperation({ summary: "Retrieve an artisan catalog by ID." })
   @ApiParam({ name: "catalogId", description: "Catalog ID", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Artisan catalog by ID" })
+  @RequireGate(GateCode.CODE_AR)
   async getArtisanCatalog(@Param("catalogId") catalogId: string) {
     return this.getCatalog(catalogId);
   }
@@ -120,6 +123,7 @@ export class CatalogApiController {
   @Get("/get/artisan/catalog-list")
   @ApiOperation({ summary: "List authenticated artisan's catalogs." })
   @ApiResponse({ status: 200, description: "Authenticated artisan catalogs" })
+  @RequireGate(GateCode.CODE_AR)
   async getArtisanCatalogList(@Req() req: any) {
     try {
       const rows = await (this.db as any)
@@ -138,6 +142,7 @@ export class CatalogApiController {
   @ApiOperation({ summary: "Get recent catalogs list." })
   @ApiParam({ name: "limit", description: "Limit count", example: 10, type: Number })
   @ApiResponse({ status: 200, description: "Recent catalogs list" })
+  @RequireGate(GateCode.CODE_SUCU)
   async getRecentCatalogList(@Param("limit") limit: number) {
     try {
       const rows = await (this.db as any)

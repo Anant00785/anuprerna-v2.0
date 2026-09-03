@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { WorkflowService } from '../service/workflow.service.js';
@@ -16,6 +15,7 @@ export class ElementFeedbackController {
   constructor(private readonly workflowService: WorkflowService) {}
 
   @Get('get/element/feedback/:feedbackId')
+  @RequireGate(GateCode.CODE_CU)
   async getElementFeedback(@Param('feedbackId') feedbackId: number) {
     const feedback = await this.workflowService.getElementFeedbackById(feedbackId);
     return keyedResponse('data', feedback);
@@ -38,6 +38,7 @@ export class ElementFeedbackController {
   }
 
   @Post('add/artisan/element/feedback')
+  @RequireGate(GateCode.CODE_AR)
   // TODO: Replace with CODE_ARTISAN when available
   @RequireGate(GateCode.CODE_SU)
   async addArtisanElementFeedback(@Body() body: any, @CurrentTenant() tenant: any) {
@@ -48,6 +49,7 @@ export class ElementFeedbackController {
   }
 
   @Patch('update/artisan/element/feedback')
+  @RequireGate(GateCode.CODE_AR)
   // TODO: Replace with CODE_ARTISAN when available
   @RequireGate(GateCode.CODE_SU)
   async updateArtisanElementFeedback(@Body() body: any, @CurrentTenant() tenant: any) {

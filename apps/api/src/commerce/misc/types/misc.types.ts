@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface ContactUsData {
   name: string;
   email: string;
@@ -19,5 +18,3 @@ export function parseContactUsData(data: any): ContactUsData {
     message: data.message.trim(),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

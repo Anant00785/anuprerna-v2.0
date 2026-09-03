@@ -1,8 +1,18 @@
-// @ts-nocheck
 import { Inject, Injectable } from '@nestjs/common';
 import { DATABASE_CONNECTION, type Database } from '../../../database/database.module.js';
 import * as schema from '../../../database/schema/schema.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, asc, gte, inArray, lt, ne } from 'drizzle-orm';
+import type { WhatsappNotificationStatus } from '../types/whatsapp.types.js';
+
+export type WhatsappNotificationHistoryRow = typeof schema.whatsappNotificationHistory.$inferSelect;
+
+/**
+ * Pollability, ported from Loom's findPollableDeliveryStatusWithinWindow /
+ * BeforeWindow native queries: Freshchat accepted the send and the lifecycle
+ * is not yet terminal. PENDING_SEND / POST_FAILED / POST_ERROR have nothing to
+ * reconcile; READ / FAILED_DELIVERY are terminal.
+ */
+const POLLABLE_STATUSES: WhatsappNotificationStatus[] = ['POST_SUCCESS', 'SENT', 'DELIVERED'];
 
 function formatWhatsappHistoryRow(r: any) {
   if (!r) return null;
@@ -59,5 +69,74 @@ export class WhatsappRepository {
       .from(schema.whatsappNotificationHistory)
       .where(eq(schema.whatsappNotificationHistory.id, BigInt(id)));
     return rows && rows.length > 0 ? formatWhatsappHistoryRow(rows[0]) : null;
+  }
+
+  // ---- delivery-status reconciliation (Loom WhatsappNotificationHistoryDAOController port) ----
+
+  /** Raw row (not the formatted projection) — the polling service needs the typed entity. */
+  async getHistoryEntityById(id: bigint): Promise<WhatsappNotificationHistoryRow | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.whatsappNotificationHistory)
+      .where(eq(schema.whatsappNotificationHistory.id, id));
+    return rows[0] ?? null;
+  }
+
+  /** Loom findPollableDeliveryStatusWithinWindow: pollable rows with sent_at >= cutoff. */
+  async findPollableDeliveryStatusWithinWindow(cutoff: number): Promise<WhatsappNotificationHistoryRow[]> {
+    const h = schema.whatsappNotificationHistory;
+    return this.db
+      .select()
+      .from(h)
+      .where(and(inArray(h.status, POLLABLE_STATUSES), ne(h.requestId, ''), gte(h.sentAt, cutoff)))
+      .orderBy(asc(h.requestId), asc(h.id));
+  }
+
+  /** Loom findPollableDeliveryStatusBeforeWindow: the stale backlog, sent_at < cutoff. */
+  async findPollableDeliveryStatusBeforeWindow(cutoff: number): Promise<WhatsappNotificationHistoryRow[]> {
+    const h = schema.whatsappNotificationHistory;
+    return this.db
+      .select()
+      .from(h)
+      .where(and(inArray(h.status, POLLABLE_STATUSES), ne(h.requestId, ''), lt(h.sentAt, cutoff)))
+      .orderBy(asc(h.requestId), asc(h.id));
+  }
+
+  /** Poll bookkeeping only — status untouched. Loom markDeliveryStatusPolled. */
+  async markDeliveryStatusPolled(id: bigint, lastPolledAt: number, pollAttemptCount: number): Promise<void> {
+    await this.db
+      .update(schema.whatsappNotificationHistory)
+      .set({ lastPolledAt, pollAttemptCount })
+      .where(eq(schema.whatsappNotificationHistory.id, id));
+  }
+
+  /**
+   * Advances a row to a reconciled delivery status. messageId/errorCode/
+   * errorMessage are written only when non-blank so a reconcile never clobbers
+   * a previously-captured value with an empty one (Loom recordDeliveryStatus).
+   */
+  async recordDeliveryStatus(
+    id: bigint,
+    status: WhatsappNotificationStatus,
+    messageId: string,
+    errorCode: string,
+    errorMessage: string,
+    statusUpdatedAt: number,
+    lastPolledAt: number,
+    pollAttemptCount: number,
+  ): Promise<void> {
+    const set: Partial<typeof schema.whatsappNotificationHistory.$inferInsert> = {
+      status,
+      statusUpdatedAt,
+      lastPolledAt,
+      pollAttemptCount,
+    };
+    if (messageId && messageId.trim() !== '') set.messageId = messageId;
+    if (errorCode && errorCode.trim() !== '') set.errorCode = errorCode;
+    if (errorMessage && errorMessage.trim() !== '') set.errorMessage = errorMessage;
+    await this.db
+      .update(schema.whatsappNotificationHistory)
+      .set(set)
+      .where(eq(schema.whatsappNotificationHistory.id, id));
   }
 }

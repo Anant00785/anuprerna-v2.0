@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/category/validators/category.validator.ts
  *
@@ -38,5 +37,3 @@ export function validateCategory(entity: CategoryInput): boolean {
     validateOptionalImage(entity.socialImageFile)
   );
 }
-// @ts-nocheck
-// @ts-nocheck

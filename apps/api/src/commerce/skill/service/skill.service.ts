@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { SkillRepository } from '../repository/skill.repository.js';
 import { mapSkill, mapArtisanSkillMapping } from '../mapper/skill.mapper.js';
@@ -36,4 +35,3 @@ export class SkillService {
     return mappings.map(mapArtisanSkillMapping);
   }
 }
-// @ts-nocheck

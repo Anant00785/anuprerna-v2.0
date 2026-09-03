@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/core/mapper/Product.mapper.ts
  *

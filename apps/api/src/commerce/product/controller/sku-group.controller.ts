@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/sku_group/SkuGroup.controller.ts
  *
@@ -48,14 +47,11 @@ import { ActionCode } from "../../../common/errors/action-code.js";
 export class SkuGroupController {
   constructor(private readonly skuGroupService: SkuGroupService) {}
 
-  /** SkuGroupDaoController#retrieveSkuGroupList() */
-  @Get("/get/sku-group/list")
-  @ApiOperation({ summary: "List every SKU group." })
-  @ApiResponse({ status: 200, description: "Full SKU group list." })
-  async getSkuGroupList() {
-    const skuGroups = await this.skuGroupService.retrieveSkuGroupList();
-    return keyedResponse("skuGroupList", skuGroups);
-  }
+  // The list route lives on ProductMigratedDomainController as
+  // GET /get/sku-group-list — the path loom's RequestMapper.GET_SKU_GROUP_LIST
+  // actually declares and the one the CMS calls. The guessed
+  // "/get/sku-group/list" spelling that used to sit here was never served
+  // and never called; removed rather than duplicated.
 
   /** SkuGroupDaoController#createSkuGroup(SkuGroup entity) */
   @Post("/add/sku-group")
@@ -114,6 +110,7 @@ export class SkuGroupController {
 
   /** SkuGroupDaoController#retrieveSkuGroupData(int page, int size) */
   @Get("/get/table-explorer/data/sku-group")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of SKU groups." })
   @ApiResponse({ status: 200, description: "Page of SKU group data." })
   async getSkuGroupData(@Query() query: unknown) {
@@ -124,6 +121,7 @@ export class SkuGroupController {
 
   /** SkuGroupDaoController#retrieveSkuGroupDataById(Long id) */
   @Get("/get/table-explorer/data/sku-group/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single SKU group." })
   @ApiResponse({ status: 200, description: "SKU group data or null." })
   async getSkuGroupDataById(@Param("id") id: string) {
@@ -132,4 +130,3 @@ export class SkuGroupController {
     return keyedResponse("skuGroupData", data);
   }
 }
-// @ts-nocheck

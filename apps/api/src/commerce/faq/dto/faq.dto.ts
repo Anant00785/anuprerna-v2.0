@@ -1,8 +1,7 @@
-// @ts-nocheck
 export interface FaqQuestionInput {
     id?: bigint | null;
     version?: bigint | null;
-    faqId?: bigint | null;
+    faqId?: number | null;
     question: string;
     answer: string;
     timeOfCreation?: number | null;
@@ -11,8 +10,8 @@ export interface FaqQuestionInput {
 export interface FaqInput {
     id?: bigint | null;
     version?: bigint | null;
-    storyContentId?: bigint | null;
-    blogContentId?: bigint | null;
+    storyContentId?: number | null;
+    blogContentId?: number | null;
     heading: string;
     timeOfCreation?: number | null;
     faqQuestionList: FaqQuestionInput[];
@@ -23,7 +22,7 @@ export function parseFaqQuestionInput(raw: unknown): FaqQuestionInput {
     return {
         id: typeof obj.id === "bigint" ? obj.id : (typeof obj.id === "number" || typeof obj.id === "string" ? BigInt(obj.id) : null),
         version: typeof obj.version === "bigint" ? obj.version : (typeof obj.version === "number" || typeof obj.version === "string" ? BigInt(obj.version) : null),
-        faqId: typeof obj.faqId === "bigint" ? obj.faqId : (typeof obj.faqId === "number" || typeof obj.faqId === "string" ? BigInt(obj.faqId) : null),
+        faqId: typeof obj.faqId === "number" || typeof obj.faqId === "string" || typeof obj.faqId === "bigint" ? Number(obj.faqId) : null,
         question: typeof obj.question === "string" ? obj.question : "",
         answer: typeof obj.answer === "string" ? obj.answer : "",
         timeOfCreation: typeof obj.timeOfCreation === "number" ? obj.timeOfCreation : null,
@@ -41,12 +40,10 @@ export function parseFaqInput(raw: unknown): FaqInput {
     return {
         id: typeof obj.id === "bigint" ? obj.id : (typeof obj.id === "number" || typeof obj.id === "string" ? BigInt(obj.id) : null),
         version: typeof obj.version === "bigint" ? obj.version : (typeof obj.version === "number" || typeof obj.version === "string" ? BigInt(obj.version) : null),
-        storyContentId: typeof obj.storyContentId === "bigint" ? obj.storyContentId : (typeof obj.storyContentId === "number" || typeof obj.storyContentId === "string" ? BigInt(obj.storyContentId) : null),
-        blogContentId: typeof obj.blogContentId === "bigint" ? obj.blogContentId : (typeof obj.blogContentId === "number" || typeof obj.blogContentId === "string" ? BigInt(obj.blogContentId) : null),
+        storyContentId: typeof obj.storyContentId === "number" || typeof obj.storyContentId === "string" || typeof obj.storyContentId === "bigint" ? Number(obj.storyContentId) : null,
+        blogContentId: typeof obj.blogContentId === "number" || typeof obj.blogContentId === "string" || typeof obj.blogContentId === "bigint" ? Number(obj.blogContentId) : null,
         heading: typeof obj.heading === "string" ? obj.heading : "",
         timeOfCreation: typeof obj.timeOfCreation === "number" ? obj.timeOfCreation : null,
         faqQuestionList: faqQuestionList,
     };
 }
-// @ts-nocheck
-// @ts-nocheck

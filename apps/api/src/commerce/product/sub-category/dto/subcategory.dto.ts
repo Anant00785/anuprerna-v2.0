@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BadRequestException } from "@nestjs/common";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, IsArray } from "class-validator";
@@ -196,7 +195,7 @@ function parseOptionalFile(value: unknown, field: string): UploadedFile | null |
   if (value === undefined) return undefined;
   if (value === null) return null;
   const v = value as Record<string, unknown>;
-  if (!Buffer.isBuffer(v.buffer) || typeof v.originalName !== "string" || typeof v.mimeType !== "string") {
+  if (!Buffer.isBuffer(v.buffer) || typeof v.originalname !== "string" || typeof v.mimetype !== "string") {
     return undefined;
   }
   return v as unknown as UploadedFile;

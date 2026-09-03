@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { ActionCode } from "../../../common/errors/action-code.js";
 import { InventoryRepository } from "../repository/inventory.repository.js";
@@ -29,7 +28,7 @@ export class InventoryService {
 
   async updateWarehouse(input: WarehouseInput) {
     if (!input.id) return false;
-    const updated = await this.repository.updateWarehouse(input.id, {
+    const updated = await this.repository.updateWarehouse(BigInt(input.id), {
       name: input.name,
       description: input.description,
     });
@@ -56,7 +55,7 @@ export class InventoryService {
 
   async updateReason(input: InventoryAdjustmentReasonInput) {
     if (!input.id) return false;
-    const updated = await this.repository.updateReason(input.id, {
+    const updated = await this.repository.updateReason(BigInt(input.id), {
       reason: input.reason,
       description: input.description,
     });

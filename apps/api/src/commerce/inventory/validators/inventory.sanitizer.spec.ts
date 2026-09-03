@@ -25,17 +25,17 @@ describe("sanitizeInventoryAdjustmentReason", () => {
 describe("sanitizeInventoryAdjustment", () => {
   it("trims and HTML-escapes referenceNo and description, leaving other fields untouched", () => {
     const result = sanitizeInventoryAdjustment({
-      userId: 1n,
+      userId: 1,
       adjustmentDate: 1700000000000,
-      warehouseId: 2n,
+      warehouseId: 2,
       referenceNo: " REF'123 ",
-      reasonId: 3n,
+      reasonId: 3,
       description: " note ",
       items: [],
     });
     expect(result.referenceNo).toBe("REF&#x27;123");
     expect(result.description).toBe("note");
-    expect(result.warehouseId).toBe(2n);
+    expect(result.warehouseId).toBe(2);
     expect(result.items).toEqual([]);
   });
 });
@@ -43,8 +43,8 @@ describe("sanitizeInventoryAdjustment", () => {
 describe("sanitizeInventoryRestockRequest", () => {
   it("trims and HTML-escapes productGroup, leaving numeric fields untouched", () => {
     const result = sanitizeInventoryRestockRequest({
-      tenantId: 1n,
-      productId: 2n,
+      tenantId: 1,
+      productId: 2,
       productGroup: " <finished> ",
       requestedQuantity: 5,
     });

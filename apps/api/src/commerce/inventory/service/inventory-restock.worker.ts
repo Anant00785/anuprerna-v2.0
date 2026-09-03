@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -10,5 +9,3 @@ export class InventoryRestockWorker {
     // TBD: stock checking logic
   }
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 export enum SettingsAttributeEnum {
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY',
   SWATCH_PRICE_PERCENTAGE = 'SWATCH_PRICE_PERCENTAGE',
@@ -26,5 +25,3 @@ export interface UpdateSettingsRequest {
   attributeValue: any;
   attributeLink: string;
 }
-// @ts-nocheck
-// @ts-nocheck

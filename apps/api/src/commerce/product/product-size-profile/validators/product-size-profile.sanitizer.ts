@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product-size-profile/sanitizer/product-size-profile.sanitizer.ts
  *
@@ -87,5 +86,3 @@ export function sanitizeProductSizeProfile<T extends Partial<ProductSizeProfileI
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

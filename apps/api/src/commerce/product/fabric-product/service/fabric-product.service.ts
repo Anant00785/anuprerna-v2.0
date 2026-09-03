@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-product/fabric-product.service.ts
  *
@@ -46,7 +45,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { FabricProductRepository, OptimisticLockError } from "../repository/fabric-product.repository.js";
 import { toInsertValues as toFabricInsertValues, toUpdateValues as toFabricUpdateValues, withFabricProductGroup } from "../mapper/fabric-product.mapper.js";
-import { CreateFabricProductRequest, UpdateFabricProductRequest } from "../dto/fabric-product.dto.js";
+
 import { sanitizeFabricProduct } from "../validators/fabric-product.sanitizer.js";
 import { validateFabricProductInput } from "../validators/fabric-product.validator.js";
 import { ActionCode } from "../../../../common/errors/action-code.js";
@@ -83,6 +82,7 @@ import {
   TagPort,
   ZOHO_ADAPTER_PORT,
   ZohoAdapterPort,
+  FabricProductInput,
 } from "../types/fabric-product.types.js";
 
 const BLANK_STRING_VALUE = "";
@@ -267,7 +267,7 @@ export class FabricProductService {
    * createFabricProduct(LoomTenant tenant, FabricProduct fabricProduct) —
    * see class doc quirk #1 for the Product Core composition rationale.
    */
-  async createFabricProduct(tenantId: number, input: CreateFabricProductRequest): Promise<number> {
+  async createFabricProduct(tenantId: number, input: FabricProductInput): Promise<number> {
     const sanitized = sanitizeFabricProduct(input);
     const { valid } = validateFabricProductInput(sanitized);
     if (!valid) return ActionCode.INCORRECT_INFORMATION;
@@ -304,15 +304,18 @@ export class FabricProductService {
    * mirroring an uncaught OptimisticLockException in the Java source
    * (same pattern as Cart/Product Core's own update methods).
    */
-  async updateFabricProduct(tenantId: number, input: UpdateFabricProductRequest): Promise<number> {
+  async updateFabricProduct(tenantId: number, input: FabricProductInput): Promise<number> {
     const sanitized = sanitizeFabricProduct(input);
     const { valid } = validateFabricProductInput(sanitized);
     if (!valid) return ActionCode.INCORRECT_INFORMATION;
+    // id is optional on FabricProductInput (create has none); BigInt(undefined) throws.
+    if (sanitized.id === undefined) return ActionCode.UPDATE_FAILURE;
 
-    const existing = await this.repo.retrieveEntity(BigInt(sanitized.id));
+    const existingId = BigInt(sanitized.id);
+    const existing = await this.repo.retrieveEntity(existingId);
     if (!existing) return ActionCode.UPDATE_FAILURE;
 
-    const productUpdate = sanitized.product as UpdateFabricProductRequest["product"] & { id: number };
+    const productUpdate = sanitized.product as FabricProductInput["product"] & { id: number };
     const operationCode = await this.productService.updateProduct(productUpdate);
 
     if (operationCode !== ActionCode.UPDATE_SUCCESS) {
@@ -320,7 +323,7 @@ export class FabricProductService {
     }
 
     try {
-      const updated = await this.repo.update(BigInt(sanitized.id), toFabricUpdateValues(sanitized));
+      const updated = await this.repo.update(existingId, toFabricUpdateValues(sanitized));
       if (!updated) return ActionCode.UPDATE_FAILURE;
 
       await this.zohoAdapter.updateFabricProductToZoho(tenantId, Number(updated.id));
@@ -371,4 +374,3 @@ export class FabricProductService {
     return 1;
   }
 }
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsOptional, IsString, IsArray, ValidateNested, IsIn } from "class-validator";
 import { Type } from "class-transformer";
@@ -33,6 +32,23 @@ export class UpdateWarehouseDto {
 }
 
 export class CreateInventoryAdjustmentReasonDto {
+  @ApiProperty({ example: "Damaged Goods", description: "Adjustment reason label" })
+  @IsNotEmpty()
+  @IsString()
+  reason!: string;
+
+  @ApiPropertyOptional({ example: "Inventory damaged during transit or handling.", description: "Reason description" })
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class UpdateInventoryAdjustmentReasonDto {
+  @ApiProperty({ example: 1, description: "Id of the reason to update" })
+  @IsNotEmpty()
+  @IsNumber()
+  id!: number;
+
   @ApiProperty({ example: "Damaged Goods", description: "Adjustment reason label" })
   @IsNotEmpty()
   @IsString()
@@ -156,52 +172,52 @@ export class UpdateRestockRequestStatusDto {
 }
 
 export interface WarehouseInput {
-  id?: number | bigint;
+  id?: number;
   name: string;
   description?: string;
 }
 
 export interface InventoryAdjustmentReasonInput {
-  id?: number | bigint;
+  id?: number;
   reason: string;
   description?: string;
 }
 
 export interface InventoryAdjustmentItemInput {
-  productId: number | bigint;
+  productId: number;
   quantityAvailable: number | string;
   quantityAdjusted: number | string;
   quantityAtHand: number | string;
 }
 
 export interface InventoryAdjustmentInput {
-  id?: number | bigint;
-  userId: number | bigint;
+  id?: number;
+  userId: number;
   adjustmentDate: number;
-  warehouseId: number | bigint;
+  warehouseId: number;
   referenceNo?: string;
-  reasonId: number | bigint;
+  reasonId: number;
   description?: string;
   items: InventoryAdjustmentItemInput[];
 }
 
 export interface InventoryRestockRequestInput {
-  id?: number | bigint;
-  tenantId: number | bigint;
-  productId: number | bigint;
-  madeToOrderProductId?: number | bigint;
-  sizeOptionId?: number | bigint;
+  id?: number;
+  tenantId: number;
+  productId: number;
+  madeToOrderProductId?: number;
+  sizeOptionId?: number;
   productGroup: string;
   requestedQuantity: number | string;
 }
 
 export interface UpdateRestockRequestQuantityInput {
-  requestId: number | bigint;
+  requestId: number;
   quantity: number;
 }
 
 export interface UpdateRestockRequestStatusInput {
-  requestId: number | bigint;
+  requestId: number;
   status: string;
 }
 

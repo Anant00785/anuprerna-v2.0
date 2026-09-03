@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/repository/product-zoho-relation.repository.ts
  *
@@ -135,6 +134,11 @@ export class ProductZohoRelationRepository {
       .from(productZohoRelation)
       .where(and(eq(productZohoRelation.productId, productId), eq(productZohoRelation.sku, sku)));
     return rows[0] ?? null;
+  }
+
+  /** `Product#getProductZohoRelationList()` — the entity's eager @OneToMany. */
+  async findAllByProductId(productId: number) {
+    return this.db.select().from(productZohoRelation).where(eq(productZohoRelation.productId, productId));
   }
 
   /** findProductZohoRelationByZohoItemIdAndSku(String zohoItemId, String sku) */

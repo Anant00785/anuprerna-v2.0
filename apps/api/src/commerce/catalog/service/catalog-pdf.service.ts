@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { CatalogPdfRepository } from "../repository/catalog-pdf.repository.js";
 

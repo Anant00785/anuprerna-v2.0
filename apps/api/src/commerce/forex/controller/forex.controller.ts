@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   ApiBearerAuth,
   ApiBody,
@@ -84,43 +83,50 @@ export class UpdateForexDto {
 export class ForexController {
   constructor(private readonly service: ForexService) {}
 
-  @Get(["/get/forex/exchange-rate/list", "/get/forex-exchange-rate-list", "/get/data-dump/forex"])
-  @ApiOperation({ summary: "Get all forex exchange rates history dump" })
+  // Loom: ForexExchangeRateController.retrieveForexExchangeRateList
+  //   GET /get/forex-exchange-rate-list — NO role gate (calls response.buildList
+  //   directly, never getEntity), response key `forexExchangeRateList`.
+  @Get(["/get/forex-exchange-rate-list", "/get/forex/exchange-rate/list"])
+  @ApiOperation({ summary: "Get all forex exchange rate history" })
   @ApiResponse({ status: 200, description: "List of all exchange rate history" })
   async getExchangeRates() {
     const rates = await this.service.getAllExchangeRates();
-    return {
-      success: true,
-      message: "",
-      data: rates,
-      exchangeRateList: rates,
-    };
+    return keyedResponse("forexExchangeRateList", rates);
   }
 
+  // Loom: ForexController.getForexDataDump
+  //   GET /get/data-dump/forex — CODE_SU, response key `forexList`, sourced from
+  //   the `forex` table (NOT forex_exchange_rate).
+  @Get("/get/data-dump/forex")
+  @ApiOperation({ summary: "Forex table data dump" })
+  @ApiResponse({ status: 200, description: "All forex records" })
+  @RequireGate(GateCode.CODE_SU)
+  async getForexDataDump() {
+    const records = await this.service.getAllForexRecords();
+    return keyedResponse("forexList", records);
+  }
+
+  // Loom: ForexExchangeRateController.retrieveLatestForexExchangeRate
+  //   GET /get/forex-exchange-rate/latest — NO role gate, response key
+  //   `forexExchangeRate`. The storefront (unauthenticated SSR fetch, see
+  //   apps/storefront/src/lib/loom/endpoints.ts getForex) reads exactly this key.
   @Get(["/get/forex-exchange-rate/latest", "/get/forex/exchange-rate/latest"])
-  @ApiOperation({ summary: "Get latest live exchange rates" })
-  @ApiResponse({ status: 200, description: "Latest exchange rates" })
+  @ApiOperation({ summary: "Get latest forex exchange rate" })
+  @ApiResponse({ status: 200, description: "Latest exchange rate row" })
   async getLatestExchangeRate() {
-    const rate = await this.service.getExchangeRateByCode("LATEST");
-    return {
-      success: true,
-      message: "",
-      data: rate ? [rate] : [],
-      exchangeRate: rate,
-    };
+    const rate = await this.service.getLatestExchangeRate();
+    return keyedResponse("forexExchangeRate", rate);
   }
 
-  @Get(["/get/forex/list", "/get/forex-list"])
+  // Loom: ForexController.getForexList
+  //   GET /get/forex-list — NO role gate (calls response.buildList directly),
+  //   response key `forexList`. Storefront reads exactly this key.
+  @Get(["/get/forex-list", "/get/forex/list"])
   @ApiOperation({ summary: "Get all supported forex currencies" })
   @ApiResponse({ status: 200, description: "List of supported forex records" })
   async getForexList() {
     const records = await this.service.getAllForexRecords();
-    return {
-      success: true,
-      message: "",
-      data: records,
-      forexList: records,
-    };
+    return keyedResponse("forexList", records);
   }
 
   @Get("/get/forex/exchange-rate/:code")

@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { Body, ConflictException, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FinishedProductService } from "../finished-product/service/finished-product.service.js";
 import { OptimisticLockError } from "../finished-product/repository/finished-product.repository.js";
@@ -80,9 +79,11 @@ export class FinishedProductController {
   @ApiResponse({ status: 409, description: "Finished product was modified by another request." })
   async updateFinishedProduct(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     const input = parseUpdateFinishedProductRequest(body);
+    const { id } = input;
+    if (id === undefined) throw new BadRequestException("Finished product id is required.");
     let result: number;
     try {
-      result = await this.finishedProductService.updateFinishedProduct(tenant?.id ?? 1, input);
+      result = await this.finishedProductService.updateFinishedProduct(tenant?.id ?? 1, { ...input, id });
     } catch (err) {
       if (err instanceof OptimisticLockError) {
         throw new ConflictException("This finished product was modified by another request. Please retry.");
@@ -137,6 +138,7 @@ export class FinishedProductController {
   @Get(["/get/table-explorer/data/finished-product", "/get/finished-preview-list"])
   @ApiOperation({ summary: "Paginated projection of finished products." })
   @ApiResponse({ status: 200, description: "Page of finished product data." })
+  @RequireGate(GateCode.CODE_SU)
   async getFinishedProductData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);
     const data = await this.finishedProductService.retrieveFinishedProductData(page, size);

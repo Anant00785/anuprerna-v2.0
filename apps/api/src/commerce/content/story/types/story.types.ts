@@ -1,7 +1,22 @@
-// @ts-nocheck
+import { storyContentTypeEnum } from "../../../../database/schema/schema.js";
+
+export type StoryContentType = (typeof storyContentTypeEnum.enumValues)[number];
+
+export const STORY_CONTENT_TYPES = storyContentTypeEnum.enumValues;
+
+/** story_content_category.story_content_type is NOT NULL with no default. */
+export const DEFAULT_STORY_CONTENT_TYPE: StoryContentType = STORY_CONTENT_TYPES[0];
+
+export function coerceStoryContentType(raw: unknown): StoryContentType {
+  if (typeof raw !== "string") return DEFAULT_STORY_CONTENT_TYPE;
+  const wanted = raw.trim().toUpperCase();
+  return STORY_CONTENT_TYPES.find((t) => t === wanted) ?? DEFAULT_STORY_CONTENT_TYPE;
+}
+
 export interface StoryContentCategoryInput {
   id?: bigint;
   name: string;
+  storyContentType: StoryContentType;
 }
 
 export function parseStoryContentCategoryInput(raw: unknown): StoryContentCategoryInput {
@@ -9,12 +24,13 @@ export function parseStoryContentCategoryInput(raw: unknown): StoryContentCatego
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
     name: typeof obj.name === "string" ? obj.name : "",
+    storyContentType: coerceStoryContentType(obj.storyContentType),
   };
 }
 
 export interface StoryContentInput {
   id?: bigint;
-  storyContentCategoryId: bigint;
+  storyContentCategoryId: number;
   title: string;
   description: string;
   readingTime: number;
@@ -23,9 +39,9 @@ export interface StoryContentInput {
   bannerImageParallax?: string;
   parallaxText?: string;
   slug?: string;
-  previousStory?: bigint;
-  nextStory?: bigint;
-  authorId: bigint;
+  previousStory?: number;
+  nextStory?: number;
+  authorId: number;
   metaTitle: string;
   metaDescription: string;
   bannerImageAlt: string;
@@ -36,7 +52,7 @@ export function parseStoryContentInput(raw: unknown): StoryContentInput {
   const obj = raw as Record<string, unknown>;
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
-    storyContentCategoryId: typeof obj.storyContentCategoryId === "string" || typeof obj.storyContentCategoryId === "number" || typeof obj.storyContentCategoryId === "bigint" ? BigInt(obj.storyContentCategoryId) : 0n,
+    storyContentCategoryId: typeof obj.storyContentCategoryId === "string" || typeof obj.storyContentCategoryId === "number" || typeof obj.storyContentCategoryId === "bigint" ? Number(obj.storyContentCategoryId) : 0,
     title: typeof obj.title === "string" ? obj.title : "",
     description: typeof obj.description === "string" ? obj.description : "",
     readingTime: typeof obj.readingTime === "number" ? obj.readingTime : 0,
@@ -45,9 +61,9 @@ export function parseStoryContentInput(raw: unknown): StoryContentInput {
     bannerImageParallax: typeof obj.bannerImageParallax === "string" ? obj.bannerImageParallax : undefined,
     parallaxText: typeof obj.parallaxText === "string" ? obj.parallaxText : undefined,
     slug: typeof obj.slug === "string" ? obj.slug : undefined,
-    previousStory: typeof obj.previousStory === "string" || typeof obj.previousStory === "number" || typeof obj.previousStory === "bigint" ? BigInt(obj.previousStory) : undefined,
-    nextStory: typeof obj.nextStory === "string" || typeof obj.nextStory === "number" || typeof obj.nextStory === "bigint" ? BigInt(obj.nextStory) : undefined,
-    authorId: typeof obj.authorId === "string" || typeof obj.authorId === "number" || typeof obj.authorId === "bigint" ? BigInt(obj.authorId) : 0n,
+    previousStory: typeof obj.previousStory === "string" || typeof obj.previousStory === "number" || typeof obj.previousStory === "bigint" ? Number(obj.previousStory) : undefined,
+    nextStory: typeof obj.nextStory === "string" || typeof obj.nextStory === "number" || typeof obj.nextStory === "bigint" ? Number(obj.nextStory) : undefined,
+    authorId: typeof obj.authorId === "string" || typeof obj.authorId === "number" || typeof obj.authorId === "bigint" ? Number(obj.authorId) : 0,
     metaTitle: typeof obj.metaTitle === "string" ? obj.metaTitle : "",
     metaDescription: typeof obj.metaDescription === "string" ? obj.metaDescription : "",
     bannerImageAlt: typeof obj.bannerImageAlt === "string" ? obj.bannerImageAlt : "",
@@ -57,7 +73,7 @@ export function parseStoryContentInput(raw: unknown): StoryContentInput {
 
 export interface StoryContentSectionInput {
   id?: bigint;
-  storyContentId: bigint;
+  storyContentId: number;
   templateType: number;
   templateColor: number;
   sortOrder: number;
@@ -90,7 +106,7 @@ export function parseStoryContentSectionInput(raw: unknown): StoryContentSection
   const obj = raw as Record<string, unknown>;
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
-    storyContentId: typeof obj.storyContentId === "string" || typeof obj.storyContentId === "number" || typeof obj.storyContentId === "bigint" ? BigInt(obj.storyContentId) : 0n,
+    storyContentId: typeof obj.storyContentId === "string" || typeof obj.storyContentId === "number" || typeof obj.storyContentId === "bigint" ? Number(obj.storyContentId) : 0,
     templateType: typeof obj.templateType === "number" ? obj.templateType : 0,
     templateColor: typeof obj.templateColor === "number" ? obj.templateColor : 0,
     sortOrder: typeof obj.sortOrder === "number" ? obj.sortOrder : 0,
@@ -122,17 +138,15 @@ export function parseStoryContentSectionInput(raw: unknown): StoryContentSection
 
 export interface StoryProductMappingInput {
   id?: bigint;
-  storyContentId: bigint;
-  productId: bigint;
+  storyContentId: number;
+  productId: number;
 }
 
 export function parseStoryProductMappingInput(raw: unknown): StoryProductMappingInput {
   const obj = raw as Record<string, unknown>;
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
-    storyContentId: typeof obj.storyContentId === "string" || typeof obj.storyContentId === "number" || typeof obj.storyContentId === "bigint" ? BigInt(obj.storyContentId) : 0n,
-    productId: typeof obj.productId === "string" || typeof obj.productId === "number" || typeof obj.productId === "bigint" ? BigInt(obj.productId) : 0n,
+    storyContentId: typeof obj.storyContentId === "string" || typeof obj.storyContentId === "number" || typeof obj.storyContentId === "bigint" ? Number(obj.storyContentId) : 0,
+    productId: typeof obj.productId === "string" || typeof obj.productId === "number" || typeof obj.productId === "bigint" ? Number(obj.productId) : 0,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Param, Req, UseGuards } from "@nestjs/common";
 import { Request } from "express";

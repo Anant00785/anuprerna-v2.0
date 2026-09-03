@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ShipmentInput } from "../dto/shipment.dto.js";
 import { ShipmentEntity, ShipmentData } from "../types/shipment.types.js";
 
@@ -20,5 +19,3 @@ export function mapToData(entity: ShipmentEntity): ShipmentData {
     locationType: entity.locationType as string,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

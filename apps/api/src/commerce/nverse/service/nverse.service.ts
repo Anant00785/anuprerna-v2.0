@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { NVerseRepository } from '../repository/nverse.repository.js';
 import { LoginRequest, OtpSendRequest, OtpVerifyRequest, EmailVerifyRequest } from '../types/nverse.types.js';
@@ -63,4 +62,3 @@ export class NVerseService {
     return keyedResponse('data', token);
   }
 }
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-preview/service/fabric-preview.service.ts
  *

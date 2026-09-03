@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product-size-profile/types/product-size-profile.types.ts
  *
@@ -122,5 +121,3 @@ export interface SizeProfileOptionPort {
 }
 
 export const SIZE_PROFILE_OPTION_PORT = Symbol("SIZE_PROFILE_OPTION_PORT");
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { SettingsDTO, SettingsAttributeEnum, SettingsAttributeTypeEnum } from '../types/settings.types.js';
 
 export function mapSettingsRowToDTO(row: any): SettingsDTO {
@@ -15,5 +14,3 @@ export function mapSettingsRowToDTO(row: any): SettingsDTO {
 export function mapSettingsRowListToDTOList(rows: any[]): SettingsDTO[] {
   return rows.map(mapSettingsRowToDTO);
 }
-// @ts-nocheck
-// @ts-nocheck

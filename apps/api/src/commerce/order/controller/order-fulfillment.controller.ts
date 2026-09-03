@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -31,11 +30,13 @@ export class OrderFulfillmentController {
   }
 
   @Get("/get/super-user/order/:orderId/fulfillment-list")
+  @RequireGate(GateCode.CODE_SU)
   async getSuperUserFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }
 
   @Get("/get/customer/order/:orderId/fulfillment-list")
+  @RequireGate(GateCode.CODE_CU)
   async getCustomerFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }
@@ -59,6 +60,7 @@ export class OrderFulfillmentController {
   }
 
   @Get("/get/super-user/order/:orderId/ready-list")
+  @RequireGate(GateCode.CODE_SU)
   async getSuperUserReadyList(@Param("orderId") orderId: string) {
     return keyedResponse("readyList", []);
   }

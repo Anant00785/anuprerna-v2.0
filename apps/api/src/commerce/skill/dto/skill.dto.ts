@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CreateSkillDto, UpdateSkillDto, ArtisanSkillMappingFilterDto } from '../types/skill.types.js';
 
 export function parseCreateSkillInput(data: any): CreateSkillDto {
@@ -22,5 +21,3 @@ export function parseArtisanSkillMappingFilterInput(query: any): ArtisanSkillMap
     limit: query?.limit ? parseInt(query.limit, 10) : 10,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

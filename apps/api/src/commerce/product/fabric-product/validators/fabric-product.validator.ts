@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-product/fabric-product.validator.ts
  *
@@ -40,5 +39,3 @@ export function validateFabricProductInput(entity: FabricProductInput): FabricPr
 
   return { valid: reasons.length === 0, reasons };
 }
-// @ts-nocheck
-// @ts-nocheck

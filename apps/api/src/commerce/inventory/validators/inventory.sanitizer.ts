@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { WarehouseInput, InventoryAdjustmentReasonInput, InventoryAdjustmentInput, InventoryRestockRequestInput } from '../dto/inventory.dto.js';
 
 function escapeHtml(str: string): string {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface BlogContentTypeInput {
   id?: bigint;
   name: string;
@@ -14,7 +13,7 @@ export function parseBlogContentTypeInput(raw: unknown): BlogContentTypeInput {
 
 export interface BlogContentCategoryInput {
   id?: bigint;
-  blogContentTypeId: bigint;
+  blogContentTypeId: number;
   name: string;
 }
 
@@ -22,14 +21,14 @@ export function parseBlogContentCategoryInput(raw: unknown): BlogContentCategory
   const obj = raw as Record<string, unknown>;
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
-    blogContentTypeId: typeof obj.blogContentTypeId === "string" || typeof obj.blogContentTypeId === "number" || typeof obj.blogContentTypeId === "bigint" ? BigInt(obj.blogContentTypeId) : 0n,
+    blogContentTypeId: typeof obj.blogContentTypeId === "string" || typeof obj.blogContentTypeId === "number" || typeof obj.blogContentTypeId === "bigint" ? Number(obj.blogContentTypeId) : 0,
     name: typeof obj.name === "string" ? obj.name : "",
   };
 }
 
 export interface BlogContentInput {
   id?: bigint;
-  blogContentCategoryId: bigint;
+  blogContentCategoryId: number;
   title: string;
   description: string;
   readingTime: number;
@@ -38,9 +37,9 @@ export interface BlogContentInput {
   bannerImageParallax?: string;
   parallaxText?: string;
   slug?: string;
-  previousBlog?: bigint;
-  nextBlog?: bigint;
-  authorId: bigint;
+  previousBlog?: number;
+  nextBlog?: number;
+  authorId: number;
   metaTitle: string;
   metaDescription: string;
   bannerImageAlt: string;
@@ -52,7 +51,7 @@ export function parseBlogContentInput(raw: unknown): BlogContentInput {
   const obj = raw as Record<string, unknown>;
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
-    blogContentCategoryId: typeof obj.blogContentCategoryId === "string" || typeof obj.blogContentCategoryId === "number" || typeof obj.blogContentCategoryId === "bigint" ? BigInt(obj.blogContentCategoryId) : 0n,
+    blogContentCategoryId: typeof obj.blogContentCategoryId === "string" || typeof obj.blogContentCategoryId === "number" || typeof obj.blogContentCategoryId === "bigint" ? Number(obj.blogContentCategoryId) : 0,
     title: typeof obj.title === "string" ? obj.title : "",
     description: typeof obj.description === "string" ? obj.description : "",
     readingTime: typeof obj.readingTime === "number" ? obj.readingTime : 0,
@@ -61,9 +60,9 @@ export function parseBlogContentInput(raw: unknown): BlogContentInput {
     bannerImageParallax: typeof obj.bannerImageParallax === "string" ? obj.bannerImageParallax : undefined,
     parallaxText: typeof obj.parallaxText === "string" ? obj.parallaxText : undefined,
     slug: typeof obj.slug === "string" ? obj.slug : undefined,
-    previousBlog: typeof obj.previousBlog === "string" || typeof obj.previousBlog === "number" || typeof obj.previousBlog === "bigint" ? BigInt(obj.previousBlog) : undefined,
-    nextBlog: typeof obj.nextBlog === "string" || typeof obj.nextBlog === "number" || typeof obj.nextBlog === "bigint" ? BigInt(obj.nextBlog) : undefined,
-    authorId: typeof obj.authorId === "string" || typeof obj.authorId === "number" || typeof obj.authorId === "bigint" ? BigInt(obj.authorId) : 0n,
+    previousBlog: typeof obj.previousBlog === "string" || typeof obj.previousBlog === "number" || typeof obj.previousBlog === "bigint" ? Number(obj.previousBlog) : undefined,
+    nextBlog: typeof obj.nextBlog === "string" || typeof obj.nextBlog === "number" || typeof obj.nextBlog === "bigint" ? Number(obj.nextBlog) : undefined,
+    authorId: typeof obj.authorId === "string" || typeof obj.authorId === "number" || typeof obj.authorId === "bigint" ? Number(obj.authorId) : 0,
     metaTitle: typeof obj.metaTitle === "string" ? obj.metaTitle : "",
     metaDescription: typeof obj.metaDescription === "string" ? obj.metaDescription : "",
     bannerImageAlt: typeof obj.bannerImageAlt === "string" ? obj.bannerImageAlt : "",
@@ -74,7 +73,7 @@ export function parseBlogContentInput(raw: unknown): BlogContentInput {
 
 export interface BlogContentSectionInput {
   id?: bigint;
-  blogContentId: bigint;
+  blogContentId: number;
   templateType: number;
   templateColor: number;
   sortOrder: number;
@@ -107,7 +106,7 @@ export function parseBlogContentSectionInput(raw: unknown): BlogContentSectionIn
   const obj = raw as Record<string, unknown>;
   return {
     id: typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.id === "bigint" ? BigInt(obj.id) : undefined,
-    blogContentId: typeof obj.blogContentId === "string" || typeof obj.blogContentId === "number" || typeof obj.blogContentId === "bigint" ? BigInt(obj.blogContentId) : 0n,
+    blogContentId: typeof obj.blogContentId === "string" || typeof obj.blogContentId === "number" || typeof obj.blogContentId === "bigint" ? Number(obj.blogContentId) : 0,
     templateType: typeof obj.templateType === "number" ? obj.templateType : 0,
     templateColor: typeof obj.templateColor === "number" ? obj.templateColor : 0,
     sortOrder: typeof obj.sortOrder === "number" ? obj.sortOrder : 0,
@@ -136,5 +135,3 @@ export function parseBlogContentSectionInput(raw: unknown): BlogContentSectionIn
     image2Link: typeof obj.image2Link === "string" ? obj.image2Link : undefined,
   };
 }
-// @ts-nocheck
-// @ts-nocheck

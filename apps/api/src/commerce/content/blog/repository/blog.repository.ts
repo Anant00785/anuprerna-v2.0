@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../../database/database.module.js";
 import * as schema from "../../../../database/schema/schema.js";
@@ -38,7 +37,7 @@ export class BlogRepository {
     return this.db.select().from(schema.blogContentCategory).orderBy(desc(schema.blogContentCategory.timeOfCreation));
   }
 
-  async addBlogContentCategory(blogContentTypeId: bigint, data: BlogContentCategoryInput) {
+  async addBlogContentCategory(blogContentTypeId: number, data: BlogContentCategoryInput) {
     const rows = await this.db.insert(schema.blogContentCategory).values({
       blogContentTypeId,
       name: data.name,
@@ -78,7 +77,7 @@ export class BlogRepository {
     return this.db.select().from(schema.blogContent).where(inArray(schema.blogContent.id, ids));
   }
 
-  async getBlogsByCategory(categoryId: bigint) {
+  async getBlogsByCategory(categoryId: number) {
     return this.db.select().from(schema.blogContent).where(eq(schema.blogContent.blogContentCategoryId, categoryId)).orderBy(desc(schema.blogContent.timeOfCreation));
   }
 
@@ -166,7 +165,7 @@ export class BlogRepository {
     return this.db.select().from(schema.blogContentSection).limit(50);
   }
 
-  async getBlogContentSections(blogContentId: bigint) {
+  async getBlogContentSections(blogContentId: number) {
     return this.db.select().from(schema.blogContentSection).where(eq(schema.blogContentSection.blogContentId, blogContentId));
   }
 

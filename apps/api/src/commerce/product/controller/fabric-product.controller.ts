@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/fabric-product/fabric-product.controller.ts
  *
@@ -98,34 +97,59 @@ export class FabricProductController {
   @Get(["/get/fabric-product/slug-v2/:productSlug", "/get/v2/fabric-product/slug/:productSlug"])
   @ApiOperation({ summary: "Retrieve a fabric product by slug (v2, functionally identical to v1)." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getFabricProductBySlugV2(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
     const fabricProduct = await this.fabricProductService.retrieveFabricProductBySlugV2(slug);
     return keyedResponse("fabricProduct", fabricProduct);
   }
 
-  /** FabricProductDAOController#retrieveFabricOverviews() */
-  @Get("/get/fabric-product/overview/list")
+  /**
+   * FabricProductController#getFabricOverviewList (loom) ->
+   * fabricOverviewResponse.buildList(daoController.retrieveFabricOverviews()).
+   *
+   * `/get/fabric-overview-list` is the legacy path; `/get/fabric-product/overview/list`
+   * is the name this API gave it. Both are served so unmigrated clients keep working —
+   * the legacy path is the one Loom published, and the storefront/CMS are not its only
+   * possible callers.
+   *
+   * Gate: Loom routes this through getEntity(..., CODE_SU, UNAUTH_FABRIC_OVERVIEW_LIST_REQUEST),
+   * so it is super-user only. It was previously ungated here; no frontend calls either
+   * path (grepped across apps/storefront/src and apps/cms/src), so restoring the gate
+   * matches the original without breaking a caller.
+   */
+  @Get(["/get/fabric-product/overview/list", "/get/fabric-overview-list"])
   @ApiOperation({ summary: "List lightweight fabric product overviews." })
   @ApiResponse({ status: 200, description: "Full fabric overview list." })
+  @RequireGate(GateCode.CODE_SU)
   async getFabricOverviews() {
     const overviews = await this.fabricProductService.retrieveFabricOverviews();
     return keyedResponse("fabricOverviewList", overviews);
   }
 
   /** FabricProductDAOController#retrieveFabricProductData(int page, int size) */
-  @Get("/get/table-explorer/data/fabric-product")
+  /**
+   * `/get/table-explorer/data/fabric-product-data` is the legacy path
+   * (RequestMapper.GET_TABLE_EXPLORER_DATA_FABRIC_PRODUCT_DATA); this API renamed it
+   * to `/fabric-product`. Both are served: the generic
+   * `/get/table-explorer/data/:tableName` handler cannot stand in for the legacy
+   * name because it feeds tableName straight to sql.identifier(), so
+   * "fabric-product-data" resolves to a table that does not exist rather than to
+   * this projection.
+   */
+  @Get(["/get/table-explorer/data/fabric-product", "/get/table-explorer/data/fabric-product-data"])
   @ApiOperation({ summary: "Paginated table-explorer projection of fabric products." })
   @ApiQuery({ name: "page", required: false, example: 0, description: "Page number (0-indexed)" })
   @ApiQuery({ name: "size", required: false, example: 20, description: "Page size" })
   @ApiResponse({ status: 200, description: "Page of fabric product data." })
+  @RequireGate(GateCode.CODE_SU)
   async getFabricProductData(@Query() query: unknown) {
     const { page, size } = parsePageQuery(query);
     const data = await this.fabricProductService.retrieveFabricProductData(page, size);
     return keyedResponse("fabricProductDataList", data);
   }
 
-  /** FabricProductDAOController#findFabricFilterPreview(categoryName, segmentCategoryName) */
+  /** FabricProductDAOController#findFabricFilterPreview(categoryName ?? null, segmentCategoryName ?? null) */
   @Get("/get/fabric-product/filter-preview")
   @ApiOperation({ summary: "Fabric filter-preview list, optionally scoped by category/segment-category name." })
   @ApiQuery({ name: "categoryName", required: false, description: "Category name" })
@@ -133,11 +157,11 @@ export class FabricProductController {
   @ApiResponse({ status: 200, description: "Matching fabric filter previews." })
   async getFabricFilterPreview(@Query() query: unknown) {
     const { categoryName, segmentCategoryName } = parseFabricFilterPreviewQuery(query);
-    const previews = await this.fabricProductService.findFabricFilterPreview(categoryName, segmentCategoryName);
+    const previews = await this.fabricProductService.findFabricFilterPreview(categoryName ?? null, segmentCategoryName ?? null);
     return keyedResponse("fabricFilterPreviewList", previews);
   }
 
-  /** FabricProductDAOController#findFabricFilterPreviewPage(categoryName, segmentCategoryName, limit, offset) */
+  /** FabricProductDAOController#findFabricFilterPreviewPage(categoryName ?? null, segmentCategoryName ?? null, limit, offset) */
   @Get("/get/fabric-product/filter-preview/page")
   @ApiOperation({ summary: "Paginated fabric filter-preview list." })
   @ApiQuery({ name: "categoryName", required: false, description: "Category name" })
@@ -147,7 +171,7 @@ export class FabricProductController {
   @ApiResponse({ status: 200, description: "Page of matching fabric filter previews." })
   async getFabricFilterPreviewPage(@Query() query: unknown) {
     const { categoryName, segmentCategoryName, limit, offset } = parseFabricFilterPreviewPageQuery(query);
-    const previews = await this.fabricProductService.findFabricFilterPreviewPage(categoryName, segmentCategoryName, limit, offset);
+    const previews = await this.fabricProductService.findFabricFilterPreviewPage(categoryName ?? null, segmentCategoryName ?? null, limit, offset);
     return keyedResponse("fabricFilterPreviewList", previews);
   }
 
@@ -249,4 +273,3 @@ export class FabricProductController {
     return simpleResponse(result === 1, result === 1 ? "Zoho workflow triggered." : "Fabric product not found.");
   }
 }
-// @ts-nocheck

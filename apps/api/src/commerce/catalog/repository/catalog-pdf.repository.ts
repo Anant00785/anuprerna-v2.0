@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
@@ -31,7 +30,7 @@ function formatCatalogPdf(r: any) {
 @Injectable()
 export class CatalogPdfRepository {
   constructor(
-    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof catalogPdf>,
+    @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase,
   ) {}
 
   async findById(id: bigint) {
@@ -48,14 +47,11 @@ export class CatalogPdfRepository {
     const rows = await this.db
       .select()
       .from(catalogPdf)
-      .where(eq(catalogPdf.artisanId, artisanId))
+      .where(eq(catalogPdf.artisanId, Number(artisanId)))
       .orderBy(desc(catalogPdf.id));
-    if (rows && rows.length > 0) {
-      return rows.map(formatCatalogPdf);
-    }
-    // Fallback to recent PDF generation records so test artisan views data
-    const fallback = await this.db.select().from(catalogPdf).orderBy(desc(catalogPdf.id)).limit(10);
-    return (fallback || []).map(formatCatalogPdf);
+    // No fallback: an artisan with no PDFs gets an empty list. The previous
+    // fallback returned other artisans' catalog PDFs (download URLs included).
+    return rows.map(formatCatalogPdf);
   }
 
   async create(artisanId: bigint, body?: any) {
@@ -63,8 +59,8 @@ export class CatalogPdfRepository {
     const [inserted] = await this.db
       .insert(catalogPdf)
       .values({
-        artisanId: artisanId,
-        requestedById: 1n,
+        artisanId: Number(artisanId),
+        requestedById: 1,
         status: "READY",
         downloadUrl: `https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/catalog-pdf/artisan/${artisanId}/${now}/artisan_catalog_${artisanId}_${now}.pdf`,
         s3Key: `catalog-pdf/artisan/${artisanId}/${now}/artisan_catalog_${artisanId}_${now}.pdf`,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
@@ -34,7 +33,8 @@ export class NavigationRepository {
     
     return rows.map(r => ({
       ...r,
-      id: Number(r.id)
+      id: Number(r.id),
+      slug: r.slug ?? ""
     }));
   }
 
@@ -51,7 +51,8 @@ export class NavigationRepository {
 
     return rows.map(r => ({
       ...r,
-      id: Number(r.id)
+      id: Number(r.id),
+      heroImage: r.heroImage ?? ""
     }));
   }
 
@@ -252,29 +253,32 @@ export class NavigationRepository {
   }
 
   async findNavMenuStoryMapping(storyType: string): Promise<NavMenuStoryResult[]> {
+    // story_content_type is an enum column on story_content_category, not a table.
+    const wanted = schema.storyContentTypeEnum.enumValues.find(
+      (t) => t === storyType.trim().toUpperCase(),
+    );
+    if (!wanted) return [];
+
     const rows = await this.db.select({
-      id: schema.storyContentCategory.id,
-      name: schema.storyContentCategory.name,
-      storyContentId: schema.storyContent.id,
-      storyContentTitle: schema.storyContent.title,
-      storyContentSlug: schema.storyContent.slug,
-      storyContentDesktopImage: schema.storyContent.bannerImageDesktop,
-      storyContentMobileImage: schema.storyContent.bannerImageMobile
+      storyCategoryId: schema.storyContentCategory.id,
+      storyCategoryName: schema.storyContentCategory.name,
+      storyId: schema.storyContent.id,
+      storyTitle: schema.storyContent.title,
+      slug: schema.storyContent.slug,
+      bannerImage: schema.storyContent.bannerImageDesktop
     })
     .from(schema.storyContentCategory)
-    .innerJoin(schema.storyContentType, eq(schema.storyContentCategory.storyContentTypeId, schema.storyContentType.id))
     .innerJoin(schema.storyContent, eq(schema.storyContent.storyContentCategoryId, schema.storyContentCategory.id))
-    .where(ilike(schema.storyContentType.name, storyType))
+    .where(eq(schema.storyContentCategory.storyContentType, wanted))
     .orderBy(schema.storyContentCategory.name, schema.storyContent.title);
 
     return rows.map(r => ({
-      id: Number(r.id),
-      name: r.name,
-      storyContentId: Number(r.storyContentId),
-      storyContentTitle: r.storyContentTitle,
-      storyContentSlug: r.storyContentSlug,
-      storyContentDesktopImage: r.storyContentDesktopImage,
-      storyContentMobileImage: r.storyContentMobileImage
+      storyCategoryId: Number(r.storyCategoryId),
+      storyCategoryName: r.storyCategoryName,
+      storyId: Number(r.storyId),
+      storyTitle: r.storyTitle,
+      slug: r.slug ?? "",
+      bannerImage: r.bannerImage
     }));
   }
 }

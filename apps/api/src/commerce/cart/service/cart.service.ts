@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/cart/service/cart.service.ts
  *
@@ -223,10 +222,15 @@ export class CartService {
       if (view.selectedFinishId === "") {
         view.selectedFinishList = [];
       } else {
-        const finishIds = view.selectedFinishId.split(",");
+        // finish_profile_item_id is a varchar CSV; finishProfileItem.id is a bigserial.
+        // Skip non-numeric fragments rather than letting BigInt() throw.
+        const finishIds = view.selectedFinishId
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => /^\d+$/.test(s));
         const resolved: unknown[] = [];
         for (const finishIdStr of finishIds) {
-          const item = await this.finishProfileItem.retrieveEntity(Number(finishIdStr));
+          const item = await this.finishProfileItem.retrieveEntity(BigInt(finishIdStr));
           if (item) {
             view.finishDisplayName = item.finishProfile.displayName; // last-one-wins, see class doc
             resolved.push(item);
@@ -388,4 +392,3 @@ export class CartService {
     return this.repo.retrieveCartItemDataById(id);
   }
 }
-// @ts-nocheck

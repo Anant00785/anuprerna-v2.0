@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { PatternRepository } from '../repository/pattern.repository.js';
 import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';
@@ -55,4 +54,3 @@ export class PatternService {
     return keyedResponse('pattern', mapPatternEntityToOutput(item));
   }
 }
-// @ts-nocheck

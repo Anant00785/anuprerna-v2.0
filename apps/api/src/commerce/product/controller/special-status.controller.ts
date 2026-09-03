@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/special-status/special-status.controller.ts
  *
@@ -52,14 +51,11 @@ import { SpecialStatusMessages } from "../special-status/types/special-status.ty
 export class SpecialStatusController {
   constructor(private readonly specialStatusService: SpecialStatusService) {}
 
-  /** SpecialStatusDaoController#retrieveSpecialStatusList() */
-  @Get("/get/special-status/list")
-  @ApiOperation({ summary: "List every special status." })
-  @ApiResponse({ status: 200, description: "Full special status list." })
-  async getSpecialStatusList() {
-    const specialStatuses = await this.specialStatusService.retrieveSpecialStatusList();
-    return keyedResponse("specialStatusList", specialStatuses);
-  }
+  // The list route lives on ProductMigratedDomainController as
+  // GET /get/special-status-list — the path
+  // loom's RequestMapper.GET_SPECIAL_STATUS_LIST actually declares and the one
+  // the CMS calls. The guessed "/get/special-status/list" spelling that used to
+  // sit here was never served and never called; removed rather than duplicated.
 
   /** SpecialStatusDaoController#createSpecialStatus(SpecialStatus entity) */
   @Post("/add/special-status")
@@ -108,6 +104,7 @@ export class SpecialStatusController {
 
   /** SpecialStatusDaoController#retrieveSpecialStatusData(int page, int size) */
   @Get("/get/table-explorer/data/special-status")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Paginated table-explorer projection of special statuses." })
   @ApiResponse({ status: 200, description: "Page of special status data." })
   async getSpecialStatusData(@Query() query: unknown) {
@@ -118,6 +115,7 @@ export class SpecialStatusController {
 
   /** SpecialStatusDaoController#retrieveSpecialStatusDataById(Long id) */
   @Get("/get/table-explorer/data/special-status/:id")
+  @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single special status." })
   @ApiResponse({ status: 200, description: "Special status data or null." })
   async getSpecialStatusDataById(@Param("id") id: string) {
@@ -126,4 +124,3 @@ export class SpecialStatusController {
     return keyedResponse("specialStatusData", data);
   }
 }
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as schema from '../../../database/schema/schema.js';
 
 export function toEmailHistoryDto(row: typeof schema.emailNotificationHistory.$inferSelect) {
@@ -11,5 +10,3 @@ export function toEmailHistoryDto(row: typeof schema.emailNotificationHistory.$i
         status: row.status
     };
 }
-// @ts-nocheck
-// @ts-nocheck

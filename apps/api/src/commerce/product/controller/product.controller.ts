@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/core/controller/Product.controller.ts
  *
@@ -124,6 +123,7 @@ export class ProductController {
   @Get(["/get/product/gist/list", "/get/product-gist-list"])
   @ApiOperation({ summary: "List lightweight product gists (id/name/sku-style summary)." })
   @ApiResponse({ status: 200, description: "Full product gist list." })
+  @RequireGate(GateCode.CODE_SU)
   async getProductGists() {
     const gists = await this.productService.retrieveProductGists();
     return keyedResponse("productGistList", gists);
@@ -260,6 +260,7 @@ export class ProductController {
   @Get("/get/table-explorer/data/product")
   @ApiOperation({ summary: "Paginated table-explorer projection of products." })
   @ApiResponse({ status: 200, description: "Page of product data." })
+  @RequireGate(GateCode.CODE_SU)
   async getProductData(@Query() query: unknown) {
     const { page, size } = parsePageQuery(query);
     const data = await this.productService.retrieveProductData(page, size);
@@ -270,10 +271,10 @@ export class ProductController {
   @Get("/get/table-explorer/data/product/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single product." })
   @ApiResponse({ status: 200, description: "Product data or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getProductDataById(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const data = await this.productService.retrieveProductDataById(parsedId);
     return keyedResponse("productData", data);
   }
 }
-// @ts-nocheck

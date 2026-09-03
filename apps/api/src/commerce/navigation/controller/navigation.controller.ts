@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Param, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -51,4 +50,3 @@ export class NavigationController {
     return this.navigationService.fetchNavMenuStoryOptions(category);
   }
 }
-// @ts-nocheck

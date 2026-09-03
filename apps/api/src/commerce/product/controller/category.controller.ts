@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Body,
   Controller,
@@ -55,6 +54,7 @@ export class CategoryController {
   @ApiOperation({ summary: "Retrieve a single category by id." })
   @ApiParam({ name: "categoryId", description: "Category ID", example: 2558, type: Number })
   @ApiResponse({ status: 200, description: "Category found." })
+  @RequireGate(GateCode.CODE_SU)
   async getCategory(@Param("categoryId") categoryId: string) {
     const id = parseCategoryIdParam(categoryId);
     const category = await this.categoryService.retrieveCategory(id);
@@ -102,6 +102,7 @@ export class CategoryController {
   @Get("/get/table-explorer/data/category")
   @ApiOperation({ summary: "Paginated table-explorer projection of categories." })
   @ApiResponse({ status: 200, description: "Page of category data." })
+  @RequireGate(GateCode.CODE_SU)
   async getCategoryData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);
     const data = await this.categoryService.retrieveCategoryData(page, size);

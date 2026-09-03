@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { ForexRepository } from "../repository/forex.repository.js";
 
@@ -8,6 +7,10 @@ export class ForexService {
 
   async getAllExchangeRates() {
     return this.repo.findAllExchangeRates();
+  }
+
+  async getLatestExchangeRate() {
+    return this.repo.findLatestExchangeRate();
   }
 
   async getExchangeRateByCode(code: string) {

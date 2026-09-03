@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/validators/tag.sanitizer.ts
  *
@@ -81,5 +80,3 @@ export function sanitizeTag<T extends Partial<CreateTagInput>>(entity: T): T {
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

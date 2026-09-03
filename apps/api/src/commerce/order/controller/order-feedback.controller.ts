@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiProperty, ApiPropertyOptional, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Body, UseGuards, Inject } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -188,18 +187,21 @@ export class OrderFeedbackController {
   }
 
   @Get("/get/order/feedback/:orderId")
+  @RequireGate(GateCode.CODE_SUCU)
   async getFeedbackByOrder(@Param("orderId") orderId: string) {
     const rows = await this.db.select().from(schema.purchaseOrderFeedback).where(eq(schema.purchaseOrderFeedback.orderId, Number(orderId))).limit(1);
     return keyedResponse("feedback", formatFeedback(rows[0]));
   }
 
   @Get("/get/super-user/order/feedback/:feedbackId")
+  @RequireGate(GateCode.CODE_SU)
   async getFeedbackById(@Param("feedbackId") feedbackId: string) {
     const rows = await this.db.select().from(schema.purchaseOrderFeedback).where(eq(schema.purchaseOrderFeedback.id, BigInt(feedbackId))).limit(1);
     return keyedResponse("feedback", formatFeedback(rows[0]));
   }
 
   @Get("/get/order/feedback-list")
+  @RequireGate(GateCode.CODE_SU)
   async getFeedbackList() {
     const rows = await this.db.select().from(schema.purchaseOrderFeedback).orderBy(desc(schema.purchaseOrderFeedback.id)).limit(50);
     return keyedResponse("feedbackList", rows.map(formatFeedback));

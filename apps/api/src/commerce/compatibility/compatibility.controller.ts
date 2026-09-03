@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Inject, Post, Query, UseGuards } from "@nestjs/common";
+import { GateCode } from "../../auth/types/auth.types.js";
+import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CreateCommerceRecordDto } from "../shared/commerce-record.dto.js";
 import { CompatibilityService } from "./compatibility.service.js";
@@ -11,18 +13,12 @@ const BASE_REDIRECT_URL = process.env.SITE_URL || "https://anuprerna.com";
 
 @ApiTags("Compatibility")
 @Controller()
+@UseGuards(RolesGuard)
 export class CompatibilityController {
   constructor(
     private readonly service: CompatibilityService,
     @Inject(DATABASE_CONNECTION) private readonly db: Database,
   ) {}
-
-  @Get("get/compatibility")
-  @ApiOperation({ summary: "Get all compatibility records" })
-  @ApiResponse({ status: 200, description: "List of compatibility configurations." })
-  async getAll() {
-    return this.service.getAll();
-  }
 
   @Get("redirect/product")
   @ApiOperation({ summary: "Legacy URL redirect mapping for products" })
@@ -136,11 +132,4 @@ export class CompatibilityController {
     }
   }
 
-  @Post("create/compatibility")
-  @HttpCode(200)
-  @ApiOperation({ summary: "Create a compatibility record" })
-  @ApiBody({ type: CreateCommerceRecordDto })
-  async create(@Body() body: unknown) {
-    return this.service.create(body);
-  }
 }

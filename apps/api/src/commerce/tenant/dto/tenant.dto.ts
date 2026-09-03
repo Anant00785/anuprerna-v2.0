@@ -16,6 +16,12 @@ export class UpdateCustomerProfileDto {
 
 export function parseUpdateCustomerProfileInput(body: any) {
   return {
+    // `name`/`phone` are the keys validateUpdateCustomerProfile and
+    // sanitizeUpdateCustomerProfile operate on (and TenantRepository
+    // already accepts both spellings) — dropping them here made both
+    // helpers no-ops.
+    name: body?.name,
+    phone: body?.phone,
     userName: body?.userName,
     contactNumber: body?.contactNumber,
     dob: body?.dob,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../auth/auth.module.js";
 import { SkillController } from "./controller/skill.controller.js";

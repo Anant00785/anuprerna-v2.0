@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function validateWorkflowInput(input: any): string[] {
   const errors: string[] = [];
   if (!input.templateId) errors.push('templateId is required');
@@ -11,5 +10,3 @@ export function validateWorkflowTemplateInput(input: any): string[] {
   if (!input.name) errors.push('name is required');
   return errors;
 }
-// @ts-nocheck
-// @ts-nocheck

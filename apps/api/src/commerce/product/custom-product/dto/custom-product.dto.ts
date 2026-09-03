@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/dto/custom-product.dto.ts
  *
@@ -104,5 +103,3 @@ export function parseUpdateCustomProductRequest(body: unknown): UpdateCustomProd
   }
   return parsed as UpdateCustomProductInput;
 }
-// @ts-nocheck
-// @ts-nocheck

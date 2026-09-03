@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
@@ -74,6 +73,7 @@ export class SegmentController {
   @ApiParam({ name: "segmentId", example: 3510, type: Number })
   @ApiResponse({ status: 200, description: "Segment found." })
   @ApiResponse({ status: 404, description: "Segment not found." })
+  @RequireGate(GateCode.CODE_SU)
   async getSegment(@Param("segmentId") segmentId: string) {
     const id = parseSegmentIdParam(segmentId);
     const segment = await this.segmentService.retrieveSegment(id);
@@ -103,8 +103,8 @@ export class SegmentController {
   @ApiResponse({ status: 404, description: "Parent category not found." })
   async createSegment(@Body() body: unknown, @UploadedFiles() files: unknown) {
     const input = parseCreateSegmentRequest(body, files);
-    await this.segmentService.createSegment(input);
-    return simpleResponse(true, SegmentMessages.SEGMENT_CREATED);
+    await this.segmentService.createNewSegment(input);
+    return simpleResponse(true, SegmentMessages.NEW_SEGMENT_CREATED);
   }
 
   /** SegmentDAOController#updateSegment(Segment segment) — multipart, iconFile/socialImageFile optional. */
@@ -152,33 +152,11 @@ export class SegmentController {
     return simpleResponse(succeeded, succeeded ? SegmentMessages.SEGMENT_DELETED : result);
   }
 
-  /** SegmentDAOController#retrieveFuzzySegmentsFromString(String, int) — default limit is Integer.MAX_VALUE. */
-  @Get("/get/segment/fuzzy-search")
-  @ApiOperation({ summary: "Fuzzy-search segments by name." })
-  @ApiResponse({ status: 200, description: "Matching segments." })
-  async fuzzySearchSegments(@Query("text") text: string, @Query("limit") limit?: string) {
-    const parsedLimit = limit !== undefined ? Number(limit) : undefined;
-    const segments = await this.segmentService.retrieveFuzzySegmentsFromString(
-      text,
-      parsedLimit !== undefined && !Number.isNaN(parsedLimit) ? parsedLimit : undefined,
-    );
-    return keyedResponse("segmentList", segments);
-  }
-
-  /** SegmentDAOController#retrieveSegmentPreviewsByCategory(String categoryName) */
-  @Get("/get/segment/preview/list")
-  @ApiOperation({ summary: "List segment previews, optionally filtered by category name." })
-  @ApiResponse({ status: 200, description: "Matching segment previews." })
-  async getSegmentPreviewList(@Query() query: unknown) {
-    const category = parseCategoryFilterQuery(query);
-    const previews = await this.segmentService.retrieveSegmentPreviewsByCategory(category);
-    return keyedResponse("segmentPreviewList", previews);
-  }
-
   /** SegmentDAOController#retrieveSegmentData(int page, int size) */
   @Get("/get/table-explorer/data/segment")
   @ApiOperation({ summary: "Paginated table-explorer projection of segments." })
   @ApiResponse({ status: 200, description: "Page of segment data." })
+  @RequireGate(GateCode.CODE_SU)
   async getSegmentData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);
     const segments = await this.segmentService.retrieveSegmentData(page, size);
@@ -189,6 +167,7 @@ export class SegmentController {
   @Get("/get/table-explorer/data/segment/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single segment." })
   @ApiResponse({ status: 200, description: "Segment data or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getSegmentDataById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const segment = await this.segmentService.retrieveSegmentById(parsedId);

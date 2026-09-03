@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -15,6 +14,7 @@ export class ArtisanPaymentController {
 
   @Get("/get/artisan-payment/record/list")
   @ApiOperation({ summary: "Get all artisan payment records" })
+  @RequireGate(GateCode.CODE_SU)
   async getPaymentRecords(
     @Query("page") page = "0",
     @Query("size") size = "50"
@@ -25,6 +25,7 @@ export class ArtisanPaymentController {
 
   @Get("/get/artisan-payment/record/:id")
   @ApiOperation({ summary: "Get artisan payment record by id" })
+  @RequireGate(GateCode.CODE_SU)
   async getPaymentRecordById(@Param("id") id: string) {
     const record = await this.service.getRecordById(BigInt(id));
     return keyedResponse("artisanPaymentRecord", record);
@@ -32,6 +33,7 @@ export class ArtisanPaymentController {
 
   @Get("/get/artisan-payment/record/artisan/:artisanId")
   @ApiOperation({ summary: "Get payment records for specific artisan" })
+  @RequireGate(GateCode.CODE_SU)
   async getRecordsByArtisan(
     @Param("artisanId") artisanId: string,
     @Query("page") page = "0",
@@ -59,6 +61,7 @@ export class ArtisanPaymentController {
 
   @Get("/get/artisan-payment/incentive-config/list")
   @ApiOperation({ summary: "Get artisan incentive configurations" })
+  @RequireGate(GateCode.CODE_SU)
   async getIncentiveConfigs() {
     const configs = await this.service.getIncentiveConfigs();
     return keyedResponse("artisanIncentiveConfigList", configs);

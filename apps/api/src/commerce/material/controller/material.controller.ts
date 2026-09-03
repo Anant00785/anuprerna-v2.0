@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { MaterialService } from '../service/material.service.js';
@@ -50,6 +49,7 @@ export class MaterialController {
   @UseGuards(RolesGuard)
     @Get('/get/table-explorer/data/material')
   @ApiOperation({ summary: "Paginated table-explorer projection of materials." })
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerData(@Query('page') page: string = '1', @Query('size') size: string = '10') {
     return this.service.getTableExplorerData(parseInt(page, 10), parseInt(size, 10));
   }
@@ -58,6 +58,7 @@ export class MaterialController {
     @Get('/get/table-explorer/data/material/:id')
   @ApiOperation({ summary: "Table-explorer projection of material by ID." })
   @ApiParam({ name: 'id', description: 'Material ID', example: 1, type: Number })
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerDataById(@Param('id') id: string) {
     return this.service.getTableExplorerDataById(id);
   }

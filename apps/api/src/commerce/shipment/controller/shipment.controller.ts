@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -15,12 +14,14 @@ export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}
 
   @Get("/get/shipment-list")
+  @RequireGate(GateCode.CODE_SUCU)
   async getShipmentList() {
     const list = await this.shipmentService.getShipmentList();
     return keyedResponse("shipmentList", list);
   }
 
   @Get("/get/shipment/:shipmentId")
+  @RequireGate(GateCode.CODE_SUCU)
   async getShipment(@Param("shipmentId") shipmentId: string) {
     const id = BigInt(shipmentId);
     const shipment = await this.shipmentService.getShipment(id);
@@ -61,6 +62,7 @@ export class ShipmentController {
   }
 
   @Get("/get/table-explorer/data/shipment")
+  @RequireGate(GateCode.CODE_SU)
   async getShipmentData(
     @Query("page") pageStr: string = "0",
     @Query("size") sizeStr: string = "10"
@@ -72,6 +74,7 @@ export class ShipmentController {
   }
 
   @Get("/get/table-explorer/data/shipment/:id")
+  @RequireGate(GateCode.CODE_SU)
   async getShipmentDataById(@Param("id") idStr: string) {
     const id = BigInt(idStr);
     const shipment = await this.shipmentService.getShipmentDataById(id);

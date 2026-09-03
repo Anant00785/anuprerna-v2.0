@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -19,12 +18,14 @@ export class CatalogItemController {
   @Get("/get/catalog-item/:catalogItemId")
   @ApiOperation({ summary: "Retrieve a single catalog item by ID." })
   @ApiParam({ name: "catalogItemId", description: "Catalog Item ID", example: 1, type: Number })
+  @RequireGate(GateCode.CODE_SU)
   async getCatalogItem(@Param('catalogItemId') id: string) {
     return keyedResponse("catalogItem", await this.catalogItemService.findById(BigInt(id)));
   }
 
   @Get("/get/catalog-item-list")
   @ApiOperation({ summary: "List all catalog items." })
+  @RequireGate(GateCode.CODE_SUCU)
   async getCatalogItemList() {
     return keyedResponse("catalogItemList", await this.catalogItemService.findAll());
   }
@@ -32,6 +33,7 @@ export class CatalogItemController {
   @Get("/get/artisan/catalog-item/:catalogItemId")
   @ApiOperation({ summary: "Retrieve an artisan catalog item by ID." })
   @ApiParam({ name: "catalogItemId", description: "Catalog Item ID", example: 1, type: Number })
+  @RequireGate(GateCode.CODE_AR)
   async getArtisanCatalogItem(@Param('catalogItemId') id: string) {
     return keyedResponse("catalogItem", await this.catalogItemService.findById(BigInt(id)));
   }

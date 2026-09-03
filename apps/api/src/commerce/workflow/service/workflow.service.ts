@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { WorkflowRepository } from '../repository/workflow.repository.js';
 import { IWorkflow, IWorkflowTemplate, IStepElement, ISubProcessElement, IElementFeedback } from '../types/workflow.types.js';
@@ -75,4 +74,3 @@ export class WorkflowService {
     return this.workflowRepository.getElementFeedbackById(id);
   }
 }
-// @ts-nocheck

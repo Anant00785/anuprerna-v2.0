@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { SearchRepository } from "../repository/search.repository.js";
 import { ProductSearchResult, LoomSearchResult } from "../types/search.types.js";

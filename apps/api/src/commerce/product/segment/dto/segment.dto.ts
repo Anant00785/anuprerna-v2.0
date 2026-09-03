@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BadRequestException } from "@nestjs/common";
 import { SegmentInput, UploadedFile } from "../types/segment.types.js";
 

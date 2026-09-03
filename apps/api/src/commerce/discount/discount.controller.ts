@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Patch, Post, UseGuards } from "@nestjs/common";
+import { GateCode } from "../../auth/types/auth.types.js";
+import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { ApiBody, ApiOperation, ApiProperty, ApiPropertyOptional, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { Type } from "class-transformer";
@@ -27,21 +29,16 @@ export class ApplyVoucherDiscountDto {
 
 @ApiTags("Discount")
 @Controller()
+@UseGuards(RolesGuard)
 export class DiscountController {
   constructor(private readonly service: DiscountService) {}
-
-  @Get("get/discount")
-  @ApiOperation({ summary: "Get all discount records" })
-  @ApiResponse({ status: 200, description: "All discount records" })
-  async getAll() {
-    return this.service.getAll();
-  }
 
   @Post("apply/voucher/discount")
   @HttpCode(200)
   @ApiOperation({ summary: "Apply voucher coupon code to checkout cart (POST)" })
   @ApiBody({ type: ApplyVoucherDiscountDto })
   @ApiResponse({ status: 200, description: "Voucher applied successfully" })
+  @RequireGate(GateCode.CODE_CU)
   async applyVoucherDiscountPost(@Body() body: ApplyVoucherDiscountDto) {
     const total = body?.cartTotal || 2500;
     const discountPercent = 15;
@@ -67,6 +64,7 @@ export class DiscountController {
   @ApiOperation({ summary: "Apply voucher coupon code to checkout cart (PATCH)" })
   @ApiBody({ type: ApplyVoucherDiscountDto })
   @ApiResponse({ status: 200, description: "Voucher applied successfully" })
+  @RequireGate(GateCode.CODE_CU)
   async applyVoucherDiscountPatch(@Body() body: ApplyVoucherDiscountDto) {
     const total = body?.cartTotal || 2500;
     const discountPercent = 15;
@@ -87,11 +85,4 @@ export class DiscountController {
     };
   }
 
-  @Post("create/discount")
-  @HttpCode(200)
-  @ApiOperation({ summary: "Create a discount record" })
-  @ApiBody({ type: CreateCommerceRecordDto })
-  async create(@Body() body: unknown) {
-    return this.service.create(body);
-  }
 }

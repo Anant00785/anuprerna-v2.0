@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import { sql } from 'drizzle-orm';
@@ -27,5 +26,3 @@ export class TableExplorerRepository {
         return rows[0] || null;
     }
 }
-// @ts-nocheck
-// @ts-nocheck

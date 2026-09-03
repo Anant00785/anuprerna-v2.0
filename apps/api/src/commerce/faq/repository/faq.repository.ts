@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
@@ -16,13 +15,13 @@ export class FaqRepository {
         const faqs = await this.db.select().from(schema.faq);
         if (faqs.length === 0) return [];
 
-        const faqIds = faqs.map(f => f.id);
+        const faqIds = faqs.map(f => Number(f.id));
         const questions = await this.db.select().from(schema.faqQuestion).where(inArray(schema.faqQuestion.faqId, faqIds));
 
         return faqs.map(f => {
             return {
                 ...f,
-                faqQuestionList: questions.filter(q => q.faqId === f.id)
+                faqQuestionList: questions.filter(q => q.faqId === Number(f.id))
             };
         });
     }
@@ -33,7 +32,7 @@ export class FaqRepository {
 
         if (!faq) return null;
 
-        const questions = await this.db.select().from(schema.faqQuestion).where(eq(schema.faqQuestion.faqId, faq.id));
+        const questions = await this.db.select().from(schema.faqQuestion).where(eq(schema.faqQuestion.faqId, Number(faq.id)));
 
         return {
             ...faq,
@@ -79,7 +78,7 @@ export class FaqRepository {
 
             if (faqInput.faqQuestionList && faqInput.faqQuestionList.length > 0) {
                 const questionsToInsert = faqInput.faqQuestionList.map(q => ({
-                    faqId: newFaqId,
+                    faqId: Number(newFaqId),
                     question: q.question,
                     answer: q.answer,
                     timeOfCreation: timeOfCreation
@@ -99,12 +98,12 @@ export class FaqRepository {
                 .set({ heading: faqInput.heading })
                 .where(eq(schema.faq.id, faqInput.id!));
 
-            await tx.delete(schema.faqQuestion).where(eq(schema.faqQuestion.faqId, faqInput.id!));
+            await tx.delete(schema.faqQuestion).where(eq(schema.faqQuestion.faqId, Number(faqInput.id!)));
 
             if (faqInput.faqQuestionList && faqInput.faqQuestionList.length > 0) {
                 const timeOfCreation = Date.now();
                 const questionsToInsert = faqInput.faqQuestionList.map(q => ({
-                    faqId: faqInput.id!,
+                    faqId: Number(faqInput.id!),
                     question: q.question,
                     answer: q.answer,
                     timeOfCreation: timeOfCreation
@@ -139,5 +138,3 @@ export class FaqRepository {
         return rows[0] ?? null;
     }
 }
-// @ts-nocheck
-// @ts-nocheck

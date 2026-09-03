@@ -1,4 +1,3 @@
-// @ts-nocheck
 export enum WorkflowStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -40,5 +39,3 @@ export interface IElementFeedback {
   feedbackText: string;
   artisanId?: number;
 }
-// @ts-nocheck
-// @ts-nocheck

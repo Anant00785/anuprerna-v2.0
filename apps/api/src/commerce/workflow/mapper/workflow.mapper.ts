@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { IWorkflow, IWorkflowTemplate, IElementFeedback } from '../types/workflow.types.js';
 
 export function mapWorkflowRowToDto(row: any): IWorkflow {
@@ -27,5 +26,3 @@ export function mapElementFeedbackRowToDto(row: any): IElementFeedback {
     artisanId: row.artisanId
   };
 }
-// @ts-nocheck
-// @ts-nocheck

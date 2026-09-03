@@ -1,10 +1,6 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { FinishedProductRepository, OptimisticLockError } from "../repository/finished-product.repository.js";
 import { toInsertValues } from "../mapper/finished-product.mapper.js";
-import {
-  CreateFinishedProductRequest,
-} from "../dto/finished-product.dto.js";
 import { ActionCode } from "../../../../common/errors/action-code.js";
 import {
   COLOR_PORT,
@@ -28,6 +24,7 @@ import {
   SizeProfilePort,
   TAG_PORT,
   TagPort,
+  FinishedProductInput,
   UpdateFinishedProductInput,
   ZOHO_ADAPTER_PORT,
   ZohoAdapterPort,
@@ -73,7 +70,7 @@ export class FinishedProductService {
       const prod = await this.product.retrieveProduct(numId);
       if (prod) {
         const enrichment = await this.enrich(numId);
-        return { id: numId, productId: numId, product: prod, productPreview: prod, ...enrichment };
+        return { ...enrichment, id: numId, productId: numId, product: prod, productPreview: prod };
       }
       return null;
     }
@@ -85,17 +82,17 @@ export class FinishedProductService {
   async retrieveFinishedProductBySlug(slug: string) {
     const product = await this.product.findProductBySlug(slug);
     if (!product) return null;
-    let entity = await this.repo.findByProductId(product.id);
+    const entity = await this.repo.findByProductId(product.id);
     if (!entity) {
       const enrichment = await this.enrich(product.id);
-      return { id: product.id, productId: product.id, product, productPreview: product, ...enrichment };
+      return { ...enrichment, id: product.id, productId: product.id, product, productPreview: product };
     }
     const enrichment = await this.enrich(entity.productId);
     return { ...entity, ...enrichment };
   }
 
   /** createFinishedProduct(LoomTenant tenant, FinishedProduct finishedProduct) */
-  async createFinishedProduct(tenantId: number, input: CreateFinishedProductRequest): Promise<number> {
+  async createFinishedProduct(tenantId: number, input: FinishedProductInput): Promise<number> {
     const createdProduct = await this.product.createProduct(input.product);
     if (!createdProduct) return ActionCode.INSERT_FAILURE;
 

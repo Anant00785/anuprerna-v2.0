@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * migrated/image/service/image.service.ts
  *
@@ -9,17 +8,16 @@
  * The AWS credentials/region are loaded from environment variables:
  *   AWS_S3_BUCKET, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
  */
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
-  NoSuchKeyError,
+  ObjectCannedACL,
+  S3ServiceException,
 } from "@aws-sdk/client-s3";
-import { path as buildUrl } from "@aws-sdk/util-endpoints";
-import { ImageFormat, ALLOWED_MIME_TYPES } from "../types/image.types.js";
 import * as crypto from "crypto";
 import * as path from "path";
 import type { EnvironmentVariables } from "../../../common/config/env.schema.js";
@@ -29,18 +27,35 @@ export class ImageService {
   private readonly logger = new Logger(ImageService.name);
   private readonly bucket: string;
   private readonly region: string;
-  private readonly s3: S3Client;
+  private readonly s3: S3Client | null;
 
   constructor(private readonly config: ConfigService<EnvironmentVariables, true>) {
-    this.bucket = this.config.get("AWS_S3_BUCKET", { infer: true }) || this.config.get("AWS_BUCKET", { infer: true }) || "anuprerna-bloomscorp";
-    this.region = this.config.get("AWS_S3_REGION", { infer: true }) || this.config.get("AWS_REGION", { infer: true }) || "ap-south-1";
-    this.s3 = new S3Client({
-      region: this.region,
-      credentials: {
-        accessKeyId: (this.config.get("AWS_S3_ACCESS_KEY", { infer: true }) || this.config.get("AWS_ACCESS_KEY_ID", { infer: true }) || "").trim(),
-        secretAccessKey: (this.config.get("AWS_S3_SECRET_KEY", { infer: true }) || this.config.get("AWS_SECRET_ACCESS_KEY", { infer: true }) || "").trim(),
-      },
-    });
+    this.bucket = (this.config.get("AWS_S3_BUCKET", { infer: true }) ?? this.config.get("AWS_BUCKET", { infer: true }) ?? "").trim();
+    this.region = (this.config.get("AWS_S3_REGION", { infer: true }) ?? this.config.get("AWS_REGION", { infer: true }) ?? "").trim();
+    const accessKeyId = (this.config.get("AWS_S3_ACCESS_KEY", { infer: true }) ?? this.config.get("AWS_ACCESS_KEY_ID", { infer: true }) ?? "").trim();
+    const secretAccessKey = (this.config.get("AWS_S3_SECRET_KEY", { infer: true }) ?? this.config.get("AWS_SECRET_ACCESS_KEY", { infer: true }) ?? "").trim();
+
+    // Fails closed: with no bucket/region/credentials in the environment the
+    // client is never constructed and every call throws instead of silently
+    // talking to a default-credential-chain account.
+    this.s3 = this.bucket && this.region && accessKeyId && secretAccessKey
+      ? new S3Client({ region: this.region, credentials: { accessKeyId, secretAccessKey } })
+      : null;
+  }
+
+  /** Throws unless S3 is fully configured from the environment. */
+  private client(): S3Client {
+    if (!this.s3) {
+      throw new ServiceUnavailableException(
+        "S3 storage is not configured (AWS_S3_BUCKET, AWS_S3_REGION, AWS_S3_ACCESS_KEY, AWS_S3_SECRET_KEY)",
+      );
+    }
+    return this.s3;
+  }
+
+  /** True when the environment supplies a complete S3 configuration. */
+  get isConfigured(): boolean {
+    return this.s3 !== null;
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────
@@ -64,12 +79,16 @@ export class ImageService {
 
   private async doesObjectExist(key: string): Promise<boolean> {
     try {
-      await this.s3.send(
+      await this.client().send(
         new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
       );
       return true;
-    } catch (e: any) {
-      if (e.name === "NotFound" || e.$metadata?.httpStatusCode === 404) return false;
+    } catch (e: unknown) {
+      // The v3 client surfaces a missing key on HeadObject as NotFound / 404;
+      // @aws-sdk/client-s3 exports no NoSuchKeyError class to instanceof against.
+      if (e instanceof S3ServiceException) {
+        if (e.name === "NotFound" || e.$metadata?.httpStatusCode === 404) return false;
+      }
       throw e;
     }
   }
@@ -90,13 +109,13 @@ export class ImageService {
     mimetype: string,
   ): Promise<string> {
     const key = this.buildImageFileName(originalName);
-    await this.s3.send(
+    await this.client().send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: buffer,
         ContentType: mimetype,
-        ACL: "public-read" as any,
+        ACL: ObjectCannedACL.public_read,
       }),
     );
     return this.buildPublicUrl(key);
@@ -112,14 +131,14 @@ export class ImageService {
     fileName: string,
   ): Promise<string> {
     if (!pdfBytes.length) throw new Error("PDF bytes are required");
-    await this.s3.send(
+    await this.client().send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: objectKey,
         Body: pdfBytes,
         ContentType: "application/pdf",
         ContentDisposition: `attachment; filename="${fileName}"`,
-        ACL: "public-read" as any,
+        ACL: ObjectCannedACL.public_read,
       }),
     );
     const exists = await this.doesObjectExist(objectKey);
@@ -136,7 +155,7 @@ export class ImageService {
     const key = this.extractObjectKeyFromUrl(fileUrl);
     if (!key) return false;
     try {
-      await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+      await this.client().send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
       return !(await this.doesObjectExist(key));
     } catch {
       return false;
@@ -158,4 +177,3 @@ export class ImageService {
     fileUrls.forEach((u) => this.initiateDeleteImageTask(u));
   }
 }
-// @ts-nocheck

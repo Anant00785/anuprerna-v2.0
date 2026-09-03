@@ -1,4 +1,4 @@
-// @ts-nocheck
+import type { ProductInput } from "../../product/types/product.types.js";
 /**
  * apps/api/src/product/finished-product/types/finished-product.types.ts
  *
@@ -51,7 +51,7 @@ export interface FinishedProductData {
  */
 export interface FinishedProductInput {
   id?: number; // required for update, absent for create
-  product: unknown;
+  product: ProductInput;
 }
 
 export interface UpdateFinishedProductInput extends FinishedProductInput {
@@ -110,7 +110,7 @@ export interface ProductPort {
   /** ProductJpaRepository#findProductBySlug(slug) */
   findProductBySlug(slug: string): Promise<{ id: number } | null>;
   /** ProductDAOController#retrieveProduct(id) (adds totalQuantity) */
-  retrieveProduct(id: number): Promise<unknown | null>;
+  retrieveProduct(id: number): Promise<({ id: number } & Record<string, unknown>) | null>;
   /** Product#getProductZohoRelationList() as read by disableFinishedProduct */
   getZohoRelations(productId: number): Promise<ProductZohoRelationLite[]>;
 }
@@ -196,5 +196,3 @@ export const SIZE_PROFILE_PORT = Symbol("SIZE_PROFILE_PORT");
 export const ZOHO_ADAPTER_PORT = Symbol("ZOHO_ADAPTER_PORT");
 export const PRODUCT_ZOHO_RELATION_PORT = Symbol("PRODUCT_ZOHO_RELATION_PORT");
 export const PRODUCT_SIZE_PROFILE_PORT = Symbol("PRODUCT_SIZE_PROFILE_PORT");
-// @ts-nocheck
-// @ts-nocheck

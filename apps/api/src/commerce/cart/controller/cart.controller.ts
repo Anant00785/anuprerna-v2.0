@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/cart/controller/cart.controller.ts
  *
@@ -59,6 +58,7 @@ export class CartController {
   @ApiResponse({ status: 200, description: "Paginated cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
+  @RequireGate(GateCode.CODE_SU)
   async getCartItemData(@Query() query: unknown) {
     const { page, size } = parseTableExplorerPageQuery(query);
     const items = await this.cartService.retrieveCartItemData(page, size);
@@ -72,6 +72,7 @@ export class CartController {
   @ApiResponse({ status: 200, description: "The cart item, or null if not found." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
+  @RequireGate(GateCode.CODE_SU)
   async getCartItemById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const item = await this.cartService.retrieveCartItemDataById(BigInt(parsedId));
@@ -85,6 +86,7 @@ export class CartController {
   @ApiResponse({ status: 200, description: "The caller's cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
+  @RequireGate(GateCode.CODE_CU)
   async getCartItemList(@CurrentTenant() tenant?: AuthenticatedTenant) {
     if (!tenant?.id) {
       return keyedResponse("cartItemList", []);
@@ -100,6 +102,7 @@ export class CartController {
   @ApiResponse({ status: 200, description: "The tenant's cart item list." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
+  @RequireGate(GateCode.CODE_SU)
   async getCartItemListUsingUid(@Param("uid") uid: string) {
     const parsedUid = parseUidParam(uid);
     const items = await this.cartService.retrieveCartItemsByUid(parsedUid);
@@ -112,6 +115,7 @@ export class CartController {
   @ApiResponse({ status: 200, description: "Per-tenant cart overview." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
+  @RequireGate(GateCode.CODE_SU)
   async getCartItemListForTenants() {
     const overview = await this.cartService.retrieveTenantWiseCartOverview();
     return keyedResponse("cartOverview", overview);
@@ -126,6 +130,7 @@ export class CartController {
   @ApiResponse({ status: 200, description: "Request rejected by validation (see response body's success flag)." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the customer role." })
+  @RequireGate(GateCode.CODE_CU)
   async addCartItem(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: unknown) {
     if (!tenant?.id) {
       return simpleResponse(false, "Please log in to add items to your cart.");
@@ -222,4 +227,3 @@ export class CartController {
     return simpleResponse(deleted, CartMessages.ALL_CART_ITEM_DELETED);
   }
 }
-// @ts-nocheck

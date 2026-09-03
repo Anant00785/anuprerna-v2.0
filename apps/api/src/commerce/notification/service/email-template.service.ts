@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { EmailNotificationTriggerType } from '../types/notification.types.js';
 
@@ -8,7 +7,7 @@ export class EmailTemplateService {
         let template = '';
         if (triggerType === EmailNotificationTriggerType.ORDER_CONFIRMATION) {
             template = `<h1>Order Confirmation</h1><p>Dear {{customerName}}, your order {{orderId}} is confirmed.</p>`;
-        } else if (triggerType === EmailNotificationTriggerType.ORDER_DISPATCH) {
+        } else if (triggerType === EmailNotificationTriggerType.ORDER_FULFILLMENT_DISPATCH) {
             template = `<h1>Order Dispatched</h1><p>Dear {{customerName}}, your order {{orderId}} has been dispatched.</p>`;
         } else {
             template = `<p>Notification from Anuprerna.</p>`;
@@ -27,4 +26,3 @@ export class EmailTemplateService {
         return template;
     }
 }
-// @ts-nocheck

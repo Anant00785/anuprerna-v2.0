@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { MaterialRepository } from '../repository/material.repository.js';
 import { simpleResponse, keyedResponse } from '../../../common/response/rain-response.js';

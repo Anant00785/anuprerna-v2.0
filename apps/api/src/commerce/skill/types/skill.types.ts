@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface CreateSkillDto {
   name?: string;
   description?: string;
@@ -14,5 +13,3 @@ export interface ArtisanSkillMappingFilterDto {
   page?: number;
   limit?: number;
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/category/validators/category.sanitizer.ts
  *
@@ -74,5 +73,3 @@ export function sanitizeCategory<T extends Partial<CategoryInput>>(entity: T): T
   }
   return sanitized;
 }
-// @ts-nocheck
-// @ts-nocheck

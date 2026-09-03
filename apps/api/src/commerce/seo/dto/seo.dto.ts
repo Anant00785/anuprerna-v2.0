@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
@@ -45,7 +44,7 @@ export class ModifyGalleryImagesDto {
 }
 
 export interface ProductImageGallerySEOPayload {
-    productId: bigint | number;
+    productId: number;
     gallerySEOList: ProductImageGallerySEO[];
 }
 
@@ -55,9 +54,9 @@ export function parseProductImageGallerySEOPayload(raw: unknown): ProductImageGa
     let gallerySEOList: ProductImageGallerySEO[] = [];
     if (Array.isArray(obj.gallerySEOList)) {
         gallerySEOList = obj.gallerySEOList.map((item: any) => ({
-            id: typeof item.id === "string" || typeof item.id === "number" || typeof item.id === "bigint" ? BigInt(item.id) : 0n,
-            version: typeof item.version === "string" || typeof item.version === "number" || typeof item.version === "bigint" ? BigInt(item.version) : 0n,
-            productId: typeof item.productId === "string" || typeof item.productId === "number" || typeof item.productId === "bigint" ? BigInt(item.productId) : (obj.productId ? BigInt(obj.productId as any) : 0n),
+            id: typeof item.id === "string" || typeof item.id === "number" || typeof item.id === "bigint" ? Number(item.id) : 0,
+            version: typeof item.version === "string" || typeof item.version === "number" || typeof item.version === "bigint" ? Number(item.version) : 0,
+            productId: typeof item.productId === "string" || typeof item.productId === "number" || typeof item.productId === "bigint" ? Number(item.productId) : Number(obj.productId ?? 0),
             image: typeof item.image === "string" ? item.image : "",
             altText: typeof item.altText === "string" ? item.altText : "",
             deleted: typeof item.deleted === "boolean" ? item.deleted : false
@@ -65,7 +64,7 @@ export function parseProductImageGallerySEOPayload(raw: unknown): ProductImageGa
     }
 
     return {
-        productId: typeof obj.productId === "string" || typeof obj.productId === "number" || typeof obj.productId === "bigint" ? BigInt(obj.productId) : 0n,
+        productId: typeof obj.productId === "string" || typeof obj.productId === "number" || typeof obj.productId === "bigint" ? Number(obj.productId) : 0,
         gallerySEOList
     };
 }

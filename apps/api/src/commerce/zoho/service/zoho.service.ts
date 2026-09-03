@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ZohoAuthTokenService } from "./zoho-auth.service.js";
@@ -76,4 +75,3 @@ export class ZohoService {
     this.logger.log(`Received Package Delivery Webhook from Zoho: ${JSON.stringify(payload)}`);
   }
 }
-// @ts-nocheck

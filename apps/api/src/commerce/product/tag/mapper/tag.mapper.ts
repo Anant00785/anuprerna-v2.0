@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/mapper/tag.mapper.ts
  *

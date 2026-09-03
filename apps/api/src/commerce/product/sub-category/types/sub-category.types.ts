@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/sub_category/SubCategory.types.ts
  *
@@ -47,10 +46,15 @@
  * controller (which would own the actual multipart parsing) is out of scope
  * for this checkpoint.
  */
+export interface DeleteSubCategoryResult {
+  success: boolean;
+  message: string;
+}
+
 export interface UploadedFile {
   buffer: Buffer;
-  originalName: string;
-  mimeType: string;
+  originalname: string;
+  mimetype: string;
 }
 
 /**
@@ -214,7 +218,7 @@ export interface FeaturedSubcategory {
  * available.
  */
 export interface SegmentPort {
-  retrieveSegment(id: number): Promise<{ id: number } | null>;
+  retrieveSegment(id: number): Promise<{ id: bigint } | null>;
 }
 
 /**

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/tag.module.ts
  *
@@ -32,4 +31,3 @@ import { TagRepository } from "./repository/tag.repository.js";
   exports: [TagService],
 })
 export class TagModule {}
-// @ts-nocheck

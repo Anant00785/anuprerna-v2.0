@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { ActionCode } from "../../../common/errors/action-code.js";
 import { SeoRepository } from "../repository/seo.repository.js";

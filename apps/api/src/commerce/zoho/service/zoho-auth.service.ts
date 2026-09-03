@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ZohoTokenResponse } from "../types/zoho.types.js";
@@ -40,4 +39,3 @@ export class ZohoAuthTokenService {
     }
   }
 }
-// @ts-nocheck

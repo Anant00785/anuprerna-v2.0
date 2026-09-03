@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   ApiBearerAuth,
   ApiBody,
@@ -16,6 +15,7 @@ import { WhatsappService } from "../service/whatsapp.service.js";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { simpleResponse, keyedResponse } from "../../../common/response/rain-response.js";
+import { parsePaginationInput } from "../../notification/dto/notification.dto.js";
 
 export class WhatsappOptInDto {
   @ApiPropertyOptional({ example: "+919876543210", description: "Mobile Number with country code" })
@@ -89,6 +89,7 @@ export class WhatsappController {
   }
 
     @Get('get/customers/whatsapp-status')
+    @RequireGate(GateCode.CODE_SU)
     async getStatus(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.whatsappService.getHistory(page, size);
@@ -96,6 +97,7 @@ export class WhatsappController {
     }
 
     @Get('get/table-explorer/data/whatsapp-notification-history')
+    @RequireGate(GateCode.CODE_SU)
     async getHistoryData(@Query() query: any) {
         const { page, size } = parsePaginationInput(query);
         const history = await this.whatsappService.getHistory(page, size);
@@ -103,6 +105,7 @@ export class WhatsappController {
     }
 
     @Get('get/table-explorer/data/whatsapp-notification-history/:id')
+    @RequireGate(GateCode.CODE_SU)
     async getHistoryDataById(@Param('id') id: string) {
         const recordId = parseInt(id, 10);
         if (isNaN(recordId)) throw new Error('Invalid ID');

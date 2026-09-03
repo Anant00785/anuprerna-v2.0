@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { BlogRepository } from "../repository/blog.repository.js";
 import { BlogContentTypeInput, BlogContentCategoryInput, BlogContentInput, BlogContentSectionInput } from "../types/blog.types.js";
@@ -28,7 +27,7 @@ export class BlogService {
   }
 
   async addBlogContentCategory(blogContentTypeId: bigint, data: BlogContentCategoryInput) {
-    const result = await this.blogRepository.addBlogContentCategory(blogContentTypeId, data);
+    const result = await this.blogRepository.addBlogContentCategory(Number(blogContentTypeId), data);
     return result ? ActionCode.INSERT_SUCCESS : ActionCode.INSERT_FAILURE;
   }
 
@@ -45,7 +44,7 @@ export class BlogService {
   async getBlogContentById(id: bigint) {
     const blog = await this.blogRepository.getBlogContentById(id);
     if (blog) {
-      const sections = await this.blogRepository.getBlogContentSections(id);
+      const sections = await this.blogRepository.getBlogContentSections(Number(id));
       return { ...blog, sections };
     }
     return null;
@@ -54,19 +53,23 @@ export class BlogService {
   async getBlogContentBySlug(slug: string) {
     const blog = await this.blogRepository.getBlogContentBySlug(slug);
     if (blog) {
-      const sections = await this.blogRepository.getBlogContentSections(blog.id);
+      const sections = await this.blogRepository.getBlogContentSections(Number(blog.id));
       return { ...blog, sections };
     }
     return null;
   }
 
   async getBlogContentListByCsv(commaSeparatedIDList: string) {
-    const ids = commaSeparatedIDList.split(",").map(id => BigInt(id.trim())).filter(id => !isNaN(Number(id)));
+    const ids = commaSeparatedIDList
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => /^\d+$/.test(id))
+      .map((id) => BigInt(id));
     return this.blogRepository.getBlogContentListByCsv(ids);
   }
 
   async getBlogsByCategory(categoryId: bigint) {
-    return this.blogRepository.getBlogsByCategory(categoryId);
+    return this.blogRepository.getBlogsByCategory(Number(categoryId));
   }
 
   async getAllBlogContentSections() {
@@ -74,7 +77,7 @@ export class BlogService {
   }
 
   async getBlogContentSections(blogContentId: bigint) {
-    return this.blogRepository.getBlogContentSections(blogContentId);
+    return this.blogRepository.getBlogContentSections(Number(blogContentId));
   }
 
   async getRecommendedBlogs(blogId: bigint) {

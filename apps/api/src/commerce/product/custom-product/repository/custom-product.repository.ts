@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/repository/custom-product.repository.ts
  *
@@ -135,5 +134,3 @@ function mapRowToCustomProductData(row: Record<string, unknown>): CustomProductD
     updatedAt: Number(row.updated_at),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

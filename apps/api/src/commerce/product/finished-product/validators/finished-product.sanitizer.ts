@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/finished-product/sanitizer/finished-product.sanitizer.ts
  *
@@ -29,5 +28,3 @@ export function sanitizeFinishedProduct<T extends Partial<FinishedProductInput>>
   // No own String field exists on FinishedProduct to sanitize (see header).
   return { ...entity };
 }
-// @ts-nocheck
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { TenantRepository } from '../repository/tenant.repository.js';
 import { mapTenantProfile, mapUserRole } from '../mapper/tenant.mapper.js';
@@ -37,4 +36,3 @@ export class TenantService {
     return role ? mapUserRole(role) : null;
   }
 }
-// @ts-nocheck

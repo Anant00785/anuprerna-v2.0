@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/sanitizer/product-zoho-relation.sanitizer.ts
  *

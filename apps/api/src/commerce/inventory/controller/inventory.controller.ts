@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -12,6 +11,7 @@ import {
   CreateWarehouseDto,
   UpdateWarehouseDto,
   CreateInventoryAdjustmentReasonDto,
+  UpdateInventoryAdjustmentReasonDto,
   CreateInventoryAdjustmentDto,
   CreateInventoryRestockRequestDto,
   UpdateRestockRequestQuantityDto,
@@ -48,12 +48,14 @@ export class InventoryController {
   // --- Warehouse ---
 
   @Get("/get/warehouse/:warehouseId")
+  @RequireGate(GateCode.CODE_SU)
   async getWarehouseById(@Param("warehouseId") warehouseId: string) {
     const warehouse = await this.inventoryService.getWarehouseById(BigInt(warehouseId));
     return keyedResponse("warehouse", warehouse);
   }
 
   @Get("/get/warehouse")
+  @RequireGate(GateCode.CODE_SU)
   async getWarehouse(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const warehouses = await this.inventoryService.getWarehouses(page, size);
     return keyedResponse("warehouseList", warehouses);
@@ -92,12 +94,14 @@ export class InventoryController {
   // --- Inventory Adjustment Reason ---
 
   @Get("/get/inventory-adjustment-reason/:reasonId")
+  @RequireGate(GateCode.CODE_SU)
   async getReasonById(@Param("reasonId") reasonId: string) {
     const reason = await this.inventoryService.getReasonById(BigInt(reasonId));
     return keyedResponse("reason", reason);
   }
 
   @Get("/get/inventory-adjustment-reason")
+  @RequireGate(GateCode.CODE_SU)
   async getReasons(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const reasons = await this.inventoryService.getReasons(page, size);
     return keyedResponse("reasonList", reasons);
@@ -118,15 +122,31 @@ export class InventoryController {
     return simpleResponse(success, success ? "Reason added." : "Failed to add reason.");
   }
 
-  // --- Inventory Adjustment ---
+  // Loom: InventoryAdjustmentReasonController.updateInventoryAdjustmentReason
+  //   PATCH /update/inventory-adjustment-reason, CODE_SU, validated +
+  //   sanitized, then InventoryAdjustmentReasonDAOController.update... which
+  //   copies ONLY reason and description onto the existing row and returns
+  //   ActionCode.NO_ACTION when the id matches nothing.
+  @Patch("/update/inventory-adjustment-reason")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "Update an inventory adjustment reason." })
+  @ApiBody({ type: UpdateInventoryAdjustmentReasonDto })
+  @ApiResponse({ status: 200, description: "Reason updated." })
+  async updateReason(@Body() raw: UpdateInventoryAdjustmentReasonDto) {
+    const input = parseInventoryAdjustmentReasonInput(raw);
+    const sanitized = sanitizeInventoryAdjustmentReason(input);
+    const error = validateInventoryAdjustmentReason(sanitized);
+    if (error) return simpleResponse(false, error);
+    if (!sanitized.id) return simpleResponse(false, "Reason id is required.");
 
-  @Get("/get/inventory-adjustment/:adjustmentId")
-  async getAdjustmentById(@Param("adjustmentId") adjustmentId: string) {
-    const adjustment = await this.inventoryService.getAdjustmentById(BigInt(adjustmentId));
-    return keyedResponse("adjustment", adjustment);
+    const success = await this.inventoryService.updateReason(sanitized);
+    return simpleResponse(success, success ? "Reason updated." : "Failed to update reason.");
   }
 
+  // --- Inventory Adjustment ---
+
   @Get("/get/inventory-adjustment")
+  @RequireGate(GateCode.CODE_SU)
   async getAdjustments(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const adjustments = await this.inventoryService.getAdjustments(page, size);
     return keyedResponse("adjustmentList", adjustments);
@@ -136,6 +156,7 @@ export class InventoryController {
   @ApiOperation({ summary: "Get inventory adjustment by ID." })
   @ApiParam({ name: "adjustmentId", type: Number, description: "Adjustment identifier", example: 1 })
   @ApiResponse({ status: 200, description: "Adjustment details." })
+  @RequireGate(GateCode.CODE_SU)
   async getAdjustmentById(@Param("adjustmentId") adjustmentId: string) {
     const adjustment = await this.inventoryService.getAdjustmentById(BigInt(adjustmentId));
     return keyedResponse("adjustment", adjustment);
@@ -160,6 +181,7 @@ export class InventoryController {
   // --- Inventory Restock Request ---
 
   @Get("/get/inventory-restock-request")
+  @RequireGate(GateCode.CODE_SU)
   async getRestockRequests(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     const requests = await this.inventoryService.getRestockRequests(page, size);
     return keyedResponse("requestList", requests);
@@ -191,7 +213,7 @@ export class InventoryController {
     const error = validateUpdateRestockRequestQuantity(input);
     if (error) return simpleResponse(false, error);
 
-    const success = await this.inventoryService.updateRestockRequestQuantity(input.requestId, input.quantity);
+    const success = await this.inventoryService.updateRestockRequestQuantity(BigInt(input.requestId), input.quantity);
     return simpleResponse(success, success ? "Quantity updated." : "Failed to update quantity.");
   }
 
@@ -205,7 +227,7 @@ export class InventoryController {
     const error = validateUpdateRestockRequestStatus(input);
     if (error) return simpleResponse(false, error);
 
-    const success = await this.inventoryService.updateRestockRequestStatus(input.requestId, input.status);
+    const success = await this.inventoryService.updateRestockRequestStatus(BigInt(input.requestId), input.status);
     return simpleResponse(success, success ? "Status updated." : "Failed to update status.");
   }
 
@@ -222,21 +244,25 @@ export class InventoryController {
   // --- Table Explorer endpoints (alias mapping) ---
 
   @Get("/get/table-explorer/data/warehouse")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerWarehouse(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getWarehouse(page, size);
   }
 
   @Get("/get/table-explorer/data/inventory-adjustment")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerAdjustment(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getAdjustments(page, size);
   }
 
   @Get("/get/table-explorer/data/inventory-adjustment-reason")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerReason(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getReasons(page, size);
   }
 
   @Get("/get/table-explorer/data/inventory-restock-request")
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerRestockRequest(@Query("page") page: number = 0, @Query("size") size: number = 10) {
     return this.getRestockRequests(page, size);
   }

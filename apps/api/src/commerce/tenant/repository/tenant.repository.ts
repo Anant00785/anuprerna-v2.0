@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import { eq } from 'drizzle-orm';

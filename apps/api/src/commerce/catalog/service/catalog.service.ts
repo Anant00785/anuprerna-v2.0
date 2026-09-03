@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { CatalogRepository } from "../repository/catalog.repository.js";
 

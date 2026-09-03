@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/cart/cart.module.ts
  *
@@ -8,7 +7,15 @@
  *         GET /get/table-explorer/data/cart-item, GET /get/tenant/cart-item/list
  */
 import { Module } from "@nestjs/common";
+import { eq } from "drizzle-orm";
 import { AuthModule } from "../../auth/auth.module.js";
+import { TenantLookupRepository } from "../../auth/repository/tenant-lookup.repository.js";
+import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
+import * as schema from "../../database/schema/schema.js";
+import { lookupById } from "../shared/db-lookup.js";
+import { ProductPreviewModule } from "../product/product-preview/Product-preview.module.js";
+import { FabricPreviewService } from "../product/product-preview/service/fabric-preview.service.js";
+import { FinishedPreviewService } from "../product/product-preview/service/finished-preview.service.js";
 import { CartController } from "./controller/cart.controller.js";
 import { CartService } from "./service/cart.service.js";
 import { CartRepository } from "./repository/cart.repository.js";
@@ -27,9 +34,9 @@ import {
   TenantLookupPort,
 } from "./types/cart.types.js";
 
-// Safe dummy implementations for cross-module ports not yet migrated.
-//
-// EMAIL_ENCODER_PORT stays a dummy DELIBERATELY — investigated, not
+// EMAIL_ENCODER_PORT is the ONE remaining non-real port here; every other
+// port below now binds to the module that owns it. It stays a pass-through
+// DELIBERATELY — investigated, not
 // forgotten. Legacy emails are encrypted with AES/ECB/PKCS5Padding (128-bit
 // key, deterministic by design so identical plaintext maps to the same DB
 // lookup key), via `NVerseEmailEncoder`/`NVerseAES` wired in
@@ -67,39 +74,60 @@ const emailEncoderDummy: EmailEncoderPort = {
   decode: async (cipherText: string) => cipherText,
 };
 
-const fabricPreviewDummy: FabricPreviewPort = {
-  retrieveEntity: async (id: number) => ({ id } as any),
-  retrieveFabricProductByProductId: async (id: number) => ({ id } as any),
-};
-
-const finishedPreviewDummy: FinishedPreviewPort = {
-  retrieveEntity: async (id: number) => ({ id } as any),
-};
-
-const finishProfileItemDummy: FinishProfileItemPort = {
-  retrieveEntity: async (id: number) => ({ id, finishProfile: { displayName: "Default Finish" } } as any),
-};
-
-const sizeProfileOptionDummy: SizeProfileOptionPort = {
-  retrieveSizeProfileOption: async (id: number) => ({ id } as any),
-};
-
-const tenantLookupDummy: TenantLookupPort = {
-  retrieveUserByUid: async () => null,
-};
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ProductPreviewModule],
   controllers: [CartController],
   providers: [
     CartService,
     CartRepository,
     { provide: EMAIL_ENCODER_PORT, useValue: emailEncoderDummy },
-    { provide: FABRIC_PREVIEW_PORT, useValue: fabricPreviewDummy },
-    { provide: FINISHED_PREVIEW_PORT, useValue: finishedPreviewDummy },
-    { provide: FINISH_PROFILE_ITEM_PORT, useValue: finishProfileItemDummy },
-    { provide: SIZE_PROFILE_OPTION_PORT, useValue: sizeProfileOptionDummy },
-    { provide: TENANT_LOOKUP_PORT, useValue: tenantLookupDummy },
+    {
+      provide: FABRIC_PREVIEW_PORT,
+      useFactory: (previews: FabricPreviewService): FabricPreviewPort => ({
+        retrieveEntity: (id) => previews.retrieveEntity(BigInt(id)),
+        retrieveFabricProductByProductId: (productId) => previews.findByProductId(productId),
+      }),
+      inject: [FabricPreviewService],
+    },
+    {
+      provide: FINISHED_PREVIEW_PORT,
+      useFactory: (previews: FinishedPreviewService): FinishedPreviewPort => ({
+        retrieveEntity: (id) => previews.retrieveEntity(BigInt(id)),
+      }),
+      inject: [FinishedPreviewService],
+    },
+    {
+      /** The cart line renders `finishProfileItem.finishProfile.displayName`. */
+      provide: FINISH_PROFILE_ITEM_PORT,
+      useFactory: (db: Database): FinishProfileItemPort => ({
+        retrieveEntity: async (id) => {
+          const rows = await db
+            .select({ item: schema.finishProfileItem, finishProfile: schema.finishProfile })
+            .from(schema.finishProfileItem)
+            .innerJoin(schema.finishProfile, eq(schema.finishProfileItem.profileId, schema.finishProfile.id))
+            .where(eq(schema.finishProfileItem.id, id))
+            .limit(1);
+          const row = rows[0];
+          return row ? { ...row.item, finishProfile: row.finishProfile } : null;
+        },
+      }),
+      inject: [DATABASE_CONNECTION],
+    },
+    {
+      provide: SIZE_PROFILE_OPTION_PORT,
+      useFactory: (db: Database): SizeProfileOptionPort => ({
+        retrieveSizeProfileOption: lookupById(db, schema.sizeProfileOption),
+      }),
+      inject: [DATABASE_CONNECTION],
+    },
+    {
+      provide: TENANT_LOOKUP_PORT,
+      useFactory: (tenants: TenantLookupRepository): TenantLookupPort => ({
+        retrieveUserByUid: (uid) => tenants.retrieveUserByUid(uid),
+      }),
+      inject: [TenantLookupRepository],
+    },
   ],
   exports: [CartService],
 })

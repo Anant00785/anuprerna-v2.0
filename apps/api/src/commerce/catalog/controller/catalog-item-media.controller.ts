@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";

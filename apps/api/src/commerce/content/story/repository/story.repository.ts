@@ -1,8 +1,7 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../../database/database.module.js";
 import * as schema from "../../../../database/schema/schema.js";
-import { eq, inArray, desc, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray, ne, desc, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { StoryContentCategoryInput, StoryContentInput, StoryContentSectionInput, StoryProductMappingInput } from "../types/story.types.js";
 
@@ -20,6 +19,7 @@ export class StoryRepository {
   async addStoryContentCategory(data: StoryContentCategoryInput) {
     const rows = await this.db.insert(schema.storyContentCategory).values({
       name: data.name,
+      storyContentType: data.storyContentType,
       timeOfCreation: Date.now(),
     }).returning();
     return rows[0];
@@ -53,8 +53,59 @@ export class StoryRepository {
     return this.db.select().from(schema.storyContent).where(inArray(schema.storyContent.id, ids));
   }
 
-  async getStoriesByCategory(categoryId: bigint) {
+  async getStoriesByCategory(categoryId: number) {
     return this.db.select().from(schema.storyContent).where(eq(schema.storyContent.storyContentCategoryId, categoryId)).orderBy(desc(schema.storyContent.timeOfCreation));
+  }
+
+  async getStoryContentCategoryById(id: number) {
+    const rows = await this.db.select().from(schema.storyContentCategory)
+      .where(eq(schema.storyContentCategory.id, BigInt(id)));
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Ports StoryContentPreviewJpaRepository.findStoriesFromSameCategory:
+   *   SELECT s.* FROM story_content s
+   *   JOIN story_content_category sc ON s.story_content_category_id = sc.id
+   *   WHERE sc.id = :storyCategoryId AND s.id != :storyId
+   *   ORDER BY s.time_of_creation desc LIMIT 6
+   * The join is redundant in the Java query (it only re-states the FK), so the
+   * equivalent single-table predicate is used here.
+   */
+  async getStoriesFromSameCategory(storyId: bigint, categoryId: number, limit: number) {
+    return this.db.select().from(schema.storyContent)
+      .where(and(
+        eq(schema.storyContent.storyContentCategoryId, categoryId),
+        ne(schema.storyContent.id, storyId),
+      ))
+      .orderBy(desc(schema.storyContent.timeOfCreation))
+      .limit(limit);
+  }
+
+  /**
+   * Ports StoryContentPreviewJpaRepository.findStoriesByContentType:
+   *   ... WHERE sc.story_content_type = CAST(:contentType as story_content_type_enum)
+   *       AND (:excludedStoryIds IS NULL OR s.id NOT IN (:excludedStoryIds))
+   *   ORDER BY s.time_of_creation desc LIMIT :limit
+   */
+  async getStoriesByContentType(
+    excludedStoryIds: bigint[],
+    contentType: (typeof schema.storyContentCategory.$inferSelect)["storyContentType"],
+    limit: number,
+  ) {
+    const categories = await this.db.select({ id: schema.storyContentCategory.id })
+      .from(schema.storyContentCategory)
+      .where(eq(schema.storyContentCategory.storyContentType, contentType));
+    if (categories.length === 0) return [];
+    const categoryIds = categories.map((c) => Number(c.id));
+    const conditions = [inArray(schema.storyContent.storyContentCategoryId, categoryIds)];
+    if (excludedStoryIds.length > 0) {
+      conditions.push(notInArray(schema.storyContent.id, excludedStoryIds));
+    }
+    return this.db.select().from(schema.storyContent)
+      .where(and(...conditions))
+      .orderBy(desc(schema.storyContent.timeOfCreation))
+      .limit(limit);
   }
 
   async addStoryContent(data: StoryContentInput) {
@@ -116,7 +167,7 @@ export class StoryRepository {
     return this.db.select().from(schema.storyContentSection).orderBy(desc(schema.storyContentSection.id));
   }
 
-  async getStoryContentSections(storyContentId: bigint) {
+  async getStoryContentSections(storyContentId: number) {
     return this.db.select().from(schema.storyContentSection).where(eq(schema.storyContentSection.storyContentId, storyContentId));
   }
 
@@ -194,13 +245,13 @@ export class StoryRepository {
   }
 
   // Story Product Mapping
-  async getStoryRelatedToProduct(productId: bigint) {
+  async getStoryRelatedToProduct(productId: number) {
     return this.db.select().from(schema.storyProductMapping).where(
       sql`${schema.storyProductMapping.productIdCsv} ~ ${`(^|,)${productId.toString()}(,|$)`}`,
     );
   }
 
-  async getProductsRelatedToStory(storyContentId: bigint) {
+  async getProductsRelatedToStory(storyContentId: number) {
     return this.db.select().from(schema.storyProductMapping).where(eq(schema.storyProductMapping.storyContentId, storyContentId));
   }
 
@@ -227,5 +278,3 @@ export class StoryRepository {
     return rows[0] ?? null;
   }
 }
-// @ts-nocheck
-// @ts-nocheck

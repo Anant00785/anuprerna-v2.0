@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface AddSizeProfileInput {
   profileName: string;
   displayName?: string;
@@ -63,5 +62,3 @@ export interface UpdateCustomerProfileInput {
   name?: string;
   phone?: string;
 }
-// @ts-nocheck
-// @ts-nocheck

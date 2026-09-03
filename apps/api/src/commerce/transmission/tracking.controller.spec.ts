@@ -1,15 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { TrackingController, buildTrackingResponse, type TrackingRecord } from "./tracking.controller.js";
 import type { TransmissionService } from "./transmission.service.js";
+import type { TrackingOwnershipService } from "./tracking.service.js";
+import type { AuthenticatedTenant } from "../../auth/types/auth.types.js";
 
-// NOTE ON REACHABILITY: TrackingController is declared in TransmissionModule
-// (transmission.module.ts), but TransmissionModule is never imported by
-// CommerceModule (apps/api/src/commerce/commerce.module.ts) or AppModule
-// (apps/api/src/app.module.ts) — grepped both, "Transmission" appears
-// nowhere in either. So today this controller is not reachable by any real
-// HTTP request despite the feature commit message ("add real transmission
-// tracking module"). Tests below characterize the code as written; they do
-// not imply it is live.
+// NOTE ON REACHABILITY: TrackingController is declared in TransmissionModule,
+// which reaches the app only transitively via WhatsappModule -> CommerceModule.
+// Tests below characterize the code as written.
+//
+// The /track/* routes have NO Java original. They were CODE_SU and keyed off a
+// sequential order id; they are now CODE_CU and every read is scoped to the
+// caller's own orders (see tracking.service.ts). /track/all stays super-user.
 
 function record(overrides: Partial<TrackingRecord["payload"]> = {}, createdAt = "2026-01-10T00:00:00.000Z"): TrackingRecord {
   return {
@@ -29,164 +30,182 @@ function record(overrides: Partial<TrackingRecord["payload"]> = {}, createdAt = 
   };
 }
 
-describe("buildTrackingResponse (pure)", () => {
-  it("sets dispatchedAt to createdAt verbatim", () => {
+describe("buildTrackingResponse (pure) — nothing is invented", () => {
+  it("reports the record's own creation time as recordedAt, verbatim", () => {
     const r = buildTrackingResponse(record(), "orderId", 101);
-    expect(r.dispatchedAt).toBe("2026-01-10T00:00:00.000Z");
+    expect(r?.recordedAt).toBe("2026-01-10T00:00:00.000Z");
   });
 
-  it("BUG: estimatedDelivery is synthesized as createdAt + 7 days, not a real carrier ETA", () => {
-    // apps/api/src/commerce/transmission/tracking.controller.ts:26-27 — there is no
-    // delivery-estimate field anywhere in TransmissionPayload; this is computed,
-    // not sourced. Per docs/TESTING.md §5, pinning as-is; not fixing.
-    const r = buildTrackingResponse(record(), "orderId", 101);
-    expect(r.estimatedDelivery).toBe("2026-01-17T00:00:00.000Z");
+  it("never invents a delivery estimate — estimatedDelivery is always null", () => {
+    // Previously synthesized as createdAt + 7 days and shown to customers.
+    // TransmissionPayload has no ETA field, so a missing estimate stays missing.
+    expect(buildTrackingResponse(record(), "orderId", 101)?.estimatedDelivery).toBeNull();
+    expect(buildTrackingResponse(record({ status: "DELIVERED" }), "orderId", 101)?.estimatedDelivery).toBeNull();
   });
 
-  it("BUG: the ORDER_PLACED timeline entry is fabricated as createdAt - 1 day, not a real event", () => {
-    // apps/api/src/commerce/transmission/tracking.controller.ts:30-34 — there is no
-    // order-placed timestamp in the payload; the transmission record's own
-    // createdAt is presented as if it were shipment history one day earlier.
-    const r = buildTrackingResponse(record(), "orderId", 101);
-    expect(r.timeline[0]).toEqual({
-      status: "ORDER_PLACED",
-      description: "Order placed and confirmed",
-      timestamp: "2026-01-09T00:00:00.000Z",
-    });
+  it("never invents timeline events — only the one status the record carries", () => {
+    // The old ladder fabricated ORDER_PLACED (-1d), IN_TRANSIT (+1d) and
+    // DELIVERED (+5d) from arithmetic on createdAt.
+    const dispatched = buildTrackingResponse(record({ status: "DISPATCHED" }), "orderId", 101);
+    expect(dispatched?.timeline).toEqual([{ status: "DISPATCHED", timestamp: "2026-01-10T00:00:00.000Z" }]);
+
+    const delivered = buildTrackingResponse(record({ status: "DELIVERED" }), "orderId", 101);
+    expect(delivered?.timeline).toEqual([{ status: "DELIVERED", timestamp: "2026-01-10T00:00:00.000Z" }]);
+    expect(delivered?.timeline.map((t) => t.status)).not.toContain("IN_TRANSIT");
   });
 
-  it("always includes a DISPATCHED entry at createdAt, naming the carrier", () => {
-    const r = buildTrackingResponse(record({ carrierName: "Delhivery" }), "orderId", 101);
-    expect(r.timeline[1]).toEqual({
-      status: "DISPATCHED",
-      description: "Dispatched from warehouse via Delhivery",
-      timestamp: "2026-01-10T00:00:00.000Z",
-    });
+  it("emits no timeline at all when the record carries no status", () => {
+    const r = buildTrackingResponse(record({ status: undefined as unknown as string }), "orderId", 101);
+    expect(r?.timeline).toEqual([]);
   });
 
-  it("falls back to 'Courier' and 'Destination' when carrierName/destinationHub are missing", () => {
+  it("surfaces missing fields as null rather than substituting a plausible value", () => {
     const r = buildTrackingResponse(
-      record({ carrierName: undefined as unknown as string, destinationHub: undefined as unknown as string, status: "IN_TRANSIT" }),
+      record({ carrierName: undefined as unknown as string, destinationHub: "   " }),
       "orderId",
       101,
     );
-    expect(r.timeline[1].description).toBe("Dispatched from warehouse via Courier");
-    expect(r.timeline[2].description).toContain("heading to Destination");
+    expect(r?.carrier).toBeNull();
+    expect(r?.destinationHub).toBeNull();
   });
 
-  it("adds no IN_TRANSIT/DELIVERED entries for a status outside that set (e.g. still DISPATCHED)", () => {
-    const r = buildTrackingResponse(record({ status: "DISPATCHED" }), "orderId", 101);
-    expect(r.timeline).toHaveLength(2);
-    expect(r.timeline.map((t) => t.status)).toEqual(["ORDER_PLACED", "DISPATCHED"]);
+  it("does not fall back to `now` when the record has no usable createdAt", () => {
+    const r = buildTrackingResponse({ ...record(), createdAt: "" }, "orderId", 101);
+    expect(r?.recordedAt).toBeNull();
+    expect(r?.timeline).toEqual([{ status: "DISPATCHED", timestamp: null }]);
   });
 
-  it("adds an IN_TRANSIT entry (createdAt + 1 day) when status is IN_TRANSIT, without a DELIVERED entry", () => {
-    const r = buildTrackingResponse(record({ status: "IN_TRANSIT" }), "orderId", 101);
-    expect(r.timeline).toHaveLength(3);
-    expect(r.timeline[2]).toEqual({
-      status: "IN_TRANSIT",
-      description: "Package in transit — heading to Mumbai Hub",
-      timestamp: "2026-01-11T00:00:00.000Z",
-    });
+  it("returns null when the record carries no tracking information at all", () => {
+    const empty = {
+      id: "1",
+      name: "x",
+      createdAt: "2026-01-10T00:00:00.000Z",
+      updatedAt: "2026-01-10T00:00:00.000Z",
+      payload: {} as TrackingRecord["payload"],
+    };
+    expect(buildTrackingResponse(empty, "orderId", 101)).toBeNull();
   });
 
-  it("adds both IN_TRANSIT and DELIVERED entries, in order, when status is DELIVERED", () => {
-    const r = buildTrackingResponse(record({ status: "DELIVERED" }), "orderId", 101);
-    expect(r.timeline.map((t) => t.status)).toEqual(["ORDER_PLACED", "DISPATCHED", "IN_TRANSIT", "DELIVERED"]);
-    expect(r.timeline[3]).toEqual({
-      status: "DELIVERED",
-      description: "Delivered to Mumbai Hub",
-      timestamp: "2026-01-15T00:00:00.000Z",
-    });
-  });
-
-  it("passes through searchedBy/searchValue and the payload fields verbatim into the envelope", () => {
+  it("passes through searchedBy/searchValue and the stored payload fields verbatim", () => {
     const r = buildTrackingResponse(record(), "trackingNumber", "AWB123");
-    expect(r.searchedBy).toBe("trackingNumber");
-    expect(r.searchValue).toBe("AWB123");
-    expect(r.batchNo).toBe("TRM-1");
-    expect(r.carrier).toBe("BlueDart");
-    expect(r.trackingNumber).toBe("AWB123");
-    expect(r.orderIds).toEqual([101, 102]);
-    expect(r.currentStatus).toBe("DISPATCHED");
-    expect(r.destinationHub).toBe("Mumbai Hub");
+    expect(r?.searchedBy).toBe("trackingNumber");
+    expect(r?.searchValue).toBe("AWB123");
+    expect(r?.batchNo).toBe("TRM-1");
+    expect(r?.carrier).toBe("BlueDart");
+    expect(r?.trackingNumber).toBe("AWB123");
+    expect(r?.orderIds).toEqual([101, 102]);
+    expect(r?.currentStatus).toBe("DISPATCHED");
+    expect(r?.destinationHub).toBe("Mumbai Hub");
   });
 });
 
 describe("TrackingController", () => {
+  const TENANT_A = { id: 7, uid: "u7", email: "a@b.com", roles: [] } as unknown as AuthenticatedTenant;
+  const TENANT_B = { id: 8, uid: "u8", email: "b@b.com", roles: [] } as unknown as AuthenticatedTenant;
+
+  /** Tenant 7 owns orders 101 and 102; tenant 8 owns nothing. */
+  const ownership = {
+    tenantOwnsOrder: async (orderId: number, tenantId: number) => tenantId === 7 && [101, 102].includes(orderId),
+    tenantOwnsAnyOrder: async (ids: readonly number[], tenantId: number) =>
+      tenantId === 7 && ids.some((i) => [101, 102].includes(i)),
+    ownedOrderIds: async (ids: readonly number[], tenantId: number) =>
+      new Set(tenantId === 7 ? ids.filter((i) => [101, 102].includes(i)) : []),
+  } as unknown as TrackingOwnershipService;
+
   function makeController(getAll: () => Promise<unknown[]> | never) {
     const fakeService = { getAll } as unknown as TransmissionService;
-    return new TrackingController(fakeService);
+    return new TrackingController(fakeService, ownership);
   }
 
   describe("trackByOrderId", () => {
-    it("returns tracking when a record's payload.orderIds includes the id", async () => {
+    it("returns tracking when the caller owns the order and a record matches", async () => {
       const controller = makeController(async () => [record({ orderIds: [101, 102] })]);
-      const res = await controller.trackByOrderId("101");
+      const res = await controller.trackByOrderId("101", TENANT_A);
       expect(res).toMatchObject({ success: true, message: "", tracking: { searchedBy: "orderId", searchValue: 101 } });
     });
 
-    it("returns a not-found envelope when no record matches", async () => {
-      const controller = makeController(async () => [record({ orderIds: [999] })]);
-      const res = await controller.trackByOrderId("101");
+    it("IDOR: tenant B cannot read tenant A's order, and gets the same message as a miss", async () => {
+      const controller = makeController(async () => [record({ orderIds: [101, 102] })]);
+      const res = await controller.trackByOrderId("101", TENANT_B);
       expect(res).toEqual({ success: false, message: "No shipment found for Order ID: 101" });
     });
 
-    it("rejects a non-numeric order id before calling the service", async () => {
+    it("returns a not-found envelope when no record matches an owned order", async () => {
+      const controller = makeController(async () => [record({ orderIds: [999] })]);
+      const res = await controller.trackByOrderId("101", TENANT_A);
+      expect(res).toEqual({ success: false, message: "No shipment found for Order ID: 101" });
+    });
+
+    it("rejects a non-numeric order id before touching the service", async () => {
       let called = false;
       const controller = makeController(async () => {
         called = true;
         return [];
       });
-      const res = await controller.trackByOrderId("not-a-number");
+      const res = await controller.trackByOrderId("not-a-number", TENANT_A);
       expect(res).toEqual({ success: false, message: "Invalid order ID." });
       expect(called).toBe(false);
     });
 
-    it("catches a service error and reports not-found rather than throwing", async () => {
+    it("propagates a service error instead of swallowing it into not-found", async () => {
       const controller = makeController(async () => {
         throw new Error("db down");
       });
-      const res = await controller.trackByOrderId("101");
-      expect(res).toEqual({ success: false, message: "No shipment found for Order ID: 101" });
+      await expect(controller.trackByOrderId("101", TENANT_A)).rejects.toThrow("db down");
     });
   });
 
   describe("trackByAwb", () => {
-    it("matches trackingNumber case-insensitively", async () => {
+    it("matches trackingNumber case-insensitively for an owner", async () => {
       const controller = makeController(async () => [record({ trackingNumber: "AWB123" })]);
-      const res = await controller.trackByAwb("awb123");
+      const res = await controller.trackByAwb("awb123", TENANT_A);
       expect(res).toMatchObject({ success: true, tracking: { searchedBy: "trackingNumber", searchValue: "awb123" } });
     });
 
-    it("rejects a blank/whitespace-only tracking number without calling the service", async () => {
+    it("IDOR: a non-owner gets not-found even though the AWB exists", async () => {
+      const controller = makeController(async () => [record({ trackingNumber: "AWB123" })]);
+      const res = await controller.trackByAwb("AWB123", TENANT_B);
+      expect(res).toEqual({ success: false, message: "No shipment found for tracking number: AWB123" });
+    });
+
+    it("rejects a blank tracking number without calling the service", async () => {
       let called = false;
       const controller = makeController(async () => {
         called = true;
         return [];
       });
-      const res = await controller.trackByAwb("   ");
+      const res = await controller.trackByAwb("   ", TENANT_A);
       expect(res).toEqual({ success: false, message: "Tracking number is required." });
       expect(called).toBe(false);
     });
 
     it("returns a not-found envelope when no AWB matches", async () => {
       const controller = makeController(async () => [record({ trackingNumber: "OTHER" })]);
-      const res = await controller.trackByAwb("AWB123");
+      const res = await controller.trackByAwb("AWB123", TENANT_A);
       expect(res).toEqual({ success: false, message: "No shipment found for tracking number: AWB123" });
     });
   });
 
   describe("trackByBatch", () => {
-    it("matches transmissionBatchNo case-insensitively", async () => {
-      const controller = makeController(async () => [record({ transmissionBatchNo: "TRM-2026-0801" })]);
-      const res = await controller.trackByBatch("trm-2026-0801");
+    it("matches transmissionBatchNo case-insensitively and narrows orderIds to the caller's own", async () => {
+      const controller = makeController(async () => [
+        record({ transmissionBatchNo: "TRM-2026-0801", orderIds: [101, 555] }),
+      ]);
+      const res = await controller.trackByBatch("trm-2026-0801", TENANT_A);
       expect(res).toMatchObject({ success: true, tracking: { searchedBy: "batchNo" } });
+      // 555 belongs to someone else and must not come back in the batch view.
+      expect((res as { tracking: { orderIds: number[] } }).tracking.orderIds).toEqual([101]);
+    });
+
+    it("IDOR: a batch containing none of the caller's orders reads as not-found", async () => {
+      const controller = makeController(async () => [record({ transmissionBatchNo: "TRM-1", orderIds: [101] })]);
+      const res = await controller.trackByBatch("TRM-1", TENANT_B);
+      expect(res).toEqual({ success: false, message: "No batch found for: TRM-1" });
     });
 
     it("returns a not-found envelope when no batch matches", async () => {
       const controller = makeController(async () => [record({ transmissionBatchNo: "OTHER" })]);
-      const res = await controller.trackByBatch("TRM-1");
+      const res = await controller.trackByBatch("TRM-1", TENANT_A);
       expect(res).toEqual({ success: false, message: "No batch found for: TRM-1" });
     });
   });
@@ -202,16 +221,31 @@ describe("TrackingController", () => {
       expect(res.trackingList[0].batchNo).toBe("TRM-1");
     });
 
-    it("BUG (asymmetric with the other three endpoints): on a service error, returns success:true with an empty list instead of success:false", async () => {
-      // apps/api/src/commerce/transmission/tracking.controller.ts:149-156 — trackByOrderId/
-      // trackByAwb/trackByBatch all report `success: false` on a caught error; getAllTracking's
-      // catch swallows it into a *successful* empty response, which a caller cannot distinguish
-      // from "there are genuinely zero batches". Pinning current behaviour, not fixing.
+    it("emits no fabricated rows when the table is empty", async () => {
+      // TransmissionService no longer substitutes two hardcoded records for an
+      // empty table, so an empty store reads as empty.
+      const controller = makeController(async () => []);
+      await expect(controller.getAllTracking()).resolves.toEqual({ success: true, message: "", trackingList: [] });
+    });
+
+    it("drops a batch row that carries no tracking information rather than rendering it blank", async () => {
+      const hollow = {
+        id: "9",
+        name: "x",
+        createdAt: "2026-01-10T00:00:00.000Z",
+        updatedAt: "2026-01-10T00:00:00.000Z",
+        payload: { transmissionBatchNo: "   " } as TrackingRecord["payload"],
+      };
+      const controller = makeController(async () => [hollow]);
+      const res = await controller.getAllTracking();
+      expect(res.trackingList).toEqual([]);
+    });
+
+    it("propagates a service error rather than reporting success with an empty list", async () => {
       const controller = makeController(async () => {
         throw new Error("db down");
       });
-      const res = await controller.getAllTracking();
-      expect(res).toEqual({ success: true, message: "", trackingList: [] });
+      await expect(controller.getAllTracking()).rejects.toThrow("db down");
     });
   });
 });

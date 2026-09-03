@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -27,7 +26,7 @@ export class CustomOrderController {
   @ApiResponse({ status: 201, description: "Custom order created successfully" })
   async createCustomOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: CreateCustomOrderDto) {
     try {
-      const customerId = tenant?.id || tenant?.tenantId || tenant?.sub || 1;
+      const customerId = tenant?.id || tenant?.tenantId || 1;
       const res = await this.orderService.createCustomOrder(customerId, body);
       return simpleResponse(Boolean(res), res ? "Custom order created successfully." : "Failed to create custom order");
     } catch (err: any) {
@@ -37,6 +36,7 @@ export class CustomOrderController {
   }
 
   @Get("/get/customer/custom-order/:orderId")
+  @RequireGate(GateCode.CODE_CU)
   async getCustomerCustomOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Param("orderId") orderId: string) {
     try {
       const order = await this.orderService.getCustomOrderById(BigInt(orderId));
@@ -47,9 +47,10 @@ export class CustomOrderController {
   }
 
   @Get("/get/customer/custom-order-list")
+  @RequireGate(GateCode.CODE_CU)
   async getCustomerCustomOrderList(@CurrentTenant() tenant: AuthenticatedTenant) {
     try {
-      const customerId = tenant?.id || tenant?.tenantId || tenant?.sub || 1;
+      const customerId = tenant?.id || tenant?.tenantId || 1;
       const list = await this.orderService.getCustomOrdersByTenant(customerId);
       return keyedResponse("customOrderList", list || []);
     } catch (err) {
@@ -58,6 +59,7 @@ export class CustomOrderController {
   }
 
   @Get("/get/super-user/custom-order/:orderId")
+  @RequireGate(GateCode.CODE_SU)
   async getSuperUserCustomOrder(@Param("orderId") orderId: string) {
     try {
       const order = await this.orderService.getCustomOrderById(BigInt(orderId));
@@ -68,6 +70,7 @@ export class CustomOrderController {
   }
 
   @Get("/get/super-user/custom-order-list")
+  @RequireGate(GateCode.CODE_SU)
   async getSuperUserCustomOrderList() {
     try {
       const list = await this.orderService.getAllCustomOrders();
@@ -100,7 +103,7 @@ export class CustomOrderController {
   @ApiResponse({ status: 200, description: "Custom order cancelled" })
   async cancelCustomOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: CancelCustomOrderDto) {
     try {
-      const customerId = tenant?.id || tenant?.tenantId || tenant?.sub || 1;
+      const customerId = tenant?.id || tenant?.tenantId || 1;
       const orderId = BigInt(body?.orderId ?? 0);
       const res = await this.orderService.cancelCustomOrder(orderId, customerId);
       return simpleResponse(res, res ? "Custom order cancelled" : "Failed to cancel custom order");
@@ -113,6 +116,7 @@ export class CustomOrderController {
   @ApiOperation({ summary: "Get fulfillment list for a customer custom order" })
   @ApiParam({ name: "orderId", description: "Custom Order ID", example: 2440968, type: Number })
   @ApiResponse({ status: 200, description: "Fulfillment list" })
+  @RequireGate(GateCode.CODE_SU)
   async getCustomOrderFulfillmentList(@Param("orderId") orderId: string) {
     return keyedResponse("fulfillmentList", []);
   }

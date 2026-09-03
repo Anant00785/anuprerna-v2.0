@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Body,
   ConflictException,
@@ -91,6 +90,12 @@ export class SubCategoryController {
   @ApiOperation({ summary: "List sub-categories marked featured within a category (e.g. Apparel, Fabrics, Home, Accessories)." })
   @ApiParam({ name: "categoryName", description: "Category Name (e.g. Apparel, Fabrics, Home, Accessories)", example: "Apparel" })
   @ApiResponse({ status: 200, description: "Featured sub-category list." })
+  // PUBLIC — no @RequireGate. Loom's SubCategoryController serves
+  // GET /get/featured/{categoryName}/sub-category with no getEntity/CODE_* gate.
+  // A byte-identical SECOND declaration of this method (ungated, serving only the
+  // /get/sub-category/featured/:categoryName alias) used to sit further down this
+  // class and silently overrode this one on the prototype; it has been deleted, so
+  // both aliases now resolve here.
   async getFeaturedSubCategories(@Param("categoryName") categoryName: string) {
     const name = parseCategoryNameParam(categoryName);
     const subCategories = await this.subCategoryService.getFeaturedSubCategories(name);
@@ -132,6 +137,7 @@ export class SubCategoryController {
   @ApiOperation({ summary: "Retrieve a single sub-category by id." })
   @ApiParam({ name: "subCategoryId", description: "SubCategory ID (e.g. 322591)", example: 322591, type: Number })
   @ApiResponse({ status: 200, description: "Sub-category or null." })
+  @RequireGate(GateCode.CODE_SU)
   async getSubCategory(@Param("subCategoryId") subCategoryId: string) {
     const id = BigInt(parseSubCategoryIdParam(subCategoryId));
     const subCategory = await this.subCategoryService.retrieveSubCategory(id);
@@ -194,33 +200,4 @@ export class SubCategoryController {
     return simpleResponse(success, success ? SubCategoryMessages.SUB_CATEGORY_DELETED : message);
   }
 
-  /** getFeaturedSubCategories(String categoryName) */
-  @Get("/get/sub-category/featured/:categoryName")
-  @ApiOperation({ summary: "List sub-categories marked featured within a category." })
-  @ApiResponse({ status: 200, description: "Matching featured sub-categories." })
-  async getFeaturedSubCategories(@Param("categoryName") categoryName: string) {
-    const name = parseCategoryNameParam(categoryName);
-    const subCategories = await this.subCategoryService.getFeaturedSubCategories(name);
-    return keyedResponse("featuredSubCategoryList", subCategories);
-  }
-
-  /** retrieveSubCategoryData(int page, int size) */
-  @Get("/get/table-explorer/data/sub-category")
-  @ApiOperation({ summary: "Paginated table-explorer projection of sub-categories." })
-  @ApiResponse({ status: 200, description: "Page of sub-category data." })
-  async getSubCategoryData(@Query() query: unknown) {
-    const { page, size } = parseTableExplorerPageQuery(query);
-    const data = await this.subCategoryService.retrieveSubCategoryData(page, size);
-    return keyedResponse("subCategoryDataList", data);
-  }
-
-  /** retrieveSubCategoryDataById(Long id) */
-  @Get("/get/table-explorer/data/sub-category/:id")
-  @ApiOperation({ summary: "Table-explorer projection of a single sub-category." })
-  @ApiResponse({ status: 200, description: "Sub-category data or null." })
-  async getSubCategoryDataById(@Param("id") id: string) {
-    const parsedId = BigInt(parseIdParam(id));
-    const data = await this.subCategoryService.retrieveSubCategoryDataById(parsedId);
-    return keyedResponse("subCategoryData", data);
-  }
 }

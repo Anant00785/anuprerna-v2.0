@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { StoryRepository } from "../repository/story.repository.js";
 import { StoryContentCategoryInput, StoryContentInput, StoryContentSectionInput, StoryProductMappingInput } from "../types/story.types.js";
@@ -6,6 +5,9 @@ import { ActionCode } from "../../../../common/errors/action-code.js";
 
 @Injectable()
 export class StoryService {
+  /** LIMIT 6 in findStoriesFromSameCategory / the `6 - size` top-up in the DAO. */
+  private static readonly RECOMMENDED_STORY_LIMIT = 6;
+
   constructor(private readonly storyRepository: StoryRepository) {}
 
   async getStoryContentCategories() {
@@ -30,7 +32,7 @@ export class StoryService {
   async getStoryContentById(id: bigint) {
     const story = await this.storyRepository.getStoryContentById(id);
     if (story) {
-      const sections = await this.storyRepository.getStoryContentSections(id);
+      const sections = await this.storyRepository.getStoryContentSections(Number(id));
       return { ...story, sections };
     }
     return null;
@@ -39,19 +41,58 @@ export class StoryService {
   async getStoryContentBySlug(slug: string) {
     const story = await this.storyRepository.getStoryContentBySlug(slug);
     if (story) {
-      const sections = await this.storyRepository.getStoryContentSections(story.id);
+      const sections = await this.storyRepository.getStoryContentSections(Number(story.id));
       return { ...story, sections };
     }
     return null;
   }
 
   async getStoryContentListByCsv(commaSeparatedIDList: string) {
-    const ids = commaSeparatedIDList.split(",").map(id => BigInt(id.trim())).filter(id => !isNaN(Number(id)));
+    const ids = commaSeparatedIDList
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => /^\d+$/.test(id))
+      .map((id) => BigInt(id));
     return this.storyRepository.getStoryContentListByCsv(ids);
   }
 
+  /**
+   * Ports StoryContentPreviewDAOController.retrieveRecommendedStoriesByStoryId.
+   *
+   * Up to six stories from the source story's category (excluding itself);
+   * if fewer than six are found, top up with stories whose category shares the
+   * source category's content type, excluding everything already selected and
+   * the source story. Missing source story -> empty list (Java returns
+   * `new ArrayList<>()`).
+   */
+  async getRecommendedStories(storyId: bigint) {
+    const story = await this.storyRepository.getStoryContentById(storyId);
+    if (!story) return [];
+
+    const category = await this.storyRepository.getStoryContentCategoryById(
+      story.storyContentCategoryId,
+    );
+    if (!category) return [];
+
+    const recommended = await this.storyRepository.getStoriesFromSameCategory(
+      storyId,
+      story.storyContentCategoryId,
+      StoryService.RECOMMENDED_STORY_LIMIT,
+    );
+
+    if (recommended.length >= StoryService.RECOMMENDED_STORY_LIMIT) return recommended;
+
+    const excludedIds = [...recommended.map((s) => s.id), storyId];
+    const additional = await this.storyRepository.getStoriesByContentType(
+      excludedIds,
+      category.storyContentType,
+      StoryService.RECOMMENDED_STORY_LIMIT - recommended.length,
+    );
+    return [...recommended, ...additional];
+  }
+
   async getStoriesByCategory(categoryId: bigint) {
-    return this.storyRepository.getStoriesByCategory(categoryId);
+    return this.storyRepository.getStoriesByCategory(Number(categoryId));
   }
 
   async addStoryContent(data: StoryContentInput) {
@@ -89,17 +130,17 @@ export class StoryService {
   }
 
   async getStoryRelatedToProduct(productId: bigint) {
-    return this.storyRepository.getStoryRelatedToProduct(productId);
+    return this.storyRepository.getStoryRelatedToProduct(Number(productId));
   }
 
   async getProductsRelatedToStory(storyContentId: bigint) {
-    return this.storyRepository.getProductsRelatedToStory(storyContentId);
+    return this.storyRepository.getProductsRelatedToStory(Number(storyContentId));
   }
 
   async getStoryProductPreviews(storyContentId: bigint) {
     // This typically joins with the Product table, returning simple preview DTOs.
     // For now we return raw mappings.
-    return this.storyRepository.getProductsRelatedToStory(storyContentId);
+    return this.storyRepository.getProductsRelatedToStory(Number(storyContentId));
   }
 
   async getAllStoryProductMappings() {
@@ -117,4 +158,3 @@ export class StoryService {
     return result ? ActionCode.UPDATE_SUCCESS : ActionCode.UPDATE_FAILURE;
   }
 }
-// @ts-nocheck

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/product/custom-product/mapper/custom-product.mapper.ts
  *
@@ -57,5 +56,3 @@ export function toUpdateValues(input: UpdateCustomProductInput): UpdateCustomPro
     updatedAt: Date.now(),
   };
 }
-// @ts-nocheck
-// @ts-nocheck

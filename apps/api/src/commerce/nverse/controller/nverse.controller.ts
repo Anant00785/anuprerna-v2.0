@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Post, Get, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { NVerseService } from '../service/nverse.service.js';

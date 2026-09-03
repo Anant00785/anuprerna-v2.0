@@ -1,11 +1,13 @@
-// @ts-nocheck
-import { Controller, Get, Query } from "@nestjs/common";
+import { GateCode } from "../../../auth/types/auth.types.js";
+import { RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { FilterService } from "../service/filter.service.js";
 import { parseFabricProductFilterParameters } from "../dto/filter.dto.js";
 import { keyedResponse } from "../../../common/response/rain-response.js";
 
 @Controller()
+@UseGuards(RolesGuard)
 @ApiTags("Filter")
 export class FilterController {
     constructor(private readonly filterService: FilterService) {}
@@ -94,6 +96,7 @@ export class FilterController {
     @Get("/get/segment-list")
     @ApiOperation({ summary: "Get segment list (LOOM legacy route)." })
     @ApiQuery({ name: "category", description: "Filter segments by category name", required: false })
+    @RequireGate(GateCode.CODE_SU)
     async getSegmentList(@Query("category") category?: string) {
         return this.getFilterSegmentList(category);
     }

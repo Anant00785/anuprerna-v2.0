@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
@@ -68,6 +67,7 @@ export class ReviewController {
   }
 
   @Get("/get/super-user/review")
+  @RequireGate(GateCode.CODE_SU)
   async retrieveAllReviewsForSuperUser(
     @Query("status") status = "APPROVED",
     @Query("pageNumber") pageNumber = "0",
@@ -78,6 +78,7 @@ export class ReviewController {
   }
 
   @Get("/get/table-explorer/data/review")
+  @RequireGate(GateCode.CODE_SU)
   async getReviewData(
     @Query("page") page: string = "0",
     @Query("size") size: string = "20"
@@ -87,6 +88,7 @@ export class ReviewController {
   }
 
   @Get("/get/table-explorer/data/review/:id")
+  @RequireGate(GateCode.CODE_SU)
   async getReviewById(@Param("id") id: string) {
     const review = await this.reviewService.findById(BigInt(id));
     return keyedResponse("review", review);

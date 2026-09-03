@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/product-preview/mapper/product-preview.mapper.ts
  *

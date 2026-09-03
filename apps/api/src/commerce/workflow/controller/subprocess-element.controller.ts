@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { WorkflowService } from '../service/workflow.service.js';
@@ -14,6 +13,7 @@ export class SubProcessElementController {
   constructor(private readonly workflowService: WorkflowService) {}
 
   @Get('get/artisan/subprocess-element-list/:status')
+  @RequireGate(GateCode.CODE_AR)
   // TODO: Replace with CODE_ARTISAN when available
   @RequireGate(GateCode.CODE_SU)
   async getArtisanSubProcessElementList(@Param('status') status: string) {

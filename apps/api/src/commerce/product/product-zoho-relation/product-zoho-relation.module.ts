@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product-zoho-relation/product-zoho-relation.module.ts
  *

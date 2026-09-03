@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/catalog/product/tag/validators/tag.validator.ts
  *
@@ -40,5 +39,3 @@ function isValidStringLength(value: unknown, min: number, max: number): boolean 
 export function validateTag(entity: Pick<CreateTagInput, "name">): boolean {
   return isValidStringLength(entity.name, 1, 255);
 }
-// @ts-nocheck
-// @ts-nocheck

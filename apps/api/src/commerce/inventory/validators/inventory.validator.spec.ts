@@ -30,13 +30,13 @@ describe("validateInventoryAdjustmentReason", () => {
 
 describe("validateInventoryAdjustment", () => {
   const valid = {
-    userId: 1n,
+    userId: 1,
     adjustmentDate: Date.now(),
-    warehouseId: 2n,
+    warehouseId: 2,
     referenceNo: "REF1",
-    reasonId: 3n,
+    reasonId: 3,
     description: "",
-    items: [{ productId: 1n, quantityAvailable: 1, quantityAdjusted: 1, quantityAtHand: 1 }],
+    items: [{ productId: 1, quantityAvailable: 1, quantityAdjusted: 1, quantityAtHand: 1 }],
   };
 
   it("passes with warehouseId, reasonId, and at least one item", () => {
@@ -61,7 +61,7 @@ describe("validateInventoryAdjustment", () => {
 });
 
 describe("validateInventoryRestockRequest", () => {
-  const valid = { tenantId: 1n, productId: 2n, productGroup: "finished", requestedQuantity: 5 };
+  const valid = { tenantId: 1, productId: 2, productGroup: "finished", requestedQuantity: 5 };
 
   it("passes with tenantId, productId, productGroup, and quantity > 0", () => {
     expect(validateInventoryRestockRequest(valid)).toBeNull();
@@ -98,7 +98,7 @@ describe("validateInventoryRestockRequest", () => {
 
 describe("validateUpdateRestockRequestQuantity", () => {
   it("passes with a requestId and positive quantity", () => {
-    expect(validateUpdateRestockRequestQuantity({ requestId: 1n, quantity: 5 })).toBeNull();
+    expect(validateUpdateRestockRequestQuantity({ requestId: 1, quantity: 5 })).toBeNull();
   });
 
   it("rejects a missing requestId", () => {
@@ -108,7 +108,7 @@ describe("validateUpdateRestockRequestQuantity", () => {
   });
 
   it("rejects quantity <= 0", () => {
-    expect(validateUpdateRestockRequestQuantity({ requestId: 1n, quantity: 0 })).toBe(
+    expect(validateUpdateRestockRequestQuantity({ requestId: 1, quantity: 0 })).toBe(
       "Quantity must be greater than 0."
     );
   });
@@ -116,7 +116,7 @@ describe("validateUpdateRestockRequestQuantity", () => {
 
 describe("validateUpdateRestockRequestStatus", () => {
   it("passes with a requestId and status", () => {
-    expect(validateUpdateRestockRequestStatus({ requestId: 1n, status: "APPROVED" })).toBeNull();
+    expect(validateUpdateRestockRequestStatus({ requestId: 1, status: "APPROVED" })).toBeNull();
   });
 
   it("rejects a missing requestId", () => {
@@ -126,6 +126,6 @@ describe("validateUpdateRestockRequestStatus", () => {
   });
 
   it("rejects a missing status", () => {
-    expect(validateUpdateRestockRequestStatus({ requestId: 1n, status: "" })).toBe("Status is required.");
+    expect(validateUpdateRestockRequestStatus({ requestId: 1, status: "" })).toBe("Status is required.");
   });
 });

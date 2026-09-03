@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Injectable, Logger } from '@nestjs/common';
 import { ContactUsData } from '../types/misc.types.js';
 
@@ -20,4 +19,3 @@ export class MiscService {
     }
   }
 }
-// @ts-nocheck

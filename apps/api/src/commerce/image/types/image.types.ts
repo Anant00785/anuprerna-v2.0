@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * migrated/image/types/image.types.ts
  *
@@ -33,5 +32,3 @@ export const ALLOWED_MIME_TYPES = new Set([
 
 /** 10 MB max file size */
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-// @ts-nocheck
-// @ts-nocheck

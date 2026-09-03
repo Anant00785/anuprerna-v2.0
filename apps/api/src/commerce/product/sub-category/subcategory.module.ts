@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/sub-category/subcategory.module.ts
  *
@@ -9,19 +8,24 @@
  * their own *.module.ts"), while `product.module.ts` already imported it.
  * That dangling import was the single TypeScript error in apps/api.
  *
- * Eight of the nine ports below are bound to dummies, matching the
- * established convention in the sibling `product/product.module.ts` and
- * `category/category.module.ts`: each is a dependency on a domain that has
- * not been migrated yet. Every dummy here is tracked in
- * `apps/api/docs/PORTS-STATUS.md` — replace with the real provider as each
- * domain lands, do not silently leave them. S3_STORAGE_PORT is the
- * exception: it is wired to a real adapter over ImageModule's ImageService
- * (S3), since that domain has landed — see the useFactory below.
+ * All nine ports are bound to real providers. SEGMENT_PORT resolves via
+ * SegmentModule's SegmentService; the seven profile lookups are
+ * select-by-id over their own tables (commerce/shared/db-lookup.ts) —
+ * a `retrieveEntity(id)` port IS a select-by-id, so answering it for real
+ * is less code than the `async () => null` dummies these replace, which
+ * made every sub-category profile relation silently absent.
+ * S3_STORAGE_PORT is a real adapter over ImageModule's ImageService (S3)
+ * — see the useFactory below.
  */
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { ImageModule } from "../../image/image.module.js";
 import { ImageService } from "../../image/service/image.service.js";
+import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
+import * as schema from "../../../database/schema/schema.js";
+import { lookupIdById } from "../../shared/db-lookup.js";
+import { SegmentModule } from "../segment/segment.module.js";
+import { SegmentService } from "../segment/service/segment.service.js";
 import { SubCategoryController } from "../controller/sub-category.controller.js";
 import { SubCategoryService } from "./service/subCategory.service.js";
 import { SubCategoryRepository } from "./repository/subCategory.repository.js";
@@ -40,15 +44,14 @@ import {
   VOLUME_DISCOUNT_PROFILE_PORT,
 } from "./types/sub-category.types.js";
 
-const segmentDummy: SegmentPort = {
-  retrieveSegment: async () => null,
-};
-
 // All seven profile lookups share one shape (see sub-category.types.ts) but
-// keep distinct injection tokens, so one dummy value is reused across them.
-const profileLookupDummy: ProfileLookupPort = {
-  retrieveEntity: async () => null,
-};
+// keep distinct injection tokens, so each gets its own provider over its
+// own table.
+const profileLookup = (token: symbol, table: unknown) => ({
+  provide: token,
+  useFactory: (db: Database): ProfileLookupPort => ({ retrieveEntity: lookupIdById(db, table as never) }),
+  inject: [DATABASE_CONNECTION],
+});
 
 // Real adapter over ImageService (S3) — not a dummy. See category.module.ts
 // for the same shim rationale (ImageService's buffer/name/mimetype call
@@ -70,19 +73,25 @@ function s3StorageAdapter(imageService: ImageService): S3StoragePort {
 }
 
 @Module({
-  imports: [AuthModule, ImageModule],
+  imports: [AuthModule, ImageModule, SegmentModule],
   controllers: [SubCategoryController],
   providers: [
     SubCategoryService,
     SubCategoryRepository,
-    { provide: SEGMENT_PORT, useValue: segmentDummy },
-    { provide: BADGE_PROFILE_PORT, useValue: profileLookupDummy },
-    { provide: MADE_TO_ORDER_PROFILE_PORT, useValue: profileLookupDummy },
-    { provide: VOLUME_DISCOUNT_PROFILE_PORT, useValue: profileLookupDummy },
-    { provide: CUSTOM_SIZE_PROFILE_PORT, useValue: profileLookupDummy },
-    { provide: SIZE_PROFILE_PORT, useValue: profileLookupDummy },
-    { provide: FINISH_PROFILE_PORT, useValue: profileLookupDummy },
-    { provide: FABRIC_PROFILE_PORT, useValue: profileLookupDummy },
+    {
+      provide: SEGMENT_PORT,
+      useFactory: (segments: SegmentService): SegmentPort => ({
+        retrieveSegment: async (id) => (await segments.retrieveSegmentById(id)) ?? null,
+      }),
+      inject: [SegmentService],
+    },
+    profileLookup(BADGE_PROFILE_PORT, schema.badgeProfile),
+    profileLookup(MADE_TO_ORDER_PROFILE_PORT, schema.madeToOrderProfile),
+    profileLookup(VOLUME_DISCOUNT_PROFILE_PORT, schema.volumeDiscountProfile),
+    profileLookup(CUSTOM_SIZE_PROFILE_PORT, schema.customSizeProfile),
+    profileLookup(SIZE_PROFILE_PORT, schema.sizeProfile),
+    profileLookup(FINISH_PROFILE_PORT, schema.finishProfile),
+    profileLookup(FABRIC_PROFILE_PORT, schema.fabricProfile),
     {
       provide: S3_STORAGE_PORT,
       useFactory: s3StorageAdapter,

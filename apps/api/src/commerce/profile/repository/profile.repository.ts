@@ -1,8 +1,8 @@
-// @ts-nocheck
 import { Injectable, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import * as schema from '../../../database/schema/schema.js';
 import { eq, desc } from 'drizzle-orm';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
   AddSizeProfileInput,
   UpdateSizeProfileInput,
@@ -15,7 +15,7 @@ import {
 
 @Injectable()
 export class ProfileRepository {
-  constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
+  constructor(@Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>) {}
 
   // Size Profile
   async getSizeProfiles() {
@@ -48,7 +48,7 @@ export class ProfileRepository {
         const option = input.options[i];
         const insertedOption = await tx.insert(schema.sizeProfileOption).values({
           version: BigInt(1),
-          profileId: profileId,
+          profileId: Number(profileId),
           label: option.label,
           keyFeature: option.keyFeature || '',
           sortOrder: option.sortOrder || i,
@@ -61,8 +61,8 @@ export class ProfileRepository {
           const guide = option.guides[j];
           await tx.insert(schema.sizeProfileGuide).values({
             version: BigInt(1),
-            profileId: profileId,
-            optionId: optionId,
+            profileId: Number(profileId),
+            optionId: Number(optionId),
             guide: guide.guide,
             value: guide.value,
             sortOrder: guide.sortOrder || j,
@@ -92,8 +92,8 @@ export class ProfileRepository {
 
   async deleteSizeProfile(id: number) {
     return this.db.transaction(async (tx) => {
-      await tx.delete(schema.sizeProfileGuide).where(eq(schema.sizeProfileGuide.profileId, BigInt(id)));
-      await tx.delete(schema.sizeProfileOption).where(eq(schema.sizeProfileOption.profileId, BigInt(id)));
+      await tx.delete(schema.sizeProfileGuide).where(eq(schema.sizeProfileGuide.profileId, id));
+      await tx.delete(schema.sizeProfileOption).where(eq(schema.sizeProfileOption.profileId, id));
       await tx.delete(schema.sizeProfile).where(eq(schema.sizeProfile.id, BigInt(id)));
       return true;
     });
@@ -125,7 +125,7 @@ export class ProfileRepository {
     return this.db.transaction(async (tx) => {
       const inserted = await tx.insert(schema.badgeProfile).values({
         version: BigInt(1),
-        name: input.name,
+        profileName: input.name,
         timeOfCreation: Date.now(),
       }).returning();
       const profileId = inserted[0].id;
@@ -134,10 +134,10 @@ export class ProfileRepository {
         const item = input.items[i];
         await tx.insert(schema.badgeProfileItem).values({
           version: BigInt(1),
-          profileId: profileId,
-          label: item.label,
-          icon: item.icon,
-          sortOrder: item.sortOrder || i,
+          profileId: Number(profileId),
+          // see updateBadgeProfile: caption/image are the real columns.
+          caption: item.label,
+          image: item.icon,
         });
       }
       return inserted[0];
@@ -145,9 +145,9 @@ export class ProfileRepository {
   }
 
   async updateBadgeProfile(id: number, input: UpdateBadgeProfileInput) {
-    const updates: any = {};
-    if (input.name !== undefined) updates.name = input.name;
-    
+    const updates: Partial<typeof schema.badgeProfile.$inferInsert> = {};
+    if (input.name !== undefined) updates.profileName = input.name;
+
     return this.db.transaction(async (tx) => {
       let profile;
       if (Object.keys(updates).length > 0) {
@@ -156,15 +156,17 @@ export class ProfileRepository {
       }
       
       if (input.items && input.items.length > 0) {
-        await tx.delete(schema.badgeProfileItem).where(eq(schema.badgeProfileItem.profileId, BigInt(id)));
+        await tx.delete(schema.badgeProfileItem).where(eq(schema.badgeProfileItem.profileId, id));
         for (let i = 0; i < input.items.length; i++) {
           const item = input.items[i];
           await tx.insert(schema.badgeProfileItem).values({
             version: BigInt(1),
-            profileId: BigInt(id),
-            label: item.label,
-            icon: item.icon,
-            sortOrder: item.sortOrder || i,
+            profileId: id,
+            // badge_profile_item stores caption/image; the input DTO calls them
+            // label/icon. There is no sort_order column, so item.sortOrder is
+            // not persisted.
+            caption: item.label,
+            image: item.icon,
           });
         }
       }
@@ -174,7 +176,7 @@ export class ProfileRepository {
 
   async deleteBadgeProfile(id: number) {
     return this.db.transaction(async (tx) => {
-      await tx.delete(schema.badgeProfileItem).where(eq(schema.badgeProfileItem.profileId, BigInt(id)));
+      await tx.delete(schema.badgeProfileItem).where(eq(schema.badgeProfileItem.profileId, id));
       await tx.delete(schema.badgeProfile).where(eq(schema.badgeProfile.id, BigInt(id)));
       return true;
     });
@@ -237,25 +239,23 @@ export class ProfileRepository {
 
   // Tenant Profile
   async getAllTenants() {
-    return this.db.select().from(schema.tenant);
+    return this.db.select().from(schema.loomTenant);
   }
 
   async getTenantById(id: number) {
-    const rows = await this.db.select().from(schema.tenant).where(eq(schema.tenant.id, BigInt(id))).limit(1);
+    const rows = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, BigInt(id))).limit(1);
     return rows[0];
   }
 
   async updateTenant(id: number, input: UpdateCustomerProfileInput) {
-    const updates: any = {};
-    if (input.name !== undefined) updates.name = input.name;
-    if (input.phone !== undefined) updates.phone = input.phone;
-    
+    const updates: Partial<typeof schema.loomTenant.$inferInsert> = {};
+    if (input.name !== undefined) updates.userName = input.name;
+    if (input.phone !== undefined) updates.contactNumber = input.phone;
+
     if (Object.keys(updates).length > 0) {
-      const res = await this.db.update(schema.tenant).set(updates).where(eq(schema.tenant.id, BigInt(id))).returning();
+      const res = await this.db.update(schema.loomTenant).set(updates).where(eq(schema.loomTenant.id, BigInt(id))).returning();
       return res[0];
     }
     return this.getTenantById(id);
   }
 }
-// @ts-nocheck
-// @ts-nocheck

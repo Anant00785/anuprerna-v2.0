@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/segment/validators/segment.sanitizer.ts
  *

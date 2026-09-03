@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { RolesGuard, RequireGate } from "../../../../common/auth/roles.guard.js";
@@ -28,6 +27,7 @@ export class BlogController {
 
   @Get("/get/blog-content-types")
   @ApiOperation({ summary: "Get blog content types." })
+  @RequireGate(GateCode.CODE_SUCU)
   async getBlogContentTypes() {
     const list = await this.blogService.getBlogContentTypes();
     return keyedResponse("blogContentTypes", list);
@@ -62,6 +62,7 @@ export class BlogController {
   @Get("/get/blog-content-category-list")
   @ApiOperation({ summary: "Get blog content category list." })
   @ApiResponse({ status: 200, description: "List of blog categories." })
+  @RequireGate(GateCode.CODE_SU)
   async getBlogContentCategoryList() {
     const list = await this.blogService.getBlogContentCategories();
     return keyedResponse("blogContentCategories", list);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { PatternService } from '../service/pattern.service.js';
@@ -50,6 +49,7 @@ export class PatternController {
   @UseGuards(RolesGuard)
     @Get('/get/table-explorer/data/pattern')
   @ApiOperation({ summary: "Paginated table-explorer projection of patterns." })
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerData(@Query('page') page: string = '1', @Query('size') size: string = '10') {
     return this.service.getTableExplorerData(parseInt(page, 10), parseInt(size, 10));
   }
@@ -58,6 +58,7 @@ export class PatternController {
     @Get('/get/table-explorer/data/pattern/:id')
   @ApiOperation({ summary: "Table-explorer projection of pattern by ID." })
   @ApiParam({ name: 'id', description: 'Pattern ID', example: 1, type: Number })
+  @RequireGate(GateCode.CODE_SU)
   async getTableExplorerDataById(@Param('id') id: string) {
     return this.service.getTableExplorerDataById(id);
   }

@@ -85,26 +85,64 @@ export class OrderService {
     return order;
   }
 
+  /**
+   * Loom has no generic "set order status" write — an order's status is
+   * derived from its items (see findOrderPreviewsByTenant). The only real
+   * transition exposed here is CANCELLED, which Loom implements as
+   * updateOrderStatusToCancelled: header stamp + every item to CANCELLED.
+   *
+   * NOT PORTED (unbuilt, see docs/KNOWN-GAPS.md): the PROCESSING transition
+   * (OrderDAOController.updateOrderStatusToProcessing, which also moves
+   * paymentStatus to PAID/PREPAID per order type) and every other status.
+   * For those this method still only writes the audit note, exactly as
+   * before — it does not move any item.
+   */
   async updateOrderStatus(input: OrderUpdateInput) {
-    const updateData: any = {
-      note: `Status updated to ${input.status}`,
-    };
     if (input.status === "CANCELLED") {
-      updateData.cancelledAt = Date.now();
-      updateData.cancellationReason = "Cancelled by admin";
+      return this.orderRepository.cancelOrder(input.orderId, "Cancelled by admin");
     }
-    return this.orderRepository.updateOrder(input.orderId, updateData);
+    return this.orderRepository.updateOrder(input.orderId, {
+      note: `Status updated to ${input.status}`,
+    } as Partial<typeof schema.orders.$inferInsert>);
   }
 
+  /** Loom: OrderDAOController.updateOrderStatusToCancelled. */
   async cancelOrder(id: bigint) {
-    return this.orderRepository.updateOrder(id, {
-      cancelledAt: Date.now(),
-      cancellationReason: "Cancelled by user",
-    } as any);
+    return this.orderRepository.cancelOrder(id, "Cancelled by user");
   }
 
-  async getProcessingOrders(customerId?: bigint) {
-    return this.orderRepository.findAllPaginated(0, 100);
+  // ─── Customer order previews (Loom OrderDAOController) ─────────────────────
+
+  /**
+   * Loom: OrderDAOController.retrieveOrderListByTenant — the tenant's regular
+   * order previews only. Backs GET /get/customer/order-list/v2.
+   */
+  async getCustomerOrderPreviews(tenantId: number, page: number, size: number) {
+    return this.orderRepository.findOrderPreviewsByTenant(tenantId, page, size);
+  }
+
+  /**
+   * Loom: OrderDAOController.retrieveAllOrderListByTenant — regular AND custom
+   * order previews, merged and re-sorted newest-first across both sources.
+   * Backs GET /get/customer/order-list/all.
+   */
+  async getCustomerAllOrderPreviews(tenantId: number, page: number, size: number) {
+    const [orders, customOrders] = await Promise.all([
+      this.orderRepository.findOrderPreviewsByTenant(tenantId, page, size),
+      this.orderRepository.findCustomOrderPreviewsByTenant(tenantId, page, size),
+    ]);
+    return [...orders, ...customOrders].sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  /**
+   * Loom: OrderDAOController.getProcessingOrderStatus — true when ANY of the
+   * tenant's regular or custom previews in the scanned page is PROCESSING.
+   * Always a valid object; defaults to false. Backs
+   * GET /get/customer/orders/status/processing.
+   */
+  async getProcessingOrderStatus(tenantId: number, page: number, size: number) {
+    const previews = await this.getCustomerAllOrderPreviews(tenantId, page, size);
+    return { hasProcessingOrder: previews.some((p) => p.status === "PROCESSING") };
   }
 
   async deleteOrder(id: bigint) {

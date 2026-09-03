@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { BlogController } from "./controller/blog.controller.js";
@@ -12,4 +11,3 @@ import { BlogRepository } from "./repository/blog.repository.js";
   exports: [BlogService],
 })
 export class BlogModule {}
-// @ts-nocheck

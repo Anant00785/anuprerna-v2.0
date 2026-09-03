@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * apps/api/src/commerce/product/finished-preview/repository/finished-preview.repository.ts
  *
