@@ -19,7 +19,9 @@ interface TableOfContentsProps {
 
 export default function TableOfContents({ sections }: TableOfContentsProps) {
   // Build TOC entries from sections that have a heading, sorted by sortOrder
-  const sorted = [...sections].sort((a, b) => a.sortOrder - b.sortOrder);
+  // Typed ContentSection[], but the content API omits blogContentSectionList on
+  // some records; `[...undefined]` throws "is not iterable". See MobileOnThisPage.
+  const sorted = [...(sections ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
   const entries: TocEntry[] = sorted
     .map((s, idx) => ({ index: idx, heading: s.heading, anchorId: 'section-' + idx }))
     .filter((e) => e.heading && e.heading.trim() !== '');
