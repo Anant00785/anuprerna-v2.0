@@ -2,31 +2,28 @@ import { Pool } from 'pg';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const NEON_PG_URL =
-  process.env.DATABASE_URL ||
-  'postgresql://neondb_owner:npg_WPjQ9oXgzKR7@ep-morning-band-ay7cmm8m-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require';
+// No hardcoded fallbacks here on purpose: this file previously shipped a live
+// Neon Postgres password and S3 keys as source-code defaults, committed to the
+// repo. Missing configuration must fail loudly, not silently authenticate
+// against production with a credential anyone reading the repo can see.
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is not configured`);
+  return value;
+}
 
-const S3_ENDPOINT =
-  process.env.NEON_S3_ENDPOINT ||
-  'https://br-raspy-sun-ayr5oy8j.storage.c-5.us-east-2.aws.neon.tech';
-
-const S3_ACCESS_KEY =
-  process.env.NEON_S3_ACCESS_KEY_ID ||
-  'nak_live_d9db58cbb2c94570a43b92ed9ac4f425';
-
-const S3_SECRET_KEY =
-  process.env.NEON_S3_SECRET_ACCESS_KEY ||
-  'nsk_live_017a5dbfa3add7a13f3af61b4716c974c962add0991842786c552796d4859712';
-
-const S3_REGION = process.env.NEON_S3_REGION || 'us-east-2';
-const S3_BUCKET = process.env.NEON_FEEDBACK_BUCKET || 'feeback';
+const S3_ENDPOINT = () => requireEnv('NEON_S3_ENDPOINT');
+const S3_ACCESS_KEY = () => requireEnv('NEON_S3_ACCESS_KEY_ID');
+const S3_SECRET_KEY = () => requireEnv('NEON_S3_SECRET_ACCESS_KEY');
+const S3_REGION = () => process.env.NEON_S3_REGION || 'us-east-2';
+const S3_BUCKET = () => requireEnv('NEON_FEEDBACK_BUCKET');
 
 // Shared PostgreSQL pool for Neon
 let pgPool: Pool | null = null;
 export function getNeonPool(): Pool {
   if (!pgPool) {
     pgPool = new Pool({
-      connectionString: NEON_PG_URL,
+      connectionString: requireEnv('DATABASE_URL'),
       ssl: { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
@@ -40,11 +37,11 @@ let s3Client: S3Client | null = null;
 export function getNeonS3(): S3Client {
   if (!s3Client) {
     s3Client = new S3Client({
-      endpoint: S3_ENDPOINT,
-      region: S3_REGION,
+      endpoint: S3_ENDPOINT(),
+      region: S3_REGION(),
       credentials: {
-        accessKeyId: S3_ACCESS_KEY,
-        secretAccessKey: S3_SECRET_KEY,
+        accessKeyId: S3_ACCESS_KEY(),
+        secretAccessKey: S3_SECRET_KEY(),
       },
       forcePathStyle: true,
     });
@@ -78,10 +75,11 @@ export async function uploadFeedbackImageToNeon(
   const ext = originalFilename.split('.').pop() || 'jpg';
   const cleanExt = ext.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'jpg';
   const key = `feedback/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
+  const bucket = S3_BUCKET();
 
   await s3.send(
     new PutObjectCommand({
-      Bucket: S3_BUCKET,
+      Bucket: bucket,
       Key: key,
       Body: fileBuffer,
       ContentType: contentType,
@@ -92,12 +90,12 @@ export async function uploadFeedbackImageToNeon(
   try {
     const signedUrl = await getSignedUrl(
       s3 as any,
-      new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }) as any,
+      new GetObjectCommand({ Bucket: bucket, Key: key }) as any,
       { expiresIn: 60 * 60 * 24 * 7 }
     );
     return signedUrl;
   } catch {
-    return `${S3_ENDPOINT}/${S3_BUCKET}/${key}`;
+    return `${S3_ENDPOINT()}/${bucket}/${key}`;
   }
 }
 

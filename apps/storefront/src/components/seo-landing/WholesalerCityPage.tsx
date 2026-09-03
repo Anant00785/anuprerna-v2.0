@@ -5,7 +5,6 @@ import type { SeoProduct } from './loom';
 import WhyPartner from './WhyPartner';
 import ReviewsSection from './ReviewsSection';
 import CityEnquiryForm from './CityEnquiryForm';
-import Link from 'next/link';
 import {
   WorkflowSection,
   WhyChooseSection,

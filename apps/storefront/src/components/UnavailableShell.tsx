@@ -12,7 +12,6 @@
 import Link from 'next/link';
 import type { CatalogueProduct } from '@/components/catalogue/types';
 import RelatedProducts from '@/components/product/RelatedProducts';
-import Link from 'next/link';
 
 function titleFromSlug(slug: string): string {
   return slug

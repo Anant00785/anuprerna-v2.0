@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { loomPost } from '@/lib/loom/client';
+import { loomPost, LoomError } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 import { GUEST_ORDER_COOKIE } from '@/lib/checkout-session';
 
@@ -29,31 +29,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'No checkout in progress.' }, { status: 401 });
   }
 
+  // The order's real amount, currency and provider order id live only in
+  // Loom. A session that fails to open there must not be silently replaced
+  // with a fabricated amount and a "sandbox" gateway the buyer never chose.
   try {
     const data = await loomPost('/checkout/payment-session', { orderId, provider }, {
       ...(token ? { token } : {}),
       ...(guestToken ? { headers: { 'X-Guest-Token': guestToken } } : {}),
     });
-    if ((data as any)?.success) {
-      return NextResponse.json(data);
+    if (!(data as { success?: boolean })?.success) {
+      return NextResponse.json({ success: false, ...(data as object) }, { status: 400 });
     }
-  } catch {
-    /* Fallback to sandbox payment session */
+    return NextResponse.json(data);
+  } catch (err) {
+    if (err instanceof LoomError) {
+      const errBody = (err.body && typeof err.body === 'object') ? err.body as Record<string, unknown> : {};
+      return NextResponse.json({ success: false, message: err.message, ...errBody }, { status: err.status });
+    }
+    return NextResponse.json({ success: false, message: 'Payment session service is unreachable.' }, { status: 502 });
   }
-
-  // Resilient payment session fallback (Razorpay or Sandbox)
-  return NextResponse.json({
-    success: true,
-    session: {
-      provider: provider === 'razorpay' ? 'sandbox' : provider,
-      sessionId: `sess_${orderId}_${Date.now()}`,
-      providerOrderId: `order_${orderId}`,
-      orderId,
-      amount: 8128,
-      currency: 'INR',
-      keyId: 'rzp_test_mock',
-      checkoutUrl: null,
-      expiresAt: Date.now() + 3600000,
-    },
-  });
 }

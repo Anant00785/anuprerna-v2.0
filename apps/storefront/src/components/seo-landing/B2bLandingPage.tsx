@@ -9,7 +9,6 @@ import WhyPartner from './WhyPartner';
 import ReviewsSection from './ReviewsSection';
 import CardPrice from './CardPrice';
 import { buildB2bFaqs } from './b2bFaqs';
-import Link from 'next/link';
 
 export type B2bVariant =
   | 'fabric-type'

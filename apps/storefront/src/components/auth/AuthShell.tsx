@@ -13,7 +13,6 @@ import CodeSignIn from './CodeSignIn';
 // so the two account-creating lanes cannot ask two different questions.
 import BuyerTypeQuestion, { type SourcingChoice } from '@/components/account/BuyerTypeQuestion';
 import { useBuyerMode } from '@/components/BuyerModeProvider';
-import Link from 'next/link';
 
 // Hero image URL — same asset the live Angular site uses
 const AUTH_HERO = 'https://anuprerna.com/assets/img/auth.jpeg';

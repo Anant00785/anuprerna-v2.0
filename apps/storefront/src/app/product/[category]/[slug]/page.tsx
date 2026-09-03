@@ -12,7 +12,6 @@ import RelatedProducts from '@/components/product/RelatedProducts';
 import UnavailableShell from '@/components/UnavailableShell';
 import JsonLd from '@/components/seo/JsonLd';
 import { absUrl, productPath, robotsMeta, metaDescription } from '@/lib/seo/config';
-import Link from 'next/link';
 
 export const revalidate = 1800;
 

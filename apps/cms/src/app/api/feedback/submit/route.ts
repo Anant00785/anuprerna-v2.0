@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNeonPool, getNeonS3 } from "@/lib/neon";
+import { getNeonPool, getNeonS3, neonFeedbackBucket, neonS3Endpoint } from "@/lib/neon";
 import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const S3_BUCKET = process.env.NEON_FEEDBACK_BUCKET || "feeback";
-const S3_ENDPOINT =
-  process.env.AWS_ENDPOINT_URL_S3 ||
-  "https://br-raspy-sun-ayr5oy8j.storage.c-5.us-east-2.aws.neon.tech";
 
 async function uploadImageToNeon(
   fileBuffer: Buffer,
@@ -17,13 +12,14 @@ async function uploadImageToNeon(
   originalFilename: string = "feedback.jpg"
 ): Promise<string> {
   const s3 = getNeonS3();
+  const bucket = neonFeedbackBucket();
   const ext = originalFilename.split(".").pop() || "jpg";
   const cleanExt = ext.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "jpg";
   const key = `cms-feedback/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
 
   await s3.send(
     new PutObjectCommand({
-      Bucket: S3_BUCKET,
+      Bucket: bucket,
       Key: key,
       Body: fileBuffer,
       ContentType: contentType,
@@ -33,12 +29,12 @@ async function uploadImageToNeon(
   try {
     const signedUrl = await getSignedUrl(
       s3 as any,
-      new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }) as any,
+      new GetObjectCommand({ Bucket: bucket, Key: key }) as any,
       { expiresIn: 60 * 60 * 24 * 7 }
     );
     return signedUrl;
   } catch {
-    return `${S3_ENDPOINT}/${S3_BUCKET}/${key}`;
+    return `${neonS3Endpoint()}/${bucket}/${key}`;
   }
 }
 
