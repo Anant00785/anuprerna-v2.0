@@ -763,12 +763,20 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                   )}
                 </div>
               ) : (
-                <button
-                  onClick={() => setLoginOpen(true)}
+                // Goes to /auth, not the LoginModal. The modal is a bare
+                // email+password box: it has no "Continue with Google", no
+                // register step and no forgot-password link, so the header —
+                // the deliberate "I want to sign in" entry point — was dropping
+                // people into the most limited of the two. LoginModal stays for
+                // the CONTEXTUAL prompts (add-to-cart, swatch, notify-me), where
+                // interrupting the page with a full navigation would lose the
+                // customer's place.
+                <Link
+                  href='/auth'
                   className='hidden sm:inline-flex items-center text-black/80 hover:text-clay text-sm transition'
                 >
                   Sign In &rsaquo;
-                </button>
+                </Link>
               )}
             </div>
           </nav>
@@ -782,7 +790,7 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
               nav={nav} acc={acc} setAcc={setAcc} user={user} logout={logout}
               firstName={firstName} isWholesale={isWholesale}
               onClose={() => setDrawer(false)}
-              onSignIn={() => { setDrawer(false); setLoginOpen(true); }}
+              onSignIn={() => { setDrawer(false); router.push('/auth'); }}
             />
           )}
         </header>
