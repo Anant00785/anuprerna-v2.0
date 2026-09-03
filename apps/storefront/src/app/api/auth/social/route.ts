@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { humaniseAuthError } from '@/lib/auth/error-message';
 import { cookies } from 'next/headers';
 import { loomPost } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     const jwt = result?.token || result?.jwt || '';
     if (result?.success === false || !jwt) {
       return NextResponse.json(
-        { success: false, message: result?.message || 'Could not sign you in with Google.' },
+        { success: false, message: humaniseAuthError(result?.message, 'Could not sign you in with Google.') },
         { status: 401 },
       );
     }
