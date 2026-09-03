@@ -112,12 +112,12 @@ async function fetchFabric(slug: string): Promise<FabricProductResponse | null> 
   // v2 is the primary detail endpoint; fall back to v1 if v2 errors for a given slug
   // (live behaviour — some slugs only resolve on one endpoint).
   try {
-    const v2 = await loomGet<FabricProductResponse>('/get/v2/fabric-product/slug/' + slug, { revalidate: PDP_REVALIDATE, tags: ['products'] });
+    const v2 = await loomGet<FabricProductResponse>('/get/v2/fabric-product/slug/' + slug, { revalidate: PDP_REVALIDATE, tags: ['products-v2'] });
     if (v2?.success && v2.fabricProduct) return v2;
     if (v2?.reason === 'unavailable') return v2; // disabled -- don't fall through to v1
   } catch { /* fall through to v1 */ }
   try {
-    const v1 = await loomGet<FabricProductResponse>('/get/fabric-product/slug/' + slug, { revalidate: PDP_REVALIDATE, tags: ['products'] });
+    const v1 = await loomGet<FabricProductResponse>('/get/fabric-product/slug/' + slug, { revalidate: PDP_REVALIDATE, tags: ['products-v2'] });
     if (v1?.success && v1.fabricProduct) return v1;
     if (v1?.reason === 'unavailable') return v1;
   } catch { /* both failed */ }
@@ -208,7 +208,7 @@ export async function getFabricProduct(slug: string): Promise<NormalisedProduct 
 export async function getFinishedProduct(slug: string): Promise<NormalisedProduct | null | 'unavailable'> {
   try {
     const [res, swatchPercentage] = await Promise.all([
-      loomGet<FinishedProductResponse>('/get/finished-product/slug/' + slug, { revalidate: PDP_REVALIDATE, tags: ['products'] }),
+      loomGet<FinishedProductResponse>('/get/finished-product/slug/' + slug, { revalidate: PDP_REVALIDATE, tags: ['products-v2'] }),
       getSwatchPercentage(),
     ]);
     if (res?.reason === 'unavailable') return 'unavailable';
@@ -252,7 +252,7 @@ export async function getFabricProductById(id: number): Promise<NormalisedProduc
   try {
     const res = await loomGet<FabricProductResponse>('/get/fabric-product/' + id, {
       revalidate: PDP_REVALIDATE,
-      tags: ['products'],
+      tags: ['products-v2'],
     });
     if (!res?.success || !res.fabricProduct) return null;
     const { product, gsm, width, addToSwatch, id: recordId } = res.fabricProduct;
@@ -276,7 +276,7 @@ export async function getFinishedProductById(id: number): Promise<NormalisedProd
   try {
     const res = await loomGet<FinishedProductResponse>('/get/finished-product/' + id, {
       revalidate: PDP_REVALIDATE,
-      tags: ['products'],
+      tags: ['products-v2'],
     });
     if (!res?.success || !res.finishedProduct) return null;
     const { product, id: recordId } = res.finishedProduct;
