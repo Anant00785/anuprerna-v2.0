@@ -658,12 +658,27 @@ function normalizeOrderDetail(raw: Record<string, unknown>): OrderDetail {
  * The raw dump is ~46 MB; normalized output is ~200 KB for 2640 orders.
  */
 export async function getOrderList(token?: string): Promise<OrderRow[]> {
-  const raw = await request<{ success: boolean; orderList: Record<string, unknown>[] }>(
-    "/get/data-dump/order",
-    {},
-    token,
-  );
-  return (raw.orderList ?? []).map(normalizeOrderRow);
+  const raw = await request<{
+    success: boolean;
+    orderList?: Record<string, unknown>[];
+    data?: Record<string, unknown>[];
+  }>("/get/data-dump/order", {}, token);
+
+  // Envelope key differs by backend: legacy Loom keys the dump under
+  // `orderList`, the v2 API under `data` (keyedResponse("data", ...) in
+  // apps/api/src/commerce/domain/order-migrated.controller.ts). Accept either.
+  //
+  // Neither key present means the shape changed again — throw rather than
+  // return []. A silent `?? []` here rendered "0 orders" against a healthy
+  // backend holding 4,770 of them, which is exactly the failure mode
+  // apps/cms/CLAUDE.md rule 2 forbids: never show a backend failure as empty.
+  const rows = raw.orderList ?? raw.data;
+  if (!Array.isArray(rows)) {
+    throw new Error(
+      `Order dump missing both 'orderList' and 'data' keys (got: ${Object.keys(raw).join(", ") || "no keys"})`,
+    );
+  }
+  return rows.map(normalizeOrderRow);
 }
 
 /** Fetch a single order by id. Returns null on miss. */

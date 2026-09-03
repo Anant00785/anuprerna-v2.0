@@ -24,7 +24,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { unstable_cache } from 'next/cache';
-import { getServiceToken } from '@/lib/loom-service-token';
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { rewriteBloomscorpUrlsDeep } from '@/lib/media';
 import type { ImpactOrderRow, ImpactSummary } from '@/lib/impact-api';
 
@@ -77,7 +77,7 @@ function getCachedSummary(
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   const { searchParams } = req.nextUrl;
   const type = (searchParams.get('type') ?? 'regular') === 'custom' ? 'custom' : 'regular';

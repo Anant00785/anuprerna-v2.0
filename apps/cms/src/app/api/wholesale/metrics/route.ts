@@ -8,7 +8,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getServiceToken } from '@/lib/loom-service-token';
+import { getBackendCallToken } from "@/lib/backend-call-token";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const active = req.nextUrl.searchParams.get('active') ?? 'true';
     const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+    const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
     const res = await fetch(`${BACKEND}/get/loyalty-program/customers/metrics?active=${encodeURIComponent(active)}`, {
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       cache: 'no-store',

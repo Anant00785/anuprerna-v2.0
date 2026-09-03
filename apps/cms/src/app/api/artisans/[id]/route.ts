@@ -17,7 +17,7 @@ import {
   getWorkersOfMaster,
   getMasterArtisan,
 } from "@/lib/artisans-api";
-import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,7 @@ export async function GET(
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   try {
     const artisan = await getArtisanById(numericId, token);
