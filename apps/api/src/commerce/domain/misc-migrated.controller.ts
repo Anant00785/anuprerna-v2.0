@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -102,12 +101,12 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 201, description: "Color created" })
   async post_add_color(@Body() body: CreateColorDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.color)
         .values({
           name: body.name,
           hex: body.hex,
-          timeOfCreation: BigInt(Date.now()),
+          timeOfCreation: Date.now(),
         })
         .returning();
       return keyedResponse("data", inserted ? [formatColor(inserted)] : []);
@@ -127,7 +126,7 @@ export class MiscMigratedDomainController {
       if (body.name) updateSet.name = body.name;
       if (body.hex) updateSet.hex = body.hex;
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.color)
         .set(updateSet)
         .where(eq(schema.color.id, BigInt(body.id)))
@@ -146,7 +145,7 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 200, description: "Color deleted" })
   async delete_delete_color_colorId(@Param("colorId") colorId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.color)
         .where(eq(schema.color.id, BigInt(colorId)));
       return simpleResponse(true, "Color record deleted successfully.");
@@ -155,31 +154,13 @@ export class MiscMigratedDomainController {
     }
   }
 
-  @Get("/get/skills")
-  @ApiOperation({ summary: "Fetch skill taxonomy list" })
-  @ApiResponse({ status: 200, description: "Skills list" })
-  async get_get_skills() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.skill)
-        .limit(50);
-      const formatted = (rows || []).map(r => ({
-        id: r.id ? String(r.id) : null,
-        name: r.name,
-      }));
-      return keyedResponse("data", formatted);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
   @Get("/get/ads-conversion/summary")
   @ApiOperation({ summary: "Fetch ad conversion attribution summary" })
   @ApiResponse({ status: 200, description: "Ad conversion summary" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_ads_conversion_summary() {
     try {
-      const orders = await (this.db as any)
+      const orders = await this.db
         .select()
         .from(schema.orders)
         .limit(100);
@@ -196,15 +177,16 @@ export class MiscMigratedDomainController {
   @Get("/get/ads-conversion/abandoned-carts")
   @ApiOperation({ summary: "Fetch ad conversion abandoned cart stats" })
   @ApiResponse({ status: 200, description: "Abandoned carts stats" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_ads_conversion_abandoned_carts() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.cartItem)
         .limit(20);
       return keyedResponse("data", (rows || []).map(r => ({
         id: r.id ? String(r.id) : null,
-        productId: r.productId ? String(r.productId) : null,
+        productId: String(r.finishedProductId ?? r.fabricProductId ?? ""),
         quantity: r.quantity ? Number(r.quantity) : 1,
       })));
     } catch (err) {
@@ -219,7 +201,7 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 200, description: "Material deleted" })
   async delete_delete_material_materialId(@Param("materialId") materialId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.material)
         .where(eq(schema.material.id, BigInt(materialId)));
       return simpleResponse(true, "Material deleted successfully.");
@@ -235,7 +217,7 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 200, description: "Pattern deleted" })
   async delete_delete_pattern_patternId(@Param("patternId") patternId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.pattern)
         .where(eq(schema.pattern.id, BigInt(patternId)));
       return simpleResponse(true, "Pattern deleted successfully.");
@@ -250,7 +232,7 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 200, description: "Users list" })
   async get_users_users() {
     try {
-      const superUsers = await (this.db as any)
+      const superUsers = await this.db
         .select()
         .from(schema.superUser)
         .limit(50);

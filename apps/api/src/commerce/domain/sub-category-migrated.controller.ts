@@ -1,6 +1,5 @@
 import * as schema from "../../database/schema/schema.js";
 import { eq } from "drizzle-orm";
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
@@ -28,6 +27,7 @@ export class SubCategoryMigratedDomainController {
 
   @Get("/get/sub-category-list")
   @ApiOperation({ summary: "Fetch sub-categories" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_sub_category_list(@Query() query: any) {
     try {
       // Query real PostgreSQL database table via Drizzle ORM

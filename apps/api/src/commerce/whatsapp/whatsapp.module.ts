@@ -5,11 +5,12 @@ import { TransmissionModule } from "../transmission/transmission.module.js";
 import { WhatsappController } from "./controller/whatsapp.controller.js";
 import { WhatsappService } from "./service/whatsapp.service.js";
 import { WhatsappRepository } from "./repository/whatsapp.repository.js";
+import { WhatsappDeliveryStatusPollingService } from "./service/whatsapp-delivery-status-polling.service.js";
 
 @Module({
   imports: [AuthModule, TransmissionModule, ConfigModule],
   controllers: [WhatsappController],
-  providers: [WhatsappService, WhatsappRepository],
-  exports: [WhatsappService, WhatsappRepository],
+  providers: [WhatsappService, WhatsappRepository, WhatsappDeliveryStatusPollingService],
+  exports: [WhatsappService, WhatsappRepository, WhatsappDeliveryStatusPollingService],
 })
 export class WhatsappModule {}

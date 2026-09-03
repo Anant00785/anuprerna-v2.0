@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -56,9 +55,15 @@ export class CurrencyLocationDomainController {
   @Get(["/get/forex/list", "/get/forex-list"])
   @ApiOperation({ summary: "List supported forex currencies" })
   @ApiResponse({ status: 200, description: "List of supported currencies" })
+  // PUBLIC — no @RequireGate. This is a DUPLICATE registration of the same two
+  // paths ForexController serves; that controller was un-gated earlier for the
+  // outage this one still carried. Loom's ForexController.getForexList() calls
+  // response.buildList() directly (never getEntity/CODE_*), and the storefront
+  // fetches /get/forex-list during SSR with no bearer token
+  // (apps/storefront/src/lib/loom/endpoints.ts getForexList).
   async get_get_forex_list(@Query() query: any) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.forex)
         .orderBy(desc(schema.forex.id));
@@ -84,12 +89,13 @@ export class CurrencyLocationDomainController {
   @ApiOperation({ summary: "Retrieve forex currency by ID" })
   @ApiParam({ name: "forexId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Forex details" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_forex_forexId(@Param("forexId") forexId: string) {
     if (forexId === "list") {
       return this.get_get_forex_list({});
     }
     try {
-      const [row] = await (this.db as any)
+      const [row] = await this.db
         .select()
         .from(schema.forex)
         .where(eq(schema.forex.id, BigInt(forexId)));
@@ -112,7 +118,7 @@ export class CurrencyLocationDomainController {
   @ApiResponse({ status: 201, description: "Forex currency created" })
   async post_add_forex(@Body() body: CreateForexDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.forex)
         .values({
           country: body.country,
@@ -138,7 +144,7 @@ export class CurrencyLocationDomainController {
       if (body.currency) updateData.currency = body.currency;
       if (body.rate !== undefined) updateData.rate = String(body.rate);
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.forex)
         .set(updateData)
         .where(eq(schema.forex.id, BigInt(body.forexId)))
@@ -156,7 +162,7 @@ export class CurrencyLocationDomainController {
   @ApiResponse({ status: 200, description: "Forex currency deleted" })
   async delete_delete_forex_forexId(@Param("forexId") forexId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.forex)
         .where(eq(schema.forex.id, BigInt(forexId)));
       return simpleResponse(true, "Forex currency deleted successfully.");
@@ -171,7 +177,7 @@ export class CurrencyLocationDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_forex_id(@Param("id") id: string) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.forex)
         .where(eq(schema.forex.id, BigInt(id)));
@@ -187,7 +193,7 @@ export class CurrencyLocationDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_forex_exchange_rate_id(@Param("id") id: string) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.forexExchangeRate)
         .where(eq(schema.forexExchangeRate.id, BigInt(id)));
@@ -202,7 +208,7 @@ export class CurrencyLocationDomainController {
   @ApiOperation({ summary: "Table explorer data for ForexExchangeRate" })
   async get_get_table_explorer_data_forex_exchange_rate(@Query() query: any) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.forexExchangeRate)
         .limit(50);
@@ -217,7 +223,7 @@ export class CurrencyLocationDomainController {
   @ApiOperation({ summary: "Table explorer data for Forex" })
   async get_get_table_explorer_data_forex(@Query() query: any) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.forex)
         .limit(50);

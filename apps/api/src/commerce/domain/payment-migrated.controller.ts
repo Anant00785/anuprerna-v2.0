@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -131,13 +130,13 @@ export class PaymentMigratedDomainController {
     @Body() body: CalculateArtisanPaymentDto,
   ) {
     try {
-      const parsedWorkflowId = BigInt(workflowId || "54196624");
-      const artisanId = body?.artisanId ? BigInt(body.artisanId) : 47913274n;
+      const parsedWorkflowId = Number(workflowId || 54196624);
+      const artisanId = body?.artisanId ? Number(body.artisanId) : 47913274;
       const quantity = body?.quantity ? String(body.quantity) : "10.000";
       const rate = body?.rate ? String(body.rate) : "50.00";
       const basePay = (parseFloat(quantity) * parseFloat(rate)).toFixed(2);
 
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.artisanPaymentRecord)
         .values({
           artisanId: artisanId,
@@ -148,7 +147,7 @@ export class PaymentMigratedDomainController {
           totalIncentive: "0.00",
           totalPayment: basePay,
           status: "PENDING",
-          calculatedAt: BigInt(Date.now()),
+          calculatedAt: Date.now(),
           quantityType: "METER",
         })
         .returning();
@@ -163,12 +162,13 @@ export class PaymentMigratedDomainController {
   @ApiOperation({ summary: "View payment ledger for specific artisan" })
   @ApiParam({ name: "artisanId", example: 103253057, type: Number })
   @ApiResponse({ status: 200, description: "Artisan payment ledger" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_artisan_payment_artisan_artisanId(@Param("artisanId") artisanId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisanPaymentRecord)
-        .where(eq(schema.artisanPaymentRecord.artisanId, BigInt(artisanId)))
+        .where(eq(schema.artisanPaymentRecord.artisanId, Number(artisanId)))
         .orderBy(desc(schema.artisanPaymentRecord.id));
       return keyedResponse("data", (rows || []).map(formatPaymentRecord));
     } catch (err) {
@@ -180,12 +180,13 @@ export class PaymentMigratedDomainController {
   @ApiOperation({ summary: "View payment summary for specific artisan" })
   @ApiParam({ name: "artisanId", example: 103253057, type: Number })
   @ApiResponse({ status: 200, description: "Artisan payment summary" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_artisan_payment_artisan_artisanId_summary(@Param("artisanId") artisanId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisanPaymentRecord)
-        .where(eq(schema.artisanPaymentRecord.artisanId, BigInt(artisanId)));
+        .where(eq(schema.artisanPaymentRecord.artisanId, Number(artisanId)));
       const totalDisbursed = rows
         .filter(r => r.status === "DISBURSED" || r.status === "PAID")
         .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
@@ -207,9 +208,10 @@ export class PaymentMigratedDomainController {
   @Get("/get/artisan-payment")
   @ApiOperation({ summary: "View payment ledger for authenticated artisan" })
   @ApiResponse({ status: 200, description: "Artisan payment records" })
+  @RequireGate(GateCode.CODE_AR)
   async get_get_artisan_payment(@Query() query: any) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisanPaymentRecord)
         .orderBy(desc(schema.artisanPaymentRecord.id))
@@ -223,9 +225,10 @@ export class PaymentMigratedDomainController {
   @Get("/get/artisan-payment/summary")
   @ApiOperation({ summary: "View payment summary for authenticated artisan" })
   @ApiResponse({ status: 200, description: "Artisan payment overall summary" })
+  @RequireGate(GateCode.CODE_AR)
   async get_get_artisan_payment_summary(@Query() query: any) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisanPaymentRecord);
       const totalDisbursed = rows
@@ -251,7 +254,7 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "All artisan payment records" })
   async get_get_artisan_payments(@Query() query: any) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisanPaymentRecord)
         .orderBy(desc(schema.artisanPaymentRecord.id));
@@ -273,7 +276,7 @@ export class PaymentMigratedDomainController {
       if (body.notes) updateData.notes = body.notes;
       if (body.totalPayment !== undefined) updateData.totalPayment = String(body.totalPayment);
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.artisanPaymentRecord)
         .set(updateData)
         .where(eq(schema.artisanPaymentRecord.id, BigInt(body.recordId)))
@@ -292,11 +295,11 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan payment record approved" })
   async patch_update_artisan_payment_approve(@Body() body: ApproveArtisanPaymentDto) {
     try {
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.artisanPaymentRecord)
         .set({
           status: "APPROVED",
-          approvedAt: BigInt(Date.now()),
+          approvedAt: Date.now(),
           approvedBy: body.approvedBy || "super_user",
           notes: body.notes || "Approved for payout",
         })
@@ -316,7 +319,7 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan payment record deleted" })
   async delete_delete_artisan_payment_record_recordId(@Param("recordId") recordId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.artisanPaymentRecord)
         .where(eq(schema.artisanPaymentRecord.id, BigInt(recordId)));
       return simpleResponse(true, "Artisan payment record deleted successfully.");
@@ -328,9 +331,10 @@ export class PaymentMigratedDomainController {
   @Get("/get/data-dump/transaction")
   @ApiOperation({ summary: "Export JSON data dump of financial transactions" })
   @ApiResponse({ status: 200, description: "Razorpay transaction data dump" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_data_dump_transaction(@Query() query: any) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.razorpayTransaction)
         .orderBy(desc(schema.razorpayTransaction.id));

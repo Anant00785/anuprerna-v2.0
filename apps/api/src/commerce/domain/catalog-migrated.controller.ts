@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as schema from "../../database/schema/schema.js";
 import { eq } from "drizzle-orm";
 import {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as schema from "../../database/schema/schema.js";
 import { eq, desc } from "drizzle-orm";
 import {
@@ -49,6 +48,7 @@ export class TableExplorerDomainController {
 
   @Get("/get/data-dump/tenant")
   @ApiOperation({ summary: "Export JSON data dump of tenant records" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_data_dump_tenant(@Query() query: any) {
     try {
       const result = await (this.db as any).select().from(schema.loomTenant);

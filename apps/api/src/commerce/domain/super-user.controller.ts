@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -97,10 +96,10 @@ export class SuperUserDomainController {
   @ApiResponse({ status: 201, description: "Superuser registered" })
   async post_super_user_registration(@Body() body: SuperUserRegistrationDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.superUser)
         .values({
-          tenantId: BigInt(body.tenantId || 1),
+          tenantId: Number(body.tenantId || 1),
         })
         .returning();
 
@@ -124,13 +123,13 @@ export class SuperUserDomainController {
       if (text && text.trim().length > 0) {
         const queryText = text.trim();
         if (!isNaN(Number(queryText))) {
-          rows = await (this.db as any)
+          rows = await this.db
             .select()
             .from(schema.orders)
             .where(eq(schema.orders.id, BigInt(queryText)))
             .limit(parsedLimit);
         } else {
-          rows = await (this.db as any)
+          rows = await this.db
             .select()
             .from(schema.orders)
             .where(ilike(schema.orders.currency, `%${queryText}%`))
@@ -138,7 +137,7 @@ export class SuperUserDomainController {
             .limit(parsedLimit);
         }
       } else {
-        rows = await (this.db as any)
+        rows = await this.db
           .select()
           .from(schema.orders)
           .orderBy(desc(schema.orders.id))
@@ -169,13 +168,13 @@ export class SuperUserDomainController {
       let rows: any[];
 
       if (text && !isNaN(Number(text.trim()))) {
-        rows = await (this.db as any)
+        rows = await this.db
           .select()
           .from(schema.customOrder)
           .where(eq(schema.customOrder.id, BigInt(text.trim())))
           .limit(parsedLimit);
       } else {
-        rows = await (this.db as any)
+        rows = await this.db
           .select()
           .from(schema.customOrder)
           .orderBy(desc(schema.customOrder.id))
@@ -212,10 +211,10 @@ export class SuperUserDomainController {
   @ApiResponse({ status: 200, description: "Custom order fulfillment list" })
   async get_get_super_user_custom_order_orderId_fulfillment_list(@Param("orderId") orderId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.customOrderFulfillment)
-        .where(eq(schema.customOrderFulfillment.customOrderId, BigInt(orderId)));
+        .where(eq(schema.customOrderFulfillment.customOrderId, Number(orderId)));
       return keyedResponse("data", rows || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -229,10 +228,10 @@ export class SuperUserDomainController {
   @ApiResponse({ status: 200, description: "Custom order ready list" })
   async get_get_super_user_custom_order_orderId_ready_list(@Param("orderId") orderId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.customOrderReady)
-        .where(eq(schema.customOrderReady.customOrderId, BigInt(orderId)));
+        .where(eq(schema.customOrderReady.customOrderId, Number(orderId)));
       return keyedResponse("data", rows || []);
     } catch (err) {
       return keyedResponse("data", []);
@@ -245,7 +244,7 @@ export class SuperUserDomainController {
   @ApiResponse({ status: 200, description: "Ads conversion summary metrics" })
   async get_get_super_user_ads_conversion_summary(@Query() query: any) {
     try {
-      const orders = await (this.db as any)
+      const orders = await this.db
         .select()
         .from(schema.orders)
         .limit(200);
@@ -281,7 +280,7 @@ export class SuperUserDomainController {
   @ApiResponse({ status: 200, description: "List of attributed orders" })
   async get_get_super_user_ads_conversion_orders(@Query() query: any) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.orders)
         .where(or(sql`${schema.orders.utmSource} IS NOT NULL`, sql`${schema.orders.clickId} IS NOT NULL`))
@@ -300,7 +299,7 @@ export class SuperUserDomainController {
   @ApiResponse({ status: 200, description: "List of abandoned carts" })
   async get_get_super_user_ads_conversion_abandoned_carts(@Query() query: any) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.cartItem)
         .orderBy(desc(schema.cartItem.id))
@@ -308,9 +307,9 @@ export class SuperUserDomainController {
       const formatted = (rows || []).map(r => ({
         id: r.id ? String(r.id) : null,
         tenantId: r.tenantId ? String(r.tenantId) : null,
-        productId: r.productId ? String(r.productId) : null,
+        productId: String(r.finishedProductId ?? r.fabricProductId ?? ""),
         quantity: r.quantity ? Number(r.quantity) : 1,
-        timeOfCreation: r.timeOfCreation ? Number(r.timeOfCreation) : null,
+        timeOfCreation: r.lastUpdatedAt ?? null,
       }));
       return keyedResponse("data", formatted);
     } catch (err) {
@@ -324,7 +323,7 @@ export class SuperUserDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_super_user_id(@Param("id") id: string) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.superUser)
         .where(eq(schema.superUser.id, BigInt(id)));
@@ -339,7 +338,7 @@ export class SuperUserDomainController {
   @ApiOperation({ summary: "Table explorer data for SuperUser" })
   async get_get_table_explorer_data_super_user(@Query() query: any) {
     try {
-      const result = await (this.db as any)
+      const result = await this.db
         .select()
         .from(schema.superUser)
         .orderBy(desc(schema.superUser.id))

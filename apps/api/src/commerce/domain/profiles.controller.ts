@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -299,12 +298,12 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 201, description: "Size option created" })
   async post_add_size_profile_option(@Body() body: CreateSizeProfileOptionDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.sizeProfileOption)
         .values({
-          profileId: BigInt(body.profileId || 109845),
+          profileId: Number(body.profileId || 109845),
           label: body.label || "L",
-          keyFeature: body.keyFeature || null,
+          keyFeature: body.keyFeature || "",
           sortOrder: body.sortOrder || 1,
           consumedFabric: body.consumedFabric || "2.50",
         })
@@ -328,7 +327,7 @@ export class ProfilesDomainController {
       if (body.sortOrder !== undefined) updateSet.sortOrder = body.sortOrder;
       if (body.consumedFabric) updateSet.consumedFabric = body.consumedFabric;
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.sizeProfileOption)
         .set(updateSet)
         .where(eq(schema.sizeProfileOption.id, BigInt(body.id)))
@@ -347,7 +346,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Size option deleted" })
   async delete_delete_size_profile_option_sizeProfileOptionId(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.sizeProfileOption)
         .where(eq(schema.sizeProfileOption.id, BigInt(sizeProfileOptionId)));
       return simpleResponse(true, "Size profile option deleted successfully.");
@@ -363,10 +362,10 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Size option product usages" })
   async get_get_usage_size_profile_option_sizeProfileOptionId(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.productSizeProfile)
-        .where(eq(schema.productSizeProfile.sizeProfileOptionId, BigInt(sizeProfileOptionId)))
+        .where(eq(schema.productSizeProfile.sizeProfileOptionId, Number(sizeProfileOptionId)))
         .limit(20);
       return keyedResponse("data", (rows || []).map(r => ({
         id: String(r.id),
@@ -386,11 +385,11 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 201, description: "Size guide created" })
   async post_add_size_profile_guide(@Body() body: CreateSizeProfileGuideDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.sizeProfileGuide)
         .values({
-          profileId: BigInt(body.profileId || 2644),
-          optionId: BigInt(body.optionId || 4084),
+          profileId: Number(body.profileId || 2644),
+          optionId: Number(body.optionId || 4084),
           guide: body.guide || "Bust",
           value: body.value || 34,
           sortOrder: body.sortOrder || 1,
@@ -414,7 +413,7 @@ export class ProfilesDomainController {
       if (body.value !== undefined) updateSet.value = body.value;
       if (body.sortOrder !== undefined) updateSet.sortOrder = body.sortOrder;
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.sizeProfileGuide)
         .set(updateSet)
         .where(eq(schema.sizeProfileGuide.id, BigInt(body.id)))
@@ -433,7 +432,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Size guide deleted" })
   async delete_delete_size_profile_guide_sizeProfileGuideId(@Param("sizeProfileGuideId") sizeProfileGuideId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.sizeProfileGuide)
         .where(eq(schema.sizeProfileGuide.id, BigInt(sizeProfileGuideId)));
       return simpleResponse(true, "Size profile guide deleted successfully.");
@@ -448,7 +447,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Fabric finish profiles" })
   async get_get_finish_profile_list() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfile)
         .limit(50);
@@ -465,7 +464,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Finish profile detail" })
   async get_get_finish_profile_profileId(@Param("profileId") profileId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfile)
         .where(eq(schema.finishProfile.id, BigInt(profileId)));
@@ -482,12 +481,12 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 201, description: "Finish profile created" })
   async post_add_finish_profile(@Body() body: CreateFinishProfileDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.finishProfile)
         .values({
           profileName: body.profileName || "Custom Finish Profile",
           displayName: body.displayName || "Finishes",
-          timeOfCreation: BigInt(Date.now()),
+          timeOfCreation: Date.now(),
         })
         .returning();
       return keyedResponse("data", inserted ? [formatFinishProfile(inserted)] : []);
@@ -508,7 +507,7 @@ export class ProfilesDomainController {
       if (body.profileName) updateSet.profileName = body.profileName;
       if (body.displayName) updateSet.displayName = body.displayName;
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.finishProfile)
         .set(updateSet)
         .where(eq(schema.finishProfile.id, BigInt(profileId)))
@@ -527,7 +526,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Finish profile deleted" })
   async delete_delete_finish_profile_profileId(@Param("profileId") profileId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.finishProfile)
         .where(eq(schema.finishProfile.id, BigInt(profileId)));
       return simpleResponse(true, "Finish profile deleted successfully.");
@@ -543,7 +542,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Finish item usages" })
   async get_get_usage_finish_profile_item_finishItemId(@Param("finishItemId") finishItemId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfileItem)
         .where(eq(schema.finishProfileItem.id, BigInt(finishItemId)));
@@ -560,7 +559,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Finish profile item deleted" })
   async delete_delete_finish_profile_item_finishItemId(@Param("finishItemId") finishItemId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.finishProfileItem)
         .where(eq(schema.finishProfileItem.id, BigInt(finishItemId)));
       return simpleResponse(true, "Finish profile item deleted successfully.");
@@ -575,7 +574,7 @@ export class ProfilesDomainController {
   @ApiResponse({ status: 200, description: "Artisan profile" })
   async get_get_artisan_profile() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .limit(10);
@@ -604,7 +603,7 @@ export class ProfilesDomainController {
       if (body.hasWhatsapp !== undefined) updateSet.hasWhatsapp = body.hasWhatsapp;
 
       const artisanId = body.id ? BigInt(body.id) : 47916439n;
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.artisan)
         .set(updateSet)
         .where(eq(schema.artisan.id, artisanId))
@@ -622,7 +621,7 @@ export class ProfilesDomainController {
   @ApiParam({ name: "id", example: 99714, type: Number })
   async get_get_table_explorer_data_finish_profile_item_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfileItem)
         .where(eq(schema.finishProfileItem.id, BigInt(id)));
@@ -638,7 +637,7 @@ export class ProfilesDomainController {
   @ApiParam({ name: "id", example: 4096, type: Number })
   async get_get_table_explorer_data_size_profile_guide_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.sizeProfileGuide)
         .where(eq(schema.sizeProfileGuide.id, BigInt(id)));
@@ -654,7 +653,7 @@ export class ProfilesDomainController {
   @ApiParam({ name: "id", example: 109861, type: Number })
   async get_get_table_explorer_data_size_profile_option_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.sizeProfileOption)
         .where(eq(schema.sizeProfileOption.id, BigInt(id)));
@@ -670,7 +669,7 @@ export class ProfilesDomainController {
   @ApiParam({ name: "id", example: 101362, type: Number })
   async get_get_table_explorer_data_finish_profile_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfile)
         .where(eq(schema.finishProfile.id, BigInt(id)));
@@ -685,7 +684,7 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Fetch all finish profile items" })
   async get_get_table_explorer_data_finish_profile_item() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfileItem)
         .limit(50);
@@ -700,7 +699,7 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Fetch all finish profiles" })
   async get_get_table_explorer_data_finish_profile() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.finishProfile)
         .limit(50);

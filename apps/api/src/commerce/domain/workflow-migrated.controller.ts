@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as schema from "../../database/schema/schema.js";
 import { eq, desc, or } from "drizzle-orm";
 import {
@@ -314,11 +313,11 @@ export class WorkflowMigratedDomainController {
   @ApiResponse({ status: 201, description: "Step element template created" })
   async post_add_step_element_template(@Body() body: CreateStepElementTemplateDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.stepElementTemplate)
         .values({
-          workflowId: BigInt(body.workflowId),
-          elementId: BigInt(body.elementId),
+          workflowId: Number(body.workflowId),
+          elementId: Number(body.elementId),
           name: body.name,
           parentStepId: body.parentStepId || "",
           previousStepId: body.previousStepId || "",
@@ -355,7 +354,7 @@ export class WorkflowMigratedDomainController {
       if (body.estimatedDays !== undefined) updateSet.estimatedDays = body.estimatedDays;
       if (body.properties !== undefined) updateSet.properties = body.properties;
 
-      let [updated] = await (this.db as any)
+      let [updated] = await this.db
         .update(schema.stepElementTemplate)
         .set(updateSet)
         .where(eq(schema.stepElementTemplate.id, BigInt(body.id)))
@@ -363,17 +362,17 @@ export class WorkflowMigratedDomainController {
 
       if (!updated) {
         // Fallback to updating matching row or top row
-        [updated] = await (this.db as any)
+        [updated] = await this.db
           .update(schema.stepElementTemplate)
           .set(updateSet)
-          .where(eq(schema.stepElementTemplate.elementId, BigInt(body.id)))
+          .where(eq(schema.stepElementTemplate.elementId, Number(body.id)))
           .returning();
       }
 
       if (!updated) {
-        const [first] = await (this.db as any).select().from(schema.stepElementTemplate).limit(1);
+        const [first] = await this.db.select().from(schema.stepElementTemplate).limit(1);
         if (first) {
-          [updated] = await (this.db as any)
+          [updated] = await this.db
             .update(schema.stepElementTemplate)
             .set(updateSet)
             .where(eq(schema.stepElementTemplate.id, first.id))
@@ -394,7 +393,7 @@ export class WorkflowMigratedDomainController {
   @ApiResponse({ status: 200, description: "Step element template deleted" })
   async delete_delete_step_element_template_templateId(@Param("templateId") templateId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.stepElementTemplate)
         .where(eq(schema.stepElementTemplate.id, BigInt(templateId)));
       return simpleResponse(true, `Step element template ${templateId} deleted successfully.`);
@@ -410,12 +409,12 @@ export class WorkflowMigratedDomainController {
   @ApiResponse({ status: 201, description: "Subprocess element template created" })
   async post_add_subprocess_element_template(@Body() body: CreateSubprocessElementTemplateDto) {
     try {
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.subprocessElementTemplate)
         .values({
-          workflowId: BigInt(body.workflowId),
-          stepId: BigInt(body.stepId),
-          elementId: BigInt(body.elementId),
+          workflowId: Number(body.workflowId),
+          stepId: Number(body.stepId),
+          elementId: Number(body.elementId),
           name: body.name,
           parentSubprocessId: body.parentSubprocessId || "",
           previousSubprocessId: body.previousSubprocessId || "",
@@ -453,7 +452,7 @@ export class WorkflowMigratedDomainController {
       if (body.estimatedDays !== undefined) updateSet.estimatedDays = body.estimatedDays;
       if (body.properties !== undefined) updateSet.properties = body.properties;
 
-      let [updated] = await (this.db as any)
+      let [updated] = await this.db
         .update(schema.subprocessElementTemplate)
         .set(updateSet)
         .where(eq(schema.subprocessElementTemplate.id, BigInt(body.id)))
@@ -461,22 +460,22 @@ export class WorkflowMigratedDomainController {
 
       if (!updated) {
         // Fallback: try by step_id or element_id
-        [updated] = await (this.db as any)
+        [updated] = await this.db
           .update(schema.subprocessElementTemplate)
           .set(updateSet)
           .where(
             or(
-              eq(schema.subprocessElementTemplate.stepId, BigInt(body.id)),
-              eq(schema.subprocessElementTemplate.elementId, BigInt(body.id))
+              eq(schema.subprocessElementTemplate.stepId, Number(body.id)),
+              eq(schema.subprocessElementTemplate.elementId, Number(body.id))
             )
           )
           .returning();
       }
 
       if (!updated) {
-        const [first] = await (this.db as any).select().from(schema.subprocessElementTemplate).limit(1);
+        const [first] = await this.db.select().from(schema.subprocessElementTemplate).limit(1);
         if (first) {
-          [updated] = await (this.db as any)
+          [updated] = await this.db
             .update(schema.subprocessElementTemplate)
             .set(updateSet)
             .where(eq(schema.subprocessElementTemplate.id, first.id))
@@ -497,7 +496,7 @@ export class WorkflowMigratedDomainController {
   @ApiResponse({ status: 200, description: "Subprocess element template deleted" })
   async delete_delete_subprocess_element_template_templateId(@Param("templateId") templateId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.subprocessElementTemplate)
         .where(eq(schema.subprocessElementTemplate.id, BigInt(templateId)));
       return simpleResponse(true, `Subprocess element template ${templateId} deleted successfully.`);
@@ -512,7 +511,7 @@ export class WorkflowMigratedDomainController {
   @ApiResponse({ status: 200, description: "Workflow quality feedback records" })
   async get_get_element_feedback() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.elementFeedback)
         .orderBy(desc(schema.elementFeedback.id))
@@ -537,16 +536,16 @@ export class WorkflowMigratedDomainController {
       if (body.remarks !== undefined) updateSet.remarks = body.remarks;
       if (body.approvedBy) updateSet.approvedBy = BigInt(body.approvedBy);
 
-      let [updated] = await (this.db as any)
+      let [updated] = await this.db
         .update(schema.elementFeedback)
         .set(updateSet)
         .where(eq(schema.elementFeedback.id, BigInt(body.id)))
         .returning();
 
       if (!updated) {
-        const [first] = await (this.db as any).select().from(schema.elementFeedback).limit(1);
+        const [first] = await this.db.select().from(schema.elementFeedback).limit(1);
         if (first) {
-          [updated] = await (this.db as any)
+          [updated] = await this.db
             .update(schema.elementFeedback)
             .set(updateSet)
             .where(eq(schema.elementFeedback.id, first.id))
@@ -566,7 +565,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 487345, type: Number })
   async get_get_table_explorer_data_element_template_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.elementTemplate)
         .where(eq(schema.elementTemplate.id, BigInt(id)));
@@ -582,7 +581,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_step_element_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.stepElement)
         .where(eq(schema.stepElement.id, BigInt(id)));
@@ -598,7 +597,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 488986, type: Number })
   async get_get_table_explorer_data_step_element_template_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.stepElementTemplate)
         .where(eq(schema.stepElementTemplate.id, BigInt(id)));
@@ -614,7 +613,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 565342, type: Number })
   async get_get_table_explorer_data_element_feedback_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.elementFeedback)
         .where(eq(schema.elementFeedback.id, BigInt(id)));
@@ -630,7 +629,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_workflow_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflow)
         .where(eq(schema.workflow.id, BigInt(id)));
@@ -646,7 +645,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 488985, type: Number })
   async get_get_table_explorer_data_workflow_template_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflowTemplate)
         .where(eq(schema.workflowTemplate.id, BigInt(id)));
@@ -662,7 +661,7 @@ export class WorkflowMigratedDomainController {
   @ApiParam({ name: "id", example: 2677992, type: Number })
   async get_get_table_explorer_data_workflow_custom_order_mapping_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflowCustomOrderMapping)
         .where(eq(schema.workflowCustomOrderMapping.id, BigInt(id)));
@@ -677,7 +676,7 @@ export class WorkflowMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for element-feedback" })
   async get_get_table_explorer_data_element_feedback() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.elementFeedback)
         .limit(50);
@@ -692,7 +691,7 @@ export class WorkflowMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for element-template" })
   async get_get_table_explorer_data_element_template() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.elementTemplate)
         .limit(50);
@@ -707,7 +706,7 @@ export class WorkflowMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for step-element-template" })
   async get_get_table_explorer_data_step_element_template() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.stepElementTemplate)
         .limit(50);
@@ -722,7 +721,7 @@ export class WorkflowMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for step-element" })
   async get_get_table_explorer_data_step_element() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.stepElement)
         .limit(50);
@@ -737,7 +736,7 @@ export class WorkflowMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for subprocess-element-template" })
   async get_get_table_explorer_data_subprocess_element_template() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.subprocessElementTemplate)
         .limit(50);
@@ -746,29 +745,12 @@ export class WorkflowMigratedDomainController {
       return keyedResponse("data", []);
     }
   }
-
-  @Get("/get/table-explorer/data/workflow-custom-order-mapping/:id")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Inspect WorkflowCustomOrderMapping entity by ID" })
-  @ApiParam({ name: "id", example: 2677992, type: Number })
-  async get_get_table_explorer_data_workflow_custom_order_mapping_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.workflowCustomOrderMapping)
-        .where(eq(schema.workflowCustomOrderMapping.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
   @Get("/get/table-explorer/data/workflow-custom-order-mapping")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for workflow-custom-order-mapping" })
   async get_get_table_explorer_data_workflow_custom_order_mapping() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflowCustomOrderMapping)
         .limit(50);
@@ -783,7 +765,7 @@ export class WorkflowMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for workflow" })
   async get_get_table_explorer_data_workflow() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflow)
         .limit(50);

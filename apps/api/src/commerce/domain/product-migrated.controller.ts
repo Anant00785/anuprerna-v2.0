@@ -1,19 +1,22 @@
 import * as schema from "../../database/schema/schema.js";
 import { eq, inArray } from "drizzle-orm";
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
+import { ProductDomainService } from "./product-domain.service.js";
 
 @ApiTags("Product")
 @ApiBearerAuth()
 @Controller()
 @UseGuards(RolesGuard)
 export class ProductMigratedDomainController {
-  constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
+  constructor(
+    @Inject(DATABASE_CONNECTION) private readonly db: Database,
+    private readonly products: ProductDomainService,
+  ) {}
 
   @Get("/get/product-preview-list/csv/:commaSeparatedCSVList")
   @ApiOperation({ summary: "Bulk product preview retrieval by SKU list" })
@@ -62,19 +65,19 @@ export class ProductMigratedDomainController {
 
   @Get("/get/related-products/id/:csv")
   @ApiOperation({ summary: "Fetch cross-sell related products by ID list" })
-  async get_get_related_products_id_csv(@Param('csv') csv: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  @ApiParam({ name: "csv", description: "Comma-separated product IDs", type: String, example: "101,102" })
+  async get_get_related_products_id_csv(@Param("csv") csv: string) {
+    // Loom: ProductController.getRelatedProductsByIdCSV ->
+    // resolveRelatedProductsByIdCSV, keyed ResponseParameter.RELATED_PRODUCTS_LIST.
+    // Previously returned the first 50 products for ANY csv, so every product
+    // page rendered the same "related products" strip.
+    return keyedResponse("relatedProductsList", await this.products.getRelatedProductsByIdCsv(csv));
   }
 
   @Get("/check/unique-product/sku/:sku")
   @ApiOperation({ summary: "Check SKU availability" })
   @ApiParam({ name: "sku", description: "Product SKU to check", type: String, example: "DAN1200452" })
+  @RequireGate(GateCode.CODE_SUCUAR)
   async get_check_unique_product_sku_sku(@Param('sku') sku: string) {
     try {
       const existing = await this.db.select({ id: schema.product.id }).from(schema.product).where(eq(schema.product.sku, sku)).limit(1);
@@ -89,6 +92,7 @@ export class ProductMigratedDomainController {
   @Get("/check/unique-product/name/:name")
   @ApiOperation({ summary: "Check product name availability" })
   @ApiParam({ name: "name", description: "Product name to check", type: String, example: "Pure Cotton Fabric" })
+  @RequireGate(GateCode.CODE_SUCUAR)
   async get_check_unique_product_name_name(@Param('name') name: string) {
     try {
       const existing = await this.db.select({ id: schema.product.id }).from(schema.product).where(eq(schema.product.name, name)).limit(1);
@@ -122,6 +126,7 @@ export class ProductMigratedDomainController {
       required: ["productPriceList"]
     }
   })
+  @RequireGate(GateCode.CODE_SU)
   async patch_update_bulk_product_price(@Body() body: any) {
     try {
       const list = body?.productPriceList || [];
@@ -140,6 +145,7 @@ export class ProductMigratedDomainController {
 
   @Get("/get/sku-group-list")
   @ApiOperation({ summary: "Fetch SKU groups list" })
+  @RequireGate(GateCode.CODE_SUCU)
   async get_get_sku_group_list(@Query() query: any) {
     try {
       const result = await (this.db as any).select().from(schema.skuGroup).limit(50);
@@ -151,6 +157,7 @@ export class ProductMigratedDomainController {
 
   @Get("/get/special-status-list")
   @ApiOperation({ summary: "Fetch product special statuses" })
+  @RequireGate(GateCode.CODE_SUCU)
   async get_get_special_status_list(@Query() query: any) {
     try {
       const result = await (this.db as any).select().from(schema.specialStatus).limit(50);
@@ -162,6 +169,7 @@ export class ProductMigratedDomainController {
 
   @Get("/get/tag-list")
   @ApiOperation({ summary: "Fetch product tags list" })
+  @RequireGate(GateCode.CODE_SUCU)
   async get_get_tag_list(@Query() query: any) {
     try {
       const result = await (this.db as any).select().from(schema.tag).limit(50);
@@ -174,27 +182,25 @@ export class ProductMigratedDomainController {
   @Get("/get/table-explorer/data/product-vector/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect ProductVector entity by ID" })
-  async get_get_table_explorer_data_product_vector_id(@Param('id') id: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.productVector).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  async get_get_table_explorer_data_product_vector_id(@Param("id") id: string) {
+    const rows = await this.db
+      .select()
+      .from(schema.productVector)
+      .where(eq(schema.productVector.id, BigInt(id)))
+      .limit(1);
+    return keyedResponse("data", rows[0] ?? null);
   }
 
   @Get("/get/table-explorer/data/story-product-mapping/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Inspect StoryProductMapping entity by ID" })
-  async get_get_table_explorer_data_story_product_mapping_id(@Param('id') id: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.storyProductMapping).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  async get_get_table_explorer_data_story_product_mapping_id(@Param("id") id: string) {
+    const rows = await this.db
+      .select()
+      .from(schema.storyProductMapping)
+      .where(eq(schema.storyProductMapping.id, BigInt(id)))
+      .limit(1);
+    return keyedResponse("data", rows[0] ?? null);
   }
 
   @Post("/update/story-product/relation")
@@ -219,6 +225,7 @@ export class ProductMigratedDomainController {
       required: ["storyContentId"]
     }
   })
+  @RequireGate(GateCode.CODE_SU)
   async post_update_story_product_relation(@Body() body: any) {
     try {
       const storyContentId = body?.storyContentId;

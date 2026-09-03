@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -10,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  NotImplementedException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -21,7 +21,7 @@ import {
   ApiProperty,
   ApiPropertyOptional,
 } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString, IsNumber } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsIn } from "class-validator";
 import { Type } from "class-transformer";
 import * as schema from "../../database/schema/schema.js";
 import { eq, desc } from "drizzle-orm";
@@ -32,9 +32,8 @@ import { GateCode } from "../../auth/types/auth.types.js";
 
 export class CreateArtisanDto {
   @ApiProperty({ example: "MASTER", enum: ["MASTER", "WORKER"] })
-  @IsNotEmpty()
-  @IsString()
-  artisanRole!: string;
+  @IsIn(["MASTER", "WORKER"])
+  artisanRole!: "MASTER" | "WORKER";
 
   @ApiPropertyOptional({ example: 47906435, description: "Master Artisan ID (if worker)" })
   @IsOptional()
@@ -87,8 +86,8 @@ export class UpdateArtisanDto {
 
   @ApiPropertyOptional({ example: "WORKER", enum: ["MASTER", "WORKER"] })
   @IsOptional()
-  @IsString()
-  artisanRole?: string;
+  @IsIn(["MASTER", "WORKER"])
+  artisanRole?: "MASTER" | "WORKER";
 
   @ApiPropertyOptional({ example: 47906435, description: "Master Artisan ID" })
   @IsOptional()
@@ -286,7 +285,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Directory of artisans" })
   async get_get_artisans() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select({
           id: schema.artisan.id,
           version: schema.artisan.version,
@@ -315,7 +314,7 @@ export class ArtisanMigratedDomainController {
         .leftJoin(schema.loomTenant, eq(schema.artisan.tenantId, schema.loomTenant.id))
         .orderBy(desc(schema.artisan.id));
 
-      const catalogRows = await (this.db as any)
+      const catalogRows = await this.db
         .select({
           artisanId: schema.catalog.artisanId,
         })
@@ -377,7 +376,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Worker list" })
   async get_get_workers() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .where(eq(schema.artisan.artisanRole, "WORKER"))
@@ -395,37 +394,11 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Workers under the specified master artisan" })
   async get_get_artisan_masterId_workers(@Param("masterId") masterId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .where(eq(schema.artisan.masterArtisanId, Number(masterId)));
       return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/artisan/catalog-list")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "List authenticated artisan's catalogs" })
-  @ApiResponse({ status: 200, description: "Artisan catalogs list" })
-  async get_get_artisan_catalog_list() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.id))
-        .limit(20);
-      return keyedResponse("data", (rows || []).map((r: any) => ({
-        id: String(r.id),
-        version: Number(r.version || 1),
-        name: r.name,
-        description: r.description ?? "",
-        artisanId: r.artisanId ? String(r.artisanId) : null,
-        defaultCatalog: Boolean(r.defaultCatalog),
-        createdAt: Number(r.createdAt || 0),
-        updatedAt: Number(r.updatedAt || 0),
-      })));
     } catch (err) {
       return keyedResponse("data", []);
     }
@@ -441,7 +414,7 @@ export class ArtisanMigratedDomainController {
       return keyedResponse("data", []);
     }
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .where(eq(schema.artisan.id, BigInt(artisanId)));
@@ -459,7 +432,7 @@ export class ArtisanMigratedDomainController {
   async post_add_artisan(@Body() body: CreateArtisanDto) {
     try {
       const now = Date.now();
-      const [tenant] = await (this.db as any)
+      const [tenant] = await this.db
         .insert(schema.loomTenant)
         .values({
           loomId: `ART_${now}`,
@@ -468,13 +441,13 @@ export class ArtisanMigratedDomainController {
           userPassword: "$2a$10$defaultencryptedpasswordforartisan",
           gender: "UNDEFINED",
           provider: "UNKNOWN",
-          creationTime: BigInt(now),
+          creationTime: now,
           active: true,
           userType: "ARTISAN",
         })
         .returning();
 
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.artisan)
         .values({
           artisanRole: body.artisanRole || "MASTER",
@@ -517,7 +490,7 @@ export class ArtisanMigratedDomainController {
       if (body.experience !== undefined) updateSet.experience = body.experience;
       if (body.hasWhatsapp !== undefined) updateSet.hasWhatsapp = body.hasWhatsapp;
 
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.artisan)
         .set(updateSet)
         .where(eq(schema.artisan.id, BigInt(body.id)))
@@ -536,7 +509,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan deleted" })
   async delete_delete_artisan_artisanId(@Param("artisanId") artisanId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .delete(schema.artisan)
         .where(eq(schema.artisan.id, BigInt(artisanId)));
       return simpleResponse(true, `Artisan ${artisanId} deleted successfully.`);
@@ -551,7 +524,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan incentive rules" })
   async get_get_artisan_incentive_config() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisanIncentiveConfig)
         .limit(50);
@@ -582,7 +555,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Incentive config updated" })
   async patch_update_artisan_incentive_config(@Body() body: UpdateArtisanIncentiveConfigDto) {
     try {
-      await (this.db as any)
+      await this.db
         .insert(schema.artisanIncentiveConfig)
         .values({
           key: body.key,
@@ -614,7 +587,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Production dashboard data" })
   async get_get_artisan_workflow_dashboard() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .limit(10);
@@ -631,10 +604,10 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Workflow element details" })
   async get_get_artisan_workflow_workflowId_assigned_element_de(@Param("workflowId") workflowId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflowArtisanMapping)
-        .where(eq(schema.workflowArtisanMapping.workflowId, BigInt(workflowId)));
+        .where(eq(schema.workflowArtisanMapping.workflowId, Number(workflowId)));
       if (rows && rows.length > 0) {
         return keyedResponse("data", rows.map(formatWorkflowArtisanMapping));
       }
@@ -700,8 +673,18 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "artisanId", example: 51654698, type: Number })
   @ApiParam({ name: "workflowId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Workflow element details" })
-  async get_get_master_masterId_worker_artisanId_workflow_workflowId(@Param("masterId") masterId: string, @Param("artisanId") artisanId: string, @Param("workflowId") workflowId: string) {
-    return keyedResponse("data", []);
+  async get_get_master_masterId_worker_artisanId_workflow_workflowId(
+    @Param("masterId") masterId: string,
+    @Param("artisanId") artisanId: string,
+    @Param("workflowId") workflowId: string,
+  ) {
+    // No such route exists in Loom's RequestMapper — only the
+    // /assigned-element-details variant below is mapped. Returning an empty
+    // list under the key "data" claims "this master/worker pair has no
+    // elements", which is a fabricated answer. Fail loudly instead.
+    throw new NotImplementedException(
+      `Master-worker workflow details are not implemented (master ${masterId}, worker ${artisanId}, workflow ${workflowId}).`,
+    );
   }
 
   @Get("/get/master/:masterId/worker/:artisanId/workflow/:workflowId/assigned-element-details")
@@ -711,8 +694,22 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "artisanId", example: 51654698, type: Number })
   @ApiParam({ name: "workflowId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Worker assigned element details" })
-  async get_get_master_masterId_worker_artisanId_workflow_workflowId_assigned_element_details(@Param("masterId") masterId: string, @Param("artisanId") artisanId: string, @Param("workflowId") workflowId: string) {
-    return keyedResponse("data", []);
+  async get_get_master_masterId_worker_artisanId_workflow_workflowId_assigned_element_details(
+    @Param("masterId") masterId: string,
+    @Param("artisanId") artisanId: string,
+    @Param("workflowId") workflowId: string,
+  ) {
+    // Loom: WorkflowController.GET_MASTER_WORKER_WORKFLOW_ASSIGNED_ELEMENT_DETAILS
+    // returns TWO lists (step elements and subprocess elements assigned to the
+    // artisan) via artisanWorkflowAssignedElementDetailsResponse.buildLists —
+    // not a single "data" array. Those two queries
+    // (retrieveWorkflowStepElementListByArtisan /
+    // retrieveWorkflowSubProcessElementListByArtisan) are not ported yet, and
+    // an empty "data" array is not the Java envelope. Fail loudly rather than
+    // answer 200 in the wrong shape.
+    throw new NotImplementedException(
+      `Master-worker assigned element details are not implemented (master ${masterId}, worker ${artisanId}, workflow ${workflowId}).`,
+    );
   }
 
   @Get("/get/step-element/:stepId/artisan-assignments")
@@ -722,7 +719,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Step assignments" })
   async get_get_step_element_stepId_artisan_assignments(@Param("stepId") stepId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.stepElementArtisanMapping)
         .where(eq(schema.stepElementArtisanMapping.stepElementId, Number(stepId)))
@@ -740,7 +737,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan assigned to step" })
   async patch_update_step_element_artisan_assignments(@Body() body: UpdateStepElementArtisanAssignmentsDto) {
     try {
-      await (this.db as any)
+      await this.db
         .insert(schema.stepElementArtisanMapping)
         .values({
           stepElementId: Number(body.stepElementId),
@@ -772,7 +769,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Subprocess artisan assignments" })
   async get_get_subprocess_element_subProcessId_artisan_assign(@Param("subProcessId") subProcessId: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.subprocessElementArtisanMapping)
         .where(eq(schema.subprocessElementArtisanMapping.subprocessElementId, Number(subProcessId)))
@@ -799,7 +796,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan assigned to subprocess" })
   async patch_update_subprocess_element_artisan_assignments(@Body() body: UpdateSubprocessElementArtisanAssignmentsDto) {
     try {
-      await (this.db as any)
+      await this.db
         .insert(schema.subprocessElementArtisanMapping)
         .values({
           subprocessElementId: Number(body.subprocessElementId),
@@ -830,7 +827,7 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "id", example: 47916439, type: Number })
   async get_get_table_explorer_data_artisan_id(@Param("id") id: string) {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .where(eq(schema.artisan.id, BigInt(id)));
@@ -845,7 +842,7 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for artisans" })
   async get_get_table_explorer_data_artisan() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.artisan)
         .limit(50);
@@ -860,7 +857,7 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for step element artisan mapping" })
   async get_get_table_explorer_data_step_element_artisan_mapping() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.stepElementArtisanMapping)
         .limit(50);
@@ -875,7 +872,7 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for subprocess element artisan mapping" })
   async get_get_table_explorer_data_subprocess_element_artisan_mapping() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.subprocessElementArtisanMapping)
         .limit(50);
@@ -890,7 +887,7 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for workflow artisan mapping" })
   async get_get_table_explorer_data_workflow_artisan_mapping() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.workflowArtisanMapping)
         .limit(50);
@@ -901,12 +898,16 @@ export class ArtisanMigratedDomainController {
   }
 
   @Get("/get/skills")
-  @RequireGate(GateCode.CODE_SU)
+  // CODE_SUCU, not CODE_SU: loom SkillController.getSkillList passes CODE_SUCU.
+  // The MiscMigratedDomainController copy of this route (a raw limit-50 dump with
+  // no `deleted` filter) had the right gate but the wrong body; it was deleted and
+  // the gate corrected here.
+  @RequireGate(GateCode.CODE_SUCU)
   @ApiOperation({ summary: "Fetch list of all craft skills" })
   @ApiResponse({ status: 200, description: "List of craft skills" })
   async get_get_skills() {
     try {
-      const rows = await (this.db as any)
+      const rows = await this.db
         .select()
         .from(schema.skill)
         .where(eq(schema.skill.deleted, false))
@@ -940,7 +941,7 @@ export class ArtisanMigratedDomainController {
   async post_add_skill(@Body() body: { name: string; description?: string }) {
     try {
       const now = Date.now();
-      const [inserted] = await (this.db as any)
+      const [inserted] = await this.db
         .insert(schema.skill)
         .values({
           name: body.name,
@@ -948,7 +949,7 @@ export class ArtisanMigratedDomainController {
           deleted: false,
           timeOfCreation: now,
           lastUpdateTime: 0,
-          version: 0,
+          version: 0n,
         })
         .returning();
 
@@ -969,7 +970,7 @@ export class ArtisanMigratedDomainController {
   async post_update_skill(@Body() body: { id: number; name: string; description?: string }) {
     try {
       const now = Date.now();
-      const [updated] = await (this.db as any)
+      const [updated] = await this.db
         .update(schema.skill)
         .set({
           name: body.name,
@@ -995,7 +996,7 @@ export class ArtisanMigratedDomainController {
   @ApiResponse({ status: 200, description: "Skill deleted" })
   async delete_delete_skill(@Param("skillId") skillId: string) {
     try {
-      await (this.db as any)
+      await this.db
         .update(schema.skill)
         .set({ deleted: true, lastUpdateTime: Date.now() })
         .where(eq(schema.skill.id, BigInt(skillId)));

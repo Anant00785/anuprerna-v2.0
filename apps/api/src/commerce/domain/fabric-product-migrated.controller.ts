@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -43,40 +42,18 @@ import {
 export class FabricProductMigratedDomainController {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
 
-  @Get("/get/fabric-preview-list")
-  @ApiOperation({ summary: "Lightweight preview list of fabric products" })
-  @ApiResponse({ status: 200, description: "List of fabric preview products" })
-  async get_get_fabric_preview_list(@Query() query: any) {
-    try {
-      const result = await (this.db as any)
-        .select({
-          id: schema.product.id,
-          name: schema.product.name,
-          sku: schema.product.sku,
-          heroImage: schema.product.heroImage,
-          price: schema.product.price,
-          productGroup: schema.product.productGroup
-        })
-        .from(schema.product)
-        .where(eq(schema.product.productGroup, "fabric"))
-        .limit(100);
-      return keyedResponse("fabricPreviewList", result || []);
-    } catch (err) {
-      return keyedResponse("fabricPreviewList", []);
-    }
-  }
-
   @Get("/get/fabric-profile-list")
   @ApiOperation({ summary: "Fetch fabric specification profiles" })
   @ApiResponse({ status: 200, description: "List of all fabric profiles with items" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_fabric_profile_list(@Query() query: any) {
     try {
-      const profiles = await (this.db as any)
+      const profiles = await this.db
         .select()
         .from(schema.fabricProfile)
         .orderBy(desc(schema.fabricProfile.id));
 
-      const items = await (this.db as any)
+      const items = await this.db
         .select()
         .from(schema.fabricProfileItem);
 
@@ -115,23 +92,24 @@ export class FabricProductMigratedDomainController {
   @ApiOperation({ summary: "Fetch fabric profile detail" })
   @ApiParam({ name: "profileId", description: "Fabric Profile ID", example: 1 })
   @ApiResponse({ status: 200, description: "Fabric profile entity with items" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_fabric_profile_profileId(@Param("profileId") profileId: string) {
     const id = Number(profileId);
     if (!id) {
       throw new BadRequestException("Invalid fabric profile ID");
     }
 
-    const [profile] = await (this.db as any)
+    const [profile] = await this.db
       .select()
       .from(schema.fabricProfile)
-      .where(eq(schema.fabricProfile.id, id))
+      .where(eq(schema.fabricProfile.id, BigInt(id)))
       .limit(1);
 
     if (!profile) {
       throw new NotFoundException("Fabric profile not found");
     }
 
-    const items = await (this.db as any)
+    const items = await this.db
       .select()
       .from(schema.fabricProfileItem)
       .where(eq(schema.fabricProfileItem.profileId, id));
@@ -167,7 +145,7 @@ export class FabricProductMigratedDomainController {
     }
 
     const now = Date.now();
-    const [createdProfile] = await (this.db as any)
+    const [createdProfile] = await this.db
       .insert(schema.fabricProfile)
       .values({
         profileName: body.profileName,
@@ -180,9 +158,9 @@ export class FabricProductMigratedDomainController {
 
     if (body.fabricProfileItemList && Array.isArray(body.fabricProfileItemList)) {
       for (const item of body.fabricProfileItemList) {
-        const prodId = Number(item.fabricId || item.productId || 0);
+        const prodId = Number(item.fabricId || 0);
         if (prodId > 0) {
-          const [insertedItem] = await (this.db as any)
+          const [insertedItem] = await this.db
             .insert(schema.fabricProfileItem)
             .values({
               profileId,
@@ -230,40 +208,40 @@ export class FabricProductMigratedDomainController {
       throw new BadRequestException("Invalid fabric profile ID");
     }
 
-    const [existingProfile] = await (this.db as any)
+    const [existingProfile] = await this.db
       .select()
       .from(schema.fabricProfile)
-      .where(eq(schema.fabricProfile.id, id))
+      .where(eq(schema.fabricProfile.id, BigInt(id)))
       .limit(1);
 
     if (!existingProfile) {
       throw new NotFoundException("Fabric profile not found");
     }
 
-    const [updatedProfile] = await (this.db as any)
+    const [updatedProfile] = await this.db
       .update(schema.fabricProfile)
       .set({
         profileName: body.profileName || existingProfile.profileName
       })
-      .where(eq(schema.fabricProfile.id, id))
+      .where(eq(schema.fabricProfile.id, BigInt(id)))
       .returning();
 
     if (body.fabricProfileItemList && Array.isArray(body.fabricProfileItemList)) {
       for (const item of body.fabricProfileItemList) {
         const itemId = Number(item.id || 0);
-        const prodId = Number(item.fabricId || item.productId || 0);
+        const prodId = Number(item.fabricId || 0);
 
         if (itemId > 0) {
-          await (this.db as any)
+          await this.db
             .update(schema.fabricProfileItem)
             .set({
               ...(prodId > 0 ? { productId: prodId } : {}),
               mockupImage: item.mockupImage !== undefined ? item.mockupImage : undefined,
               mockupText: item.mockupText !== undefined ? item.mockupText : undefined
             })
-            .where(eq(schema.fabricProfileItem.id, itemId));
+            .where(eq(schema.fabricProfileItem.id, BigInt(itemId)));
         } else if (prodId > 0) {
-          await (this.db as any)
+          await this.db
             .insert(schema.fabricProfileItem)
             .values({
               profileId: id,
@@ -275,7 +253,7 @@ export class FabricProductMigratedDomainController {
       }
     }
 
-    const currentItems = await (this.db as any)
+    const currentItems = await this.db
       .select()
       .from(schema.fabricProfileItem)
       .where(eq(schema.fabricProfileItem.profileId, id));
@@ -311,7 +289,7 @@ export class FabricProductMigratedDomainController {
     }
 
     // Check if fabric profile is associated with products
-    const associatedProducts = await (this.db as any)
+    const associatedProducts = await this.db
       .select({ sku: schema.product.sku })
       .from(schema.product)
       .where(eq(schema.product.fabricProfileId, id));
@@ -326,14 +304,14 @@ export class FabricProductMigratedDomainController {
     }
 
     // Delete child items first
-    await (this.db as any)
+    await this.db
       .delete(schema.fabricProfileItem)
       .where(eq(schema.fabricProfileItem.profileId, id));
 
     // Delete profile
-    await (this.db as any)
+    await this.db
       .delete(schema.fabricProfile)
-      .where(eq(schema.fabricProfile.id, id));
+      .where(eq(schema.fabricProfile.id, BigInt(id)));
 
     return keyedResponse("profileDelete", {
       status: true,
@@ -354,9 +332,9 @@ export class FabricProductMigratedDomainController {
       throw new BadRequestException("Invalid profile item ID");
     }
 
-    await (this.db as any)
+    await this.db
       .delete(schema.fabricProfileItem)
-      .where(eq(schema.fabricProfileItem.id, id));
+      .where(eq(schema.fabricProfileItem.id, BigInt(id)));
 
     return simpleResponse(true, "Fabric profile item deleted.");
   }
@@ -366,10 +344,10 @@ export class FabricProductMigratedDomainController {
   @ApiOperation({ summary: "Inspect FabricProfileItem entity by ID" })
   @ApiParam({ name: "id", description: "Fabric Profile Item ID", example: 1 })
   async get_get_table_explorer_data_fabric_profile_item_id(@Param("id") id: string) {
-    const [result] = await (this.db as any)
+    const [result] = await this.db
       .select()
       .from(schema.fabricProfileItem)
-      .where(eq(schema.fabricProfileItem.id, Number(id)))
+      .where(eq(schema.fabricProfileItem.id, BigInt(id)))
       .limit(1);
     return keyedResponse("data", result || null);
   }
@@ -379,10 +357,10 @@ export class FabricProductMigratedDomainController {
   @ApiOperation({ summary: "Inspect FabricProfile entity by ID" })
   @ApiParam({ name: "id", description: "Fabric Profile ID", example: 1 })
   async get_get_table_explorer_data_fabric_profile_id(@Param("id") id: string) {
-    const [result] = await (this.db as any)
+    const [result] = await this.db
       .select()
       .from(schema.fabricProfile)
-      .where(eq(schema.fabricProfile.id, Number(id)))
+      .where(eq(schema.fabricProfile.id, BigInt(id)))
       .limit(1);
     return keyedResponse("data", result || null);
   }
@@ -397,7 +375,7 @@ export class FabricProductMigratedDomainController {
     const size = Math.max(1, Math.min(100, Number(query?.size) || 50));
     const offset = (page - 1) * size;
 
-    const result = await (this.db as any)
+    const result = await this.db
       .select()
       .from(schema.fabricProfileItem)
       .limit(size)
@@ -415,7 +393,7 @@ export class FabricProductMigratedDomainController {
     const size = Math.max(1, Math.min(100, Number(query?.size) || 50));
     const offset = (page - 1) * size;
 
-    const result = await (this.db as any)
+    const result = await this.db
       .select()
       .from(schema.fabricProfile)
       .limit(size)

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -10,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -30,6 +30,7 @@ import { DATABASE_CONNECTION, type Database } from "../../database/database.modu
 import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
+import { WhatsappDeliveryStatusPollingService } from "../whatsapp/service/whatsapp-delivery-status-polling.service.js";
 
 export class SendEmailPreparedOrderDto {
   @ApiProperty({ example: 278006, description: "Order ID" })
@@ -150,7 +151,10 @@ function formatCronLog(r: any) {
 @Controller()
 @UseGuards(RolesGuard)
 export class NotificationsDomainController {
-  constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
+  constructor(
+    @Inject(DATABASE_CONNECTION) private readonly db: Database,
+    private readonly whatsappPolling: WhatsappDeliveryStatusPollingService,
+  ) {}
 
   @Post("/send/email/prepared-order")
   @RequireGate(GateCode.CODE_SU)
@@ -158,9 +162,15 @@ export class NotificationsDomainController {
   @ApiBody({ type: SendEmailPreparedOrderDto })
   @ApiResponse({ status: 201, description: "Prepared order email queued" })
   async post_send_email_prepared_order(@Body() body: SendEmailPreparedOrderDto) {
+    // No default order id: an unresolvable order is an error, not a fallback onto
+    // whichever real order the constant happened to name. Validated outside the
+    // try/catch below so the rejection is not swallowed into an empty 200.
+    if (!body.orderId) throw new BadRequestException("orderId is required");
+    if (!body.recipientEmail) throw new BadRequestException("recipientEmail is required");
+    const orderId = BigInt(body.orderId);
+    const recipient = body.recipientEmail;
+
     try {
-      const orderId = BigInt(body.orderId || 278006);
-      const recipient = body.recipientEmail || "customer@example.com";
 
       const [inserted] = await (this.db as any)
         .insert(schema.emailNotificationHistory)
@@ -193,7 +203,7 @@ export class NotificationsDomainController {
   @ApiResponse({ status: 201, description: "Order confirmation email queued" })
   async post_send_email_confirmed_order_orderId(@Param("orderId") orderId: string) {
     try {
-      const parsedOrderId = BigInt(orderId || "278006");
+      const parsedOrderId = BigInt(orderId);
       const [inserted] = await (this.db as any)
         .insert(schema.emailNotificationHistory)
         .values({
@@ -301,74 +311,38 @@ export class NotificationsDomainController {
     }
   }
 
-  @Get("/poll/whatsapp/delivery-status")
+  // Loom's poll routes are POST manual-trigger reconciliations against
+  // Freshchat (WhatsappNotificationController.pollWhatsappDeliveryStatus[ById|Stale]
+  // → getEntityCustomResponse(..., CODE_SU) → RainEntity<summary>, envelope key
+  // `entity`). The previous @Get versions here were inventions — they read
+  // history rows (one even fabricated a record on miss) and polled nothing.
+
+  @Post("/poll/whatsapp/delivery-status")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Poll active WhatsApp message delivery status" })
-  @ApiResponse({ status: 200, description: "Active WhatsApp delivery status records" })
-  async get_poll_whatsapp_delivery_status() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.whatsappNotificationHistory)
-        .orderBy(desc(schema.whatsappNotificationHistory.id))
-        .limit(20);
-      return keyedResponse("data", (rows || []).map(formatWhatsappHistory));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  @ApiOperation({ summary: "Reconcile recent-window WhatsApp delivery statuses against Freshchat" })
+  @ApiResponse({ status: 201, description: "Poll run summary" })
+  async post_poll_whatsapp_delivery_status() {
+    return keyedResponse("entity", await this.whatsappPolling.pollWithinWindow());
   }
 
-  @Get("/poll/whatsapp/delivery-status/stale")
+  @Post("/poll/whatsapp/delivery-status/stale")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Poll stale WhatsApp delivery messages" })
-  @ApiResponse({ status: 200, description: "Stale WhatsApp delivery messages" })
-  async get_poll_whatsapp_delivery_status_stale() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.whatsappNotificationHistory)
-        .where(eq(schema.whatsappNotificationHistory.status, "SENT"))
-        .limit(20);
-      return keyedResponse("data", (rows || []).map(formatWhatsappHistory));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  @ApiOperation({ summary: "Reconcile the stale (>7-day) WhatsApp delivery-status backlog" })
+  @ApiResponse({ status: 201, description: "Poll run summary" })
+  async post_poll_whatsapp_delivery_status_stale() {
+    return keyedResponse("entity", await this.whatsappPolling.pollStaleBacklog());
   }
 
-  @Get("/poll/whatsapp/delivery-status/:id")
+  @Post("/poll/whatsapp/delivery-status/:id")
   @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Poll delivery status for specific message" })
+  @ApiOperation({ summary: "Reconcile the delivery status of a single WhatsApp audit row" })
   @ApiParam({ name: "id", example: 137360033, type: Number })
-  @ApiResponse({ status: 200, description: "WhatsApp delivery status for specific message" })
-  async get_poll_whatsapp_delivery_status_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.whatsappNotificationHistory)
-        .where(eq(schema.whatsappNotificationHistory.id, BigInt(id)));
-      if (rows && rows.length > 0) {
-        return keyedResponse("data", rows.map(formatWhatsappHistory));
-      }
-      return keyedResponse("data", [{
-        id: String(id),
-        version: 1,
-        tenantType: "CUSTOMER",
-        tenantId: "9365",
-        tenantName: "Customer",
-        recipientMobile: "+919876543210",
-        fromMobile: "+919876500000",
-        triggerType: "ORDER_CONFIRMATION",
-        entityType: "ORDER",
-        entityId: "278006",
-        templateName: "order_confirmation",
-        status: "DELIVERED",
-        httpStatus: 200,
-        createdAt: Date.now() - 3600000,
-        sentAt: Date.now() - 3500000,
-      }]);
-    } catch (err) {
-      return keyedResponse("data", []);
+  @ApiResponse({ status: 201, description: "Poll run summary; all-zero when the row does not exist" })
+  async post_poll_whatsapp_delivery_status_id(@Param("id") id: string) {
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException(`Invalid audit row id: ${id}`);
     }
+    return keyedResponse("entity", await this.whatsappPolling.pollSingle(BigInt(id)));
   }
 
   @Get("/get/email/audit-log")

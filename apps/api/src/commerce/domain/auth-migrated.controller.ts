@@ -1,6 +1,5 @@
 import * as schema from "../../database/schema/schema.js";
 import { eq } from "drizzle-orm";
-// @ts-nocheck
 import { Controller, Post, Body, HttpCode, Inject } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as schema from "../../database/schema/schema.js";
 import { eq, desc } from "drizzle-orm";
 import {
@@ -159,48 +158,12 @@ export class ContentAiMigratedDomainController {
     }
   }
 
-  @Get("/get/table-explorer/data/blog-content-type")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Table explorer data for blog-content-type" })
-  async get_get_table_explorer_data_blog_content_type(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.blogContentType).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/table-explorer/data/blog-content-section")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Table explorer data for blog-content-section" })
-  async get_get_table_explorer_data_blog_content_section(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.blogContentSection).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
   @Get("/get/table-explorer/data/blog-vector")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for blog-vector" })
   async get_get_table_explorer_data_blog_vector(@Query() query: any) {
     try {
       const result = await (this.db as any).select().from(schema.blogVector).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/table-explorer/data/story-content-section")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Table explorer data for story-content-section" })
-  async get_get_table_explorer_data_story_content_section(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.storyContentSection).limit(50);
       return keyedResponse("data", (result || []).map(formatEntity));
     } catch (err) {
       return keyedResponse("data", []);
@@ -219,32 +182,9 @@ export class ContentAiMigratedDomainController {
     }
   }
 
-  @Get("/get/table-explorer/data/story-content")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Table explorer data for story-content" })
-  async get_get_table_explorer_data_story_content(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.storyContent).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
-  @Get("/get/table-explorer/data/blog-content")
-  @RequireGate(GateCode.CODE_SU)
-  @ApiOperation({ summary: "Table explorer data for blog-content" })
-  async get_get_table_explorer_data_blog_content(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.blogContent).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
-
   @Get("/get/ai-embedding-stats")
   @ApiOperation({ summary: "Vector DB AI embeddings statistics" })
+  @RequireGate(GateCode.CODE_SU)
   async get_get_ai_embedding_stats() {
     try {
       const [blogCount] = await (this.db as any).select({ count: schema.blogContent.id }).from(schema.blogContent);

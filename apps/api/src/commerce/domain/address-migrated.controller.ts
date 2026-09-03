@@ -1,6 +1,5 @@
 import * as schema from "../../database/schema/schema.js";
 import { eq } from "drizzle-orm";
-// @ts-nocheck
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
@@ -17,14 +16,15 @@ export class AddressMigratedDomainController {
   @Get("/get/table-explorer/data/address/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/address/:id" })
-  async get_get_table_explorer_data_address_id(@Param('id') id: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.address).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+  async get_get_table_explorer_data_address_id(@Param("id") id: string) {
+    // Loom: AddressController.getAddressById returns the ONE requested row.
+    // This ignored `id` entirely and returned the first 50 addresses.
+    const rows = await this.db
+      .select()
+      .from(schema.address)
+      .where(eq(schema.address.id, BigInt(id)))
+      .limit(1);
+    return keyedResponse("data", rows[0] ?? null);
   }
 
   @Get("/get/table-explorer/data/address")

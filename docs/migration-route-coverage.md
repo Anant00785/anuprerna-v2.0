@@ -15,6 +15,14 @@
 > — implemented, deferred to the owning agent, or intentionally not migrated with a reason.
 > Nothing in this pass was stubbed.
 
+> **UPDATED 2026-09-03 — the 14 deferred routes are closed.**
+> Re-measured: **665/694 matched (95.8%), 29 missing** (from 651/694, 43 missing).
+> The §3a "Deferred — owned by a concurrent agent" table is fully resolved — see
+> [§3d Deferred-route resolution](#3d-deferred-route-resolution-2026-09-03). One §3a recipe
+> was wrong and was NOT applied as written: the whatsapp poll routes are not verb drift
+> (details in §3d). Everything still missing (29) is in §3a's "intentionally not migrated"
+> list: filter 13, table-explorer custom-vertical 9, custom-made 4, analytics 3.
+
 # Migration route coverage — measured
 
 **Produced by:** `scripts/route-coverage.mjs` (run: `node scripts/route-coverage.mjs --list`)
@@ -284,7 +292,10 @@ Measured after: **651/694 (93.8%), 43 missing**.
 | GET | `/get/table-explorer/data/fabric-product-data` | `FabricProductController.getFabricProductData` → `getEntity(..., CODE_SU)` | **CODE_SU** | Pure rename (`fabric-product-data` → `fabric-product`). Legacy path added as an alias on the existing handler. |
 | GET | `/get/customer/order-list/loyalty` | `LoyaltyProgramInfoController.getCustomerLoyaltyOrderList` → `getEntity(..., CODE_CU, UNAUTH_ORDER_LIST_REQUEST)` | **CODE_CU** | Real port, not a stub. Both Loom named native queries reproduced verbatim in `loyaltyprogram.repository.ts`: `findCustomerLoyaltyProgramOrders` (regular) and `findCustomerLoyaltyProgramCustomOrders` (custom), merged in Loom's order (regular then custom, each `created_at DESC`, **no combined re-sort** — reproduced exactly, not "fixed"). Envelope `{ orderList }`, which is what `apps/storefront/src/lib/api/repositories/profile.repository.ts:335` reads. Tenant comes from `@CurrentTenant`, never a param; Loom's `:tenantId IS NULL` "all customers" branch is deliberately dropped so a missing tenant 401s instead of leaking every customer's orders. |
 
-### Deferred — owned by a concurrent agent (14 routes)
+### Deferred — owned by a concurrent agent (14 routes) — **RESOLVED 2026-09-03, see §3d**
+
+> The whatsapp row's "add `@Post` alongside each `@Get`" recipe below turned out to be
+> wrong (the Loom POSTs are Freshchat reconciliations, not reads) — §3d has the correction.
 
 These are in `apps/api/src/commerce/domain/**`, owned by another agent during this
 pass. They were **not** edited to avoid clobbering in-flight work. Each is a
@@ -475,6 +486,82 @@ UNAUTH_BLOG_CONTENT_CATEGORY_LIST_REQUEST)`;
 `GATED_CALLS` block — the mirror of its existing `ANONYMOUS_CALLS` block — asserting these
 three keep a `@RequireGate`, with the evidence above inline so a future "make blog public"
 sweep cannot quietly open an admin list to the internet.
+
+---
+
+## 3d. Deferred-route resolution (2026-09-03)
+
+Measured before this pass: 661/694 (95.2%), 33 missing (the image-optimization 10 had
+already been closed by the owning agent). Measured after: **665/694 (95.8%), 29 missing**.
+
+### image-optimization — 10 routes, closed by the owning agent (verified, not re-done)
+
+`image-optimization.controller.ts` now declares `@Post` alongside each existing `@Patch`
+for the 8 verb-drift mutations, and POST-only `workers/{start,stop}`, all `CODE_SU`,
+matching Loom's `@PostMapping`s. Every handler throws `NotImplementedException`
+(the whole optimizer backend is unmigrated and recorded in `KNOWN-GAPS.md`) — routes
+resolve with the legacy verb and are honestly 501, not stubbed successes.
+
+### whatsapp poll — 3 routes. **The §3a recipe was wrong** — not verb drift; real port done.
+
+§3a said "declared `@Get`, Loom publishes `POST` — add `@Post` alongside each `@Get`".
+Reading `WhatsappNotificationController` + `WhatsappDeliveryStatusPollingService` in Loom
+shows the POST routes are **manual-trigger reconciliations against Freshchat's
+delivery-status API** (`getEntityCustomResponse(..., CODE_SU)` → `RainEntity<summary>`,
+envelope key `entity`), not reads. The `@Get` versions on this side were inventions: they
+read history rows, and the `/:id` one **fabricated a delivery record on miss**. Aliasing
+would have shipped wrong semantics under the legacy method+path.
+
+Done instead — a faithful port, all three `POST`, `CODE_SU`, envelope `{ entity: summary }`:
+
+- `whatsapp/service/whatsapp-delivery-status-polling.service.ts` — Loom's poll loop:
+  candidates grouped by `request_id` (one Freshchat `GET /outbound-messages?request_id=` per
+  send), matched to audit rows by recipient phone, status only ever advances
+  (`POST_SUCCESS < SENT < DELIVERED < READ`; `FAILED_DELIVERY` terminal), per-batch failures
+  isolated, 429 ends the run early with `rateLimited: true`. Loom's config defaults
+  (7-day window, 200ms inter-request delay, 5s backoff) are fixed constants.
+- `whatsapp/repository/whatsapp.repository.ts` — the two pollable native queries
+  (`status IN ('POST_SUCCESS','SENT','DELIVERED') AND request_id <> ''`, sent_at ≥/< cutoff,
+  ordered by request_id then id) plus `markDeliveryStatusPolled` / `recordDeliveryStatus`
+  (messageId/errorCode/errorMessage written only when non-blank, as in Loom).
+- `domain/notifications.controller.ts` — the invented `@Get` handlers (and their fabricated
+  row) are **deleted**; `POST /poll/whatsapp/delivery-status[/stale|/:id]` replace them.
+  `pollSingle` of a nonexistent id returns Loom's all-zero summary.
+
+No frontend caller changes: the CMS's poll buttons are explicitly disabled
+("live calls a real Freshchat poll", `apps/cms/src/app/whatsapp/WhatsAppClient.tsx`).
+
+### `GET /get/table-explorer/data/customer` — real port
+
+Loom `CustomerController.getCustomerData`: `CODE_SU`, required int `page`/`size`, the
+`retrieveCustomer` native query's CustomerData projection (id, version, tenant_id, wishlist,
+default_currency, whatsapp_*) `ORDER BY id LIMIT :size OFFSET :page*:size`, keyed
+`customerList`. Ported verbatim in `domain/customer.controller.ts` (whatsapp_preferences
+serialized to text as Loom's `::text` cast does; missing/non-integer page/size → 400).
+
+### table-explorer allowlist (blast-radius fix, §3a follow-up) — landed
+
+`table_explorer/table_explorer.allowlist.ts` + the 400 gate in
+`table_explorer.service.ts` (both by the owning agent) are now covered by
+`table_explorer.service.spec.ts`: an allowlisted slug serves, any other name is 400 before
+a query is built, and every allowlisted name passes the gate. Every slug the CMS requests
+by literal (`step-element-artisan-mapping`, `subprocess-element-artisan-mapping`,
+`whatsapp-notification-history`, `workflow`, `workflow-artisan-mapping`) and every raw name
+served by `/get/table-explorer/tables` is on the list; `customer` deliberately is not
+(no caller — the dedicated projection route above serves it).
+
+**Finding recorded, not fixed here:** the generic `:tableName` controller lives in
+`Table_explorerModule`, which **no module imports** — the generic handler is declared but
+not served at runtime (the coverage script's "unserved" check only covers matched routes,
+and these match as `D2_param_superseded` *missing* entries). The allowlist is therefore
+defense-in-depth for whenever that module is wired in; wiring it is a routing-order
+decision (the param route must register after every literal per-entity route) and was left
+to the owner of that module.
+
+### Remaining 29 — all "intentionally not migrated", reasons in §3a
+
+filter 13 · table-explorer custom-vertical 9 (the customer one above is closed) ·
+custom-made 4 · analytics 3.
 
 ---
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -94,7 +93,7 @@ export class LoyaltyMigratedDomainController {
   @ApiResponse({ status: 201, description: "Loyalty program enabled" })
   async post_enable_loyalty_program(@Body() body: EnableLoyaltyProgramDto) {
     try {
-      const customerId = BigInt(body.customerId || 50934301);
+      const customerId = Number(body.customerId || 50934301);
       const currency = body.currency || "EUR";
       const minOrderVal = body.minOrderValue ? String(body.minOrderValue) : "1000.00";
       const discount = body.discountPercentage ? String(body.discountPercentage) : "12.00";
@@ -103,7 +102,7 @@ export class LoyaltyMigratedDomainController {
       const endDate = now + tenure * 30 * 24 * 60 * 60 * 1000;
 
       // Check if already exists
-      const existing = await (this.db as any)
+      const existing = await this.db
         .select()
         .from(schema.loyaltyProgramConfig)
         .where(eq(schema.loyaltyProgramConfig.customerId, customerId))
@@ -111,7 +110,7 @@ export class LoyaltyMigratedDomainController {
 
       let resultRecord: any;
       if (existing && existing.length > 0) {
-        const [updated] = await (this.db as any)
+        const [updated] = await this.db
           .update(schema.loyaltyProgramConfig)
           .set({
             minOrderValueCurrency: currency,
@@ -119,13 +118,13 @@ export class LoyaltyMigratedDomainController {
             discountPercentage: discount,
             tenure: tenure,
             active: true,
-            updatedAt: BigInt(now),
+            updatedAt: now,
           })
           .where(eq(schema.loyaltyProgramConfig.id, existing[0].id))
           .returning();
         resultRecord = updated;
       } else {
-        const [inserted] = await (this.db as any)
+        const [inserted] = await this.db
           .insert(schema.loyaltyProgramConfig)
           .values({
             customerId: customerId,
@@ -135,10 +134,10 @@ export class LoyaltyMigratedDomainController {
             exchangeRate: "1.0000",
             tenure: tenure,
             discountPercentage: discount,
-            startDate: BigInt(now),
-            endDate: BigInt(endDate),
+            startDate: now,
+            endDate: Number(endDate),
             active: true,
-            createdAt: BigInt(now),
+            createdAt: now,
           })
           .returning();
         resultRecord = inserted;
