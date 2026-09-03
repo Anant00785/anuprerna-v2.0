@@ -871,8 +871,53 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                     const belowMin = q < floorMoq;
                     const setQ = (nq: number) => {
                       const v = Math.max(1, nq);
-                      if (isGuest && gKey) guestCart.updateQty(gKey, v);
-                      else setCartQty((prev) => ({ ...prev, [(it.id as number) ?? i]: v }));
+                      if (isGuest && gKey) {
+                        guestCart.updateQty(gKey, v);
+                        return;
+                      }
+                      // Optimistic locally, then PERSIST. This used to only set
+                      // local state, so a signed-in shopper's quantity change
+                      // vanished on the next read.
+                      setCartQty((prev) => ({ ...prev, [(it.id as number) ?? i]: v }));
+                      const id = it.id as number | undefined;
+                      if (id == null) return;
+                      const preview = (it as { fabricProductPreview?: { id?: number }; finishedProductPreview?: { id?: number } });
+                      void fetch('/api/cart/update', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id,
+                          quantity: v,
+                          fabricProductId: preview.fabricProductPreview?.id,
+                          finishedProductId: preview.finishedProductPreview?.id,
+                        }),
+                        cache: 'no-store',
+                      }).catch(() => { setCartReload((k) => k + 1); });
+                    };
+
+                    // Remove works for BOTH lanes. It used to be wired only for
+                    // guests -- a signed-in shopper's delete button had NO
+                    // onClick at all ("Disabled in TEST MODE"), so it silently
+                    // did nothing however many times it was clicked.
+                    const removeLine = async () => {
+                      if (isGuest && gKey) {
+                        guestCart.removeItem(gKey);
+                        return;
+                      }
+                      const id = it.id as number | undefined;
+                      if (id == null) return;
+                      try {
+                        const res = await fetch('/api/cart/remove', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id }),
+                          cache: 'no-store',
+                        });
+                        if (!res.ok) throw new Error('remove failed');
+                      } finally {
+                        setCartReload((k) => k + 1);
+                        try { window.dispatchEvent(new CustomEvent('anuprerna:cart-updated')); } catch { /* no-op */ }
+                      }
                     };
                     return (
                       <li key={gKey ?? it.id ?? i} className='flex gap-3 border-b border-clay/5 pb-4'>
@@ -934,7 +979,7 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                             View details
                           </button>
                         </div>
-                        <button type='button' title={isGuest ? 'Remove' : 'Disabled in TEST MODE'} aria-label={isGuest ? 'remove' : 'remove (display only)'} onClick={isGuest && gKey ? () => guestCart.removeItem(gKey) : undefined} className='shrink-0 self-start text-black/40 hover:text-black/60'>
+                        <button type='button' title='Remove' aria-label={'remove ' + displayName} onClick={() => { void removeLine(); }} className='shrink-0 self-start text-black/40 hover:text-black/60'>
                           <span className='material-symbols-outlined text-[18px]'>delete</span>
                         </button>
                       </li>
