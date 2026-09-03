@@ -22,7 +22,25 @@ export function isWrapperToken(token: string | undefined | null): boolean {
     const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const json = Buffer.from(b64, 'base64').toString('utf8');
     const payload = JSON.parse(json) as Record<string, unknown>;
-    return Boolean(payload && typeof payload === 'object');
+    if (!payload || typeof payload !== 'object') return false;
+
+    // The body used to stop at the line above — `typeof payload === 'object'` —
+    // which is true for EVERY well-formed JWT, so this returned true for the
+    // legacy tokens it exists to reject and the guard was dead.
+    //
+    // What apps/api actually mints (GatekeeperService): a numeric `sub`, a `uid`,
+    // `email`, and a cleartext `roles` array. The header comment above describes
+    // an OLDER wrapper that emitted `customerId`; implementing that literally
+    // would reject our own current tokens, so both shapes are accepted and a
+    // legacy Loom token — opaque `sub`, no cleartext roles — is what fails.
+    const hasRoles = Array.isArray((payload as { roles?: unknown }).roles);
+    const sub = (payload as { sub?: unknown }).sub;
+    const hasSubject =
+      typeof sub === 'number' ||
+      (typeof sub === 'string' && /^\d+$/.test(sub)) ||
+      typeof (payload as { customerId?: unknown }).customerId === 'number';
+
+    return hasRoles && hasSubject;
   } catch {
     return false;
   }
