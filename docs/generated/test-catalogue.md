@@ -4,9 +4,9 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1770 tests across 305 files.**
+**1788 tests across 307 files.**
 
-- `apps/api` — 249 files, 1161 tests
+- `apps/api` — 251 files, 1179 tests
 - `apps/cms` — 17 files, 212 tests
 - `apps/storefront` — 38 files, 395 tests
 - `packages/types` — 1 files, 2 tests
@@ -1594,11 +1594,33 @@
 
 ### `apps/api/src/commerce/workflow/controller/workflow.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/workflow/dto/workflow-input.spec.ts` — 15
+- maps every NOT NULL column that has no default
+- uses workflowTemplateId — the real column — not templateId
+- takes tenantId from the TOKEN and ignores any in the body
+- converts a 
+- accepts epoch millis and epoch seconds
+- defaults status to CREATED and type to ORDER, and rejects nothing valid
+- ignores an unknown status/type rather than writing an invalid enum
+- carries the optional order/product references through
+- accepts the CUSTOM_ORDER reference* spellings
+- rejects a missing template, a missing name, and an unknown caller
+- emits no key the workflow table does not have
+- returns only supplied fields, plus updatedAt
+- rejects an empty update instead of silently doing nothing
+- rejects an invalid status or type
+- maps templateId to the real column
+
 ### `apps/api/src/commerce/workflow/mapper/workflow.mapper.spec.ts` — 4
 - maps id/templateId/orderId/status, dropping other row fields
 - maps id/name/description/isActive
 - preserves a false isActive rather than defaulting it
 - maps id/elementId/feedbackText/artisanId
+
+### `apps/api/src/commerce/workflow/repository/workflow-template-deleted.spec.ts` — 3
+- getWorkflowTemplates filters instead of selecting every row
+- getWorkflowTemplateById also filters, matching findByIdAndDeletedFalse
+- a deleted id resolves to null rather than the row
 
 ### `apps/api/src/commerce/zoho/controller/zoho.controller.gates.spec.ts` — 0
 
