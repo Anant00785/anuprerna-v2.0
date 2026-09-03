@@ -3,8 +3,6 @@ import { cookies } from 'next/headers';
 import { loomPost } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 import { isWrapperToken } from '@/lib/loom/token';
-import { decodeTokenPayload } from '@/lib/auth/token-helper';
-import { localCartStore } from '@/lib/cart/local-cart-store';
 
 export async function POST(request: Request) {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
@@ -26,25 +24,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
   }
 
-  const payload = decodeTokenPayload(token);
-  const email = (payload?.email || payload?.sub || '') as string;
-
-  // Save to local cart store
-  let localItem: unknown = null;
-  if (email) {
-    localItem = localCartStore.addItem(email, body);
-  }
-
-  // Best-effort remote / backend sync
+  // The backend owns the cart. A failure is reported rather than masked as a
+  // success against a local file the next request would not see.
   try {
     const result = await loomPost('/add/cart-item', body, { token });
     return NextResponse.json(result);
   } catch {
-    // If remote Loom rejects or is unavailable, our persistent local store already recorded it
-    return NextResponse.json({
-      success: true,
-      message: 'Item added to cart.',
-      entity: localItem,
-    });
+    return NextResponse.json({ success: false, message: 'Could not add the item to your cart.' }, { status: 502 });
   }
 }

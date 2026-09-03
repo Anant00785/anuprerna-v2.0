@@ -9,6 +9,7 @@ import type { CartItem } from '@/components/checkout/types';
 import CartDetailsDialog from '@/components/checkout/CartDetailsDialog';
 import { cartUnitPrice, lineTotal, effectiveOrderType, lineMoq } from '@/components/checkout/types';
 import { useBuyerMode } from '@/components/BuyerModeProvider';
+import Link from 'next/link';
 
 const LOGO = '/media/logo_black.svg';
 
@@ -117,12 +118,12 @@ function FabricPanel({ fabric }: { fabric: FabricNav }) {
           <span style={{ color: '#7D5B20' }}>Accessories</span>
         </p>
         <div className='flex flex-col gap-2 mt-4'>
-          <a href='/products/fabric' className='w-full text-center rounded-md py-1.5 px-3 text-sm font-medium text-white transition hover:opacity-90' style={{ background: '#8E7862' }}>
+          <Link href='/products/fabric' className='w-full text-center rounded-md py-1.5 px-3 text-sm font-medium text-white transition hover:opacity-90' style={{ background: '#8E7862' }}>
             Fabric
-          </a>
-          <a href='/products/fabric?category=swatchkit' className='w-full text-center rounded-md py-1.5 px-3 text-sm font-medium text-white transition hover:opacity-90' style={{ background: '#B78F9D' }}>
+          </Link>
+          <Link href='/products/fabric?category=swatchkit' className='w-full text-center rounded-md py-1.5 px-3 text-sm font-medium text-white transition hover:opacity-90' style={{ background: '#B78F9D' }}>
             Order a SwatchKit
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -139,13 +140,13 @@ function FabricPanel({ fabric }: { fabric: FabricNav }) {
             return (
               <div key={g.title}>
                 {isSwatchKit ? (
-                  <a
+                  <Link
                     href='/products/fabric?category=swatchkit'
                     className='inline-block rounded-md px-2 py-1 text-sm font-medium text-white whitespace-nowrap'
                     style={{ background: '#B78F9D' }}
                   >
                     Order a SwatchKit
-                  </a>
+                  </Link>
                 ) : (
                   <>
                     <h4 className={HEADER_CLS}>{g.title}</h4>
@@ -263,24 +264,24 @@ function CollaborationsPanel() {
           <div className='rounded-md p-3' style={{ background: TINT.tetradic3 }}>
             <div className='font-bold text-base mb-2' style={{ color: '#b37487' }}>Crafts</div>
             <ul className='space-y-1.5 text-sm'>
-              <li><a className='capitalize hover:underline' href='/stories'>jamdani weaving</a></li>
-              <li><a className='capitalize hover:underline' href='/stories'>kantha embroidery</a></li>
-              <li><a className='capitalize hover:underline' href='/stories'>natural dyeing</a></li>
-              <li><a className='capitalize hover:underline' href='/stories'>block printing</a></li>
-              <li><a className='capitalize hover:underline' href='/stories'>handloom weaving</a></li>
+              <li><Link className='capitalize hover:underline' href='/stories'>jamdani weaving</Link></li>
+              <li><Link className='capitalize hover:underline' href='/stories'>kantha embroidery</Link></li>
+              <li><Link className='capitalize hover:underline' href='/stories'>natural dyeing</Link></li>
+              <li><Link className='capitalize hover:underline' href='/stories'>block printing</Link></li>
+              <li><Link className='capitalize hover:underline' href='/stories'>handloom weaving</Link></li>
             </ul>
           </div>
-          <a href='/stories' className='rounded-md overflow-hidden flex items-end p-3 min-h-[120px]' style={{ background: TINT.base }}>
+          <Link href='/stories' className='rounded-md overflow-hidden flex items-end p-3 min-h-[120px]' style={{ background: TINT.base }}>
             <span className='text-sm font-semibold text-white'>Explore Our Crafts</span>
-          </a>
+          </Link>
         </div>
         <div className='font-bold text-base mt-3 mb-1.5'>Collaborations</div>
         <div className='rounded-md p-3' style={{ background: TINT.tetradic2 }}>
           <ul className='space-y-1.5 text-sm columns-2'>
-            <li><a className='capitalize hover:underline' href='/stories'>designer collaborations</a></li>
-            <li><a className='capitalize hover:underline' href='/stories'>brand partnerships</a></li>
-            <li><a className='capitalize hover:underline' href='/stories'>artisan co-creations</a></li>
-            <li><a className='capitalize hover:underline' href='/stories'>sustainability projects</a></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>designer collaborations</Link></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>brand partnerships</Link></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>artisan co-creations</Link></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>sustainability projects</Link></li>
           </ul>
         </div>
       </div>
@@ -290,16 +291,16 @@ function CollaborationsPanel() {
         <div className='rounded-md p-3' style={{ background: TINT.tetradic1 }}>
           <div className='font-bold text-base mb-2' style={{ color: '#4c6e5d' }}>Clusters</div>
           <ul className='space-y-1.5 text-sm'>
-            <li><a className='capitalize hover:underline' href='/stories'>phulia cluster</a></li>
-            <li><a className='capitalize hover:underline' href='/stories'>shantipur cluster</a></li>
-            <li><a className='capitalize hover:underline' href='/stories'>nadia weavers</a></li>
-            <li><a className='capitalize hover:underline' href='/stories'>bengal artisans</a></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>phulia cluster</Link></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>shantipur cluster</Link></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>nadia weavers</Link></li>
+            <li><Link className='capitalize hover:underline' href='/stories'>bengal artisans</Link></li>
           </ul>
         </div>
         <div className='flex flex-col gap-2'>
-          <a href='/stories' className='rounded-md overflow-hidden flex items-end p-3 h-[70%] min-h-[100px]' style={{ background: TINT.tetradic2 }}>
+          <Link href='/stories' className='rounded-md overflow-hidden flex items-end p-3 h-[70%] min-h-[100px]' style={{ background: TINT.tetradic2 }}>
             <span className='text-sm font-semibold text-black/70'>Discover Our Clusters</span>
-          </a>
+          </Link>
           <div className='h-[30%] rounded-md flex justify-center items-center px-2 py-3' style={{ background: TINT.base }}>
             <ArrowBtn href='/stories' label='Discover More About Our Journey' />
           </div>
@@ -323,7 +324,7 @@ function OurStoryPanel() {
           <li><a href={'/content/about-us/about-our-impact/57938'} className='hover:underline'>About Our Impact</a></li>
           <li><a href={'/content/about-us/about-the-founder/57073'} className='hover:underline'>About the Founder</a></li>
           <li><a href={'/content/about-us/about-anuprerna-studio/53794'} className='hover:underline'>About the Studio</a></li>
-          <li><a href='/contact' className='hover:underline'>Contact Us</a></li>
+          <li><Link href='/contact' className='hover:underline'>Contact Us</Link></li>
         </ul>
       </div>
       <div className='rounded-md p-3.5' style={{ background: TINT.complementary2 }}>
@@ -351,8 +352,8 @@ function B2BPanel() {
       <div className='rounded-md p-3.5' style={{ background: TINT.tetradic3 }}>
         <div className='font-bold mb-2'>Wholesale for Brands</div>
         <ul className='space-y-2 text-sm'>
-          <li><a href='/wholesale-partner-program' className='hover:underline'>Wholesale <span className='font-bold'>Partner</span> Program</a></li>
-          <li><a href='/artisanflow' className='hover:underline'>Traceability Platform: <span className='font-bold'>ArtisanFlow</span></a></li>
+          <li><Link href='/wholesale-partner-program' className='hover:underline'>Wholesale <span className='font-bold'>Partner</span> Program</Link></li>
+          <li><Link href='/artisanflow' className='hover:underline'>Traceability Platform: <span className='font-bold'>ArtisanFlow</span></Link></li>
           <li><a href={'/content/wholesale/order-fabric-swatches/59195'} className='hover:underline'>Order Fabric Swatches</a></li>
           <li><a href={'/content/wholesale/natural-sustainable-custom-dyeing/59105'} className='hover:underline'>Sustainable Dyeing</a></li>
           <li><a href={'/content/wholesale/eco-printing/24862107'} className='hover:underline'>Sustainable Printing</a></li>
@@ -621,19 +622,19 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                 <span className='material-symbols-outlined'>{drawer ? 'close' : 'menu'}</span>
               </button>
               {/* FIX 9: logo glyph tucked tight against wordmark (live: hidden "A" + "nuprerna") */}
-              <a href='/' className='flex items-center'>
+              <Link href='/' className='flex items-center'>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={LOGO} alt='Anuprerna' className='h-7 lg:h-9 w-auto' />
                 <div className='font-bold text-base lg:text-xl leading-none -ml-0.5'>
                   <span className='hidden'>A</span>nuprerna
                 </div>
-              </a>
+              </Link>
             </div>
 
             {/* Desktop mega-menu nav */}
             <ul className='hidden xl:flex items-center gap-4 2xl:gap-6 text-base text-black/80'>
               <li className='py-5' onMouseEnter={() => openMenu('fabric')}>
-                <a href='/products/fabric' className='hover:text-[#9c8a6c] transition-colors'>Fabric</a>
+                <Link href='/products/fabric' className='hover:text-[#9c8a6c] transition-colors'>Fabric</Link>
               </li>
               {nav.finished.map((grp) => (
                 <li key={grp.category} className='py-5' onMouseEnter={() => openMenu(grp.category)}>
@@ -644,7 +645,7 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
               ))}
               {/* FIX 1: Collaborations — hover opens dropdown; label routes to /stories */}
               <li className='py-5' onMouseEnter={() => openMenu('collaborations')}>
-                <a href='/stories' className='hover:text-[#9c8a6c] transition-colors'>Collaborations</a>
+                <Link href='/stories' className='hover:text-[#9c8a6c] transition-colors'>Collaborations</Link>
               </li>
               {/* FIX 2: Our Story — hover-trigger span (no navigation) */}
               <li className='py-5' onMouseEnter={() => openMenu('ourstory')}>
@@ -681,22 +682,22 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                 />
               </form>
               {/* Mobile: icon-only search — ≥44px tap target */}
-              <a href='/display/search' aria-label='Search' className='xl:hidden flex items-center justify-center text-black/80 hover:text-clay' style={{ minWidth: '44px', minHeight: '44px' }}>
+              <Link href='/display/search' aria-label='Search' className='xl:hidden flex items-center justify-center text-black/80 hover:text-clay' style={{ minWidth: '44px', minHeight: '44px' }}>
                 <span className='material-symbols-outlined'>search</span>
-              </a>
+              </Link>
 
               {/* Desktop: persistent Talk to us contact link */}
-              <a href='/contact' className='hidden xl:inline-flex items-center gap-1 text-sm text-black/70 hover:text-clay transition whitespace-nowrap'>
+              <Link href='/contact' className='hidden xl:inline-flex items-center gap-1 text-sm text-black/70 hover:text-clay transition whitespace-nowrap'>
                 <span className='material-symbols-outlined text-[18px]'>chat_bubble_outline</span>
                 Talk to us
-              </a>
+              </Link>
 
               <span className='hidden xl:block'><CurrencySelector /></span>
 
               {/* FIX 6: wishlist heart OUTLINE */}
-              <a href='/wishlist' aria-label='Wishlist' className='flex items-center justify-center text-black/80 hover:text-clay' style={{ minWidth: '44px', minHeight: '44px' }}>
+              <Link href='/wishlist' aria-label='Wishlist' className='flex items-center justify-center text-black/80 hover:text-clay' style={{ minWidth: '44px', minHeight: '44px' }}>
                 <span className='material-symbols-outlined'>favorite_border</span>
-              </a>
+              </Link>
 
               <button aria-label='Cart' className='flex items-center justify-center text-black/80 hover:text-clay relative' style={{ minWidth: '44px', minHeight: '44px' }} onClick={() => setCartOpen(true)}>
                 <span className='material-symbols-outlined'>shopping_cart</span>
@@ -746,12 +747,12 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                         </div>
                       </div>
 
-                      <a href='/profile' className='block px-4 py-2 hover:bg-sand'>Dashboard</a>
-                      <a href='/profile/order' className='block px-4 py-2 hover:bg-sand'>Orders</a>
-                      <a href='/profile/address' className='block px-4 py-2 hover:bg-sand'>Address</a>
-                      <a href='/profile/account' className='block px-4 py-2 hover:bg-sand'>Account</a>
-                      <a href='/profile/wholesale-program' className='block px-4 py-2 hover:bg-sand'>Wholesale Program</a>
-                      <a href='/contact' className='block px-4 py-2 hover:bg-sand'>Contact Us</a>
+                      <Link href='/profile' className='block px-4 py-2 hover:bg-sand'>Dashboard</Link>
+                      <Link href='/profile/order' className='block px-4 py-2 hover:bg-sand'>Orders</Link>
+                      <Link href='/profile/address' className='block px-4 py-2 hover:bg-sand'>Address</Link>
+                      <Link href='/profile/account' className='block px-4 py-2 hover:bg-sand'>Account</Link>
+                      <Link href='/profile/wholesale-program' className='block px-4 py-2 hover:bg-sand'>Wholesale Program</Link>
+                      <Link href='/contact' className='block px-4 py-2 hover:bg-sand'>Contact Us</Link>
                       <button onClick={() => logout()} className='w-full text-left px-4 py-2 hover:bg-sand flex items-center gap-2'>
                         Logout
                         <span className='material-symbols-outlined text-[16px]'>logout</span>
@@ -959,9 +960,9 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                   </span>
                 </div>
               )}
-              <a href='/checkout' className='block text-center rounded-lg bg-clay text-white py-2.5 font-medium hover:bg-clayd transition'>
+              <Link href='/checkout' className='block text-center rounded-lg bg-clay text-white py-2.5 font-medium hover:bg-clayd transition'>
                 Checkout
-              </a>
+              </Link>
             </div>
           </aside>
         </div>
@@ -1014,11 +1015,11 @@ function MobileDrawer({
         </div>
 
         {/* FIX 12: Order a SwatchKit CTA */}
-        <a href='/products/fabric?category=swatchkit' onClick={onClose}
+        <Link href='/products/fabric?category=swatchkit' onClick={onClose}
           className='block w-full text-center rounded-md py-2.5 px-3 text-sm font-semibold text-white mb-3'
           style={{ background: '#B78F9D' }}>
           Order a SwatchKit
-        </a>
+        </Link>
 
         <MobileFabricAccordion fabric={nav.fabric} acc={acc} setAcc={setAcc} onNav={onClose} />
         {nav.finished.map((g) => (
@@ -1029,9 +1030,9 @@ function MobileDrawer({
         {/* Collaborations — expandable */}
         <MobileLinkAccordion title='Collaborations' k='collaborations' href='/stories' acc={acc} setAcc={setAcc} onNav={onClose}>
           <ul className='space-y-1 text-sm text-black/60'>
-            <li><a href='/stories' onClick={onNav(onClose)} className='hover:text-clay'>Crafts</a></li>
-            <li><a href='/stories' onClick={onNav(onClose)} className='hover:text-clay'>Clusters</a></li>
-            <li><a href='/stories' onClick={onNav(onClose)} className='hover:text-clay'>Collaborations</a></li>
+            <li><Link href='/stories' onClick={onNav(onClose)} className='hover:text-clay'>Crafts</Link></li>
+            <li><Link href='/stories' onClick={onNav(onClose)} className='hover:text-clay'>Clusters</Link></li>
+            <li><Link href='/stories' onClick={onNav(onClose)} className='hover:text-clay'>Collaborations</Link></li>
           </ul>
         </MobileLinkAccordion>
 
@@ -1041,16 +1042,16 @@ function MobileDrawer({
             <li><a href={'/content/about-us/about-the-brand/56485'} className='hover:text-clay'>About The Brand</a></li>
             <li><a href={'/content/about-us/about-our-impact/57938'} className='hover:text-clay'>About Our Impact</a></li>
             <li><a href={'/content/about-us/about-the-founder/57073'} className='hover:text-clay'>About the Founder</a></li>
-            <li><a href='/blogs' onClick={onNav(onClose)} className='hover:text-clay'>Read Our Stories</a></li>
-            <li><a href='/contact' onClick={onNav(onClose)} className='hover:text-clay'>Contact Us</a></li>
+            <li><Link href='/blogs' onClick={onNav(onClose)} className='hover:text-clay'>Read Our Stories</Link></li>
+            <li><Link href='/contact' onClick={onNav(onClose)} className='hover:text-clay'>Contact Us</Link></li>
           </ul>
         </MobileLinkAccordion>
 
         {/* B2B — expandable */}
         <MobileLinkAccordion title='B2B' k='b2b' acc={acc} setAcc={setAcc} onNav={onClose}>
           <ul className='space-y-1 text-sm text-black/60'>
-            <li><a href='/wholesale-partner-program' onClick={onNav(onClose)} className='hover:text-clay'>Wholesale Partner Program</a></li>
-            <li><a href='/artisanflow' onClick={onNav(onClose)} className='hover:text-clay'>ArtisanFlow</a></li>
+            <li><Link href='/wholesale-partner-program' onClick={onNav(onClose)} className='hover:text-clay'>Wholesale Partner Program</Link></li>
+            <li><Link href='/artisanflow' onClick={onNav(onClose)} className='hover:text-clay'>ArtisanFlow</Link></li>
             <li><a href={'/content/wholesale/order-fabric-swatches/59195'} className='hover:text-clay'>Order Fabric Swatches</a></li>
             <li><a href={'/content/wholesale/wholesale-production-preorder/59335'} className='hover:text-clay'>Custom Fabric Production</a></li>
           </ul>
@@ -1058,18 +1059,18 @@ function MobileDrawer({
 
         {user && (
           <div className='mt-3 flex flex-col gap-1 text-sm border-t border-clay/10 pt-3'>
-            <a href='/profile' onClick={onClose} className='py-1.5'>Dashboard</a>
-            <a href='/profile/order' onClick={onClose} className='py-1.5'>Orders</a>
+            <Link href='/profile' onClick={onClose} className='py-1.5'>Dashboard</Link>
+            <Link href='/profile/order' onClick={onClose} className='py-1.5'>Orders</Link>
             <button onClick={() => logout()} className='py-1.5 text-left text-red-600'>Logout</button>
           </div>
         )}
 
         {/* FIX 12: Contact + social icons at the bottom */}
         <div className='mt-4 border-t border-clay/10 pt-4'>
-          <a href='/contact' onClick={onClose} className='inline-flex items-center gap-2 text-sm text-clay font-medium mb-3'>
+          <Link href='/contact' onClick={onClose} className='inline-flex items-center gap-2 text-sm text-clay font-medium mb-3'>
             <span className='material-symbols-outlined text-[20px]'>contact_support</span>
             Contact us
-          </a>
+          </Link>
           <div className='flex items-center gap-4'>
             {SOCIAL.map((s) => (
               <a key={s.alt} href={s.href} target='_blank' rel='noopener' aria-label={s.alt} className='opacity-80 hover:opacity-100'>
@@ -1158,7 +1159,7 @@ function MobileFabricAccordion({
   return (
     <div className='border-b border-clay/5'>
       <div className='flex items-center justify-between py-3'>
-        <a href='/products/fabric' className='hover:text-clay' onClick={onNavClose}>Fabric</a>
+        <Link href='/products/fabric' className='hover:text-clay' onClick={onNavClose}>Fabric</Link>
         <button aria-label='Toggle' onClick={() => setAcc(open ? null : 'fabric')}>
           <span className='material-symbols-outlined'>{open ? 'expand_less' : 'expand_more'}</span>
         </button>

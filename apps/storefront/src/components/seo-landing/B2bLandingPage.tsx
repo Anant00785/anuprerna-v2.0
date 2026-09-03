@@ -8,6 +8,7 @@ import WhyPartner from './WhyPartner';
 import ReviewsSection from './ReviewsSection';
 import CardPrice from './CardPrice';
 import { buildB2bFaqs } from './b2bFaqs';
+import Link from 'next/link';
 
 export type B2bVariant =
   | 'fabric-type'
@@ -318,13 +319,13 @@ function FeaturedProducts({ products, title }: { products: SeoProduct[]; title: 
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900">
               Featured Products
             </h2>
-            <a
+            <Link
               href="/products/fabric"
               className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-clay hover:underline"
             >
               Discover More
               <span className="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
-            </a>
+            </Link>
           </div>
 
           {/* Tab controls */}
@@ -516,12 +517,12 @@ export default function B2bLandingPage({
                 >
                   Request a Quote (RFQ)
                 </a>
-                <a
+                <Link
                   href="/products/fabric?category=swatchkit"
                   className="inline-flex items-center px-6 py-3 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-50 transition-colors"
                 >
                   Order a SwatchKit
-                </a>
+                </Link>
               </div>
 
               {/* Feature badges */}

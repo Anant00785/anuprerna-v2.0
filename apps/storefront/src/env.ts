@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Fail fast at boot if env is misconfigured. Never read process.env directly elsewhere.
 const schema = z.object({
-  NEXT_PUBLIC_API_MODE: z.enum(["legacy", "nest"]).default("nest"),
+  NEXT_PUBLIC_API_MODE: z.enum(["legacy", "nest"]).default("legacy"),
   NEXT_PUBLIC_SPRINGBOOT_API_URL: z.string().url().default("https://anuprerna-api.onrender.com"),
   NEXT_PUBLIC_NEST_API_URL: z.string().url().default("https://anuprerna-api.onrender.com"),
   NEXT_PUBLIC_S3_BASE_URL: z.string().url().default("https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/"),
@@ -20,7 +20,7 @@ function cleanUrl(val: string | undefined, fallback: string): string {
 }
 
 export const env = schema.parse({
-  NEXT_PUBLIC_API_MODE: process.env.NEXT_PUBLIC_API_MODE || "nest",
+  NEXT_PUBLIC_API_MODE: process.env.NEXT_PUBLIC_API_MODE || "legacy",
   NEXT_PUBLIC_SPRINGBOOT_API_URL: cleanUrl(process.env.NEXT_PUBLIC_SPRINGBOOT_API_URL, "https://anuprerna-api.onrender.com"),
   NEXT_PUBLIC_NEST_API_URL: cleanUrl(process.env.NEXT_PUBLIC_NEST_API_URL, "https://anuprerna-api.onrender.com"),
   NEXT_PUBLIC_S3_BASE_URL: cleanUrl(process.env.NEXT_PUBLIC_S3_BASE_URL, "https://anuprerna-bloomscorp.s3.ap-south-1.amazonaws.com/"),

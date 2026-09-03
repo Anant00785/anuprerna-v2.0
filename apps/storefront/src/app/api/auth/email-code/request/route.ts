@@ -22,8 +22,17 @@ export async function POST(req: Request) {
   });
 
   // 2. Send Real Email via Gmail SMTP
-  const smtpUser = process.env.SMTP_USER || 'anantkr10000@gmail.com';
-  const smtpPass = process.env.SMTP_PASS || 'hpjb jqxn skui jduk';
+  // Credentials come from the environment only. A committed fallback is a
+  // published credential.
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  if (!smtpUser || !smtpPass) {
+    console.error('[Storefront Email OTP] SMTP_USER/SMTP_PASS are not configured.');
+    return NextResponse.json(
+      { success: false, message: 'Email sign-in is unavailable right now.' },
+      { status: 503 },
+    );
+  }
 
   try {
     const transporter = nodemailer.createTransport({
@@ -59,9 +68,12 @@ export async function POST(req: Request) {
       `,
     });
 
-    console.log(`[Storefront Email OTP] Real OTP ${code} successfully sent to ${email}`);
   } catch (err) {
-    console.error(`[Storefront Email OTP Error] Failed to send email to ${email}:`, err);
+    console.error('[Storefront Email OTP] Failed to send the sign-in code:', err);
+    return NextResponse.json(
+      { success: false, message: 'Could not send the sign-in code. Please try again.' },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({

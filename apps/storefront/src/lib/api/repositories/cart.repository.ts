@@ -61,6 +61,9 @@ function toLegacyCartItem(input: AddCartItemInput): Record<string, unknown> {
     sku: input.sku,
     orderType: input.orderType ?? "IN_STOCK",
     productGroup: input.productGroup ?? "fabric",
+    // Always sent (Loom's NOT NULL column), unlike the foreign keys below,
+    // which are omitted when absent because Loom cannot join on 0.
+    selectedSizeOptionId: input.selectedSizeOptionId ?? 0,
     selectedFinishId: input.selectedFinishId ?? "",
     makingCharge: input.makingCharge ?? 0,
     customSize: input.customSize ?? {},
@@ -68,7 +71,6 @@ function toLegacyCartItem(input: AddCartItemInput): Record<string, unknown> {
   if (input.fabricProductId && input.fabricProductId > 0) body.fabricProductId = input.fabricProductId;
   if (input.finishedProductId && input.finishedProductId > 0) body.finishedProductId = input.finishedProductId;
   if (input.selectedFabricId && input.selectedFabricId > 0) body.selectedFabricId = input.selectedFabricId;
-  if (input.selectedSizeOptionId && input.selectedSizeOptionId > 0) body.selectedSizeOptionId = input.selectedSizeOptionId;
   if (input.minOrderQuantity) body.minOrderQuantity = input.minOrderQuantity;
   return body;
 }
@@ -78,6 +80,10 @@ export const cartRepository = {
    * Get active user cart
    */
   async getCart(): Promise<Cart> {
+    if (env.NEXT_PUBLIC_API_MODE === "nest") {
+      const response = await apiRequest<NestApiResponse<NestCartDto>>("/v1/cart", {}, "nest");
+      return mapNestCartToDomain(response.data);
+    }
     try {
       const response = await apiRequest<LegacyCartListResponse>(
         "/get/cart-item/list",

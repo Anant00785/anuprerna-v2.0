@@ -333,8 +333,6 @@ const REVIEW_TTL_MS = PDP_REVALIDATE * 1000;
 
 export async function getProductReviews(
   productId: number,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  productGroup: string,
   pageSize = 6,
 ): Promise<ProductReview[]> {
   const cacheKey = `${productId}:${pageSize}`;

@@ -1,6 +1,7 @@
 import Img from '@/components/ui/Img';
 import CardPrice from './CardPrice';
 import type { SeoProduct, SeoBlogItem } from './loom';
+import Link from 'next/link';
 
 interface AdsLandingPageProps {
   slug: string;
@@ -178,12 +179,12 @@ export default function AdsLandingPage({ slug, title, products, blogs }: AdsLand
                 >
                   Explore Collection
                 </a>
-                <a
+                <Link
                   href="/contact"
                   className="inline-flex items-center px-6 py-3 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-white/60 transition-colors"
                 >
                   Contact Us
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -242,13 +243,13 @@ export default function AdsLandingPage({ slug, title, products, blogs }: AdsLand
               )}
 
               <div className="text-center mt-10">
-                <a
+                <Link
                   href="/products/fabric"
                   className="inline-flex items-center gap-2 px-8 py-3 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-colors"
                 >
                   <span className="material-symbols-outlined text-lg" aria-hidden="true">grid_view</span>
                   View More Products
-                </a>
+                </Link>
               </div>
             </>
           ) : (
@@ -267,13 +268,13 @@ export default function AdsLandingPage({ slug, title, products, blogs }: AdsLand
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900">
                 Latest Insights
               </h2>
-              <a
+              <Link
                 href="/blogs"
                 className="text-sm font-medium text-clay hover:underline hidden sm:inline-flex items-center gap-1"
               >
                 View all articles
                 <span className="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
-              </a>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -283,12 +284,12 @@ export default function AdsLandingPage({ slug, title, products, blogs }: AdsLand
             </div>
 
             <div className="text-center mt-10">
-              <a
+              <Link
                 href="/blogs"
                 className="inline-flex items-center gap-2 px-8 py-3 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-colors"
               >
                 Load More Articles
-              </a>
+              </Link>
             </div>
           </div>
         </section>

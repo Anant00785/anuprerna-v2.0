@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { loomPost } from '@/lib/loom/client';
-import { userStore } from '@/lib/auth/user-store';
 
 export async function POST(req: Request) {
   let email = '';
@@ -13,34 +12,6 @@ export async function POST(req: Request) {
 
   if (!email) {
     return NextResponse.json({ success: false, message: 'Email is required.' }, { status: 400 });
-  }
-
-  // 1. Check local NestJS backend first
-  try {
-    const nestRes = await fetch(`http://127.0.0.1:3000/check-email/tenant?email=${encodeURIComponent(email)}`);
-    if (nestRes.ok) {
-      const nestData = await nestRes.json();
-      if (nestData?.registered || nestData?.isRegistered || nestData?.entity?.registered) {
-        return NextResponse.json({
-          success: true,
-          registered: true,
-          emailVerified: true,
-          passwordless: false,
-        });
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  // 2. Check local user store
-  if (userStore.has(email)) {
-    return NextResponse.json({
-      success: true,
-      registered: true,
-      emailVerified: true,
-      passwordless: false,
-    });
   }
 
   try {

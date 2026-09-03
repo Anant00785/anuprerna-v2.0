@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { loomPost } from '@/lib/loom/client';
+import { authenticateEmail } from '@/lib/loom/endpoints';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
-import { userStore } from '@/lib/auth/user-store';
-import { signToken } from '@/lib/auth/token-helper';
 
 export async function POST(req: Request) {
   let name = '';
@@ -46,18 +45,8 @@ export async function POST(req: Request) {
 
   const buyerType = buyerChoice === 'business' ? 'b2b' : 'b2c';
 
-  // Save to local user store
-  userStore.set(email, {
-    email,
-    name,
-    phone,
-    password,
-    buyerType,
-    companyName,
-    gstNumber,
-  });
-
-  // Try registering in backend
+  // The BACKEND owns the account. Nothing about this registration — least of
+  // all the password — is persisted by the storefront.
   try {
     await loomPost('/customer/registration/email', {
       tenant: { name, email, password, contactNumber: phone },
@@ -65,34 +54,24 @@ export async function POST(req: Request) {
       companyName,
       gstNumber,
     });
-  } catch {
-    // ignore
+  } catch (e: unknown) {
+    const msg = (e as { body?: { message?: string } })?.body?.message || 'Could not create the account.';
+    const status = (e as { status?: number })?.status ?? 502;
+    return NextResponse.json({ success: false, message: msg }, { status });
   }
 
-  // Mint JWT session token
-  const jwtToken = signToken({
-    sub: email,
-    email,
-    name,
-    firstName: name.split(' ')[0] || 'Member',
-    contactNumber: phone,
-    phone,
-    buyerType,
-    companyName,
-    gstNumber,
-    roles: buyerType === 'b2b' ? ['ROLE_CUSTOMER', 'ROLE_WHOLESALE'] : ['ROLE_CUSTOMER'],
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 14,
-  });
-
-  const store = await cookies();
-  store.set(LOOM_JWT_COOKIE, jwtToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 14,
-  });
+  // Session comes from a real backend authentication, not a locally minted token.
+  const result = await authenticateEmail(email, password);
+  if (result.ok) {
+    const store = await cookies();
+    store.set(LOOM_JWT_COOKIE, result.jwt, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 14,
+    });
+  }
 
   return NextResponse.json({ success: true, message: 'Account created successfully.' });
 }

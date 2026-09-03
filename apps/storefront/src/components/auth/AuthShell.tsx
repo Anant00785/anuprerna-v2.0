@@ -12,6 +12,7 @@ import CodeSignIn from './CodeSignIn';
 // so the two account-creating lanes cannot ask two different questions.
 import BuyerTypeQuestion, { type SourcingChoice } from '@/components/account/BuyerTypeQuestion';
 import { useBuyerMode } from '@/components/BuyerModeProvider';
+import Link from 'next/link';
 
 // Hero image URL — same asset the live Angular site uses
 const AUTH_HERO = 'https://anuprerna.com/assets/img/auth.jpeg';
@@ -189,9 +190,9 @@ function PasswordStep({
           </div>
         </div>
         <div className='text-right'>
-          <a href='/auth/forget-password' className='text-sm text-clay hover:underline'>
+          <Link href='/auth/forget-password' className='text-sm text-clay hover:underline'>
             Forgot Password?
-          </a>
+          </Link>
         </div>
         {error && <p className='text-sm text-red-600'>{error}</p>}
         <button
@@ -602,9 +603,9 @@ export default function AuthShell() {
 
           <p className='mt-6 text-xs text-black/45 text-center leading-relaxed'>
             By continuing you agree to the website&apos;s{' '}
-            <a href='/content/policies/terms-conditions/174271' className='text-clay hover:underline'>T&amp;C</a>
+            <Link href='/content/policies/terms-conditions/174271' className='text-clay hover:underline'>T&amp;C</Link>
             {' '}&amp;{' '}
-            <a href='/content/policies/privacy-policy/173823' className='text-clay hover:underline'>Privacy Policies</a>
+            <Link href='/content/policies/privacy-policy/173823' className='text-clay hover:underline'>Privacy Policies</Link>
             {' '}and to receive emails for service related information.
           </p>
         </>

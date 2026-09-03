@@ -63,43 +63,42 @@ export const checkoutRepository = {
         ? response
         : response?.shipmentList || response?.payload || response?.content || response?.data || [];
 
+      if (!Array.isArray(list) || list.length === 0) {
+        // Never invent a quote. See the throw below.
+        throw new Error("The backend returned no shipping options.");
+      }
+
       return list.map((item: any) => {
         const isInternational = (item.locationType || item.shipmentType) === "INTERNATIONAL";
+        // `??`, never `||`: a genuine 0 (free shipping, no per-unit surcharge)
+        // is a real price. `Number(0) || 110` would silently overcharge — the
+        // same falsy-zero bug already fixed twice in the cart adapters.
+        const money = (...vals: unknown[]): number => {
+          const found = vals.find((v) => v !== undefined && v !== null);
+          const n = Number(found);
+          if (found === undefined || !Number.isFinite(n)) {
+            throw new Error("The backend sent a shipping option with no usable price.");
+          }
+          return n;
+        };
         return {
           id: Number(item.id),
           name: item.name || (isInternational ? "Pay Duty & Taxes on Delivery (DDU)" : "Regular - By Road"),
           locationType: (isInternational ? "INTERNATIONAL" : "DOMESTIC") as "DOMESTIC" | "INTERNATIONAL",
-          baseAmount: Number(item.baseAmount ?? item.baseCharge) || (isInternational ? 1500 : 110),
-          additionalAmount: Number(item.additionalAmount ?? item.perExtraUnitRate) || (isInternational ? 80 : 9),
-          baseQuantity: Number(item.baseQuantity ?? item.baseUnitsLimit) || (isInternational ? 4 : 5),
+          baseAmount: money(item.baseAmount, item.baseCharge),
+          additionalAmount: money(item.additionalAmount, item.perExtraUnitRate),
+          baseQuantity: money(item.baseQuantity, item.baseUnitsLimit),
           estimatedFromDay: Number(item.estimatedFromDay) || (isInternational ? 7 : 5),
           estimatedToDay: Number(item.estimatedToDay) || (isInternational ? 12 : 7),
         };
       });
     } catch (err) {
-      console.warn("Failed to fetch shipment list, using defaults:", err);
-      return [
-        {
-          id: 4,
-          name: "Regular - By Road",
-          locationType: "DOMESTIC",
-          baseAmount: 110,
-          additionalAmount: 9,
-          baseQuantity: 5,
-          estimatedFromDay: 5,
-          estimatedToDay: 7,
-        },
-        {
-          id: 5,
-          name: "Express - By Air",
-          locationType: "DOMESTIC",
-          baseAmount: 200,
-          additionalAmount: 15,
-          baseQuantity: 5,
-          estimatedFromDay: 3,
-          estimatedToDay: 4,
-        },
-      ];
+      // NO FABRICATED FALLBACK. This used to return a hardcoded two-option list
+      // with real rupee amounts, which the caller could not distinguish from a
+      // live quote. A shipping price that no backend produced must never reach
+      // an order total — so the failure is surfaced and the caller decides.
+      console.warn("Failed to fetch shipment list:", err);
+      throw err instanceof Error ? err : new Error("Could not load shipping options.");
     }
   },
 

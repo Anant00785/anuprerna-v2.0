@@ -35,8 +35,7 @@ function clearedSession() {
   return response;
 }
 
-import { decodeTokenPayload } from '@/lib/auth/token-helper';
-import { userStore } from '@/lib/auth/user-store';
+import { verifyToken } from '@/lib/auth/token-helper';
 
 export async function GET() {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
@@ -46,15 +45,25 @@ export async function GET() {
     return clearedSession();
   }
 
-  // 1. Check if token was minted locally with user data
-  const payload = decodeTokenPayload(token);
-  if (payload && (payload.email || payload.sub)) {
-    const email = String(payload.email || payload.sub).trim().toLowerCase();
-    const stored = userStore.get(email);
-    const name = stored?.name || String(payload.name || email.split('@')[0]);
+  // 1. Passwordless sessions carry their identity in the wrapper-minted token
+  // itself. Read it from the token — never from a user store on disk.
+  const verified = verifyToken(token);
+
+  // Our own token, past its `exp`. Tear the session down here rather than let
+  // it fall through to the Loom profile fetch: that would answer
+  // `authenticated: false` while LEAVING the expired cookie in the browser, so
+  // every subsequent request would repeat the same dead round trip.
+  if (!verified.ok && verified.reason === 'expired') {
+    return clearedSession();
+  }
+
+  const payload = verified.ok ? verified.payload : null;
+  if (payload && payload.email && payload.name) {
+    const email = String(payload.email).trim().toLowerCase();
+    const name = String(payload.name);
     const firstName = name.split(' ')[0] || 'Member';
-    const phone = stored?.phone || String(payload.contactNumber || payload.phone || '');
-    const buyerMode = (stored?.buyerType || payload.buyerType) === 'b2b' ? 'b2b' : 'b2c';
+    const phone = String(payload.contactNumber || payload.phone || '');
+    const buyerMode = payload.buyerType === 'b2b' ? 'b2b' : 'b2c';
 
     const normalizedProfile = {
       ...payload,

@@ -11,6 +11,7 @@ import RelatedProducts from '@/components/product/RelatedProducts';
 import UnavailableShell from '@/components/UnavailableShell';
 import JsonLd from '@/components/seo/JsonLd';
 import { absUrl, productPath, robotsMeta, metaDescription } from '@/lib/seo/config';
+import Link from 'next/link';
 
 export const revalidate = 1800;
 
@@ -105,7 +106,7 @@ export default async function ProductDetailPage({
   const [relatedRaw, reviewStats, reviews, relatedStories] = await Promise.all([
     isFinished ? getFinishedProducts() : getFabricProducts(),
     getReviewStats(product.id, isFinished ? 'finished' : 'fabric'),
-    getProductReviews(product.id, isFinished ? 'finished' : 'fabric'),
+    getProductReviews(product.id),
     isFinished ? Promise.resolve([]) : getRelatedStories(recordId),
   ]);
 
@@ -226,7 +227,7 @@ export default async function ProductDetailPage({
       {/* Breadcrumb */}
       <div className='border-b border-sand'>
         <div className='mx-auto max-w-screen-xl px-4 py-3 text-xs text-black/50 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap'>
-          <a href='/' className='hover:text-clay transition-colors'>Home</a>
+          <Link href='/' className='hover:text-clay transition-colors'>Home</Link>
           <span className='material-symbols-outlined text-[12px]'>chevron_right</span>
           <a
             href={isFinished ? '/products/finished' : '/products/fabric'}

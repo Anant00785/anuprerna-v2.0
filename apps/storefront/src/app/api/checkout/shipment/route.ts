@@ -1,48 +1,31 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { loomGet } from '@/lib/loom/client';
+import { loomGet, LoomError } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
 
-const DEFAULT_SHIPMENT_LIST = [
-  {
-    id: 16104210,
-    version: 1,
-    name: 'Express - By Air',
-    baseAmount: 200,
-    baseQuantity: 5,
-    additionalAmount: 15,
-    estimatedFromDay: 3,
-    estimatedToDay: 4,
-    locationType: 'DOMESTIC',
-  },
-  {
-    id: 21209,
-    version: 31,
-    name: 'Regular - By Road',
-    baseAmount: 150,
-    baseQuantity: 1,
-    additionalAmount: 50,
-    estimatedFromDay: 3,
-    estimatedToDay: 7,
-    locationType: 'DOMESTIC',
-  },
-  {
-    id: 62591603,
-    version: 6,
-    name: 'Standard International Shipping (DDP)',
-    baseAmount: 3000,
-    baseQuantity: 4,
-    additionalAmount: 125,
-    estimatedFromDay: 10,
-    estimatedToDay: 20,
-    locationType: 'INTERNATIONAL',
-  },
-];
+// =====================================================================================
+// GET /api/checkout/shipment — the shipping options, and their PRICES.
+//
+// THIS ROUTE USED TO INVENT MONEY. When both upstreams failed it answered
+// `200 { success: true }` with a hardcoded DEFAULT_SHIPMENT_LIST carrying real
+// rupee amounts (₹200 express, ₹150 regular, ₹3000 international). The caller
+// could not tell a live quote from the fabrication, and the figure flowed
+// straight into a real order total: a buyer could be quoted, and charged, a
+// price no backend ever produced.
+//
+// A shipping price is not a default. If no backend can quote one, the honest
+// answer is that we do not have one — so this now fails with 502 and relays
+// the backend's own message, exactly like /api/profile/addresses. Both
+// CheckoutShell load paths already treat a non-OK response as a hard load
+// error and render the error state, so the checkout stops instead of
+// proceeding on a made-up number.
+// =====================================================================================
 
 export async function GET() {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
 
-  // 1. Try local NestJS backend first
+  // 1. Local NestJS backend first, when one is running. Unchanged from before:
+  // only the fabricated fallback was removed, not the upstream order.
   try {
     const nestRes = await fetch('http://127.0.0.1:3000/get/shipment-list', {
       headers: { Origin: 'localhost', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -55,13 +38,14 @@ export async function GET() {
       }
     }
   } catch {
-    // ignore
+    // Not running / not reachable — fall through to Loom.
   }
 
-  // 2. Try remote Loom
+  // 2. Loom.
   const path = token ? '/get/shipment-list' : '/checkout/shipment-list';
+
   try {
-    const data = await loomGet<{ shipmentList?: unknown[]; success?: boolean }>(
+    const data = await loomGet<{ shipmentList?: unknown[]; success?: boolean; message?: string }>(
       path,
       token ? { token } : undefined,
     );
@@ -69,14 +53,27 @@ export async function GET() {
     if (Array.isArray(list) && list.length > 0) {
       return NextResponse.json({ ...data, authenticated: !!token });
     }
-  } catch {
-    // ignore
+    // A reachable backend with nothing to offer is still "no quote available" —
+    // it is NOT an empty list the checkout may proceed past.
+    return NextResponse.json(
+      {
+        shipmentList: [],
+        success: false,
+        authenticated: !!token,
+        message: data?.message || 'No shipping options are available right now.',
+      },
+      { status: 502 },
+    );
+  } catch (e: unknown) {
+    const body = e instanceof LoomError ? (e.body as { message?: string } | undefined) : undefined;
+    return NextResponse.json(
+      {
+        shipmentList: [],
+        success: false,
+        authenticated: !!token,
+        message: body?.message || 'Could not load shipping options.',
+      },
+      { status: 502 },
+    );
   }
-
-  // 3. Fallback to default shipment options
-  return NextResponse.json({
-    shipmentList: DEFAULT_SHIPMENT_LIST,
-    success: true,
-    authenticated: !!token,
-  });
 }

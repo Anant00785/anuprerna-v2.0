@@ -11,6 +11,7 @@
 // visitor isn't dead-ended -- see app/product/[category]/[slug]/page.tsx.
 import type { CatalogueProduct } from '@/components/catalogue/types';
 import RelatedProducts from '@/components/product/RelatedProducts';
+import Link from 'next/link';
 
 function titleFromSlug(slug: string): string {
   return slug
@@ -38,7 +39,7 @@ export default function UnavailableShell({
     <main className='min-h-screen bg-white'>
       <div className='border-b border-sand'>
         <div className='mx-auto max-w-screen-xl px-4 py-3 text-xs text-black/50 flex items-center gap-1.5'>
-          <a href='/' className='hover:text-clay transition-colors'>Home</a>
+          <Link href='/' className='hover:text-clay transition-colors'>Home</Link>
           <span className='material-symbols-outlined text-[12px]'>chevron_right</span>
           <a href={backHref} className='hover:text-clay transition-colors'>{backLabel}</a>
         </div>

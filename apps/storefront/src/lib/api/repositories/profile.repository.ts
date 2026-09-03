@@ -107,30 +107,28 @@ export const profileRepository = {
    * Get current authenticated user profile
    */
   async getCustomerProfile(jwtToken?: string): Promise<UserProfileData> {
-    try {
-      const headers = getAuthHeaders(jwtToken);
-      const response = await apiRequest<any>("get/customer/profile", { headers });
+    // No try/catch: a 401 here means the session is gone and the caller has to
+    // know. Swallowing it renders a logged-in header with an empty profile.
+    const headers = getAuthHeaders(jwtToken);
+    const response = await apiRequest<any>("get/customer/profile", { headers });
 
-      const customer = response?.customer ?? {};
-      const tenant = customer.tenant ?? response?.profile ?? response?.entity ?? response?.data ?? response ?? {};
-      const name: string = tenant.name || tenant.userName || tenant.user_name || customer.name || "";
-      const [firstName, ...rest] = name.trim().split(/\s+/).filter(Boolean);
+    const customer = response?.customer ?? {};
+    const tenant = customer.tenant ?? response?.profile ?? response?.entity ?? response?.data ?? response ?? {};
+    const name: string = tenant.name || tenant.userName || tenant.user_name || customer.name || "";
+    const [firstName, ...rest] = name.trim().split(/\s+/).filter(Boolean);
 
-      return {
-        ...tenant,
-        ...customer,
-        id: tenant.uid ?? tenant.id,
-        email: tenant.email,
-        name: name || [tenant.firstName, tenant.lastName].filter(Boolean).join(" ").trim(),
-        firstName: firstName || tenant.firstName || "",
-        lastName: rest.join(" ") || tenant.lastName || "",
-        phone: tenant.contactNumber || tenant.phone || "",
-        gender: tenant.gender,
-        dob: tenant.dob,
-      };
-    } catch {
-      return {};
-    }
+    return {
+      ...tenant,
+      ...customer,
+      id: tenant.uid ?? tenant.id,
+      email: tenant.email,
+      name: name || [tenant.firstName, tenant.lastName].filter(Boolean).join(" ").trim(),
+      firstName: firstName || tenant.firstName || "",
+      lastName: rest.join(" ") || tenant.lastName || "",
+      phone: tenant.contactNumber || tenant.phone || "",
+      gender: tenant.gender,
+      dob: tenant.dob,
+    };
   },
 
   /**
