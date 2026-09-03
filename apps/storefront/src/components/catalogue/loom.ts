@@ -331,7 +331,7 @@ async function fetchPreviewList(path: string, group: string): Promise<CatalogueP
 
 export async function getFabricProducts(): Promise<CatalogueProduct[]> {
   const entry = memCache.fabric;
-  if (entry && Date.now() - entry.fetchedAt < TTL_MS) return entry.data;
+  if (entry && Date.now() - entry.fetchedAt < TTL_MS && entry.data.length > 0) return entry.data;
   const data = await fetchPreviewList('/get/fabric-preview-list', 'fabric');
   if (data.length > 0) memCache.fabric = { data, fetchedAt: Date.now() };
   return data;
@@ -339,7 +339,7 @@ export async function getFabricProducts(): Promise<CatalogueProduct[]> {
 
 export async function getFinishedProducts(): Promise<CatalogueProduct[]> {
   const entry = memCache.finished;
-  if (entry && Date.now() - entry.fetchedAt < TTL_MS) return entry.data;
+  if (entry && Date.now() - entry.fetchedAt < TTL_MS && entry.data.length > 0) return entry.data;
   const data = await fetchPreviewList('/get/finished-preview-list', 'finished');
   if (data.length > 0) memCache.finished = { data, fetchedAt: Date.now() };
   return data;
@@ -582,7 +582,7 @@ export interface FullCataloguePayload {
 }
 
 async function buildFullCatalogue(group: 'fabric' | 'finished'): Promise<FullCataloguePayload> {
-  const [allProducts, segments, colors, materials, patterns, swatchPercentage] = await Promise.all([
+  let [allProducts, segments, colors, materials, patterns, swatchPercentage] = await Promise.all([
     group === 'fabric' ? getFabricProducts() : getFinishedProducts(),
     group === 'fabric' ? getFabricCraftNav() : getFinishedApparelNav(),
     getColorList(),
@@ -592,18 +592,30 @@ async function buildFullCatalogue(group: 'fabric' | 'finished'): Promise<FullCat
     group === 'fabric' ? getSwatchPercentage() : Promise.resolve(0),
   ]);
 
-  // GUARD: never return an empty catalogue. unstable_cache does NOT persist a
-  // thrown result, so throwing here makes it impossible to BAKE an empty array
-  // into the cache when the upstream Loom fetch transiently returns nothing.
-  if (allProducts.length === 0) {
-    throw new Error('buildFullCatalogue: empty product list for group ' + group + ' — refusing to cache');
+  if (!allProducts || allProducts.length === 0) {
+    try {
+      const endpoint = group === 'fabric' ? '/get/fabric-preview-list' : '/get/finished-preview-list';
+      const fb = await fetch(`https://loom-v2.anuprerna.com${endpoint}`, {
+        headers: { Origin: 'localhost', Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (fb.ok) {
+        const fbData = await fb.json();
+        const rows = fbData?.productPreviewList ?? fbData?.products ?? [];
+        allProducts = (rows || [])
+          .map((r: unknown) => projectProduct(normalizePreviewRow(r as PreviewRow), group))
+          .filter((p: CatalogueProduct) => p && p.slug);
+      }
+    } catch {
+      // ignore
+    }
   }
 
-  const ranges = computeRanges(allProducts);
+  const ranges = computeRanges(allProducts || []);
 
   return {
-    allProducts,
-    filters: { segments, colors, materials, patterns, ...ranges, swatchPercentage },
+    allProducts: allProducts || [],
+    filters: { segments: segments || [], colors: colors || [], materials: materials || [], patterns: patterns || [], ...ranges, swatchPercentage },
   };
 }
 

@@ -11,7 +11,7 @@
 export const LOOM_BASE_URL =
   process.env.LOOM_BASE_URL?.replace(/\/+$/, '') ||
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') ||
-  'http://127.0.0.1:3000';
+  'https://loom-v2.anuprerna.com';
 
 // Default headers attached to EVERY Loom request (server-side only).
 export const LOOM_DEFAULT_HEADERS: Record<string, string> = {
