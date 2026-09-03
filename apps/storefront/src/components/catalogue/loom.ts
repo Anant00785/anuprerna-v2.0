@@ -199,6 +199,21 @@ function computeFinishedCalculatedPrice(raw: RawProduct, group: string, price: n
  *
  * A row that already carries a nested `product` is returned untouched.
  */
+/**
+ * A taxonomy field arrives either as a nested `{name}` (legacy Loom) or as a
+ * plain string (our own backend). Reading only `.name` yielded '' for every
+ * product against our API, which emptied every craft/category facet and made
+ * each mega-menu filter link match nothing.
+ */
+function nameOf(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object') {
+    const n = (v as { name?: unknown }).name;
+    if (typeof n === 'string') return n;
+  }
+  return '';
+}
+
 function normalizePreviewRow(row: PreviewRow): PreviewRow {
   if (row && typeof row === 'object' && row.product) return row;
   const flat = row as unknown as Record<string, unknown>;
@@ -246,11 +261,12 @@ function projectProduct(row: PreviewRow, fallbackGroup: string): CatalogueProduc
     hoverImageAlt: raw.hoverImageAlt,
     productGroup: group,
     isMainProduct: !!raw.mainProductCheck,
-    segmentName: raw.segment?.name ?? '',
+    segmentName: nameOf(raw.segment) || nameOf((raw as { segmentCategory?: unknown }).segmentCategory),
     // categoryName = top-level category from segment.category.name
     // (Apparel | Home | Accessories for finished products)
-    categoryName: raw.segment?.category?.name ?? raw.category?.name ?? '',
-    subCategoryName: raw.subCategory?.name ?? '',
+    categoryName:
+      nameOf((raw.segment as { category?: unknown } | undefined)?.category) || nameOf(raw.category),
+    subCategoryName: nameOf(raw.subCategory),
     specialStatus: special,
     materials: projectNamed(raw.materials),
     colors: projectNamed(raw.colors),
