@@ -4,9 +4,9 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. What `apps/api` exposes, and what the frontends actually call.
 
-**apps/api exposes 824 routes** across 98 controllers (DELETE 59, GET 492, PATCH 109, POST 163, PUT 1).
+**apps/api exposes 827 routes** across 98 controllers (DELETE 59, GET 494, PATCH 109, POST 164, PUT 1).
 
-**The frontends call 31 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
+**The frontends call 30 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
 gap is the migration. See `docs/KNOWN-GAPS.md`.
 
 ## apps/api routes
@@ -22,7 +22,6 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
-| GET | `/` | `apps/api/src/commerce/product/controller/finished-product.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/product/controller/product.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/product/controller/sub-category.controller.ts` |
 | POST | `/add/address` | `apps/api/src/commerce/address/address.controller.ts` |
@@ -321,7 +320,9 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/get/filter/segment/list` | `apps/api/src/commerce/filter/controller/filter.controller.ts` |
 | GET | `/get/finish-profile-list` | `apps/api/src/commerce/domain/profiles.controller.ts` |
 | GET | `/get/finish-profile/:profileId` | `apps/api/src/commerce/domain/profiles.controller.ts` |
+| GET | `/get/finished-preview-list` | `apps/api/src/commerce/filter/controller/filter.controller.ts` |
 | GET | `/get/finished-product/:productId` | `apps/api/src/commerce/product/controller/finished-product.controller.ts` |
+| GET | `/get/finished-product/slug` | `apps/api/src/commerce/product/controller/finished-product.controller.ts` |
 | GET | `/get/finished-product/slug/:productSlug` | `apps/api/src/commerce/product/controller/finished-product.controller.ts` |
 | GET | `/get/forex/:forexId` | `apps/api/src/commerce/domain/currency-location.controller.ts` |
 | GET | `/get/forex/exchange-rate/:code` | `apps/api/src/commerce/forex/controller/forex.controller.ts` |
@@ -518,6 +519,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/get/table-explorer/data/finish-profile-item` | `apps/api/src/commerce/domain/profiles.controller.ts` |
 | GET | `/get/table-explorer/data/finish-profile-item/:id` | `apps/api/src/commerce/domain/profiles.controller.ts` |
 | GET | `/get/table-explorer/data/finish-profile/:id` | `apps/api/src/commerce/domain/profiles.controller.ts` |
+| GET | `/get/table-explorer/data/finished-product` | `apps/api/src/commerce/product/controller/finished-product.controller.ts` |
 | GET | `/get/table-explorer/data/forex` | `apps/api/src/commerce/domain/currency-location.controller.ts` |
 | GET | `/get/table-explorer/data/forex-exchange-rate` | `apps/api/src/commerce/domain/currency-location.controller.ts` |
 | GET | `/get/table-explorer/data/forex-exchange-rate/:id` | `apps/api/src/commerce/domain/currency-location.controller.ts` |
@@ -662,6 +664,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/nverse//get/table-explorer/data/verification-token/:id` | `apps/api/src/commerce/nverse/controller/nverse.controller.ts` |
 | POST | `/nverse/email/verify` | `apps/api/src/commerce/nverse/controller/nverse.controller.ts` |
 | POST | `/nverse/login` | `apps/api/src/commerce/nverse/controller/nverse.controller.ts` |
+| POST | `/nverse/otp/resend` | `apps/api/src/commerce/nverse/controller/nverse.controller.ts` |
 | POST | `/nverse/otp/send` | `apps/api/src/commerce/nverse/controller/nverse.controller.ts` |
 | POST | `/nverse/otp/verify` | `apps/api/src/commerce/nverse/controller/nverse.controller.ts` |
 | POST | `/otp/resend` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
@@ -867,7 +870,6 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 - `/update/cart-item`
 - `/update/payment/failure`
 - `/update/payment/success`
-- `/v1/cart`
 - `/v1/navigation`
 - `/v1/products`
 - `/v1/search`

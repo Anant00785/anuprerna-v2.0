@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1345 tests across 240 files.**
+**1429 tests across 250 files.**
 
-- `apps/api` — 189 files, 787 tests
+- `apps/api` — 199 files, 858 tests
 - `apps/cms` — 17 files, 210 tests
-- `apps/storefront` — 33 files, 346 tests
+- `apps/storefront` — 33 files, 359 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -73,6 +73,15 @@
 - deletes every row of the tenant and counts them
 - returns 0 for a tenant with an empty cart
 - aborts the whole transaction if any row lost its version race
+
+### `apps/api/src/commerce/cart/service/cart.enrichment-batching.spec.ts` — 7
+- does not issue more queries as the cart grows
+- falls back to the bare product row when no product_fabric row exists
+- falls through to the port only when neither table has the id
+- resolves a missing size option to null instead of throwing
+- keeps finish CSV token order and last-one-wins finishDisplayName
+- skips non-numeric finish tokens rather than throwing on BigInt()
+- returns an empty list for an empty cart without querying
 
 ### `apps/api/src/commerce/cart/validators/cart-item.sanitizer.spec.ts` — 11
 - strips null bytes (stage 1: canonicalization)
@@ -143,6 +152,18 @@
 - the sandbox gateway is a genuine 404 — no sandbox provider exists in this API
 
 ### `apps/api/src/commerce/checkout/controller/checkout.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/commerce.module.spec.ts` — 10
+- wires TagController, which serves /get/tag/list for the CMS
+- keeps the generic table-explorer wildcard last, behind the per-entity routes
+- imports NverseModule
+- imports ZohoModule
+- NVerseService issues tokens through GatekeeperService, never a literal string
+- NVerseService has no hardcoded OTP and no plaintext password compare
+- the MSG91 service is gated on OUTBOUND_SMS_ENABLED and never returns an OTP value
+- no FakeOTPController-shaped handler was ported
+- every anonymous NVerse failure path returns the same non-enumerable message
+- every Zoho webhook handler is behind ZohoWebhookGuard
 
 ### `apps/api/src/commerce/compatibility/compatibility.controller.gates.spec.ts` — 0
 
@@ -653,23 +674,49 @@
 - maps a row to a verification token DTO
 - returns null for a null/undefined row
 
+### `apps/api/src/commerce/nverse/service/msg91-otp.service.spec.ts` — 8
+- verifyOtp makes no network call and never succeeds when the switch is off
+- treats an unset switch as off (fail closed)
+- fails closed when the switch is on but credentials are missing
+- sends the Java
+- verifies via GET with authkey/mobile/otp query params
+- maps anything other than type==
+- fails closed when the provider is unreachable
+- clamps a nonsense MSG91_OTP_LENGTH to the Java default of 6
+
+### `apps/api/src/commerce/nverse/service/nverse.service.spec.ts` — 13
+- verifyOtp with a rejected OTP returns no token
+- verifyOtp for an unknown number never even asks MSG91
+- verifyOtp with the kill switch on (MSG91 unavailable) issues nothing
+- login with a wrong password returns no token
+- login never compares passwords itself — it delegates to GatekeeperService
+- issues a real signed token only when MSG91 verifies
+- refuses a disabled account even when MSG91 verifies the OTP
+- unknown number and wrong OTP are indistinguishable on verify
+- unknown number and provider failure are indistinguishable on send
+- unknown email and wrong password are indistinguishable on login
+- no response body ever carries an OTP value
+- fails when the token does not check out
+- succeeds only when the repository consumes a real token
+
 ### `apps/api/src/commerce/nverse/validators/nverse.sanitizer.spec.ts` — 4
 - trims and lowercases
 - returns undefined for an undefined/empty input
 - strips non-digit characters
 - returns undefined for an undefined/empty input
 
-### `apps/api/src/commerce/nverse/validators/nverse.validator.spec.ts` — 10
+### `apps/api/src/commerce/nverse/validators/nverse.validator.spec.ts` — 11
 - accepts email + password
 - accepts contactNumber + password (email not required)
 - rejects when neither email nor contactNumber is present
 - rejects when password is missing
-- accepts a request with a contactNumber
-- rejects a request missing contactNumber
-- accepts contactNumber + otp
-- rejects when otp is missing
+- accepts a 10-digit number
+- accepts a 6-digit otp by default
+- honours a configured otp length
+- rejects a bad contact number before looking at the otp
 - accepts email + token
 - rejects when token is missing
+- does not distinguish which field was wrong
 
 ### `apps/api/src/commerce/order/controller/custom-order.controller.gates.spec.ts` — 0
 
@@ -865,9 +912,24 @@
 
 ### `apps/api/src/commerce/product/controller/tag.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/product/fabric-product/service/fabric-product.batching.spec.ts` — 6
+- issues exactly one query for a whole CSV column
+- returns rows in CSV token order, not query order
+- yields null for a token with no row — as retrieveEntity(id) used to
+- keeps duplicate tokens duplicated but queries each id once
+- short-circuits an empty or absent column without touching the database
+- fires every enrichment lookup concurrently rather than one at a time
+
 ### `apps/api/src/commerce/product/finished-product/finished-product.port.spec.ts` — 2
 - a genuine 0 price is persisted as \
 - persists the real ids it was given
+
+### `apps/api/src/commerce/product/finished-product/service/finished-product.enrich.spec.ts` — 5
+- looks each entity up by its own id, not the product id
+- returns each list as an array, and an empty csv as an empty list
+- exposes the product row under both 
+- returns null for an unknown slug
+- treats an id past 2^53 as a miss rather than rounding it into another row
 
 ### `apps/api/src/commerce/product/product/dto/product.dto.spec.ts` — 6
 - a genuine 0 price survives — it must NOT become 1200
@@ -940,12 +1002,25 @@
 - rejects an unknown type — ReportFactoryService throws IllegalArgumentException
 - emits only the header when there are no rows, never placeholder data
 
+### `apps/api/src/commerce/response-key-contract.spec.ts` — 1
+- ${route} emits 
+
 ### `apps/api/src/commerce/review/controller/review.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/review/mapper/review.mapper.spec.ts` — 3
 - maps a full row, converting ids to bigint and rating to number
 - defaults headline/comment to empty string and status to PENDING when missing
 - falls back createdAt to now() when missing
+
+### `apps/api/src/commerce/review/service/review.service.spec.ts` — 8
+- returns only the product
+- does not pad a short page up to 
+- returns an empty list for a product with no reviews — never a site-wide fallback
+- never reaches for sub-category / category / fabric / generic reviews
+- passes paging straight through
+- scopes to a product when one is given
+- stays site-wide when no product is given
+- zeroes out an id that cannot address a row rather than falling back to the global figure
 
 ### `apps/api/src/commerce/review/validators/review.sanitizer.spec.ts` — 3
 - trims and HTML-escapes every optional string field
@@ -968,12 +1043,12 @@
 
 ### `apps/api/src/commerce/search/controller/search.controller.spec.ts` — 7
 - returns a validation error without calling the service for an empty keyword
-- returns entityList from the service on success
-- swallows a service error into an empty entityList rather than propagating it
+- returns productPreviewList from the service on success
+- swallows a service error into an empty productPreviewList rather than propagating it
 - returns a validation error without calling the service for a keyword >= 300 chars
 - returns the entity envelope from the service on success
 - BUG (inconsistent with v1): has no try/catch, so a service error propagates as a rejected promise instead of a JSON error envelope
-- mirrors searchProduct: validates, delegates to searchService.searchProduct, and swallows errors into an empty entityList
+- validates, delegates to searchService.searchProductV2, and swallows errors into the legacy empty searchResult shape
 
 ### `apps/api/src/commerce/search/validators/search.validator.spec.ts` — 5
 - accepts a normal search term
@@ -1124,6 +1199,13 @@
 
 ### `apps/api/src/commerce/zoho/controller/zoho.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/zoho/guard/zoho-webhook.guard.spec.ts` — 5
+- accepts a request carrying both Loom header values
+- honours an env-overridden agent and a multi-entry IP allowlist
+- accepts when X-Forwarded-For
+- rejects a spoofed header set arriving from an unlisted peer
+- is off by default, so an App Runner proxy peer does not break delivery
+
 ### `apps/api/src/common/auth/roles.guard.spec.ts` — 18
 - allows the request through when no @RequireGate metadata is present (public route)
 - throws UnauthorizedException when Authorization header is missing
@@ -1164,6 +1246,15 @@
 ### `apps/api/src/common/middleware/request-id.middleware.spec.ts` — 2
 - generates an id when none is provided
 - preserves an incoming x-request-id
+
+### `apps/api/src/common/params/id-param.spec.ts` — 7
+- accepts a well-formed id and preserves it exactly past 2^53
+- accepts an integer supplied as a number (JSON body ids)
+- rejects an id past the postgres bigint bound with 400, not a 500
+- names the offending field in the message
+- converts ids inside the safe range
+- returns null rather than a rounded id
+- accepts a real slug
 
 ### `apps/api/src/common/response/rain-response.spec.ts` — 5
 - returns exactly {success, message}
@@ -1438,8 +1529,10 @@
 - reports no guest session when the cookie is corrupt rather than throwing
 - expires the guest cookie
 
-### `apps/storefront/src/app/api/auth/login/route.test.ts` — 6
+### `apps/storefront/src/app/api/auth/login/route.test.ts` — 8
 - calls Loom
+- accepts a 
+- treats success:false as a rejection even when a token-shaped field is present
 - answers 401 and sets no session when the backend rejects the credentials
 - never mints a session of its own when the backend is unreachable
 - rejects a missing credential before touching the backend
@@ -1455,6 +1548,13 @@
 - reports logged-out (never a half-session) when the profile call fails
 - clears the cookie and the buyer-mode for OUR OWN token once its exp has passed
 - never serves the profile carried by an expired token
+
+### `apps/storefront/src/app/api/auth/register/route.test.ts` — 5
+- REFUSES to report success when Loom answers 200 with success:false
+- creates the account and parks the authenticated JWT in an httpOnly cookie
+- reports the failure when Loom rejects with an error status
+- rejects an incomplete payload without calling the backend at all
+- rejects a password under six characters without calling the backend
 
 ### `apps/storefront/src/app/api/backend/[...path]/route.test.ts` — 8
 - rejoins the catch-all segments and preserves the query string
@@ -1575,20 +1675,21 @@
 - wraps the Auth0 ID token as the tenant password under 
 - POSTs the email and returns the success confirmation
 
-### `apps/storefront/src/lib/api/repositories/cart.repository.test.ts` — 13
-- reads Loom
-- returns an empty cart — not a crash — when Loom sends the old payload key
-- swallows a fetch failure and returns an empty cart rather than throwing
-- also swallows a 401 the same way — getCart never surfaces auth failure to the caller
-- fetches /v1/cart and maps the NestApiResponse envelope to a domain Cart
-- POSTs the flat Loom CartItem entity to /add/cart-item
+### `apps/storefront/src/lib/api/repositories/cart.repository.test.ts` — 14
+- reads the cart from the /api/cart BFF route, not the /api/backend proxy
+- treats a signed-out session as a genuinely empty cart, not an error
+- THROWS on a backend failure instead of reporting an empty cart
+- raises CartAuthError on a 401 so the UI can offer sign-in
+- raises CartAuthError when the BFF flags an expired session with reauth
+- POSTs the flat Loom CartItem entity to /api/cart/add
 - omits zero/absent foreign keys rather than sending 0, which Loom cannot join
 - throws on Loom
-- propagates a server error instead of swallowing it, unlike getCart
-- PATCHes the whole row back with the new quantity, rebuilt from item.source
+- raises CartAuthError when the session has expired
+- sends the quantity and the product FK — never a price
 - throws on Loom
-- DELETEs /delete/cart-item/{cartItemId} using the cart row id
+- POSTs the cart row id to /api/cart/remove
 - throws on Loom
+- raises CartAuthError on an expired session
 
 ### `apps/storefront/src/lib/api/repositories/catalog.repository.test.ts` — 8
 - fetches /get/navigation and maps the payload envelope to HeaderNavigation
@@ -1732,7 +1833,7 @@
 - is declared on the API
 - is NOT role-gated — the storefront calls it with no token (Loom: ${evidence})
 
-### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 37
+### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 49
 - sets calculatedPrice from price for fabric products, no discount fields untouched
 - does NOT compute discounted price from max_discount fields (wholesale-only in Angular)
 - preserves API-provided calculatedDiscountedPrice when present
@@ -1751,6 +1852,9 @@
 - returns every product unchanged when no filters are active
 - filters by a single active csv option (color)
 - filters by sub-category (segment_category -> sub_category)
+- narrows to the selected sub-option even when its parent is also active
+- returns the whole parent segment when a parent is active with no sub-option selected
+- unions sub-options selected across different parent segments
 - filters inStock toggle to products with quantity > 0
 - treats size_profile_option_list quantity as in-stock even when total_quantity is 0
 - filters by price range, inclusive of both bounds
@@ -1770,6 +1874,15 @@
 - emits a range chip once the range is moved off its default
 - emits a sub chip for an active sub-category option
 - resets active options, sub-options, and range bounds back to defaults
+- names the price param 
+- does not serialise a range still at its full bounds — that is not a filter
+- serialises a narrowed range as from-to
+- SURVIVES a controls rebuild: the filter still applies after re-preparing from the URL
+- clamps an out-of-range URL value to the catalogue bounds
+- ignores a malformed or inverted URL value rather than filtering everything away
+- a hyphenated slug selects the matching sub-category and nothing else
+- does NOT widen to the whole parent segment
+- an unknown slug activates nothing rather than emptying the grid
 
 ### `apps/storefront/src/lib/profile/adapters.test.ts` — 8
 - maps Loom
@@ -1781,21 +1894,12 @@
 - maps the live loyaltyProgramInfo aggregates
 - zeroes the aggregates instead of inventing them when absent
 
-### `apps/storefront/src/stores/auth.store.test.ts` — 9
-- should initialize with unauthenticated state
-- should set token and mark logged in
-- should set user profile
-- should clear state on logout
-- persists the jwt to localStorage under the anuprerna-auth key
-- writes a jwt_token cookie when the token is set
-- logout removes the persisted localStorage token
-- logout removes the jwt_token cookie — no live token left behind
-- the jwt_token cookie carries no Secure or HttpOnly flag (documents a known gap, not desired behaviour)
-
-### `apps/storefront/src/stores/cart.store.test.ts` — 5
+### `apps/storefront/src/stores/cart.store.test.ts` — 7
 - starts empty so the header badge renders 0 on the server and first client render
-- refresh() loads the cart out of Loom
-- refresh() yields an empty cart (not a throw) when the backend fails
+- refresh() loads the cart from the /api/cart BFF route
+- refresh() surfaces an auth failure instead of pretending the cart is empty
+- refresh() keeps a previously loaded cart when a later read fails
+- refresh() reports a signed-out session as an empty cart, not an error
 - open()/close() drive the side tab
 - does NOT persist to localStorage — the cart belongs to the bearer token, not the browser
 
@@ -1826,8 +1930,8 @@
 - updates selectedCurrency state
 - lowercases the currency before storing
 - persists the selection to localStorage under the selectedCurrency key
-- does not call the profile sync endpoint when unauthenticated (no jwt)
-- syncs the selection to the profile endpoint when authenticated
+- attaches NO client-side Authorization header — the proxy adds the session cookie
+- syncs the selection to the profile endpoint
 - silently swallows a failed profile sync (fire-and-forget, no throw)
 - on success, merges live rates over defaults (inr pinned to 1.0) and uses the returned forexList
 - falls back to DEFAULT_FOREX_LIST when the response
