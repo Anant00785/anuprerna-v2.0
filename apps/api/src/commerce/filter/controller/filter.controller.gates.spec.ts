@@ -15,8 +15,20 @@ import { FilterController } from "./filter.controller.js";
 describeGates(
   "FilterController",
   FilterController as never,
+  [],
+  // getSegmentList is deliberately ungated: /get/segment-list serves the exact
+  // same 23 segments as the already-public /get/filter/segment/list twin, so the
+  // gate protected nothing and only forced the storefront to mint a
+  // service-account JWT to read a public list.
   [
-    ["getSegmentList", GateCode.CODE_SU],
+    "getSegmentList",
+    "getFabricFilterPreviewList",
+    "getFabricPreviewListAlias",
+    "getFabricFilterPreviewListPaginated",
+    "getFinishedFilterPreviewList",
+    "getFinishedPreviewListAlias",
+    "getFilteredFabricFilterPreviewList",
+    "getFilterSegmentList",
+    "getFilterSegmentListSlash",
   ],
-  ["getFabricFilterPreviewList", "getFabricPreviewListAlias", "getFabricFilterPreviewListPaginated", "getFinishedFilterPreviewList", "getFilteredFabricFilterPreviewList", "getFilterSegmentList", "getFilterSegmentListSlash"],
 );

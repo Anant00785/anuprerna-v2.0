@@ -23,6 +23,7 @@
 
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowFeedbackQueue, BackendFetchError, type WorkflowFeedbackQueue } from "@/lib/artisanflow-api";
 import { ArtisanFlowShell } from "@/components/artisanflow/ArtisanFlowShell";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -69,7 +70,7 @@ async function loadQueue(status: string, token?: string): Promise<WorkflowFeedba
 
 export default async function FeedbackPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   const results = await Promise.all([
     loadQueue("PENDING", token),

@@ -83,6 +83,20 @@ export class LoomLegacyAuthController {
     if (!userEmail) {
       throw new UnauthorizedException(AuthErrorCode.INVALID_CREDENTIALS);
     }
+
+    // The provider token is the ONLY thing that proves the caller owns this
+    // address. Without this check the route minted a signed token — roles
+    // included — for any email posted to it, which is an anonymous path to
+    // ROLE_SUPER_USER. Same validation the v2 twin does in auth.controller.ts.
+    const auth0Token = (body?.auth0Token || "").trim();
+    if (!auth0Token) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_PROVIDER_TOKEN);
+    }
+    const isTokenValid = await this.auth0.validateToken(auth0Token, userEmail);
+    if (!isTokenValid) {
+      throw new UnauthorizedException(AuthErrorCode.INVALID_PROVIDER_TOKEN);
+    }
+
     let tenant = await this.tenantLookup.findByEmail(userEmail);
     if (!tenant) {
       // Auto-create social tenant if not exists yet

@@ -18,64 +18,44 @@ export class DiagnosticsDomainController {
   @ApiOperation({ summary: "Application health and memory diagnostics" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_diagnostics_app(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/diagnostics/host")
   @ApiOperation({ summary: "Host server OS and CPU diagnostics" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_diagnostics_host(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/diagnostics/summary")
   @ApiOperation({ summary: "Consolidated system diagnostic summary" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_diagnostics_summary(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/diagnostics/ping")
   @ApiOperation({ summary: "Liveness health ping check" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_diagnostics_ping(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/diagnostics/thread-dump")
   @ApiOperation({ summary: "JVM Thread dump output" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_diagnostics_thread_dump(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
   }
 }

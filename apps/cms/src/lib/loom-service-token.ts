@@ -9,9 +9,14 @@
  * IMPORTANT — server-only: env vars are NOT NEXT_PUBLIC_ so they are never
  * bundled into the client. Only import from server components or route handlers.
  *
- * Pattern in a server component:
- *   const cookieToken = cookieStore.get(COOKIE)?.value;
- *   const token = cookieToken ?? await getServiceToken();
+ * Pattern in a server component — go through the helper, do NOT hand-roll the
+ * precedence. The service token must come FIRST; a `cookieToken ?? service`
+ * fallback (what this comment used to recommend) breaks against the v2 API,
+ * which cannot verify a Loom-signed cookie and answers 401:
+ *
+ *   const token = await getBackendCallToken(cookieStore.get(COOKIE)?.value);
+ *
+ * See src/lib/backend-call-token.ts.
  */
 
 const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8090";

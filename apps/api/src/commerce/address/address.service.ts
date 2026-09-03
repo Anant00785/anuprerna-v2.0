@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { address, loomTenant } from "../../database/schema/schema.js";
 
@@ -79,14 +79,30 @@ export class AddressService {
     }
   }
 
-  async update(id: number | bigint, payload: unknown) {
+  async update(id: number | bigint, payload: unknown, tenantId?: number | bigint) {
     try {
       const numId = Number(id);
       if (!Number.isSafeInteger(numId) || numId <= 0) {
         return { success: false, error: "Invalid address ID" };
       }
       const input = this.parseUpdateInput(payload);
-      const [updated] = await this.db.update(address).set(input).where(eq(address.id, BigInt(numId))).returning();
+      // Scope to the caller. Matching on address.id alone let any authenticated
+      // customer rewrite any other customer's address — including the phone and
+      // street a live order ships to.
+      if (tenantId === undefined) {
+        return { success: false, error: "Address updates must be scoped to a tenant." };
+      }
+      // tenantId is never taken from the body: parseUpdateInput copies it, so a
+      // caller could otherwise reassign someone else's address to themselves.
+      delete (input as { tenantId?: number }).tenantId;
+      const [updated] = await this.db
+        .update(address)
+        .set(input)
+        .where(and(eq(address.id, BigInt(numId)), eq(address.tenantId, Number(tenantId))))
+        .returning();
+      if (!updated) {
+        return { success: false, error: "Address not found." };
+      }
       const norm = normalizeAddress(updated);
       return { success: true, data: norm ? [norm] : [], payload: norm, entity: norm, ...norm, message: "ok" };
     } catch (error) {
@@ -94,9 +110,19 @@ export class AddressService {
     }
   }
 
-  async deleteById(id: number | bigint) {
+  async deleteById(id: number | bigint, tenantId?: number | bigint) {
     try {
-      const [deleted] = await this.db.delete(address).where(eq(address.id, BigInt(id))).returning();
+      // Same scoping as update(): id alone let any customer delete any address.
+      if (tenantId === undefined) {
+        return { success: false, error: "Address deletion must be scoped to a tenant." };
+      }
+      const [deleted] = await this.db
+        .delete(address)
+        .where(and(eq(address.id, BigInt(id)), eq(address.tenantId, Number(tenantId))))
+        .returning();
+      if (!deleted) {
+        return { success: false, error: "Address not found." };
+      }
       const norm = normalizeAddress(deleted);
       return { success: true, data: norm ? [norm] : [], payload: norm, message: "ok" };
     } catch (error) {

@@ -3,11 +3,12 @@ import { AuthModule } from "../../auth/auth.module.js";
 import { ZohoController } from "./controller/zoho.controller.js";
 import { ZohoAuthTokenService } from "./service/zoho-auth.service.js";
 import { ZohoService } from "./service/zoho.service.js";
+import { ZohoWebhookGuard } from "./guard/zoho-webhook.guard.js";
 
 @Module({
   imports: [AuthModule],
   controllers: [ZohoController],
-  providers: [ZohoAuthTokenService, ZohoService],
+  providers: [ZohoAuthTokenService, ZohoService, ZohoWebhookGuard],
   exports: [ZohoAuthTokenService, ZohoService],
 })
 export class ZohoModule {}

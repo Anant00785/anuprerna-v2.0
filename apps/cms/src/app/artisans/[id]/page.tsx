@@ -19,6 +19,7 @@ import {
   getMasterArtisan,
 } from "@/lib/artisans-api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { WeaveShell } from "@/components/weave/WeaveShell";
 import { Button } from "@/components/ui";
 import { ArtisanDetailView } from "./ArtisanDetailView";
@@ -43,7 +44,7 @@ export default async function ArtisanDetailPage({ params }: PageProps) {
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   let artisan: ArtisanDetail | null;
   try {

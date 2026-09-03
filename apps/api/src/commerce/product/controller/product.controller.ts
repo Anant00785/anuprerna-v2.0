@@ -50,7 +50,7 @@
  * (missing native-query SQL source), so no route for them exists here
  * either.
  */
-import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiExcludeEndpoint, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProductService } from "../product/service/product.service.js";
 import { OptimisticLockError } from "../product/repository/product.repository.js";
@@ -81,20 +81,37 @@ export class ProductController {
   /** ProductDAOController#retrieveProductById(Long id) — @Transactional(readOnly = true) alias of retrieveProduct. */
   @Get("/get/product/by-id/:id")
   @ApiOperation({ summary: "Retrieve a single product by id (read-only alias)." })
-  @ApiResponse({ status: 200, description: "Product or null." })
+  @ApiResponse({ status: 200, description: "Product." })
+  @ApiResponse({ status: 400, description: "Malformed product id." })
+  @ApiResponse({ status: 404, description: "No such product." })
   async getProductById(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const product = await this.productService.retrieveProductById(parsedId);
+    if (!product) throw new NotFoundException(`Product ${id} not found.`);
     return keyedResponse("product", product);
+  }
+
+  /**
+   * `/get/product/slug/` (empty slug) otherwise falls through to
+   * `/get/product/:id` with id="slug" and answers 400 "id must be an integer".
+   * Declared before the `:id` route because Express matches in registration order.
+   */
+  @Get("/get/product/slug")
+  @ApiOperation({ summary: "Reserved — an empty slug is a 404, not a product id." })
+  @ApiResponse({ status: 404, description: "No slug supplied." })
+  emptySlug(): never {
+    throw new NotFoundException("A product slug is required.");
   }
 
   /** ProductDAOController#findProductBySlug(String slug) */
   @Get("/get/product/slug/:slug")
   @ApiOperation({ summary: "Retrieve a single product by slug." })
-  @ApiResponse({ status: 200, description: "Product or null." })
+  @ApiResponse({ status: 200, description: "Product." })
+  @ApiResponse({ status: 404, description: "No product with that slug." })
   async getProductBySlug(@Param("slug") slug: string) {
     const parsedSlug = parseSlugParam(slug);
     const product = await this.productService.findBySlug(parsedSlug);
+    if (!product) throw new NotFoundException(`Product "${parsedSlug}" not found.`);
     return keyedResponse("product", product);
   }
 
@@ -102,10 +119,12 @@ export class ProductController {
   @Get("/get/product/backward-compatible-link")
   @ApiExcludeEndpoint()
   @ApiOperation({ summary: "Retrieve a single product by its legacy backward-compatible link." })
-  @ApiResponse({ status: 200, description: "Product or null." })
+  @ApiResponse({ status: 200, description: "Product." })
+  @ApiResponse({ status: 404, description: "No product for that legacy link." })
   async getProductByBackwardCompatibleLink(@Query("link") link: string) {
     const parsedLink = parseBackwardCompatibleLinkParam(link);
     const product = await this.productService.findByBackwardCompatibleLink(parsedLink);
+    if (!product) throw new NotFoundException(`Product "${parsedLink}" not found.`);
     return keyedResponse("product", product);
   }
 
@@ -189,10 +208,13 @@ export class ProductController {
   @Get("/get/product/:id")
   @ApiOperation({ summary: "Retrieve a single product by id." })
   @ApiParam({ name: "id", description: "Product ID (e.g. 52336, 2728, 94504)", example: 52336, type: Number })
-  @ApiResponse({ status: 200, description: "Product or null." })
+  @ApiResponse({ status: 200, description: "Product." })
+  @ApiResponse({ status: 400, description: "Malformed product id." })
+  @ApiResponse({ status: 404, description: "No such product." })
   async getProduct(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const product = await this.productService.retrieveProduct(parsedId);
+    if (!product) throw new NotFoundException(`Product ${id} not found.`);
     return keyedResponse("product", product);
   }
 
@@ -270,11 +292,13 @@ export class ProductController {
   /** ProductDAOController#retrieveProductDataById(Long id) */
   @Get("/get/table-explorer/data/product/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single product." })
-  @ApiResponse({ status: 200, description: "Product data or null." })
+  @ApiResponse({ status: 200, description: "Product data." })
+  @ApiResponse({ status: 404, description: "No such product." })
   @RequireGate(GateCode.CODE_SU)
   async getProductDataById(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const data = await this.productService.retrieveProductDataById(parsedId);
+    if (!data) throw new NotFoundException(`Product ${id} not found.`);
     return keyedResponse("productData", data);
   }
 }

@@ -283,16 +283,12 @@ export class NotificationsDomainController {
   @ApiOperation({ summary: "Fetch background scheduled cron job execution logs" })
   @ApiResponse({ status: 200, description: "Cron execution logs" })
   async get_get_cron_logs() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.cronJobLog)
-        .orderBy(desc(schema.cronJobLog.id))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatCronLog));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.cronJobLog)
+      .orderBy(desc(schema.cronJobLog.id))
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatCronLog));
   }
 
   @Get("/get/whatsapp/audit-log")
@@ -300,16 +296,12 @@ export class NotificationsDomainController {
   @ApiOperation({ summary: "Fetch WhatsApp notification dispatch history log" })
   @ApiResponse({ status: 200, description: "WhatsApp notification history" })
   async get_get_whatsapp_audit_log() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.whatsappNotificationHistory)
-        .orderBy(desc(schema.whatsappNotificationHistory.id))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatWhatsappHistory));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.whatsappNotificationHistory)
+      .orderBy(desc(schema.whatsappNotificationHistory.id))
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatWhatsappHistory));
   }
 
   @Get("/get/whatsapp/audit-log/:id")
@@ -318,15 +310,11 @@ export class NotificationsDomainController {
   @ApiParam({ name: "id", example: 3, type: Number })
   @ApiResponse({ status: 200, description: "Single WhatsApp notification record" })
   async get_get_whatsapp_audit_log_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.whatsappNotificationHistory)
-        .where(eq(schema.whatsappNotificationHistory.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatWhatsappHistory));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.whatsappNotificationHistory)
+      .where(eq(schema.whatsappNotificationHistory.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatWhatsappHistory));
   }
 
   // Loom's poll routes are POST manual-trigger reconciliations against
@@ -368,16 +356,12 @@ export class NotificationsDomainController {
   @ApiOperation({ summary: "Fetch email dispatch audit log" })
   @ApiResponse({ status: 200, description: "Email dispatch audit log records" })
   async get_get_email_audit_log() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.emailNotificationHistory)
-        .orderBy(desc(schema.emailNotificationHistory.id))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatEmailHistory));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.emailNotificationHistory)
+      .orderBy(desc(schema.emailNotificationHistory.id))
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatEmailHistory));
   }
 
   @Get("/get/email/audit-log/:id")
@@ -386,15 +370,11 @@ export class NotificationsDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Single email audit record" })
   async get_get_email_audit_log_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.emailNotificationHistory)
-        .where(eq(schema.emailNotificationHistory.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatEmailHistory));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.emailNotificationHistory)
+      .where(eq(schema.emailNotificationHistory.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatEmailHistory));
   }
 
   @Post("/retrigger/email/audit-log")

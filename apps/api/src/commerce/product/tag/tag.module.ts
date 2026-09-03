@@ -6,15 +6,11 @@
  * re-imported here — TagRepository injects it directly, same as every
  * other module in this project.
  *
- * NO CONTROLLER IS WIRED HERE YET. TagController depends on
- * `com.bloomscorp.loom.support.RequestMapper` (route path constants), which
- * has not been provided. Per the migration brief, controller generation is
- * deferred — this module currently exports TagService only, ready to be
- * consumed by:
- *   1. TagController, once RequestMapper.java is available (adds a
- *      `controllers: [TagController]` line here).
- *   2. Other product sub-domains that reference tags (none confirmed yet
- *      from the files migrated so far).
+ * TagController (product/controller/tag.controller.ts) is wired here. Its
+ * route paths were inferred rather than read off RequestMapper.java — see
+ * that file's header. Every route on it is @RequireGate'd (CODE_SUCU for the
+ * two list reads, CODE_SU for the rest) under a class-level RolesGuard, so
+ * nothing here is anonymously reachable.
  *
  * TagService is exported (not just provided) so a future ProductModule /
  * CatalogModule composition root can import TagModule and inject
@@ -22,11 +18,13 @@
  */
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
+import { TagController } from "../controller/tag.controller.js";
 import { TagService } from "./service/tag.service.js";
 import { TagRepository } from "./repository/tag.repository.js";
 
 @Module({
   imports: [AuthModule],
+  controllers: [TagController],
   providers: [TagService, TagRepository],
   exports: [TagService],
 })

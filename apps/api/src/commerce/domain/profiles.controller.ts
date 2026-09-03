@@ -323,23 +323,19 @@ export class ProfilesDomainController {
   @ApiBody({ type: UpdateSizeProfileOptionDto })
   @ApiResponse({ status: 200, description: "Size option updated" })
   async patch_update_size_profile_option(@Body() body: UpdateSizeProfileOptionDto) {
-    try {
-      const updateSet: any = {};
-      if (body.label) updateSet.label = body.label;
-      if (body.keyFeature) updateSet.keyFeature = body.keyFeature;
-      if (body.sortOrder !== undefined) updateSet.sortOrder = body.sortOrder;
-      if (body.consumedFabric) updateSet.consumedFabric = body.consumedFabric;
+    const updateSet: any = {};
+    if (body.label) updateSet.label = body.label;
+    if (body.keyFeature) updateSet.keyFeature = body.keyFeature;
+    if (body.sortOrder !== undefined) updateSet.sortOrder = body.sortOrder;
+    if (body.consumedFabric) updateSet.consumedFabric = body.consumedFabric;
 
-      const [updated] = await this.db
-        .update(schema.sizeProfileOption)
-        .set(updateSet)
-        .where(eq(schema.sizeProfileOption.id, BigInt(body.id)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.sizeProfileOption)
+      .set(updateSet)
+      .where(eq(schema.sizeProfileOption.id, BigInt(body.id)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatSizeProfileOption(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatSizeProfileOption(updated)] : []);
   }
 
   @Delete("/delete/size-profile-option/:sizeProfileOptionId")
@@ -364,21 +360,17 @@ export class ProfilesDomainController {
   @ApiParam({ name: "sizeProfileOptionId", example: 12562710, type: Number })
   @ApiResponse({ status: 200, description: "Size option product usages" })
   async get_get_usage_size_profile_option_sizeProfileOptionId(@Param("sizeProfileOptionId") sizeProfileOptionId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.productSizeProfile)
-        .where(eq(schema.productSizeProfile.sizeProfileOptionId, Number(sizeProfileOptionId)))
-        .limit(20);
-      return keyedResponse("data", (rows || []).map(r => ({
-        id: String(r.id),
-        productId: String(r.productId),
-        sku: r.sizeProfileOptionSku,
-        quantity: r.quantity,
-      })));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.productSizeProfile)
+      .where(eq(schema.productSizeProfile.sizeProfileOptionId, Number(sizeProfileOptionId)))
+      .limit(20);
+    return keyedResponse("data", (rows || []).map(r => ({
+      id: String(r.id),
+      productId: String(r.productId),
+      sku: r.sizeProfileOptionSku,
+      quantity: r.quantity,
+    })));
   }
 
   @Post("/add/size-profile-guide")
@@ -415,22 +407,18 @@ export class ProfilesDomainController {
   @ApiBody({ type: UpdateSizeProfileGuideDto })
   @ApiResponse({ status: 200, description: "Size guide updated" })
   async patch_update_size_profile_guide(@Body() body: UpdateSizeProfileGuideDto) {
-    try {
-      const updateSet: any = {};
-      if (body.guide) updateSet.guide = body.guide;
-      if (body.value !== undefined) updateSet.value = body.value;
-      if (body.sortOrder !== undefined) updateSet.sortOrder = body.sortOrder;
+    const updateSet: any = {};
+    if (body.guide) updateSet.guide = body.guide;
+    if (body.value !== undefined) updateSet.value = body.value;
+    if (body.sortOrder !== undefined) updateSet.sortOrder = body.sortOrder;
 
-      const [updated] = await this.db
-        .update(schema.sizeProfileGuide)
-        .set(updateSet)
-        .where(eq(schema.sizeProfileGuide.id, BigInt(body.id)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.sizeProfileGuide)
+      .set(updateSet)
+      .where(eq(schema.sizeProfileGuide.id, BigInt(body.id)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatSizeProfileGuide(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatSizeProfileGuide(updated)] : []);
   }
 
   @Delete("/delete/size-profile-guide/:sizeProfileGuideId")
@@ -454,15 +442,11 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Fetch fabric finish profiles" })
   @ApiResponse({ status: 200, description: "Fabric finish profiles" })
   async get_get_finish_profile_list() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfile)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatFinishProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfile)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatFinishProfile));
   }
 
   @Get("/get/finish-profile/:profileId")
@@ -471,15 +455,11 @@ export class ProfilesDomainController {
   @ApiParam({ name: "profileId", example: 101362, type: Number })
   @ApiResponse({ status: 200, description: "Finish profile detail" })
   async get_get_finish_profile_profileId(@Param("profileId") profileId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfile)
-        .where(eq(schema.finishProfile.id, BigInt(profileId)));
-      return keyedResponse("data", (rows || []).map(formatFinishProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfile)
+      .where(eq(schema.finishProfile.id, BigInt(profileId)));
+    return keyedResponse("data", (rows || []).map(formatFinishProfile));
   }
 
   @Post("/add/finish-profile")
@@ -488,19 +468,15 @@ export class ProfilesDomainController {
   @ApiBody({ type: CreateFinishProfileDto })
   @ApiResponse({ status: 201, description: "Finish profile created" })
   async post_add_finish_profile(@Body() body: CreateFinishProfileDto) {
-    try {
-      const [inserted] = await this.db
-        .insert(schema.finishProfile)
-        .values({
-          profileName: body.profileName || "Custom Finish Profile",
-          displayName: body.displayName || "Finishes",
-          timeOfCreation: Date.now(),
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatFinishProfile(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.finishProfile)
+      .values({
+        profileName: body.profileName || "Custom Finish Profile",
+        displayName: body.displayName || "Finishes",
+        timeOfCreation: Date.now(),
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatFinishProfile(inserted)] : []);
   }
 
   @Patch("/update/finish-profile/:profileId")
@@ -510,21 +486,17 @@ export class ProfilesDomainController {
   @ApiBody({ type: UpdateFinishProfileDto })
   @ApiResponse({ status: 200, description: "Finish profile updated" })
   async patch_update_finish_profile_profileId(@Param("profileId") profileId: string, @Body() body: UpdateFinishProfileDto) {
-    try {
-      const updateSet: any = {};
-      if (body.profileName) updateSet.profileName = body.profileName;
-      if (body.displayName) updateSet.displayName = body.displayName;
+    const updateSet: any = {};
+    if (body.profileName) updateSet.profileName = body.profileName;
+    if (body.displayName) updateSet.displayName = body.displayName;
 
-      const [updated] = await this.db
-        .update(schema.finishProfile)
-        .set(updateSet)
-        .where(eq(schema.finishProfile.id, BigInt(profileId)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.finishProfile)
+      .set(updateSet)
+      .where(eq(schema.finishProfile.id, BigInt(profileId)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatFinishProfile(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatFinishProfile(updated)] : []);
   }
 
   @Delete("/delete/finish-profile/:profileId")
@@ -549,15 +521,11 @@ export class ProfilesDomainController {
   @ApiParam({ name: "finishItemId", example: 99714, type: Number })
   @ApiResponse({ status: 200, description: "Finish item usages" })
   async get_get_usage_finish_profile_item_finishItemId(@Param("finishItemId") finishItemId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfileItem)
-        .where(eq(schema.finishProfileItem.id, BigInt(finishItemId)));
-      return keyedResponse("data", (rows || []).map(formatFinishProfileItem));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfileItem)
+      .where(eq(schema.finishProfileItem.id, BigInt(finishItemId)));
+    return keyedResponse("data", (rows || []).map(formatFinishProfileItem));
   }
 
   @Delete("/delete/finish-profile-item/:finishItemId")
@@ -581,15 +549,11 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Retrieve active artisan profile" })
   @ApiResponse({ status: 200, description: "Artisan profile" })
   async get_get_artisan_profile() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .limit(10);
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .limit(10);
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Patch("/update/artisan/profile")
@@ -627,15 +591,11 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Inspect FinishProfileItem entity by ID" })
   @ApiParam({ name: "id", example: 99714, type: Number })
   async get_get_table_explorer_data_finish_profile_item_id(@Param("id") id: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfileItem)
-        .where(eq(schema.finishProfileItem.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatFinishProfileItem));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfileItem)
+      .where(eq(schema.finishProfileItem.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatFinishProfileItem));
   }
 
   @Get("/get/table-explorer/data/size-profile-guide/:id")
@@ -643,15 +603,11 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Inspect SizeProfileGuide entity by ID" })
   @ApiParam({ name: "id", example: 4096, type: Number })
   async get_get_table_explorer_data_size_profile_guide_id(@Param("id") id: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.sizeProfileGuide)
-        .where(eq(schema.sizeProfileGuide.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatSizeProfileGuide));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.sizeProfileGuide)
+      .where(eq(schema.sizeProfileGuide.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatSizeProfileGuide));
   }
 
   @Get("/get/table-explorer/data/size-profile-option/:id")
@@ -659,15 +615,11 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Inspect SizeProfileOption entity by ID" })
   @ApiParam({ name: "id", example: 109861, type: Number })
   async get_get_table_explorer_data_size_profile_option_id(@Param("id") id: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.sizeProfileOption)
-        .where(eq(schema.sizeProfileOption.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatSizeProfileOption));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.sizeProfileOption)
+      .where(eq(schema.sizeProfileOption.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatSizeProfileOption));
   }
 
   @Get("/get/table-explorer/data/finish-profile/:id")
@@ -675,44 +627,32 @@ export class ProfilesDomainController {
   @ApiOperation({ summary: "Inspect FinishProfile entity by ID" })
   @ApiParam({ name: "id", example: 101362, type: Number })
   async get_get_table_explorer_data_finish_profile_id(@Param("id") id: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfile)
-        .where(eq(schema.finishProfile.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatFinishProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfile)
+      .where(eq(schema.finishProfile.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatFinishProfile));
   }
 
   @Get("/get/table-explorer/data/finish-profile-item")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch all finish profile items" })
   async get_get_table_explorer_data_finish_profile_item() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfileItem)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatFinishProfileItem));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfileItem)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatFinishProfileItem));
   }
 
   @Get("/get/table-explorer/data/finish-profile")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Fetch all finish profiles" })
   async get_get_table_explorer_data_finish_profile() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.finishProfile)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatFinishProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.finishProfile)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatFinishProfile));
   }
 }

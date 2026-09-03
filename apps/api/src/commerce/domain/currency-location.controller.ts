@@ -94,21 +94,17 @@ export class CurrencyLocationDomainController {
     if (forexId === "list") {
       return this.get_get_forex_list({});
     }
-    try {
-      const [row] = await this.db
-        .select()
-        .from(schema.forex)
-        .where(eq(schema.forex.id, BigInt(forexId)));
-      return keyedResponse("data", row ? [{
-        id: String(row.id),
-        version: Number(row.version),
-        country: row.country,
-        currency: row.currency,
-        rate: row.rate ? parseFloat(String(row.rate)) : null,
-      }] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [row] = await this.db
+      .select()
+      .from(schema.forex)
+      .where(eq(schema.forex.id, BigInt(forexId)));
+    return keyedResponse("data", row ? [{
+      id: String(row.id),
+      version: Number(row.version),
+      country: row.country,
+      currency: row.currency,
+      rate: row.rate ? parseFloat(String(row.rate)) : null,
+    }] : []);
   }
 
   @Post("/add/forex")
@@ -117,19 +113,15 @@ export class CurrencyLocationDomainController {
   @ApiBody({ type: CreateForexDto })
   @ApiResponse({ status: 201, description: "Forex currency created" })
   async post_add_forex(@Body() body: CreateForexDto) {
-    try {
-      const [inserted] = await this.db
-        .insert(schema.forex)
-        .values({
-          country: body.country,
-          currency: body.currency,
-          rate: String(body.rate),
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [inserted] : []);
-    } catch (err: any) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.forex)
+      .values({
+        country: body.country,
+        currency: body.currency,
+        rate: String(body.rate),
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [inserted] : []);
   }
 
   @Patch("/update/forex")
@@ -138,21 +130,17 @@ export class CurrencyLocationDomainController {
   @ApiBody({ type: UpdateForexDto })
   @ApiResponse({ status: 200, description: "Forex currency updated" })
   async patch_update_forex(@Body() body: UpdateForexDto) {
-    try {
-      const updateData: any = {};
-      if (body.country) updateData.country = body.country;
-      if (body.currency) updateData.currency = body.currency;
-      if (body.rate !== undefined) updateData.rate = String(body.rate);
+    const updateData: any = {};
+    if (body.country) updateData.country = body.country;
+    if (body.currency) updateData.currency = body.currency;
+    if (body.rate !== undefined) updateData.rate = String(body.rate);
 
-      const [updated] = await this.db
-        .update(schema.forex)
-        .set(updateData)
-        .where(eq(schema.forex.id, BigInt(body.forexId)))
-        .returning();
-      return keyedResponse("data", updated ? [updated] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [updated] = await this.db
+      .update(schema.forex)
+      .set(updateData)
+      .where(eq(schema.forex.id, BigInt(body.forexId)))
+      .returning();
+    return keyedResponse("data", updated ? [updated] : []);
   }
 
   @Delete("/delete/forex/:forexId")
@@ -176,15 +164,11 @@ export class CurrencyLocationDomainController {
   @ApiOperation({ summary: "Inspect Forex entity by ID" })
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_forex_id(@Param("id") id: string) {
-    try {
-      const result = await this.db
-        .select()
-        .from(schema.forex)
-        .where(eq(schema.forex.id, BigInt(id)));
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await this.db
+      .select()
+      .from(schema.forex)
+      .where(eq(schema.forex.id, BigInt(id)));
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/table-explorer/data/forex-exchange-rate/:id")
@@ -192,44 +176,32 @@ export class CurrencyLocationDomainController {
   @ApiOperation({ summary: "Inspect ForexExchangeRate entity by ID" })
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_forex_exchange_rate_id(@Param("id") id: string) {
-    try {
-      const result = await this.db
-        .select()
-        .from(schema.forexExchangeRate)
-        .where(eq(schema.forexExchangeRate.id, BigInt(id)));
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await this.db
+      .select()
+      .from(schema.forexExchangeRate)
+      .where(eq(schema.forexExchangeRate.id, BigInt(id)));
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/table-explorer/data/forex-exchange-rate")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for ForexExchangeRate" })
   async get_get_table_explorer_data_forex_exchange_rate(@Query() query: any) {
-    try {
-      const result = await this.db
-        .select()
-        .from(schema.forexExchangeRate)
-        .limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await this.db
+      .select()
+      .from(schema.forexExchangeRate)
+      .limit(50);
+    return keyedResponse("data", result || []);
   }
 
   @Get("/get/table-explorer/data/forex")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for Forex" })
   async get_get_table_explorer_data_forex(@Query() query: any) {
-    try {
-      const result = await this.db
-        .select()
-        .from(schema.forex)
-        .limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await this.db
+      .select()
+      .from(schema.forex)
+      .limit(50);
+    return keyedResponse("data", result || []);
   }
 }

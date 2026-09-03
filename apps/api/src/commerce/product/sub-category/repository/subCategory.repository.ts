@@ -351,7 +351,8 @@ export class SubCategoryRepository {
   }
 }
 
-function mapRowToEntity(row: typeof subCategory.$inferSelect): SubCategoryEntity {
+/** Exported so callers that already have a `sub_category` row from a join can map it without a second query. */
+export function mapRowToEntity(row: typeof subCategory.$inferSelect): SubCategoryEntity {
   return {
     id: Number(row.id),
     version: Number(row.version),

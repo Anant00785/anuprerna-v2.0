@@ -100,7 +100,10 @@ export class BlogController {
   @ApiResponse({ status: 200, description: "List of blog contents." })
   async getBlogContentList() {
     const list = await this.blogService.getBlogContentList();
-    return keyedResponse("blogContents", list);
+    // Key MUST be `blogContentList` (legacy Loom + storefront
+    // components/content-list/loom.ts + seo-landing/loom.ts).
+    // `blogContents` rendered empty everywhere.
+    return keyedResponse("blogContentList", list);
   }
 
   @Get("/get/blog-content-list/customer")
@@ -108,7 +111,7 @@ export class BlogController {
   @ApiResponse({ status: 200, description: "List of public blog contents." })
   async getCustomerBlogContentList() {
     const list = await this.blogService.getBlogContentList();
-    return keyedResponse("blogContents", list);
+    return keyedResponse("blogContentList", list);
   }
 
   @Get("/get/blogs/:blogId/recommended")
@@ -117,7 +120,7 @@ export class BlogController {
   @ApiResponse({ status: 200, description: "List of recommended blogs." })
   async getRecommendedBlogs(@Param("blogId") blogId: string) {
     const list = await this.blogService.getRecommendedBlogs(BigInt(blogId));
-    return keyedResponse("blogContents", list);
+    return keyedResponse("blogContentList", list);
   }
 
   @Get("/get/blogs/category/:blogCategoryId")
@@ -126,7 +129,7 @@ export class BlogController {
   @ApiResponse({ status: 200, description: "List of blogs in category." })
   async getBlogsByCategory(@Param("blogCategoryId") blogCategoryId: string) {
     const list = await this.blogService.getBlogsByCategory(BigInt(blogCategoryId));
-    return keyedResponse("blogContents", list);
+    return keyedResponse("blogContentList", list);
   }
 
   @Get("/get/blog-content/:blogContentId")
@@ -153,7 +156,7 @@ export class BlogController {
   @ApiResponse({ status: 200, description: "List of blog contents matching IDs." })
   async getBlogContentListCsv(@Param("commaSeparatedIDList") commaSeparatedIDList: string) {
     const list = await this.blogService.getBlogContentListByCsv(commaSeparatedIDList);
-    return keyedResponse("blogContents", list);
+    return keyedResponse("blogContentList", list);
   }
 
   @Post("/add/blog-content")

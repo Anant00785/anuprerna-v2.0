@@ -24,39 +24,30 @@ export class CustomerDomainController {
   @ApiOperation({ summary: "Admin retrieval of customer directory" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_customers(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/loyalty-eligible/customers")
   @ApiOperation({ summary: "Get customers eligible for loyalty program" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_loyalty_eligible_customers(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/loyalty-program/customers/metrics")
   @ApiOperation({ summary: "Retrieve loyalty program customer metrics" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_loyalty_program_customers_metrics(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/customer/loyalty/info")
@@ -76,12 +67,9 @@ export class CustomerDomainController {
   @ApiOperation({ summary: "Export JSON data dump of customer directory" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_data_dump_customer(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.customer);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any).select().from(schema.customer);
+    return keyedResponse("data", result || []);
+
   }
 
   // Loom CustomerController.getCustomerData → getEntity(..., CODE_SU,

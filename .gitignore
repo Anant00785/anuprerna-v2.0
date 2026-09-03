@@ -14,3 +14,5 @@ next-env.d.ts
 # Local runtime data — may contain real user PII. Never commit.
 .data/
 .env.bak*
+.vercel
+.env*

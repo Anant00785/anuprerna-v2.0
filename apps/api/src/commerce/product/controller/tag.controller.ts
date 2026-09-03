@@ -35,7 +35,7 @@
  * SpecialStatusService#updateSpecialStatus), so no separate try/catch for
  * it is needed here.
  */
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { TagService } from "../tag/service/tag.service.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -80,11 +80,14 @@ export class TagController {
   /** TagDAOController#retrieveTagById(Long id) */
   @Get("/get/tag/:id")
   @ApiOperation({ summary: "Retrieve a single tag by id." })
-  @ApiResponse({ status: 200, description: "Tag or null." })
+  @ApiResponse({ status: 200, description: "Tag." })
+  @ApiResponse({ status: 400, description: "Malformed tag id." })
+  @ApiResponse({ status: 404, description: "No such tag." })
   @RequireGate(GateCode.CODE_SU)
   async getTagById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const tag = await this.tagService.retrieveTagById(parsedId);
+    if (!tag) throw new NotFoundException(`Tag ${id} not found.`);
     return keyedResponse("tag", tag);
   }
 
@@ -132,11 +135,13 @@ export class TagController {
   /** TagDAOController#retrieveTagDataById(Long id) */
   @Get("/get/table-explorer/data/tag/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single tag." })
-  @ApiResponse({ status: 200, description: "Tag data or null." })
+  @ApiResponse({ status: 200, description: "Tag data." })
+  @ApiResponse({ status: 404, description: "No such tag." })
   @RequireGate(GateCode.CODE_SU)
   async getTagDataById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const data = await this.tagService.retrieveTagDataById(parsedId);
+    if (!data) throw new NotFoundException(`Tag ${id} not found.`);
     return keyedResponse("tagData", data);
   }
 }

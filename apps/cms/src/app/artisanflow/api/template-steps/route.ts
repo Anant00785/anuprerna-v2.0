@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowTemplate, BackendFetchError } from "@/lib/artisanflow-api";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
   // Bare await -> opaque Next HTML 500 on a wrapper outage, which the calling
   // form reads as a JSON parse error. Classify it as a 502 instead.
   let template: Awaited<ReturnType<typeof getWorkflowTemplate>>;

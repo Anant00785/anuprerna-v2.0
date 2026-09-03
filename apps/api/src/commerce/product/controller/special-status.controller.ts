@@ -30,7 +30,7 @@
  * true;`) — ported as-is, always reports success without touching the
  * database, same as SkuGroup.controller.ts's deleteSkuGroup.
  */
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SpecialStatusService } from "../special-status/service/special-status.service.js";
 import { GateCode, RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
@@ -117,10 +117,12 @@ export class SpecialStatusController {
   @Get("/get/table-explorer/data/special-status/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single special status." })
-  @ApiResponse({ status: 200, description: "Special status data or null." })
+  @ApiResponse({ status: 200, description: "Special status data." })
+  @ApiResponse({ status: 404, description: "No such special status." })
   async getSpecialStatusDataById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const data = await this.specialStatusService.retrieveSpecialStatusDataById(BigInt(parsedId));
+    if (!data) throw new NotFoundException(`Special status ${id} not found.`);
     return keyedResponse("specialStatusData", data);
   }
 }

@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getTemplateUsage } from "@/lib/artisanflow-api";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "templateId is required" }, { status: 400 });
   }
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
   // getTemplateUsage never throws — it returns null when the read failed, which
   // this route reports as `usage: null` with a 200 so the advisory banner just
   // stays hidden. An unavailable advisory must not look like a broken builder.

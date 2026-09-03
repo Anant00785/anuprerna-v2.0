@@ -32,7 +32,11 @@ function getClient(config: Pick<ConfigService<EnvironmentVariables, true>, "get"
     if (!databaseUrl) {
       throw new Error("DATABASE_URL must be configured. The API does not run without its database.");
     }
-    client = postgres(databaseUrl, { max: 10 });
+    // connect_timeout bounds how long a request waits for a connection. Without
+    // it a request that cannot reach Postgres hangs forever, which is what made
+    // the App Runner deploy 500 with no diagnosable error: /health (no database)
+    // answered in 200ms while every database-backed route hung indefinitely.
+    client = postgres(databaseUrl, { max: 10, connect_timeout: 10 });
   }
   return client;
 }
@@ -46,7 +50,17 @@ async function verifyDatabaseConnection(config: ConfigService<EnvironmentVariabl
     console.log("Database connected successfully");
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    console.warn(`[Database] Connection warning: ${reason}. Running in standalone mode.`);
+    // There is no "standalone mode": every commerce route reads the database, so
+    // a process that boots without one serves nothing but /health. Swallowing
+    // this made the first App Runner deploy undiagnosable — /health answered in
+    // 200ms while sign-in, checkout, cart and every catalogue route hung until
+    // the caller gave up, with the real reason buried in one startup log line.
+    // Fail at boot instead, so a broken DATABASE_URL or blocked egress surfaces
+    // as a failed deploy naming its cause.
+    throw new Error(
+      `[Database] Cannot reach the database: ${reason}. The API does not run without it. ` +
+        `Check DATABASE_URL and that this host can reach the database (egress/VPC/security groups).`,
+    );
   }
 }
 

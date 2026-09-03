@@ -13,12 +13,25 @@
 import { BadRequestException } from "@nestjs/common";
 import { ApiProperty } from "@nestjs/swagger";
 import { CartItemInput, ORDER_TYPES, OrderType, UNITS, Unit } from "../types/cart.types.js";
+import { parseIdParamStrict, toSafeNumberId } from "../../../common/params/id-param.js";
 
 function requireInt(value: unknown, field: string): number {
   const n = typeof value === "string" ? Number(value) : value;
   if (typeof n !== "number" || !Number.isInteger(n)) {
     throw new BadRequestException(`${field} must be an integer.`);
   }
+  return n;
+}
+
+/**
+ * Path ids go through the shared strict parser (common/params/id-param.ts):
+ * digits-only on the RAW string, converted with BigInt(string) so nothing is
+ * rounded on the way through Number(). The local `requireInt` above stays for
+ * JSON body / query fields, where an integer legitimately arrives as a number.
+ */
+function strictNumberIdParam(value: unknown, field: string): number {
+  const n = toSafeNumberId(parseIdParamStrict(value, field));
+  if (n === null) throw new BadRequestException(`${field} must be an integer.`);
   return n;
 }
 
@@ -87,7 +100,7 @@ export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQu
 }
 
 export function parseIdParam(id: unknown): number {
-  return requireInt(id, "id");
+  return strictNumberIdParam(id, "id");
 }
 
 export function parseUidParam(uid: unknown): string {
@@ -95,7 +108,7 @@ export function parseUidParam(uid: unknown): string {
 }
 
 export function parseCartItemIdParam(cartItemId: unknown): number {
-  return requireInt(cartItemId, "cartItemId");
+  return strictNumberIdParam(cartItemId, "cartItemId");
 }
 
 // ─── Body parsers ─────────────────────────────────────────────────────────────

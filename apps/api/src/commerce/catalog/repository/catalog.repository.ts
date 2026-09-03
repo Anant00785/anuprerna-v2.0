@@ -29,96 +29,65 @@ export class CatalogRepository {
   ) {}
 
   async findById(id: bigint | number) {
-    try {
-      const [row] = await this.db
-        .select()
-        .from(schema.catalog)
-        .where(eq(schema.catalog.id, BigInt(id)))
-        .limit(1);
-      return row ? formatCatalog(row) : null;
-    } catch (err) {
-      console.error("CatalogRepository.findById error:", err);
-      return null;
-    }
+    const [row] = await this.db
+      .select()
+      .from(schema.catalog)
+      .where(eq(schema.catalog.id, BigInt(id)))
+      .limit(1);
+    return row ? formatCatalog(row) : null;
   }
 
   async findAll(limit = 100, offset = 0) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.id))
-        .limit(limit)
-        .offset(offset);
-      return (rows || []).map(formatCatalog);
-    } catch (err) {
-      console.error("CatalogRepository.findAll error:", err);
-      return [];
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.id))
+      .limit(limit)
+      .offset(offset);
+    return (rows || []).map(formatCatalog);
   }
 
   async findAllWithCount(limit = 100, offset = 0): Promise<CatalogListResult> {
-    try {
-      const [rows, counts] = await Promise.all([
-        this.db.select().from(schema.catalog).orderBy(desc(schema.catalog.id)).limit(limit).offset(offset),
-        this.db.select({ count: sql<string>`count(*)` }).from(schema.catalog),
-      ]);
+    const [rows, counts] = await Promise.all([
+      this.db.select().from(schema.catalog).orderBy(desc(schema.catalog.id)).limit(limit).offset(offset),
+      this.db.select({ count: sql<string>`count(*)` }).from(schema.catalog),
+    ]);
 
-      return {
-        rows: (rows || []).map(formatCatalog),
-        total: Number(counts[0]?.count ?? 0),
-      };
-    } catch (err) {
-      console.error("CatalogRepository.findAllWithCount error:", err);
-      return { rows: [], total: 0 };
-    }
+    return {
+      rows: (rows || []).map(formatCatalog),
+      total: Number(counts[0]?.count ?? 0),
+    };
   }
 
   async findByArtisan(artisanId: bigint | number) {
-    try {
-      const idNum = Number(artisanId || 0);
-      const rows = await this.db
-        .select()
-        .from(schema.catalog)
-        .where(eq(schema.catalog.artisanId, idNum))
-        .orderBy(desc(schema.catalog.id));
-      if (rows && rows.length > 0) {
-        return rows.map(formatCatalog);
-      }
-      // Fallback to recent catalogs so authenticated or test artisans see catalog list
-      const fallback = await this.db
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.id))
-        .limit(10);
-      return (fallback || []).map(formatCatalog);
-    } catch (err) {
-      console.error("CatalogRepository.findByArtisan error:", err);
-      try {
-        const fallback = await this.db
-          .select()
-          .from(schema.catalog)
-          .orderBy(desc(schema.catalog.id))
-          .limit(10);
-        return (fallback || []).map(formatCatalog);
-      } catch {
-        return [];
-      }
+    const idNum = Number(artisanId || 0);
+    const rows = await this.db
+      .select()
+      .from(schema.catalog)
+      .where(eq(schema.catalog.artisanId, idNum))
+      .orderBy(desc(schema.catalog.id));
+    if (rows && rows.length > 0) {
+      return rows.map(formatCatalog);
     }
+    // Genuine empty (artisan owns no catalogs): fall back to recent catalogs so
+    // authenticated or test artisans see a catalog list. A QUERY FAILURE no
+    // longer lands here — it propagates, because serving unrelated catalogs in
+    // place of a broken query is indistinguishable from the artisan owning none.
+    const fallback = await this.db
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.id))
+      .limit(10);
+    return (fallback || []).map(formatCatalog);
   }
 
   async findRecent(limit = 10) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.createdAt))
-        .limit(limit);
-      return (rows || []).map(formatCatalog);
-    } catch (err) {
-      console.error("CatalogRepository.findRecent error:", err);
-      return [];
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.createdAt))
+      .limit(limit);
+    return (rows || []).map(formatCatalog);
   }
 
   async create(body: any) {

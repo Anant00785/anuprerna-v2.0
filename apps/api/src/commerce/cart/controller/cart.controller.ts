@@ -23,7 +23,7 @@
  * (CODE_SU or CODE_CU), so every route is protected; there is no public
  * Cart endpoint to exclude it from.
  */
-import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CartService } from "../service/cart.service.js";
 import { OptimisticLockError } from "../repository/cart.repository.js";
@@ -69,13 +69,15 @@ export class CartController {
   @Get("/get/table-explorer/data/cart-item/:id")
   @ApiOperation({ summary: "Table-explorer: fetch a single cart item by id (admin)." })
   @ApiParam({ name: "id", description: "Cart item ID", example: 157423053, type: Number })
-  @ApiResponse({ status: 200, description: "The cart item, or null if not found." })
+  @ApiResponse({ status: 200, description: "The cart item." })
+  @ApiResponse({ status: 404, description: "No such cart item." })
   @ApiResponse({ status: 401, description: "Missing or invalid bearer token." })
   @ApiResponse({ status: 403, description: "Caller lacks the super-user role." })
   @RequireGate(GateCode.CODE_SU)
   async getCartItemById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const item = await this.cartService.retrieveCartItemDataById(BigInt(parsedId));
+    if (!item) throw new NotFoundException(`Cart item ${id} not found.`);
     return keyedResponse("cartItem", item);
   }
 

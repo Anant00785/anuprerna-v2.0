@@ -28,6 +28,7 @@ export class ColorLoomController {
       hex: color.hex,
     }).from(color).orderBy(color.name);
 
-    return keyedResponse("entityList", results);
+    // Key MUST be `colorList` — legacy Loom's /get/color-list emits `colorList`.
+    return keyedResponse("colorList", results);
   }
 }

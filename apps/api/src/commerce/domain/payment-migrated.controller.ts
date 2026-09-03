@@ -169,16 +169,12 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan payment ledger" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_artisan_payment_artisan_artisanId(@Param("artisanId") artisanId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisanPaymentRecord)
-        .where(eq(schema.artisanPaymentRecord.artisanId, Number(artisanId)))
-        .orderBy(desc(schema.artisanPaymentRecord.id));
-      return keyedResponse("data", (rows || []).map(formatPaymentRecord));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisanPaymentRecord)
+      .where(eq(schema.artisanPaymentRecord.artisanId, Number(artisanId)))
+      .orderBy(desc(schema.artisanPaymentRecord.id));
+    return keyedResponse("data", (rows || []).map(formatPaymentRecord));
   }
 
   @Get("/get/artisan-payment/artisan/:artisanId/summary")
@@ -187,27 +183,23 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan payment summary" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_artisan_payment_artisan_artisanId_summary(@Param("artisanId") artisanId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisanPaymentRecord)
-        .where(eq(schema.artisanPaymentRecord.artisanId, Number(artisanId)));
-      const totalDisbursed = rows
-        .filter(r => r.status === "DISBURSED" || r.status === "PAID")
-        .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
-      const totalPending = rows
-        .filter(r => r.status === "PENDING" || r.status === "APPROVED")
-        .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
+    const rows = await this.db
+      .select()
+      .from(schema.artisanPaymentRecord)
+      .where(eq(schema.artisanPaymentRecord.artisanId, Number(artisanId)));
+    const totalDisbursed = rows
+      .filter(r => r.status === "DISBURSED" || r.status === "PAID")
+      .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
+    const totalPending = rows
+      .filter(r => r.status === "PENDING" || r.status === "APPROVED")
+      .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
 
-      return keyedResponse("data", [{
-        artisanId,
-        totalRecords: rows.length,
-        totalDisbursed,
-        totalPending,
-      }]);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", [{
+      artisanId,
+      totalRecords: rows.length,
+      totalDisbursed,
+      totalPending,
+    }]);
   }
 
   @Get("/get/artisan-payment")
@@ -215,16 +207,12 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan payment records" })
   @RequireGate(GateCode.CODE_AR)
   async get_get_artisan_payment(@Query() query: any) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisanPaymentRecord)
-        .orderBy(desc(schema.artisanPaymentRecord.id))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatPaymentRecord));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisanPaymentRecord)
+      .orderBy(desc(schema.artisanPaymentRecord.id))
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatPaymentRecord));
   }
 
   @Get("/get/artisan-payment/summary")
@@ -232,25 +220,21 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Artisan payment overall summary" })
   @RequireGate(GateCode.CODE_AR)
   async get_get_artisan_payment_summary(@Query() query: any) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisanPaymentRecord);
-      const totalDisbursed = rows
-        .filter(r => r.status === "DISBURSED" || r.status === "PAID")
-        .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
-      const totalPending = rows
-        .filter(r => r.status === "PENDING" || r.status === "APPROVED")
-        .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
+    const rows = await this.db
+      .select()
+      .from(schema.artisanPaymentRecord);
+    const totalDisbursed = rows
+      .filter(r => r.status === "DISBURSED" || r.status === "PAID")
+      .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
+    const totalPending = rows
+      .filter(r => r.status === "PENDING" || r.status === "APPROVED")
+      .reduce((sum, r) => sum + parseFloat(String(r.totalPayment || "0")), 0);
 
-      return keyedResponse("data", [{
-        totalRecords: rows.length,
-        totalDisbursed,
-        totalPending,
-      }]);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", [{
+      totalRecords: rows.length,
+      totalDisbursed,
+      totalPending,
+    }]);
   }
 
   @Get("/get/artisan-payments")
@@ -258,15 +242,11 @@ export class PaymentMigratedDomainController {
   @ApiOperation({ summary: "Admin view of all artisan payment records" })
   @ApiResponse({ status: 200, description: "All artisan payment records" })
   async get_get_artisan_payments(@Query() query: any) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisanPaymentRecord)
-        .orderBy(desc(schema.artisanPaymentRecord.id));
-      return keyedResponse("data", (rows || []).map(formatPaymentRecord));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisanPaymentRecord)
+      .orderBy(desc(schema.artisanPaymentRecord.id));
+    return keyedResponse("data", (rows || []).map(formatPaymentRecord));
   }
 
   @Patch("/update/artisan-payment/record")
@@ -275,22 +255,18 @@ export class PaymentMigratedDomainController {
   @ApiBody({ type: UpdateArtisanPaymentRecordDto })
   @ApiResponse({ status: 200, description: "Disbursement recorded" })
   async patch_update_artisan_payment_record(@Body() body: UpdateArtisanPaymentRecordDto) {
-    try {
-      const updateData: any = {};
-      if (body.status) updateData.status = body.status;
-      if (body.notes) updateData.notes = body.notes;
-      if (body.totalPayment !== undefined) updateData.totalPayment = String(body.totalPayment);
+    const updateData: any = {};
+    if (body.status) updateData.status = body.status;
+    if (body.notes) updateData.notes = body.notes;
+    if (body.totalPayment !== undefined) updateData.totalPayment = String(body.totalPayment);
 
-      const [updated] = await this.db
-        .update(schema.artisanPaymentRecord)
-        .set(updateData)
-        .where(eq(schema.artisanPaymentRecord.id, BigInt(body.recordId)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.artisanPaymentRecord)
+      .set(updateData)
+      .where(eq(schema.artisanPaymentRecord.id, BigInt(body.recordId)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatPaymentRecord(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatPaymentRecord(updated)] : []);
   }
 
   @Patch("/update/artisan-payment/approve")
@@ -299,22 +275,18 @@ export class PaymentMigratedDomainController {
   @ApiBody({ type: ApproveArtisanPaymentDto })
   @ApiResponse({ status: 200, description: "Artisan payment record approved" })
   async patch_update_artisan_payment_approve(@Body() body: ApproveArtisanPaymentDto) {
-    try {
-      const [updated] = await this.db
-        .update(schema.artisanPaymentRecord)
-        .set({
-          status: "APPROVED",
-          approvedAt: Date.now(),
-          approvedBy: body.approvedBy || "super_user",
-          notes: body.notes || "Approved for payout",
-        })
-        .where(eq(schema.artisanPaymentRecord.id, BigInt(body.recordId)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.artisanPaymentRecord)
+      .set({
+        status: "APPROVED",
+        approvedAt: Date.now(),
+        approvedBy: body.approvedBy || "super_user",
+        notes: body.notes || "Approved for payout",
+      })
+      .where(eq(schema.artisanPaymentRecord.id, BigInt(body.recordId)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatPaymentRecord(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatPaymentRecord(updated)] : []);
   }
 
   @Delete("/delete/artisan-payment/record/:recordId")
@@ -338,25 +310,21 @@ export class PaymentMigratedDomainController {
   @ApiResponse({ status: 200, description: "Razorpay transaction data dump" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_data_dump_transaction(@Query() query: any) {
-    try {
-      const result = await this.db
-        .select()
-        .from(schema.razorpayTransaction)
-        .orderBy(desc(schema.razorpayTransaction.id));
-      const formatted = (result || []).map(r => ({
-        id: r.id ? String(r.id) : null,
-        version: r.version ? Number(r.version) : null,
-        razorpayOrderId: r.razorpayOrderId,
-        loomOrderId: r.loomOrderId ? String(r.loomOrderId) : null,
-        amount: r.amount ? parseFloat(String(r.amount)) : 0,
-        currency: r.currency,
-        transactionId: r.transactionId,
-        status: r.status,
-        createdAt: r.createdAt ? Number(r.createdAt) : null,
-      }));
-      return keyedResponse("data", formatted);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await this.db
+      .select()
+      .from(schema.razorpayTransaction)
+      .orderBy(desc(schema.razorpayTransaction.id));
+    const formatted = (result || []).map(r => ({
+      id: r.id ? String(r.id) : null,
+      version: r.version ? Number(r.version) : null,
+      razorpayOrderId: r.razorpayOrderId,
+      loomOrderId: r.loomOrderId ? String(r.loomOrderId) : null,
+      amount: r.amount ? parseFloat(String(r.amount)) : 0,
+      currency: r.currency,
+      transactionId: r.transactionId,
+      status: r.status,
+      createdAt: r.createdAt ? Number(r.createdAt) : null,
+    }));
+    return keyedResponse("data", formatted);
   }
 }

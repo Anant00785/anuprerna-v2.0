@@ -18,6 +18,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflow, getCustomWorkflowDetail, computeStepWindow, BackendFetchError } from "@/lib/artisanflow-api";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
   const customIds = parseIds(searchParams.get("customIds"));
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   const windows: Record<string, { from: number | null; to: number | null }> = {};
 

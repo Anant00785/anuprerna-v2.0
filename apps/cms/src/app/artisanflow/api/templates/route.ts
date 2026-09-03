@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowTemplateList, BackendFetchError } from "@/lib/artisanflow-api";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
 export async function GET() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
   // Bare await -> opaque Next HTML 500 on a wrapper outage; StartProductionDialog
   // then fails on r.json() rather than surfacing the cause. Classify as 502.
   let templates: Awaited<ReturnType<typeof getWorkflowTemplateList>>;

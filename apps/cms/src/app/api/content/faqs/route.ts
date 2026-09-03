@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServiceToken } from '@/lib/loom-service-token';
+import { getBackendCallToken } from '@/lib/backend-call-token';
 
 const BACKEND = process.env.BACKEND_URL ?? 'http://localhost:8090';
 const COOKIE = process.env.AUTH_COOKIE_NAME ?? 'weave_token';
@@ -17,7 +18,7 @@ const COOKIE = process.env.AUTH_COOKIE_NAME ?? 'weave_token';
 export async function GET(): Promise<NextResponse> {
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE)?.value;
-  const token = cookieToken ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieToken);
 
   // fetch() REJECTS when the backend is unreachable (connection refused, DNS,
   // timeout) -- it does not return a non-ok Response. That rejection was

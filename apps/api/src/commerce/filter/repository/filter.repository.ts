@@ -223,7 +223,17 @@ export class FilterRepository {
         return (result as unknown as Record<string, unknown>[]).map(mapFabricFilterPreviewRow);
     }
 
-    async findFinishedFilterPreview(category: string | null): Promise<FinishedFilterPreview[]> {
+    /**
+     * Paginated twin of findFinishedFilterPreview, mirroring
+     * findFabricFilterPreviewPage. Rather than duplicating the ~130-line CTE,
+     * the base query takes an optional LIMIT/OFFSET fragment.
+     */
+    async findFinishedFilterPreviewPage(category: string | null, limit: number, offset: number): Promise<FinishedFilterPreview[]> {
+        return this.findFinishedFilterPreview(category, limit, offset);
+    }
+
+    async findFinishedFilterPreview(category: string | null, limit?: number, offset?: number): Promise<FinishedFilterPreview[]> {
+        const pagination = limit == null ? sql`` : sql` limit ${limit} offset ${offset ?? 0}`;
         const query = sql`
             with
                   max_discount_item as (
@@ -350,6 +360,7 @@ export class FilterRepository {
                     or lower(${category || null}::text) like ('%' || lower(category.name) || '%')
                 )
             order by product_finished.id desc
+            ${pagination}
         `;
 
         const result = await this.db.execute(query);

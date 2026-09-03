@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -54,10 +55,13 @@ export class CategoryController {
   @ApiOperation({ summary: "Retrieve a single category by id." })
   @ApiParam({ name: "categoryId", description: "Category ID", example: 2558, type: Number })
   @ApiResponse({ status: 200, description: "Category found." })
+  @ApiResponse({ status: 400, description: "Malformed category id." })
+  @ApiResponse({ status: 404, description: "No such category." })
   @RequireGate(GateCode.CODE_SU)
   async getCategory(@Param("categoryId") categoryId: string) {
     const id = parseCategoryIdParam(categoryId);
     const category = await this.categoryService.retrieveCategory(id);
+    if (!category) throw new NotFoundException(`Category ${categoryId} not found.`);
     return keyedResponse("category", category);
   }
 

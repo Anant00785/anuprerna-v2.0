@@ -121,6 +121,20 @@ describe("getCustomProductById", () => {
     await expect(getCustomProductById(9)).resolves.toMatchObject({ id: 9, price: 2400 });
   });
 
+  it("returns null for a real 404 — the backend now says 'no such record' with a status", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    useHandlers(http.get(DETAIL, () => new HttpResponse(null, { status: 404 })));
+
+    await expect(getCustomProductById(9)).resolves.toBeNull();
+  });
+
+  it("still THROWS on 401 — a 4xx that is not 404 is a fault, not an empty record", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    useHandlers(http.get(DETAIL, () => new HttpResponse(null, { status: 401 })));
+
+    await expect(getCustomProductById(9)).rejects.toMatchObject({ kind: "auth" });
+  });
+
   it("returns null for a 200 that carries no product — genuinely not found", async () => {
     useHandlers(http.get(DETAIL, () => HttpResponse.json({ success: true, message: "" })));
 

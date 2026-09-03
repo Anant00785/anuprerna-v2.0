@@ -86,7 +86,7 @@ const emailEncoderDummy: EmailEncoderPort = {
       provide: FABRIC_PREVIEW_PORT,
       useFactory: (previews: FabricPreviewService): FabricPreviewPort => ({
         retrieveEntity: (id) => previews.retrieveEntity(BigInt(id)),
-        retrieveFabricProductByProductId: (productId) => previews.findByProductId(productId),
+        retrieveFabricProductsByProductIds: (productIds) => previews.findByProductIds(productIds),
       }),
       inject: [FabricPreviewService],
     },

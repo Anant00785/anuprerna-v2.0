@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowTemplate, getWorkflowTemplateList, BackendFetchError } from "@/lib/artisanflow-api";
 import { ArtisanFlowShell } from "@/components/artisanflow/ArtisanFlowShell";
 import { TemplateBuilder } from "@/components/artisanflow/TemplateBuilder";
@@ -26,7 +27,7 @@ export default async function TemplateEditPage({ params }: PageProps) {
   const { id } = await params;
   const numericId = Number(id);
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   let tpl: Awaited<ReturnType<typeof getWorkflowTemplate>> = null;
   let list: Awaited<ReturnType<typeof getWorkflowTemplateList>> = [];

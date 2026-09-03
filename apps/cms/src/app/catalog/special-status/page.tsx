@@ -2,6 +2,7 @@ import React from "react";
 import { cookies } from "next/headers";
 import { getSpecialStatusList } from "@/lib/catalog-api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { SimpleItemCrud } from "@/components/catalog/SimpleItemCrud";
 import { loadOrBanner } from "@/lib/load-or-banner";
 
@@ -11,7 +12,7 @@ const COOKIE = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 export default async function SpecialStatusPage() {
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE)?.value;
-  const token = cookieToken ?? await getServiceToken();
+  const token = await getBackendCallToken(cookieToken);
   return loadOrBanner(
     () => getSpecialStatusList(token),
     items => (

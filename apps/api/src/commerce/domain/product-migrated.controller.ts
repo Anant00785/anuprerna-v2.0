@@ -139,36 +139,27 @@ export class ProductMigratedDomainController {
   @ApiOperation({ summary: "Fetch SKU groups list" })
   @RequireGate(GateCode.CODE_SUCU)
   async get_get_sku_group_list(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.skuGroup).limit(50);
-      return keyedResponse("skuGroupList", result || []);
-    } catch (err) {
-      return keyedResponse("skuGroupList", []);
-    }
+    const result = await (this.db as any).select().from(schema.skuGroup).limit(50);
+    return keyedResponse("skuGroupList", result || []);
+
   }
 
   @Get("/get/special-status-list")
   @ApiOperation({ summary: "Fetch product special statuses" })
   @RequireGate(GateCode.CODE_SUCU)
   async get_get_special_status_list(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.specialStatus).limit(50);
-      return keyedResponse("specialStatusList", result || []);
-    } catch (err) {
-      return keyedResponse("specialStatusList", []);
-    }
+    const result = await (this.db as any).select().from(schema.specialStatus).limit(50);
+    return keyedResponse("specialStatusList", result || []);
+
   }
 
   @Get("/get/tag-list")
   @ApiOperation({ summary: "Fetch product tags list" })
   @RequireGate(GateCode.CODE_SUCU)
   async get_get_tag_list(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.tag).limit(50);
-      return keyedResponse("tagList", result || []);
-    } catch (err) {
-      return keyedResponse("tagList", []);
-    }
+    const result = await (this.db as any).select().from(schema.tag).limit(50);
+    return keyedResponse("tagList", result || []);
+
   }
 
   @Get("/get/table-explorer/data/product-vector/:id")
@@ -256,39 +247,30 @@ export class ProductMigratedDomainController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/product-fabric" })
   async get_get_table_explorer_data_product_fabric(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.productFabric).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.productFabric).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/product-finished")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/product-finished" })
   async get_get_table_explorer_data_product_finished(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.productFinished).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.productFinished).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/product-vector")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/product-vector" })
   async get_get_table_explorer_data_product_vector(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.productVector).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.productVector).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
 }

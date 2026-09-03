@@ -65,16 +65,16 @@ export class AddressController {
       properties: {
         id: { type: "integer", example: 224663, description: "Address ID to update" },
         tenantId: { type: "integer", example: 130439 },
-        name: { type: "string", example: "Sonal Agarwal" },
-        addressLine1: { type: "string", example: "A-6, 1st Floor Gopi Kunj Colony" },
-        addressLine2: { type: "string", example: "CIVIL LINES" },
-        postalCode: { type: "string", example: "244901" },
-        city: { type: "string", example: "RAMPUR" },
-        state: { type: "string", example: "Uttar Pradesh" },
+        name: { type: "string", example: "Jane Doe" },
+        addressLine1: { type: "string", example: "12 Example Street" },
+        addressLine2: { type: "string", example: "Sample Area" },
+        postalCode: { type: "string", example: "110001" },
+        city: { type: "string", example: "New Delhi" },
+        state: { type: "string", example: "Delhi" },
         country: { type: "string", example: "India" },
-        companyName: { type: "string", example: "SHIBUI" },
-        primaryPhone: { type: "string", example: "+919740853835" },
-        contactEmail: { type: "string", format: "email", example: "agarwalsonal2893@gmail.com" },
+        companyName: { type: "string", example: "Example Co" },
+        primaryPhone: { type: "string", example: "+910000000000" },
+        contactEmail: { type: "string", format: "email", example: "jane.doe@example.com" },
         addressType: { type: "string", enum: ["BILLING", "SHIPPING"], example: "SHIPPING" },
         primaryBillingAddress: { type: "boolean", example: false },
         primaryShippingAddress: { type: "boolean", example: true },
@@ -82,20 +82,20 @@ export class AddressController {
     },
   })
   @RequireGate(GateCode.CODE_CU)
-  async updateAddress(@Body() body: any) {
+  async updateAddress(@CurrentTenant() tenant: AuthenticatedTenant, @Body() body: any) {
     const rawId = body?.id ?? body?.addressId ?? body?.address_id ?? body?.data?.id ?? body?.payload?.id;
     const id = Number(rawId);
     if (!Number.isSafeInteger(id) || id <= 0) {
       return { success: false, error: "A valid integer address id is required for update." };
     }
-    return this.service.update(id, body);
+    return this.service.update(id, body, tenant?.tenantId ?? tenant?.id);
   }
 
   @Delete("delete/address/:addressId")
   @ApiOperation({ summary: "Delete address from customer account" })
   @ApiParam({ name: "addressId", example: 224663, description: "Address ID to delete", type: Number })
   @RequireGate(GateCode.CODE_CU)
-  async deleteAddress(@Param("addressId") addressId: string) {
-    return this.service.deleteById(Number(addressId));
+  async deleteAddress(@CurrentTenant() tenant: AuthenticatedTenant, @Param("addressId") addressId: string) {
+    return this.service.deleteById(Number(addressId), tenant?.tenantId ?? tenant?.id);
   }
 }

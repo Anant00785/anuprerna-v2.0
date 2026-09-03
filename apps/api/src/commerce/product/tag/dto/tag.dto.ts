@@ -13,6 +13,7 @@
  */
 import { BadRequestException } from "@nestjs/common";
 import { CreateTagInput, UpdateTagInput } from "../types/tag.types.js";
+import { parseIdParamStrict } from "../../../../common/params/id-param.js";
 
 function requireInt(value: unknown, field: string): number {
   const n = typeof value === "string" ? Number(value) : value;
@@ -46,8 +47,7 @@ export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQu
 
 /** @PathVariable Long id on getTagById */
 export function parseIdParam(id: unknown): bigint {
-  const n = requireInt(id, "id");
-  return BigInt(n);
+  return parseIdParamStrict(id, "id");
 }
 
 /** @RequestBody Tag entity on createNewTag — only `name` is consumed by source. */

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SegmentService } from "../segment/service/segment.service.js";
@@ -60,10 +60,13 @@ export class SegmentController {
   @Get("/get/segment/by-id/:id")
   @ApiOperation({ summary: "Retrieve a single segment by id (returns null if not found)." })
   @ApiParam({ name: "id", example: 3510, type: Number })
-  @ApiResponse({ status: 200, description: "Segment or null." })
+  @ApiResponse({ status: 200, description: "Segment." })
+  @ApiResponse({ status: 400, description: "Malformed segment id." })
+  @ApiResponse({ status: 404, description: "No such segment." })
   async getSegmentById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const segment = await this.segmentService.retrieveSegmentById(parsedId);
+    if (!segment) throw new NotFoundException(`Segment ${id} not found.`);
     return keyedResponse("segment", segment);
   }
 
@@ -77,6 +80,7 @@ export class SegmentController {
   async getSegment(@Param("segmentId") segmentId: string) {
     const id = parseSegmentIdParam(segmentId);
     const segment = await this.segmentService.retrieveSegment(id);
+    if (!segment) throw new NotFoundException(`Segment ${segmentId} not found.`);
     return keyedResponse("segment", segment);
   }
 
@@ -166,11 +170,13 @@ export class SegmentController {
   /** SegmentDAOController#retrieveSegment(Long id) in table-explorer namespace. */
   @Get("/get/table-explorer/data/segment/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single segment." })
-  @ApiResponse({ status: 200, description: "Segment data or null." })
+  @ApiResponse({ status: 200, description: "Segment data." })
+  @ApiResponse({ status: 404, description: "No such segment." })
   @RequireGate(GateCode.CODE_SU)
   async getSegmentDataById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const segment = await this.segmentService.retrieveSegmentById(parsedId);
+    if (!segment) throw new NotFoundException(`Segment ${id} not found.`);
     return keyedResponse("segment", segment);
   }
 }

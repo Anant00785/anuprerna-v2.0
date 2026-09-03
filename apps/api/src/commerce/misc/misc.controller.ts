@@ -91,5 +91,4 @@ export class MiscController {
     }
     return { success: true, response: "Form submitted successfully!" };
   }
-
 }

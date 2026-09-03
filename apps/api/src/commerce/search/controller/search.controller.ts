@@ -20,12 +20,11 @@ export class SearchController {
   async searchProduct(@Param("keyword") keyword: string) {
     const error = validateSearchTerm(keyword);
     if (error) return simpleResponse(false, error);
-    try {
-      const results = await this.searchService.searchProduct(keyword);
-      return keyedResponse("entityList", results);
-    } catch {
-      return keyedResponse("entityList", []);
-    }
+    const results = await this.searchService.searchProduct(keyword);
+    // Legacy Loom emits `productPreviewList` here (verified:
+    // loom-v2 /get/search/result/silk -> { productPreviewList: [...] }).
+    // `entityList` matched nothing on either frontend.
+    return keyedResponse("productPreviewList", results);
   }
 
   @Get("/get/v2/search/result/:keyword")
@@ -51,12 +50,10 @@ export class SearchController {
   async aiBlogSearch(@Param("keyword") keyword: string) {
     const error = validateSearchTerm(keyword);
     if (error) return simpleResponse(false, error);
-    try {
-      const results = await this.searchService.searchBlogs(keyword);
-      return keyedResponse("entityList", results);
-    } catch {
-      return keyedResponse("entityList", []);
-    }
+    const results = await this.searchService.searchBlogs(keyword);
+    // Legacy Loom: { blogContentList: [...] }. Read by the storefront at
+    // components/content-list/loom.ts and app/api/search/route.ts.
+    return keyedResponse("blogContentList", results);
   }
 
   @Get("/search/ai/story/:keyword")
@@ -65,12 +62,9 @@ export class SearchController {
   async aiStorySearch(@Param("keyword") keyword: string) {
     const error = validateSearchTerm(keyword);
     if (error) return simpleResponse(false, error);
-    try {
-      const results = await this.searchService.searchStories(keyword);
-      return keyedResponse("entityList", results);
-    } catch {
-      return keyedResponse("entityList", []);
-    }
+    const results = await this.searchService.searchStories(keyword);
+    // Legacy Loom: { storyContentList: [...] }.
+    return keyedResponse("storyContentList", results);
   }
 
   @Get("/search/ai/:keyword")
@@ -79,12 +73,12 @@ export class SearchController {
   async aiSearch(@Param("keyword") keyword: string) {
     const error = validateSearchTerm(keyword);
     if (error) return simpleResponse(false, error);
-    try {
-      const results = await this.searchService.searchProduct(keyword);
-      return keyedResponse("entityList", results);
-    } catch {
-      return keyedResponse("entityList", []);
-    }
+    // Legacy Loom nests this: { searchResult: { product: { resultSet,
+    // relatedResultSet } } } — verified against loom-v2 /search/ai/silk.
+    // Read by storefront app/api/search/route.ts, components/content-list/loom.ts
+    // and components/seo-landing/loom.ts. `entityList` matched none of them.
+    const result = await this.searchService.searchProductV2(keyword);
+    return keyedResponse("searchResult", result);
   }
 
   @Get("/reindex/vector")

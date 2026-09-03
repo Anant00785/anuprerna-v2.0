@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1345 tests across 240 files.**
+**1671 tests across 296 files.**
 
-- `apps/api` — 189 files, 787 tests
-- `apps/cms` — 17 files, 210 tests
-- `apps/storefront` — 33 files, 346 tests
+- `apps/api` — 245 files, 1098 tests
+- `apps/cms` — 17 files, 212 tests
+- `apps/storefront` — 33 files, 359 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -74,6 +74,18 @@
 - returns 0 for a tenant with an empty cart
 - aborts the whole transaction if any row lost its version race
 
+### `apps/api/src/commerce/cart/service/cart.enrichment-batching.spec.ts` — 10
+- does not issue more queries as the cart grows
+- falls back to the bare product row when no product_fabric row exists
+- falls through to the port only when neither table has the id
+- resolves a missing size option to null instead of throwing
+- keeps finish CSV token order and last-one-wins finishDisplayName
+- skips non-numeric finish tokens rather than throwing on BigInt()
+- asks the fabric-preview port once for all distinct selectedFabricIds
+- leaves selectedFabric null when the batch has no row for that id
+- does not touch the fabric-preview port when no line selects a fabric
+- returns an empty list for an empty cart without querying
+
 ### `apps/api/src/commerce/cart/validators/cart-item.sanitizer.spec.ts` — 11
 - strips null bytes (stage 1: canonicalization)
 - strips <script> tags (stage 2: XSS stripping)
@@ -113,6 +125,24 @@
 
 ### `apps/api/src/commerce/catalog/controller/catalog.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/catalog/repository/catalog-item-media.repository.spec.ts` — 3
+- null for a missing row, the row otherwise
+- a query failure propagates instead of a 404-shaped null
+- empty table is still [], a failure propagates
+
+### `apps/api/src/commerce/catalog/repository/catalog-item.repository.spec.ts` — 3
+- null for a missing row, the row otherwise
+- a query failure propagates instead of a 404-shaped null
+- empty table is still [], a failure propagates
+
+### `apps/api/src/commerce/catalog/repository/catalog-pdf.repository.spec.ts` — 6
+- scopes the query to the given artisanId
+- an artisan with no PDFs gets [] — NOT another artisan
+- a query failure propagates instead of an empty (or borrowed) PDF list
+- formats rows through formatCatalogPdf (ids as strings, booleans coerced)
+- findById: null for a missing row
+- findAll: caps at 50 and returns [] when empty, a failure propagates
+
 ### `apps/api/src/commerce/checkout/checkout.e2e.spec.ts` — 27
 - guest order: subtotal from verified line prices, shipping from the shipment record, client totals discarded
 - rejects a line priced below the catalogue price
@@ -143,6 +173,31 @@
 - the sandbox gateway is a genuine 404 — no sandbox provider exists in this API
 
 ### `apps/api/src/commerce/checkout/controller/checkout.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/checkout/repository/checkout.repository.spec.ts` — 11
+- returns [] without querying when given no ids
+- maps rows into the checkout pricing projection
+- a query failure propagates instead of pricing the cart at 0 (silent checkout bug)
+- returns [] without querying when given no profile ids
+- a query failure propagates rather than silently applying no volume discount
+- returns null for an unknown email (createGuestTenant path taken)
+- returns the tenant id/userType for a matching email
+- propagates a lookup failure instead of treating every email as guest
+- findSidecarByTokenHash: an empty hash returns null WITHOUT issuing the lookup query — never matches every non-guest row
+- findSidecarByTokenHash: maps a found row
+- findSidecarByOrderId: no row is null, a DB failure propagates
+
+### `apps/api/src/commerce/commerce.module.spec.ts` — 10
+- wires TagController, which serves /get/tag/list for the CMS
+- keeps the generic table-explorer wildcard last, behind the per-entity routes
+- imports NverseModule
+- imports ZohoModule
+- NVerseService issues tokens through GatekeeperService, never a literal string
+- NVerseService has no hardcoded OTP and no plaintext password compare
+- the MSG91 service is gated on OUTBOUND_SMS_ENABLED and never returns an OTP value
+- no FakeOTPController-shaped handler was ported
+- every anonymous NVerse failure path returns the same non-enumerable message
+- every Zoho webhook handler is behind ZohoWebhookGuard
 
 ### `apps/api/src/commerce/compatibility/compatibility.controller.gates.spec.ts` — 0
 
@@ -177,7 +232,7 @@
 - returns the list under 
 - returns an empty list rather than an error when there are none
 - returns the row under 
-- returns customProduct: null for an id that does not exist
+- 404s for an id that does not exist, rather than a 200 carrying null
 - rejects a non-numeric id instead of querying with NaN
 - creates and reports success
 - derives unit UNIT for the finished group, as Loom
@@ -378,7 +433,17 @@
 
 ### `apps/api/src/commerce/domain/workflow-migrated.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/dto-id-params.strict.spec.ts` — 3
+- accepts a well-formed id unchanged
+- rejects an id above 2^53 rather than querying a rounded one
+- preserves ids exactly past 2^53
+
 ### `apps/api/src/commerce/faq/controller/faq.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/faq/mapper/faq.mapper.spec.ts` — 3
+- maps every field straight through
+- maps the row and nests mapped questions
+- defaults faqQuestionList to [] when no questions are passed
 
 ### `apps/api/src/commerce/faq/validators/faq.sanitizer.spec.ts` — 3
 - trims and HTML-escapes question and answer
@@ -399,10 +464,10 @@
 ### `apps/api/src/commerce/filter/controller/filter.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/filter/mapper/filter.mapper.spec.ts` — 4
-- maps a fully populated row, coercing snake_case DB columns to camelCase fields
-- defaults missing/undefined fields to zero-values instead of throwing
-- maps a fully populated row
-- defaults missing fields to zero-values
+- maps a fully-populated snake_case row
+- defaults every field on an empty row
+- maps a fully-populated snake_case row
+- defaults nullable list fields to null and numerics to 0 on an empty row
 
 ### `apps/api/src/commerce/forex/controller/forex.controller.gates.spec.ts` — 0
 
@@ -630,7 +695,24 @@
 
 ### `apps/api/src/commerce/misc/misc.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/navigation/mapper/navigation.mapper.spec.ts` — 4
+- coerces ids to Number and names to String
+- maps fields and defaults subCategoryFeaturedImage to empty string when absent
+- passes through a provided image url
+- maps every field, defaulting bannerImage to empty string when absent
+
+### `apps/api/src/commerce/navigation/repository/navigation.repository.spec.ts` — 5
+- uses the primary fabric-scoped rows when present
+- falls back to the plain join when the fabric-scoped query returns no rows
+- a query failure propagates instead of silently falling back to the plain join
+- empty is still [], a query failure propagates
+- returns [] without querying for an unrecognised story type
+
 ### `apps/api/src/commerce/notification/controller/notification.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/notification/mapper/notification.mapper.spec.ts` — 2
+- picks only id/tenantId/entityId/entityType/triggerType/status, dropping every other row field
+- passes a null tenantId/entityId through unchanged
 
 ### `apps/api/src/commerce/notification/service/notification.service.spec.ts` — 13
 - builds no transporter when SMTP_HOST and SMTP_FROM are absent
@@ -653,23 +735,60 @@
 - maps a row to a verification token DTO
 - returns null for a null/undefined row
 
+### `apps/api/src/commerce/nverse/otp-rate-limit.guard.spec.ts` — 9
+- allows the first OTP_SENDS_PER_NUMBER sends for a number, then 429s
+- limits per IP even when every request uses a different number
+- keeps a different number on a different IP unaffected
+- normalises formatting so +91-98765 43210 cannot buy a fresh quota
+- answers 429 TOO_MANY_REQUESTS, not a generic 500
+- does not reveal WHICH limit tripped — same message for IP and number
+- lets the caller through again once the window has elapsed
+- still limits by IP when no contactNumber is supplied at all
+- falls back to socket.remoteAddress when req.ip is absent
+
+### `apps/api/src/commerce/nverse/service/msg91-otp.service.spec.ts` — 8
+- verifyOtp makes no network call and never succeeds when the switch is off
+- treats an unset switch as off (fail closed)
+- fails closed when the switch is on but credentials are missing
+- sends the Java
+- verifies via GET with authkey/mobile/otp query params
+- maps anything other than type==
+- fails closed when the provider is unreachable
+- clamps a nonsense MSG91_OTP_LENGTH to the Java default of 6
+
+### `apps/api/src/commerce/nverse/service/nverse.service.spec.ts` — 13
+- verifyOtp with a rejected OTP returns no token
+- verifyOtp for an unknown number never even asks MSG91
+- verifyOtp with the kill switch on (MSG91 unavailable) issues nothing
+- login with a wrong password returns no token
+- login never compares passwords itself — it delegates to GatekeeperService
+- issues a real signed token only when MSG91 verifies
+- refuses a disabled account even when MSG91 verifies the OTP
+- unknown number and wrong OTP are indistinguishable on verify
+- unknown number and provider failure are indistinguishable on send
+- unknown email and wrong password are indistinguishable on login
+- no response body ever carries an OTP value
+- fails when the token does not check out
+- succeeds only when the repository consumes a real token
+
 ### `apps/api/src/commerce/nverse/validators/nverse.sanitizer.spec.ts` — 4
 - trims and lowercases
 - returns undefined for an undefined/empty input
 - strips non-digit characters
 - returns undefined for an undefined/empty input
 
-### `apps/api/src/commerce/nverse/validators/nverse.validator.spec.ts` — 10
+### `apps/api/src/commerce/nverse/validators/nverse.validator.spec.ts` — 11
 - accepts email + password
 - accepts contactNumber + password (email not required)
 - rejects when neither email nor contactNumber is present
 - rejects when password is missing
-- accepts a request with a contactNumber
-- rejects a request missing contactNumber
-- accepts contactNumber + otp
-- rejects when otp is missing
+- accepts a 10-digit number
+- accepts a 6-digit otp by default
+- honours a configured otp length
+- rejects a bad contact number before looking at the otp
 - accepts email + token
 - rejects when token is missing
+- does not distinguish which field was wrong
 
 ### `apps/api/src/commerce/order/controller/custom-order.controller.gates.spec.ts` — 0
 
@@ -843,11 +962,31 @@
 - documented contract: customerEmail length is checked (port ignores customerEmail)
 - documented contract: currency must be a valid enum (port only checks non-blank)
 
+### `apps/api/src/commerce/product/category/mapper/category.mapper.spec.ts` — 4
+- maps name/metaTitle/metaDescription and the resolved image urls, stamping timeOfCreation
+- defaults metaTitle/metaDescription to empty string when absent
+- always writes name/metaTitle/metaDescription and omits icon/socialImage when not passed
+- includes icon/socialImage only when a replacement was uploaded
+
+### `apps/api/src/commerce/product/category/repository/category.repository.spec.ts` — 6
+- findById: null for a missing row, the row otherwise
+- findById: a query failure propagates
+- findAll: an empty table is still [], a failure propagates
+- findByNameIgnoreCase: null for no match, a failure propagates
+- countSegmentsByCategoryId: propagates a query failure instead of reporting 0 segments
+- retrieveCategory: maps the paginated column set, a failure propagates
+
 ### `apps/api/src/commerce/product/controller/category.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/product/controller/fabric-product.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/product/controller/finished-product.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/product/controller/missing-entity-404.spec.ts` — 4
+- ${route} throws NotFoundException
+- /get/product/slug (no slug) is a 404, not a 400 from the :id route
+- /get/fabric-product/slug (no slug) is a 404, not a 400 from the :productId route
+- /get/product/${bad} is a 400
 
 ### `apps/api/src/commerce/product/controller/product-size-profile.controller.gates.spec.ts` — 0
 
@@ -865,9 +1004,97 @@
 
 ### `apps/api/src/commerce/product/controller/tag.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/product/custom-product/mapper/custom-product.mapper.spec.ts` — 3
+- maps a fully-populated input, stringifying price and stamping createdAt/updatedAt
+- defaults unit to METER and string fields to empty string when absent
+- maps name/productGroup/unit/price/images/remarks and stamps updatedAt, omitting sku/createdAt
+
+### `apps/api/src/commerce/product/fabric-product/mapper/fabric-product.mapper.spec.ts` — 5
+- attaches the caller-supplied productId and maps gsm/addToSwatch/width
+- defaults addToSwatch to true when absent
+- always overwrites gsm/addToSwatch/width unconditionally
+- defaults addToSwatch to true when absent
+- forces productGroup to 
+
+### `apps/api/src/commerce/product/fabric-product/repository/fabric-product.repository.spec.ts` — 7
+- retrieveEntity: null for a missing row, a failure propagates
+- findByProductId: null for a missing row, a failure propagates
+- update: returns null for a missing row, throws OptimisticLockError on a version race
+- deleteById: returns 0 for a missing row, throws OptimisticLockError on a version race
+- findFabricOverviews: empty is still [], a query failure propagates instead of an empty admin table
+- findFabricFilterPreviewByIds: returns [] without querying when given no ids
+- findFabricFilterPreviewPage: a query failure propagates instead of an empty storefront PLP
+
+### `apps/api/src/commerce/product/fabric-product/service/fabric-product.batching.spec.ts` — 6
+- issues exactly one query for a whole CSV column
+- returns rows in CSV token order, not query order
+- yields null for a token with no row — as retrieveEntity(id) used to
+- keeps duplicate tokens duplicated but queries each id once
+- short-circuits an empty or absent column without touching the database
+- fires every enrichment lookup concurrently rather than one at a time
+
 ### `apps/api/src/commerce/product/finished-product/finished-product.port.spec.ts` — 2
 - a genuine 0 price is persisted as \
 - persists the real ids it was given
+
+### `apps/api/src/commerce/product/finished-product/mapper/finished-product.mapper.spec.ts` — 1
+- wraps the caller-supplied productId with no other fields
+
+### `apps/api/src/commerce/product/finished-product/service/finished-product.enrich.spec.ts` — 5
+- looks each entity up by its own id, not the product id
+- returns each list as an array, and an empty csv as an empty list
+- exposes the product row under both 
+- returns null for an unknown slug
+- treats an id past 2^53 as a miss rather than rounding it into another row
+
+### `apps/api/src/commerce/product/product-preview/mapper/fabric-preview.mapper.spec.ts` — 1
+- coerces bigint id/version/productId to Number and leaves product null for later enrichment
+
+### `apps/api/src/commerce/product/product-preview/mapper/finished-preview.mapper.spec.ts` — 1
+- coerces bigint id/version/productId to Number and leaves product null for later enrichment
+
+### `apps/api/src/commerce/product/product-preview/mapper/main-product-preview.mapper.spec.ts` — 3
+- coerces id/version to Number and defaults heroImage to empty string when null
+- coerces a non-null mainProductId to Number rather than leaving it a bigint/string
+- preserves a populated heroImage rather than blanking it
+
+### `apps/api/src/commerce/product/product-preview/mapper/nav-product-preview.mapper.spec.ts` — 2
+- coerces bigint id/version/subCategoryId to Number, leaves category/segment null, and defaults transient list fields to []
+- defaults patternId to empty string when null but preserves a populated patternId/heroImage
+
+### `apps/api/src/commerce/product/product-preview/mapper/product-preview.mapper.spec.ts` — 5
+- coerces numeric-string columns to Number and computes totalQuantity as quantity + externalQuantity
+- leaves category/segment null and defaults transient list fields to []
+- defaults nullable string fields (tagId/patternId/heroImage/hoverImage) to empty string
+- preserves null on nullable FK-id fields rather than coercing to 0
+- coerces a non-null nullable FK-id field to Number
+
+### `apps/api/src/commerce/product/product-preview/mapper/product-search-preview.mapper.spec.ts` — 2
+- coerces id/version/price/skuGroupId to Number and preserves null FK ids
+- coerces non-null specialStatusId/mainProductId to Number
+
+### `apps/api/src/commerce/product/product-preview/mapper/review-product-preview.mapper.spec.ts` — 2
+- coerces id/version/subCategoryId to Number and defaults heroImage to empty string when null
+- preserves a populated heroImage
+
+### `apps/api/src/commerce/product/product-size-profile/mapper/product-size-profile.mapper.spec.ts` — 9
+- maps every field, stringifying consumedFabric
+- keeps consumedFabric null when input is null/absent, and defaults disabled to false
+- writes the full persisted shape (no partial-update quirk)
+- coerces the numeric-string consumedFabric column back to Number
+- preserves null consumedFabric rather than coercing to 0
+- coerces bigint id/version to Number and embeds the resolved sizeProfileOption
+- allows a null sizeProfileOption
+- maps snake_case native-query columns, coercing numeric strings to Number
+- preserves a null consumed_fabric rather than coercing to 0
+
+### `apps/api/src/commerce/product/product-zoho-relation/mapper/product-zoho-relation.mapper.spec.ts` — 6
+- maps every field, stringifying purchasePrice/tax
+- defaults zohoItemId/hsnCode to empty string, purchasePrice to 0.001, and disabled to false when absent
+- writes the full persisted shape
+- coerces purchasePrice/tax back to Number, sets product undefined and quantity to 0 (transient placeholder)
+- always nulls quantity, since it
+- maps snake_case native-query columns, coercing numeric strings to Number
 
 ### `apps/api/src/commerce/product/product/dto/product.dto.spec.ts` — 6
 - a genuine 0 price survives — it must NOT become 1200
@@ -876,6 +1103,24 @@
 - a genuine 0 quantity survives
 - still requires an id
 - accepts a full update body with a 0 price
+
+### `apps/api/src/commerce/product/product/mapper/product.mapper.spec.ts` — 16
+- lowercases, strips non-alphanumerics to hyphens, and collapses/trims them
+- collapses consecutive separators into one hyphen
+- trims sku, regenerates slug from name, and defaults optional fields
+- nulls mainProductId when mainProductCheck is true, even if a mainProductId was supplied
+- passes through mainProductId when mainProductCheck is false
+- regenerates slug and trims sku when sku is provided
+- leaves sku as-is (untrimmed, including null) when sku is null/undefined
+- omits subCategoryId/skuGroupId/specialStatusId from the update set when absent or zero
+- includes subCategoryId/skuGroupId/specialStatusId when present and non-zero
+- nulls badgeProfileId when disabled, even if an id was supplied
+- keeps badgeProfileId when enabled and non-zero
+- nulls badgeProfileId when enabled but id is 0
+- madeToOrder branch also sets madeToOrderFabricId when enabled, and nulls both when disabled
+- finishProfile branch resets finishProfileItemId to empty string when disabled
+- nulls mainProductId when mainProductCheck is true regardless of supplied mainProductId
+- never writes productSpecificSizeProfile (no backing column, per source-gap note)
 
 ### `apps/api/src/commerce/product/product/product.module.spec.ts` — 8
 - binds all fourteen cross-module ports
@@ -887,10 +1132,97 @@
 - PRODUCT_ZOHO_RELATION_PORT looks the relation up and writes 
 - IMAGE_GALLERY_SEO_PORT replaces the gallery rows instead of dropping them
 
+### `apps/api/src/commerce/product/product/repository/product.repository.spec.ts` — 15
+- retrieveEntity: returns null for a missing id, the row otherwise
+- retrieveEntity: a query failure propagates instead of a 404-shaped null
+- findBySlug: returns null for an unknown slug, the row otherwise
+- findBySlug: a query failure propagates rather than rendering a 404 PDP
+- returns null for a missing product without attempting a write
+- returns the updated row when the version-checked write succeeds
+- throws OptimisticLockError when the row changed between read and write
+- returns 0 for a missing product without attempting a delete
+- returns 1 when the version-checked delete removed the row
+- throws OptimisticLockError when the row changed between read and delete
+- maps rows to the gist projection
+- an empty catalogue is still []
+- a query failure propagates instead of an empty PLP
+- findNavMenuCraftMapping falls back to the plain segment/subcategory join when the fabric-scoped query is empty
+- findNavMenuCraftMapping: a query failure propagates rather than serving an empty nav menu
+
+### `apps/api/src/commerce/product/segment/mapper/segment.mapper.spec.ts` — 4
+- maps categoryId/name/metaTitle/metaDescription and the resolved image urls, stamping timeOfCreation
+- defaults metaTitle/metaDescription to empty string when absent
+- always overwrites categoryId/name/metaTitle/metaDescription and omits icon/socialImage when not passed
+- includes icon/socialImage only when a replacement was uploaded
+
+### `apps/api/src/commerce/product/segment/repository/segment.repository.spec.ts` — 6
+- findById: null for a missing row, the row otherwise
+- findById: a query failure propagates
+- findAll: an empty table is still [], a failure propagates
+- maps the joined preview rows
+- a query failure propagates instead of an empty filter panel
+- a query failure propagates instead of reporting 0 subcategories
+
+### `apps/api/src/commerce/product/sku-group/mapper/sku-group.mapper.spec.ts` — 2
+- maps name and always server-stamps timeOfCreation
+- writes only name, leaving timeOfCreation untouched
+
+### `apps/api/src/commerce/product/sku-group/repository/sku-group.repository.spec.ts` — 6
+- findAll: an empty table is still [], a failure propagates
+- retrieveEntity: null for a missing row, a failure propagates
+- returns null for a missing sku group without writing
+- throws OptimisticLockError on a version race
+- returns the mapped entity when the version-checked write succeeds
+- a query failure propagates instead of an empty admin list
+
+### `apps/api/src/commerce/product/special-status/mapper/special-status.mapper.spec.ts` — 2
+- maps name and always server-stamps timeOfCreation
+- writes only name
+
+### `apps/api/src/commerce/product/special-status/repository/special-status.repository.spec.ts` — 5
+- findAll: an empty table is still [], a failure propagates
+- retrieveEntity: null for a missing row, a failure propagates
+- returns null for a missing row without writing
+- throws OptimisticLockError on a version race
+- null for a missing id, a query failure propagates
+
 ### `apps/api/src/commerce/product/sub-category/dto/subcategory.dto.spec.ts` — 3
 - rejects a missing segmentId instead of defaulting to 66059
 - rejects a missing name instead of inventing \
 - keeps the real segmentId it was given
+
+### `apps/api/src/commerce/product/sub-category/mapper/subcategory.mapper.spec.ts` — 8
+- maps every field, stamping timeOfCreation
+- leaves a profile id undefined (omitted from the write) when absent or 0 on create
+- defaults metaTitle/metaDescription/featured when absent
+- always writes name/metaTitle/metaDescription/featured/segmentId
+- clears a profile id to null when present-and-0
+- sets a profile id when present-and-nonzero
+- omits a profile id from the update set entirely when absent (leaves existing value untouched)
+- only includes image fields that were actually re-uploaded
+
+### `apps/api/src/commerce/product/sub-category/repository/subCategory.repository.spec.ts` — 8
+- null for a missing row, the mapped entity otherwise
+- a query failure propagates
+- an empty table is still [], a failure propagates
+- a query failure propagates instead of reporting 0 products
+- returns null for a missing subcategory without writing
+- throws OptimisticLockError on a version race
+- scopes the bulk UPDATE to this subcategory
+- a write failure propagates rather than silently leaving stale profile FKs on related products
+
+### `apps/api/src/commerce/product/tag/mapper/tag.mapper.spec.ts` — 2
+- maps name and always server-stamps timeOfCreation
+- writes only name
+
+### `apps/api/src/commerce/product/tag/repository/tag.repository.spec.ts` — 7
+- returns [] without querying when given no ids
+- a query failure propagates instead of dropping the tag list
+- null for a missing tag, the row otherwise
+- a query failure propagates
+- returns null for a missing tag without writing
+- throws OptimisticLockError on a version race
+- maps BigInt-friendly columns, a failure propagates
 
 ### `apps/api/src/commerce/profile/controller/badge-profile.controller.gates.spec.ts` — 0
 
@@ -940,12 +1272,25 @@
 - rejects an unknown type — ReportFactoryService throws IllegalArgumentException
 - emits only the header when there are no rows, never placeholder data
 
+### `apps/api/src/commerce/response-key-contract.spec.ts` — 1
+- ${route} emits 
+
 ### `apps/api/src/commerce/review/controller/review.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/review/mapper/review.mapper.spec.ts` — 3
 - maps a full row, converting ids to bigint and rating to number
 - defaults headline/comment to empty string and status to PENDING when missing
 - falls back createdAt to now() when missing
+
+### `apps/api/src/commerce/review/service/review.service.spec.ts` — 8
+- returns only the product
+- does not pad a short page up to 
+- returns an empty list for a product with no reviews — never a site-wide fallback
+- never reaches for sub-category / category / fabric / generic reviews
+- passes paging straight through
+- scopes to a product when one is given
+- stays site-wide when no product is given
+- zeroes out an id that cannot address a row rather than falling back to the global figure
 
 ### `apps/api/src/commerce/review/validators/review.sanitizer.spec.ts` — 3
 - trims and HTML-escapes every optional string field
@@ -968,12 +1313,22 @@
 
 ### `apps/api/src/commerce/search/controller/search.controller.spec.ts` — 7
 - returns a validation error without calling the service for an empty keyword
-- returns entityList from the service on success
-- swallows a service error into an empty entityList rather than propagating it
+- returns productPreviewList from the service on success
+- propagates a service error instead of answering 200 with an empty productPreviewList
 - returns a validation error without calling the service for a keyword >= 300 chars
 - returns the entity envelope from the service on success
 - BUG (inconsistent with v1): has no try/catch, so a service error propagates as a rejected promise instead of a JSON error envelope
-- mirrors searchProduct: validates, delegates to searchService.searchProduct, and swallows errors into an empty entityList
+- validates, delegates to searchService.searchProductV2, and propagates service errors
+
+### `apps/api/src/commerce/search/mapper/search.mapper.spec.ts` — 2
+- maps a fully-populated raw row
+- defaults image alt text to empty string and specialStatus to null when absent
+
+### `apps/api/src/commerce/search/repository/search.repository.spec.ts` — 4
+- caps results at 150 and maps nullable image/altText fields
+- no matches is still [], a query failure propagates instead of an empty results page
+- searchBlogs: stringifies bigint id, a query failure propagates
+- searchStories: no matches is still [], a query failure propagates
 
 ### `apps/api/src/commerce/search/validators/search.validator.spec.ts` — 5
 - accepts a normal search term
@@ -997,6 +1352,11 @@
 
 ### `apps/api/src/commerce/settings/controller/settings.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/settings/mapper/settings.mapper.spec.ts` — 3
+- maps every field straight through, casting the enum-typed fields
+- maps each row in the list
+- returns an empty array for an empty list
+
 ### `apps/api/src/commerce/settings/validators/settings.sanitizer.spec.ts` — 1
 - returns the request object unchanged
 
@@ -1015,6 +1375,10 @@
 
 ### `apps/api/src/commerce/shipment/controller/shipment.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/shipment/mapper/shipment.mapper.spec.ts` — 2
+- maps input fields, dropping id (not part of ShipmentEntity
+- spreads the entity and casts locationType to string
+
 ### `apps/api/src/commerce/shipment/validators/shipment.sanitizer.spec.ts` — 2
 - trims and HTML-escapes the name
 - leaves a falsy name untouched rather than throwing
@@ -1032,6 +1396,10 @@
 
 ### `apps/api/src/commerce/skill/controller/skill.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/skill/mapper/skill.mapper.spec.ts` — 2
+- maps id/name/description straight through, dropping other fields
+- maps id/artisanId/skillId/level straight through
+
 ### `apps/api/src/commerce/skill/validators/skill.sanitizer.spec.ts` — 3
 - trims name and description
 - leaves undefined name/description as undefined
@@ -1042,6 +1410,35 @@
 - returns an error when name is missing
 - returns no errors for a valid id
 - returns an error when id is missing
+
+### `apps/api/src/commerce/swallowed-failure.spec.ts` — 27
+- happy path is unchanged: { success, message, products }
+- a genuinely empty catalogue is still a 200 with products: []
+- a query failure propagates instead of masquerading as an empty catalogue
+- /get/fabric-preview-list: happy path unchanged, failure propagates
+- happy path is unchanged: the service payload is returned verbatim
+- a failure propagates rather than serving an empty menu {}
+- findById: happy path unchanged (formatted row), missing row is still null
+- findById: a query failure propagates instead of returning null (= 
+- findAll / findRecent: empty table is still [], query failure propagates
+- findAllWithCount: a query failure propagates instead of { rows: [], total: 0 }
+- findByArtisan: the no-rows fallback still runs, but a query failure propagates
+- CatalogApiController.getCatalogList: happy path unchanged, failure propagates
+- CatalogApiController.getCatalog: an unknown id is still data: null, a failure is not
+- CustomerDomainController.get_get_customers: failure propagates, empty stays empty
+- SuperUserDomainController order search: no longer hardcodes success:true on failure
+- SuperUserDomainController custom-order search: same contract
+- TableExplorer data dump: happy path unchanged, empty table stays empty, failure propagates
+- Workflow table-explorer read: empty stays empty, failure propagates
+- Artisan incentive config: the NO-ROWS default fallback still runs; a query failure does not
+- Artisan step assignment no longer reports 
+- Profiles finish-profile list: empty stays empty, failure propagates
+- Artisan payment ledger: failure propagates instead of an empty ledger
+- AI embedding stats no longer reports status ACTIVE when the DB is down
+- Forex admin read by id: failure propagates (no storefront caller for /get/forex/:forexId)
+- /get/discount-list still degrades to an empty list — apps/storefront/src/app/api/checkout/discount/route.ts
+- /get/forex-list still degrades to an empty list — apps/storefront/src/stores/currency.store.ts
+- /get/ip-wise/currency still falls back to INR — public route, external geo-IP dependency
 
 ### `apps/api/src/commerce/table_explorer/controller/table_explorer.controller.gates.spec.ts` — 0
 
@@ -1107,6 +1504,10 @@
 
 ### `apps/api/src/commerce/whatsapp/controller/whatsapp.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/whatsapp/mapper/whatsapp.mapper.spec.ts` — 2
+- picks only id/tenantId/entityId/entityType/triggerType/status, dropping every other row field
+- passes a null tenantId/entityId/entityType through unchanged
+
 ### `apps/api/src/commerce/whatsapp/service/whatsapp-delivery-status-polling.service.spec.ts` — 5
 - pollSingle of a missing row returns the all-zero summary and queries nothing
 - advances a row when Freshchat reports a forward transition, writing only non-blank fields
@@ -1122,7 +1523,20 @@
 
 ### `apps/api/src/commerce/workflow/controller/workflow.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/workflow/mapper/workflow.mapper.spec.ts` — 4
+- maps id/templateId/orderId/status, dropping other row fields
+- maps id/name/description/isActive
+- preserves a false isActive rather than defaulting it
+- maps id/elementId/feedbackText/artisanId
+
 ### `apps/api/src/commerce/zoho/controller/zoho.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/zoho/guard/zoho-webhook.guard.spec.ts` — 5
+- accepts a request carrying both Loom header values
+- honours an env-overridden agent and a multi-entry IP allowlist
+- accepts when X-Forwarded-For
+- rejects a spoofed header set arriving from an unlisted peer
+- is off by default, so an App Runner proxy peer does not break delivery
 
 ### `apps/api/src/common/auth/roles.guard.spec.ts` — 18
 - allows the request through when no @RequireGate metadata is present (public route)
@@ -1164,6 +1578,15 @@
 ### `apps/api/src/common/middleware/request-id.middleware.spec.ts` — 2
 - generates an id when none is provided
 - preserves an incoming x-request-id
+
+### `apps/api/src/common/params/id-param.spec.ts` — 7
+- accepts a well-formed id and preserves it exactly past 2^53
+- accepts an integer supplied as a number (JSON body ids)
+- rejects an id past the postgres bigint bound with 400, not a 500
+- names the offending field in the message
+- converts ids inside the safe range
+- returns null rather than a rounded id
+- accepts a real slug
 
 ### `apps/api/src/common/response/rain-response.spec.ts` — 5
 - returns exactly {success, message}
@@ -1358,7 +1781,7 @@
 - rejects on a 500
 - keeps 
 
-### `apps/cms/src/lib/custom-products-api.test.ts` — 12
+### `apps/cms/src/lib/custom-products-api.test.ts` — 14
 - normalizes a row, coercing absent numerics to 0 rather than NaN
 - keeps a non-numeric price at 0 instead of letting NaN reach the screen
 - preserves the difference between an absent timestamp and a zero one
@@ -1366,6 +1789,8 @@
 - returns ok:false on a 401 — a token mismatch must not read as an empty catalogue
 - returns ok:true with [] when the list key is missing entirely
 - returns the normalized product
+- returns null for a real 404 — the backend now says 
+- still THROWS on 401 — a 4xx that is not 404 is a fault, not an empty record
 - returns null for a 200 that carries no product — genuinely not found
 - THROWS on a backend failure, unlike the list — the detail page must banner, not 404
 - pins the two canonical groups and units so the sandbox never invents a third
@@ -1438,8 +1863,10 @@
 - reports no guest session when the cookie is corrupt rather than throwing
 - expires the guest cookie
 
-### `apps/storefront/src/app/api/auth/login/route.test.ts` — 6
+### `apps/storefront/src/app/api/auth/login/route.test.ts` — 8
 - calls Loom
+- accepts a 
+- treats success:false as a rejection even when a token-shaped field is present
 - answers 401 and sets no session when the backend rejects the credentials
 - never mints a session of its own when the backend is unreachable
 - rejects a missing credential before touching the backend
@@ -1455,6 +1882,13 @@
 - reports logged-out (never a half-session) when the profile call fails
 - clears the cookie and the buyer-mode for OUR OWN token once its exp has passed
 - never serves the profile carried by an expired token
+
+### `apps/storefront/src/app/api/auth/register/route.test.ts` — 5
+- REFUSES to report success when Loom answers 200 with success:false
+- creates the account and parks the authenticated JWT in an httpOnly cookie
+- reports the failure when Loom rejects with an error status
+- rejects an incomplete payload without calling the backend at all
+- rejects a password under six characters without calling the backend
 
 ### `apps/storefront/src/app/api/backend/[...path]/route.test.ts` — 8
 - rejoins the catch-all segments and preserves the query string
@@ -1575,20 +2009,21 @@
 - wraps the Auth0 ID token as the tenant password under 
 - POSTs the email and returns the success confirmation
 
-### `apps/storefront/src/lib/api/repositories/cart.repository.test.ts` — 13
-- reads Loom
-- returns an empty cart — not a crash — when Loom sends the old payload key
-- swallows a fetch failure and returns an empty cart rather than throwing
-- also swallows a 401 the same way — getCart never surfaces auth failure to the caller
-- fetches /v1/cart and maps the NestApiResponse envelope to a domain Cart
-- POSTs the flat Loom CartItem entity to /add/cart-item
+### `apps/storefront/src/lib/api/repositories/cart.repository.test.ts` — 14
+- reads the cart from the /api/cart BFF route, not the /api/backend proxy
+- treats a signed-out session as a genuinely empty cart, not an error
+- THROWS on a backend failure instead of reporting an empty cart
+- raises CartAuthError on a 401 so the UI can offer sign-in
+- raises CartAuthError when the BFF flags an expired session with reauth
+- POSTs the flat Loom CartItem entity to /api/cart/add
 - omits zero/absent foreign keys rather than sending 0, which Loom cannot join
 - throws on Loom
-- propagates a server error instead of swallowing it, unlike getCart
-- PATCHes the whole row back with the new quantity, rebuilt from item.source
+- raises CartAuthError when the session has expired
+- sends the quantity and the product FK — never a price
 - throws on Loom
-- DELETEs /delete/cart-item/{cartItemId} using the cart row id
+- POSTs the cart row id to /api/cart/remove
 - throws on Loom
+- raises CartAuthError on an expired session
 
 ### `apps/storefront/src/lib/api/repositories/catalog.repository.test.ts` — 8
 - fetches /get/navigation and maps the payload envelope to HeaderNavigation
@@ -1732,7 +2167,7 @@
 - is declared on the API
 - is NOT role-gated — the storefront calls it with no token (Loom: ${evidence})
 
-### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 37
+### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 49
 - sets calculatedPrice from price for fabric products, no discount fields untouched
 - does NOT compute discounted price from max_discount fields (wholesale-only in Angular)
 - preserves API-provided calculatedDiscountedPrice when present
@@ -1751,6 +2186,9 @@
 - returns every product unchanged when no filters are active
 - filters by a single active csv option (color)
 - filters by sub-category (segment_category -> sub_category)
+- narrows to the selected sub-option even when its parent is also active
+- returns the whole parent segment when a parent is active with no sub-option selected
+- unions sub-options selected across different parent segments
 - filters inStock toggle to products with quantity > 0
 - treats size_profile_option_list quantity as in-stock even when total_quantity is 0
 - filters by price range, inclusive of both bounds
@@ -1770,6 +2208,15 @@
 - emits a range chip once the range is moved off its default
 - emits a sub chip for an active sub-category option
 - resets active options, sub-options, and range bounds back to defaults
+- names the price param 
+- does not serialise a range still at its full bounds — that is not a filter
+- serialises a narrowed range as from-to
+- SURVIVES a controls rebuild: the filter still applies after re-preparing from the URL
+- clamps an out-of-range URL value to the catalogue bounds
+- ignores a malformed or inverted URL value rather than filtering everything away
+- a hyphenated slug selects the matching sub-category and nothing else
+- does NOT widen to the whole parent segment
+- an unknown slug activates nothing rather than emptying the grid
 
 ### `apps/storefront/src/lib/profile/adapters.test.ts` — 8
 - maps Loom
@@ -1781,21 +2228,12 @@
 - maps the live loyaltyProgramInfo aggregates
 - zeroes the aggregates instead of inventing them when absent
 
-### `apps/storefront/src/stores/auth.store.test.ts` — 9
-- should initialize with unauthenticated state
-- should set token and mark logged in
-- should set user profile
-- should clear state on logout
-- persists the jwt to localStorage under the anuprerna-auth key
-- writes a jwt_token cookie when the token is set
-- logout removes the persisted localStorage token
-- logout removes the jwt_token cookie — no live token left behind
-- the jwt_token cookie carries no Secure or HttpOnly flag (documents a known gap, not desired behaviour)
-
-### `apps/storefront/src/stores/cart.store.test.ts` — 5
+### `apps/storefront/src/stores/cart.store.test.ts` — 7
 - starts empty so the header badge renders 0 on the server and first client render
-- refresh() loads the cart out of Loom
-- refresh() yields an empty cart (not a throw) when the backend fails
+- refresh() loads the cart from the /api/cart BFF route
+- refresh() surfaces an auth failure instead of pretending the cart is empty
+- refresh() keeps a previously loaded cart when a later read fails
+- refresh() reports a signed-out session as an empty cart, not an error
 - open()/close() drive the side tab
 - does NOT persist to localStorage — the cart belongs to the bearer token, not the browser
 
@@ -1826,8 +2264,8 @@
 - updates selectedCurrency state
 - lowercases the currency before storing
 - persists the selection to localStorage under the selectedCurrency key
-- does not call the profile sync endpoint when unauthenticated (no jwt)
-- syncs the selection to the profile endpoint when authenticated
+- attaches NO client-side Authorization header — the proxy adds the session cookie
+- syncs the selection to the profile endpoint
 - silently swallows a failed profile sync (fire-and-forget, no throw)
 - on success, merges live rates over defaults (inr pinned to 1.0) and uses the returned forexList
 - falls back to DEFAULT_FOREX_LIST when the response

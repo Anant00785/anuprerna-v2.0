@@ -2,6 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { ProductZohoRelationInput } from "../types/product-zoho-relation.types.js";
+import { parseIdParamStrict, toSafeNumberId } from "../../../../common/params/id-param.js";
 
 export class CreateProductZohoRelationDto {
   @ApiProperty({ example: 200415, description: "Parent Product ID" })
@@ -90,6 +91,18 @@ function requireInt(value: unknown, field: string): number {
   return n;
 }
 
+/**
+ * Path ids go through the shared strict parser (common/params/id-param.ts):
+ * digits-only on the RAW string, converted with BigInt(string) so nothing is
+ * rounded on the way through Number(). The local `requireInt` above stays for
+ * JSON body / query fields, where an integer legitimately arrives as a number.
+ */
+function strictNumberIdParam(value: unknown, field: string): number {
+  const n = toSafeNumberId(parseIdParamStrict(value, field));
+  if (n === null) throw new BadRequestException(`${field} must be an integer.`);
+  return n;
+}
+
 function requireNonEmptyString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new BadRequestException(`${field} must be a non-empty string.`);
@@ -133,7 +146,7 @@ export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQu
 
 /** retrieveProductZohoRelationById(Long id) / retrieveProductZohoRelationDataById(Long id) / deleteProductZohoRelation(Long id) */
 export function parseIdParam(id: unknown): number {
-  return requireInt(id, "id");
+  return strictNumberIdParam(id, "id");
 }
 
 /** findProductZohoRelationByProductAndSku(Product product, String sku) */

@@ -29,6 +29,7 @@ import {
   ZOHO_ADAPTER_PORT,
   ZohoAdapterPort,
 } from "../types/finished-product.types.js";
+import { toSafeNumberId } from "../../../../common/params/id-param.js";
 
 @Injectable()
 export class FinishedProductService {
@@ -46,31 +47,63 @@ export class FinishedProductService {
     @Inject(PRODUCT_SIZE_PROFILE_PORT) private readonly productSizeProfile: ProductSizeProfilePort,
   ) {}
 
-  private async enrich(productId: number) {
-    const [productPreview, colors, materials, patterns, tags, relatedProducts, sizeProfile] = await Promise.all([
-      this.product.retrieveProduct(productId),
-      this.color.retrieveEntity(productId),
-      this.material.retrieveEntity(productId),
-      this.pattern.retrieveEntity(productId),
-      this.tag.retrieveEntity(productId),
+  /**
+   * `product.color_id` / `material_id` / `pattern_id` / `tag_id` are
+   * comma-separated id lists on the product row (fabric-product does the same
+   * split — see fabric-product.service.ts#prepareColor).
+   */
+  private static idList(csv: unknown): number[] {
+    if (typeof csv !== "string" || csv.trim() === "") return [];
+    return csv
+      .split(",")
+      .map((part) => Number(part.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0);
+  }
+
+  /**
+   * COLOR/MATERIAL/PATTERN/TAG_PORT are select-by-id over the colour, material,
+   * pattern and tag tables, and SIZE_PROFILE_PORT over size profiles — every
+   * one of them used to be handed the PRODUCT id, so five of this endpoint's
+   * ten queries looked up a foreign id in the wrong table and returned null.
+   * The ids live on the product row; read them from there, as the fabric path
+   * already does.
+   */
+  private async enrich(productId: number, known?: Record<string, unknown> | null) {
+    const product = known ?? (await this.product.retrieveProduct(productId));
+    const lookup = <T>(port: { retrieveEntity(id: number): Promise<T> }, csv: unknown) =>
+      Promise.all(FinishedProductService.idList(csv).map((id) => port.retrieveEntity(id)));
+
+    const [colors, materials, patterns, tags, relatedProducts, sizeProfile] = await Promise.all([
+      lookup(this.color, product?.colorId),
+      lookup(this.material, product?.materialId),
+      lookup(this.pattern, product?.patternId),
+      lookup(this.tag, product?.tagId),
       this.mainProductPreview.prepareRelatedProductList(productId),
-      this.sizeProfile.prepareSizeProfile(productId),
+      typeof product?.sizeProfileId === "number"
+        ? this.sizeProfile.prepareSizeProfile(product.sizeProfileId)
+        : Promise.resolve(null),
     ]);
-    return { productPreview, colors, materials, patterns, tags, relatedProducts, sizeProfile };
+    // `product` and `productPreview` are the same row: the storefront PDP reads
+    // `finishedProduct.product` (components/product/loom.ts#getFinishedProduct)
+    // and only the no-entity branch used to set it.
+    return { product, productPreview: product, colors, materials, patterns, tags, relatedProducts, sizeProfile };
   }
 
   /** retrieveFinishedProduct(Long id) */
   async retrieveFinishedProduct(id: bigint) {
-    const numId = Number(id);
+    // `findByProductId`/`retrieveProduct` take a number; an id past 2^53 would
+    // be rounded into a DIFFERENT product's row, so it is a miss, not a lookup.
+    const numId = toSafeNumberId(id);
     let entity = await this.repo.retrieveEntity(id);
-    if (!entity) {
+    if (!entity && numId !== null) {
       entity = await this.repo.findByProductId(numId);
     }
     if (!entity) {
+      if (numId === null) return null;
       const prod = await this.product.retrieveProduct(numId);
       if (prod) {
-        const enrichment = await this.enrich(numId);
-        return { ...enrichment, id: numId, productId: numId, product: prod, productPreview: prod };
+        const enrichment = await this.enrich(numId, prod);
+        return { ...enrichment, id: numId, productId: numId };
       }
       return null;
     }
@@ -84,10 +117,10 @@ export class FinishedProductService {
     if (!product) return null;
     const entity = await this.repo.findByProductId(product.id);
     if (!entity) {
-      const enrichment = await this.enrich(product.id);
-      return { ...enrichment, id: product.id, productId: product.id, product, productPreview: product };
+      const enrichment = await this.enrich(product.id, product);
+      return { ...enrichment, id: product.id, productId: product.id };
     }
-    const enrichment = await this.enrich(entity.productId);
+    const enrichment = await this.enrich(entity.productId, entity.productId === product.id ? product : null);
     return { ...entity, ...enrichment };
   }
 

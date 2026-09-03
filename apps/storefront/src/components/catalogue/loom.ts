@@ -340,7 +340,7 @@ export async function getFabricProducts(): Promise<CatalogueProduct[]> {
 export async function getFinishedProducts(): Promise<CatalogueProduct[]> {
   const entry = memCache.finished;
   if (entry && Date.now() - entry.fetchedAt < TTL_MS && entry.data.length > 0) return entry.data;
-  const data = await fetchPreviewList('/get/finished-preview-list', 'finished');
+  const data = await fetchPreviewList('/get/filter/finished', 'finished');
   if (data.length > 0) memCache.finished = { data, fetchedAt: Date.now() };
   return data;
 }

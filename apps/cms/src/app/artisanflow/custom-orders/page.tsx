@@ -12,6 +12,7 @@
 
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getCustomOrderList, BackendFetchError, type CustomOrderPreview } from "@/lib/artisanflow-api";
 import { ArtisanFlowShell } from "@/components/artisanflow/ArtisanFlowShell";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -64,7 +65,7 @@ async function getAllCustomOrders(token?: string): Promise<CustomOrderPreview[]>
 
 export default async function CustomOrdersPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
   // Bare await -> opaque Next 500 on a wrapper outage. Render the shared
   // ErrorBanner instead, like the rest of this tree.
   let orders: CustomOrderPreview[] = [];

@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import {
   getWorkflow,
   getArtisanList,
@@ -71,7 +72,7 @@ export default async function InstanceDetailPage({ params }: PageProps) {
   const { id } = await params;
   const numericId = Number(id);
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   let wf: Awaited<ReturnType<typeof getWorkflow>> = null;
   let fetchError: BackendFetchError | null = null;

@@ -25,46 +25,34 @@ export class OrderMigratedDomainController {
 
   @ApiOperation({ summary: "Paginated customer order list (V2)" })
   async get_get_customer_order_list_v2(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @ApiOperation({ summary: "Fetch complete order history" })
   async get_get_customer_order_list_all(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @ApiOperation({ summary: "Fetch orders with loyalty points history" })
   async get_get_customer_order_list_loyalty(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @ApiOperation({ summary: "Fetch customer order history (v1)" })
   async get_get_customer_order_list(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Patch("/update/order/global-note")
@@ -188,24 +176,18 @@ export class OrderMigratedDomainController {
   @ApiOperation({ summary: "Export JSON data dump of standard orders" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_data_dump_order(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.orders);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any).select().from(schema.orders);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/data-dump/order-item")
   @ApiOperation({ summary: "Export JSON data dump of order line items" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_data_dump_order_item(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.orderItem);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any).select().from(schema.orderItem);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/order-item/:id")
@@ -228,12 +210,9 @@ export class OrderMigratedDomainController {
   @ApiOperation({ summary: "Inspect OrderReviewScheduledEmail entity by ID" })
   @ApiParam({ name: "id", description: "Order Review Scheduled Email ID", example: 1, type: Number })
   async get_get_table_explorer_data_order_review_scheduled_email_id(@Param('id') id: string) {
-    try {
-      const result = await (this.db as any).select().from(schema.orderReviewScheduledEmail).where(eq(schema.orderReviewScheduledEmail.id, BigInt(id))).limit(1);
-      return keyedResponse("data", result[0] || null);
-    } catch (err) {
-      return keyedResponse("data", null);
-    }
+    const result = await (this.db as any).select().from(schema.orderReviewScheduledEmail).where(eq(schema.orderReviewScheduledEmail.id, BigInt(id))).limit(1);
+    return keyedResponse("data", result[0] || null);
+
   }
 
   @Get("/get/table-explorer/data/orders/:id")
@@ -241,26 +220,20 @@ export class OrderMigratedDomainController {
   @ApiOperation({ summary: "Inspect Orders entity by ID" })
   @ApiParam({ name: "id", description: "Order ID", example: 1, type: Number })
   async get_get_table_explorer_data_orders_id(@Param('id') id: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orders).where(eq(schema.orders.id, BigInt(id))).limit(1);
-      return keyedResponse("data", result[0] || null);
-    } catch (err) {
-      return keyedResponse("data", null);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orders).where(eq(schema.orders.id, BigInt(id))).limit(1);
+    return keyedResponse("data", result[0] || null);
+
   }
 
   @Get("/get/ads-conversion/orders")
   @ApiOperation({ summary: "Fetch ad conversion attributed order list" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_ads_conversion_orders(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orders).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orders).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/email/audit-log/order/:orderId")
@@ -268,12 +241,9 @@ export class OrderMigratedDomainController {
   @ApiParam({ name: "orderId", description: "Order ID", example: 1, type: Number })
   @RequireGate(GateCode.CODE_SU)
   async get_get_email_audit_log_order_orderId(@Param('orderId') orderId: string) {
-    try {
-      const result = await (this.db as any).select().from(schema.orders).where(eq(schema.orders.id, BigInt(orderId))).limit(1);
-      return keyedResponse("data", result[0] || null);
-    } catch (err) {
-      return keyedResponse("data", null);
-    }
+    const result = await (this.db as any).select().from(schema.orders).where(eq(schema.orders.id, BigInt(orderId))).limit(1);
+    return keyedResponse("data", result[0] || null);
+
   }
 
   @Post("/send/email/order-notification")
@@ -289,78 +259,60 @@ export class OrderMigratedDomainController {
   @ApiOperation({ summary: "Inspect OrderFulfillment entity by ID" })
   @ApiParam({ name: "id", description: "Order Fulfillment ID (e.g. 120861045)", example: 120861045, type: Number })
   async get_get_table_explorer_data_order_fulfillment_id(@Param('id') id: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderFulfillment).where(eq(schema.orderFulfillment.id, BigInt(id))).limit(1);
-      return keyedResponse("data", result[0] || null);
-    } catch (err) {
-      return keyedResponse("data", null);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orderFulfillment).where(eq(schema.orderFulfillment.id, BigInt(id))).limit(1);
+    return keyedResponse("data", result[0] || null);
+
   }
 
   @Get("/get/table-explorer/data/order-fulfillment")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-fulfillment" })
   async get_get_table_explorer_data_order_fulfillment(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderFulfillment).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orderFulfillment).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/order-item-fulfillment")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-item-fulfillment" })
   async get_get_table_explorer_data_order_item_fulfillment(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderItemFulfillment).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orderItemFulfillment).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/order-item")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-item" })
   async get_get_table_explorer_data_order_item(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderItem).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orderItem).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/order-review-scheduled-email")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/order-review-scheduled-email" })
   async get_get_table_explorer_data_order_review_scheduled_email(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orderReviewScheduledEmail).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orderReviewScheduledEmail).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Get("/get/table-explorer/data/orders")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/orders" })
   async get_get_table_explorer_data_orders(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.orders).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.orders).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
 }

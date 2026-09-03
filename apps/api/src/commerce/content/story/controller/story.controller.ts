@@ -52,7 +52,9 @@ export class StoryController {
   @ApiOperation({ summary: "List all story contents." })
   async getStoryContentList() {
     const list = await this.storyService.getStoryContentList();
-    return keyedResponse("storyContents", list);
+    // Key MUST be `storyContentList` (legacy Loom + storefront
+    // components/content-list/loom.ts). `storyContents` rendered empty.
+    return keyedResponse("storyContentList", list);
   }
 
   @Get("/get/story-content/:storyContentId")
@@ -76,7 +78,7 @@ export class StoryController {
   @ApiParam({ name: "storyId", description: "Story ID", example: 100, type: Number })
   async getRecommendedStories(@Param("storyId") storyId: string) {
     const list = await this.storyService.getRecommendedStories(BigInt(storyId));
-    return keyedResponse("storyContents", list);
+    return keyedResponse("storyContentList", list);
   }
 
   @Get("/get/stories/category/:storyCategoryId")
@@ -84,7 +86,7 @@ export class StoryController {
   @ApiParam({ name: "storyCategoryId", description: "Story Category ID", example: 1, type: Number })
   async getStoriesByCategory(@Param("storyCategoryId") storyCategoryId: string) {
     const list = await this.storyService.getStoriesByCategory(BigInt(storyCategoryId));
-    return keyedResponse("storyContents", list);
+    return keyedResponse("storyContentList", list);
   }
 
   @Get("/get/story-content-list/csv/:commaSeparatedIDList")
@@ -92,7 +94,7 @@ export class StoryController {
   @ApiParam({ name: "commaSeparatedIDList", description: "CSV ID list", example: "1,2,3", type: String })
   async getStoryContentListCsv(@Param("commaSeparatedIDList") commaSeparatedIDList: string) {
     const list = await this.storyService.getStoryContentListByCsv(commaSeparatedIDList);
-    return keyedResponse("storyContents", list);
+    return keyedResponse("storyContentList", list);
   }
 
   @Post("/add/story-content")
@@ -168,7 +170,10 @@ export class StoryController {
   @ApiParam({ name: "productId", description: "Product ID", example: 156298614, type: Number })
   async getStoryRelatedToProduct(@Param("productId") productId: string) {
     const list = await this.storyService.getStoryRelatedToProduct(BigInt(productId));
-    return keyedResponse("storyProductMappings", list);
+    // Legacy Loom returns the STORIES for a product under `storyContentList`,
+    // not the raw join rows. Verified against loom-v2
+    // /get/story/related/product/156298614 -> { storyContentList: [...] }.
+    return keyedResponse("storyContentList", list);
   }
 
   @Get("/get/product/related/story/:storyContentId")
@@ -191,8 +196,24 @@ export class StoryController {
   @ApiOperation({ summary: "Get product previews for story." })
   @ApiParam({ name: "storyContentId", description: "Story Content ID", example: 100, type: Number })
   async getStoryProductPreviews(@Param("storyContentId") storyContentId: string) {
-    const list = await this.storyService.getStoryProductPreviews(BigInt(storyContentId));
-    return keyedResponse("productPreviews", list);
+    const rows = await this.storyService.getStoryProductPreviews(BigInt(storyContentId));
+    // Legacy Loom nests this: { storyProductMapping: { storyContentId,
+    // fabricProductList, finishedProductList } } — verified against loom-v2
+    // /get/story/product-previews/161823917. The storefront reads
+    // res.storyProductMapping.fabricProductList (content-detail/loom.ts).
+    // ponytail: StoryService.getStoryProductPreviews() still returns raw
+    // story_product_mapping join rows ({id, storyContentId, productIdCsv}) —
+    // NOT product previews. Bucketing those into fabricProductList would render
+    // blank product cards, so they are dropped and the buckets stay empty until
+    // the product join lands in story.repository.ts. The SHAPE is now correct.
+    const products = (rows ?? []) as Array<Record<string, unknown>>;
+    const isPreview = (p: Record<string, unknown>) => "sku" in p || "product_group" in p;
+    const previews = products.filter(isPreview);
+    return keyedResponse("storyProductMapping", {
+      storyContentId: Number(storyContentId),
+      fabricProductList: previews.filter((p) => p.product_group !== "finished"),
+      finishedProductList: previews.filter((p) => p.product_group === "finished"),
+    });
   }
 
   @Post("/add/story-product/relation")

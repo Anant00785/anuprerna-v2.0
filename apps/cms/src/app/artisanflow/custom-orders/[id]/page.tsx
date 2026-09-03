@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import {
   getCustomOrderDetail,
   getCustomOrderFulfillmentList,
@@ -50,7 +51,7 @@ export default async function CustomOrderDetailPage({ params }: PageProps) {
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   let order: Awaited<ReturnType<typeof getCustomOrderDetail>> = null;
   try {

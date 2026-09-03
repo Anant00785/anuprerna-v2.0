@@ -34,13 +34,11 @@ export class CategoryMigratedDomainController {
   @ApiOperation({ summary: "Fetch product categories" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_category_list(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.category).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // No limit, and no catch: the previous limit(50) would have truncated the
+    // list the moment categories outgrew it, and swallowing the error made a
+    // failed query indistinguishable from an empty catalogue.
+    const result = await this.db.select().from(schema.category);
+    return keyedResponse("data", result ?? []);
   }
 
   @Get("/get/table-explorer/data/blog-content-category/:id")

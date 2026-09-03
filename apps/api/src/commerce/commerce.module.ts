@@ -62,6 +62,45 @@ import { ImpactModule } from "./impact/impact.module.js";
 import { CompatibilityModule } from "./compatibility/compatibility.module.js";
 import { MiscModule } from "./misc/misc.module.js";
 import { ProductPreviewModule } from "./product/product-preview/Product-preview.module.js";
+// Modules that existed on disk but were never imported here, so none of their
+// routes were registered and every one of them 404'd for the CMS. Each was
+// checked route-by-route before wiring: every route they add sits behind a
+// class-level RolesGuard with an explicit @RequireGate (CODE_SU / CODE_SUCU /
+// CODE_AR), so they answer 401 anonymously rather than serving data.
+//
+// PREVIOUSLY EXCLUDED FOR SECURITY, now imported — the reasons were fixed, not
+// waived. Keep reading before you touch either of them:
+//
+//   NverseModule (./nverse/nverse.module.js) — POST /nverse/{login,otp/send,
+//     otp/resend,otp/verify,email/verify} still carry no @RequireGate, and that
+//     is correct: they are the token-minting endpoints, the same shape as the
+//     already-public POST /auth/authenticate. What made them dangerous was the
+//     service behind them, and that is gone: plaintext password compare ->
+//     GatekeeperService bcrypt(pepper+password); hardcoded OTP "1234" ->
+//     MSG91 server-side verification (Msg91OtpService, port of
+//     MSG91OTPService.java) which is itself hard-gated on OUTBOUND_SMS_ENABLED;
+//     literal 'dummy-jwt-token' -> GatekeeperService#generateToken; and
+//     unconditional email-verify success -> a real single-use token check.
+//     Every anonymous failure path now returns one identical message
+//     (NVerseService.GENERIC_FAILURE), so the enumeration oracle is closed.
+//     OPEN RISK: no rate limiting — @nestjs/throttler is not a dependency. See
+//     the TODO on NVerseController before enabling OUTBOUND_SMS_ENABLED.
+//
+//   ZohoModule (./zoho/zoho.module.js) — the four POST /zoho/webhook/* handlers
+//     are now behind ZohoWebhookGuard, the NestJS equivalent of Loom's
+//     @NVerseDomainValidated User-Agent + Zoho-Request-Ip allowlist
+//     (ZohoStockSyncWebhookController.java:31-41). It fails closed and answers
+//     403 to anything that doesn't match. The handlers themselves are still
+//     log-only — no stock is synced yet — which is deliberate: this change made
+//     them authenticated, it did not port ZohoItemStockSyncService.
+import { NverseModule } from "./nverse/nverse.module.js";
+import { ZohoModule } from "./zoho/zoho.module.js";
+import { FaqModule } from "./faq/faq.module.js";
+import { SkillModule } from "./skill/skill.module.js";
+import { WorkflowModule } from "./workflow/workflow.module.js";
+import { Table_explorerModule } from "./table_explorer/table_explorer.module.js";
+import { ArtisanpaymentModule } from "./artisanpayment/artisanpayment.module.js";
+import { NotificationModule } from "./notification/notification.module.js";
 // Service layer extracted out of commerce/domain's inline-Drizzle controllers.
 import { OrderDomainService } from "./domain/order-domain.service.js";
 import { ProductDomainService } from "./domain/product-domain.service.js";
@@ -134,6 +173,18 @@ import { CustomerDomainService } from "./domain/customer-domain.service.js";
     ImpactModule,
     CompatibilityModule,
     MiscModule,
+    FaqModule,
+    SkillModule,
+    WorkflowModule,
+    ArtisanpaymentModule,
+    NotificationModule,
+    NverseModule,
+    ZohoModule,
+    // Last on purpose: TableExplorerController's `get/table-explorer/data/:tableName`
+    // is a wildcard that would otherwise shadow the per-entity table-explorer routes
+    // on the domain/faq/tag/workflow/notification controllers. It is gated CODE_SU and
+    // its service rejects anything outside table_explorer.allowlist.ts.
+    Table_explorerModule,
   ],
   exports: [
     CartModule,
@@ -167,6 +218,12 @@ import { CustomerDomainService } from "./domain/customer-domain.service.js";
     ImpactModule,
     CompatibilityModule,
     MiscModule,
+    FaqModule,
+    SkillModule,
+    WorkflowModule,
+    ArtisanpaymentModule,
+    NotificationModule,
+    Table_explorerModule,
   ],
 })
 export class CommerceModule {}

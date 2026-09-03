@@ -2,50 +2,185 @@ import { describe, it, expect } from "vitest";
 import { mapFabricFilterPreviewRow, mapFinishedFilterPreviewRow } from "./filter.mapper.js";
 
 describe("mapFabricFilterPreviewRow", () => {
-  it("maps a fully populated row, coercing snake_case DB columns to camelCase fields", () => {
-    const row = {
-      id: 1, gsm: 120, product_id: 2, sku: "SKU1", name: "Fabric",
-      price: 100, hero_image: "h.jpg", hover_image: "v.jpg", slug: "fabric",
-      unit: "METER", material: "Cotton", color: "Red", pattern: "Solid",
-      quantity: 5, is_main_product: true, segment_category: "seg", sub_category: "sub",
-      category: "cat", special_status: "NEW", volume_discount: 10,
-      volume_discount_minimum_order_quantity: 3, consumed_fabric: 2,
-      minimum_order_quantity: 1, finish_profile_item_list: [{ a: 1 }],
-      max_discount_product_price: 90, max_discount_product_discount: 5,
-      made_to_order_fabric_quantity: 4, external_quantity: 0, total_quantity: 9,
+  it("maps a fully-populated snake_case row", () => {
+    const out = mapFabricFilterPreviewRow({
+      id: 1,
+      gsm: 120,
+      product_id: 2,
+      sku: "SKU1",
+      name: "Cotton",
+      price: 100,
+      hero_image: "hero.jpg",
+      hover_image: "hover.jpg",
+      slug: "cotton",
+      unit: "METER",
+      material: "Cotton",
+      color: "Red",
+      pattern: "Solid",
+      quantity: 5,
+      is_main_product: true,
+      segment_category: "Segment",
+      sub_category: "Sub",
+      category: "Cat",
+      special_status: "New",
+      volume_discount: 10,
+      volume_discount_minimum_order_quantity: 3,
+      consumed_fabric: 1.5,
+      minimum_order_quantity: 1,
+      finish_profile_item_list: [{ id: 1 }],
+      max_discount_product_price: 90,
+      max_discount_product_discount: 10,
+      made_to_order_fabric_quantity: 2,
+      external_quantity: 4,
+      total_quantity: 9,
       product_group: "fabric",
-    };
-    const out = mapFabricFilterPreviewRow(row);
-    expect(out.id).toBe(1n);
-    expect(out.productId).toBe(2n);
-    expect(out.isMainProduct).toBe(true);
-    expect(out.finishProfileItemList).toEqual([{ a: 1 }]);
-    expect(out.productGroup).toBe("fabric");
+    });
+    expect(out).toEqual({
+      id: 1n,
+      gsm: 120,
+      productId: 2n,
+      sku: "SKU1",
+      name: "Cotton",
+      price: 100,
+      heroImage: "hero.jpg",
+      hoverImage: "hover.jpg",
+      slug: "cotton",
+      unit: "METER",
+      material: "Cotton",
+      color: "Red",
+      pattern: "Solid",
+      quantity: 5,
+      isMainProduct: true,
+      segmentCategory: "Segment",
+      subCategory: "Sub",
+      category: "Cat",
+      specialStatus: "New",
+      volumeDiscount: 10,
+      volumeDiscountMinimumOrderQuantity: 3,
+      consumedFabric: 1.5,
+      minimumOrderQuantity: 1,
+      finishProfileItemList: [{ id: 1 }],
+      maxDiscountProductPrice: 90,
+      maxDiscountProductDiscount: 10,
+      madeToOrderFabricQuantity: 2,
+      externalQuantity: 4,
+      totalQuantity: 9,
+      productGroup: "fabric",
+    });
   });
 
-  it("defaults missing/undefined fields to zero-values instead of throwing", () => {
+  it("defaults every field on an empty row", () => {
     const out = mapFabricFilterPreviewRow({});
-    expect(out.id).toBe(0n);
-    expect(out.gsm).toBe(0);
-    expect(out.sku).toBe("");
-    expect(out.isMainProduct).toBe(false);
-    expect(out.finishProfileItemList).toBeNull();
+    expect(out).toEqual({
+      id: 0n,
+      gsm: 0,
+      productId: 0n,
+      sku: "",
+      name: "",
+      price: 0,
+      heroImage: "",
+      hoverImage: "",
+      slug: "",
+      unit: "",
+      material: "",
+      color: "",
+      pattern: "",
+      quantity: 0,
+      isMainProduct: false,
+      segmentCategory: "",
+      subCategory: "",
+      category: "",
+      specialStatus: "",
+      volumeDiscount: 0,
+      volumeDiscountMinimumOrderQuantity: 0,
+      consumedFabric: 0,
+      minimumOrderQuantity: 0,
+      finishProfileItemList: null,
+      maxDiscountProductPrice: 0,
+      maxDiscountProductDiscount: 0,
+      madeToOrderFabricQuantity: 0,
+      externalQuantity: 0,
+      totalQuantity: 0,
+      productGroup: "",
+    });
   });
 });
 
 describe("mapFinishedFilterPreviewRow", () => {
-  it("maps a fully populated row", () => {
-    const row = { id: 5, sku: "SKU2", name: "Finished", price: 200, size_profile_id: 7 };
-    const out = mapFinishedFilterPreviewRow(row);
-    expect(out.id).toBe(5n);
-    expect(out.sizeProfileId).toBe(7n);
-    expect(out.price).toBe(200);
+  it("maps a fully-populated snake_case row", () => {
+    const out = mapFinishedFilterPreviewRow({
+      id: 1,
+      sku: "SKU2",
+      name: "Shirt",
+      price: 500,
+      hero_image: "hero.jpg",
+      hover_image: "hover.jpg",
+      slug: "shirt",
+      unit: "PIECE",
+      material: "Cotton",
+      color: "Blue",
+      pattern: "Check",
+      quantity: 3,
+      is_main_product: false,
+      segment_category: "Segment",
+      sub_category: "Sub",
+      special_status: "Sale",
+      external_quantity: 1,
+      total_quantity: 4,
+      volume_discount: 5,
+      volume_discount_minimum_order_quantity: 2,
+      made_to_order_profile_consumed_fabric: 1.2,
+      minimum_order_quantity: 1,
+      made_to_order_fabric_quantity: 2,
+      size_profile_id: 7,
+      size_profile_option_list: [{ id: 1 }],
+      product_size_profile_option_list: [{ id: 2 }],
+      made_to_order_fabric_price: 50,
+      category: "Cat",
+      made_to_order_fabric_discount: 5,
+      product_group: "finished",
+    });
+    expect(out).toEqual({
+      id: 1n,
+      sku: "SKU2",
+      name: "Shirt",
+      price: 500,
+      heroImage: "hero.jpg",
+      hoverImage: "hover.jpg",
+      slug: "shirt",
+      unit: "PIECE",
+      material: "Cotton",
+      color: "Blue",
+      pattern: "Check",
+      quantity: 3,
+      isMainProduct: false,
+      segmentCategory: "Segment",
+      subCategory: "Sub",
+      specialStatus: "Sale",
+      externalQuantity: 1,
+      totalQuantity: 4,
+      volumeDiscount: 5,
+      volumeDiscountMinimumOrderQuantity: 2,
+      madeToOrderProfileConsumedFabric: 1.2,
+      minimumOrderQuantity: 1,
+      madeToOrderFabricQuantity: 2,
+      sizeProfileId: 7n,
+      sizeProfileOptionList: [{ id: 1 }],
+      productSizeProfileOptionList: [{ id: 2 }],
+      madeToOrderFabricPrice: 50,
+      category: "Cat",
+      madeToOrderFabricDiscount: 5,
+      productGroup: "finished",
+    });
   });
 
-  it("defaults missing fields to zero-values", () => {
+  it("defaults nullable list fields to null and numerics to 0 on an empty row", () => {
     const out = mapFinishedFilterPreviewRow({});
+    expect(out.sizeProfileOptionList).toBeNull();
+    expect(out.productSizeProfileOptionList).toBeNull();
+    expect(out.madeToOrderFabricDiscount).toBeNull();
     expect(out.id).toBe(0n);
     expect(out.sizeProfileId).toBe(0n);
-    expect(out.madeToOrderFabricDiscount).toBeNull();
+    expect(out.totalQuantity).toBe(0);
   });
 });
