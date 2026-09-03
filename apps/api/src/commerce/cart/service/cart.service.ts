@@ -23,7 +23,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { CartRepository, OptimisticLockError } from "../repository/cart.repository.js";
 import { toInsertValues, toUpdateValues } from "../mapper/cart.mapper.js";
 import { AddCartItemRequest, UpdateCartItemRequest } from "../dto/cart.dto.js";
-import { ActionCode } from "../../../common/errors/action-code";
+import { ActionCode } from "../../../common/errors/action-code.js";
 import { eq } from "drizzle-orm";
 import { cartItem, product, productFabric, productFinished } from "../../../database/schema/schema.js";
 import {
