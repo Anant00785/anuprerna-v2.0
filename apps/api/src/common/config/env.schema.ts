@@ -185,6 +185,23 @@ export class EnvironmentVariables {
   /** Legacy name read directly by zoho.service.ts today; kept for the mechanical refactor. */
   @IsOptional() @IsString() ZOHO_API_BASE_URL?: string;
 
+  // Zoho webhook caller allowlist — the NestJS equivalent of Loom's
+  // @NVerseDomainValidated(headerKeys={"User-Agent","Zoho-Request-Ip"},
+  // headerValues={"ZohoBooks-Agent","103.89.74.49"}) on
+  // ZohoStockSyncWebhookController.java:31-41. Defaults are the Loom literals;
+  // they are env-driven so a Zoho renumbering is a config change, not a deploy.
+  // ZohoWebhookGuard FAILS CLOSED if either is blank.
+  @IsOptional() @IsString() ZOHO_WEBHOOK_USER_AGENT: string = "ZohoBooks-Agent";
+  /** Comma-separated. Checked against the Zoho-Request-Ip header (and the peer address when the flag below is on). */
+  @IsOptional() @IsString() ZOHO_WEBHOOK_ALLOWED_IPS: string = "103.89.74.49";
+  /**
+   * Additionally require the transport-level source address to be in the
+   * allowlist. Off by default: behind AWS App Runner the peer is the platform
+   * proxy, so this needs Express `trust proxy` set in main.ts first, otherwise
+   * every legitimate webhook is rejected.
+   */
+  @IsOptional() @IsBoolean() @booleanFlag() ZOHO_WEBHOOK_ENFORCE_PEER_IP: boolean = false;
+
   // ---------------------------------------------------------------------
   // AI / misc integrations named in the mapping table but not yet wired
   // to any service (Phase 5, droppable) — validated now so the schema is

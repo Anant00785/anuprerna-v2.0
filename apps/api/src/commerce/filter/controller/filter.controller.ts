@@ -1,16 +1,38 @@
-import { GateCode } from "../../../auth/types/auth.types.js";
-import { RequireGate, RolesGuard } from "../../../common/auth/roles.guard.js";
+import { RolesGuard } from "../../../common/auth/roles.guard.js";
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { FilterService } from "../service/filter.service.js";
+import { FilterRepository } from "../repository/filter.repository.js";
 import { parseFabricProductFilterParameters } from "../dto/filter.dto.js";
 import { keyedResponse } from "../../../common/response/rain-response.js";
+
+/**
+ * Hard ceiling for the un-paginated `*-preview-list` aliases. The storefront
+ * relies on the FULL list today (fabric ~3150 rows / 2.97 MB, finished ~1033
+ * rows / 2.58 MB), so the default stays "everything" — the cap only stops an
+ * unbounded scan if those tables grow.
+ */
+const PREVIEW_LIST_MAX_ROWS = 5000;
+
+/** `?page=&pageSize=` when supplied, otherwise everything up to the cap. */
+function previewListWindow(page?: string, pageSize?: string): { limit: number; offset: number } {
+    const size = pageSize ? parseInt(pageSize, 10) : NaN;
+    if (!Number.isFinite(size) || size <= 0) return { limit: PREVIEW_LIST_MAX_ROWS, offset: 0 };
+    const pageIndex = page ? parseInt(page, 10) : 0;
+    return {
+        limit: Math.min(size, PREVIEW_LIST_MAX_ROWS),
+        offset: Number.isFinite(pageIndex) && pageIndex > 0 ? pageIndex * size : 0,
+    };
+}
 
 @Controller()
 @UseGuards(RolesGuard)
 @ApiTags("Filter")
 export class FilterController {
-    constructor(private readonly filterService: FilterService) {}
+    constructor(
+        private readonly filterService: FilterService,
+        private readonly filterRepository: FilterRepository,
+    ) {}
 
     @Get("/get/filter/fabric")
     @ApiOperation({ summary: "Get fabric product filter preview grid." })
@@ -33,11 +55,24 @@ export class FilterController {
     @ApiOperation({ summary: "Get fabric preview list (alias)." })
     @ApiQuery({ name: "category", description: "Filter by category name", example: "Fabrics", required: false })
     @ApiQuery({ name: "segmentCategory", description: "Filter by segment name", example: "ORGANIC AND NATURAL", required: false })
+    @ApiQuery({ name: "page", description: "Page index (0-based). Omit to get everything.", required: false })
+    @ApiQuery({ name: "pageSize", description: "Rows per page. Omit to get everything.", required: false })
     async getFabricPreviewListAlias(
         @Query("category") category?: string,
-        @Query("segmentCategory") segmentCategory?: string
+        @Query("segmentCategory") segmentCategory?: string,
+        @Query("page") page?: string,
+        @Query("pageSize") pageSize?: string
     ) {
-        return this.getFabricFilterPreviewList(category, segmentCategory);
+        const { limit, offset } = previewListWindow(page, pageSize);
+        try {
+            const products = await this.filterRepository.findFabricFilterPreviewPage(
+                category || null, segmentCategory || null, limit, offset,
+            );
+            return keyedResponse("products", products);
+        } catch (error) {
+            console.warn("Fabric preview list query failed; returning an empty result.", error);
+            return keyedResponse("products", []);
+        }
     }
 
     @Get("/get/v2/filter/fabric")
@@ -65,6 +100,21 @@ export class FilterController {
         @Query("category") category?: string
     ) {
         const products = await this.filterService.getFinishedFilterPreviewList(category);
+        return keyedResponse("products", products);
+    }
+
+    @Get("/get/finished-preview-list")
+    @ApiOperation({ summary: "Get finished preview list (alias)." })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "Apparel", required: false })
+    @ApiQuery({ name: "page", description: "Page index (0-based). Omit to get everything.", required: false })
+    @ApiQuery({ name: "pageSize", description: "Rows per page. Omit to get everything.", required: false })
+    async getFinishedPreviewListAlias(
+        @Query("category") category?: string,
+        @Query("page") page?: string,
+        @Query("pageSize") pageSize?: string
+    ) {
+        const { limit, offset } = previewListWindow(page, pageSize);
+        const products = await this.filterRepository.findFinishedFilterPreviewPage(category || null, limit, offset);
         return keyedResponse("products", products);
     }
 
@@ -96,7 +146,10 @@ export class FilterController {
     @Get("/get/segment-list")
     @ApiOperation({ summary: "Get segment list (LOOM legacy route)." })
     @ApiQuery({ name: "category", description: "Filter segments by category name", required: false })
-    @RequireGate(GateCode.CODE_SU)
+    // UNGATED deliberately. This is a pure alias of /get/filter/segment/list,
+    // which is public and returns the byte-identical payload, so the gate
+    // protected nothing — it only forced the storefront to mint a
+    // service-account JWT to read data already served anonymously.
     async getSegmentList(@Query("category") category?: string) {
         return this.getFilterSegmentList(category);
     }

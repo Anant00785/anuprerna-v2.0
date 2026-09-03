@@ -10,8 +10,11 @@ export class ReviewService {
     return this.reviewRepository.findById(id);
   }
 
-  async findStatistics() {
-    return this.reviewRepository.findStatistics();
+  /** Global statistics, or — with a productId — that product's own. */
+  async findStatistics(productId?: number | null) {
+    if (productId === undefined) return this.reviewRepository.findStatistics();
+    if (productId === null) return { count: 0, rating: 0 };
+    return this.reviewRepository.findStatistics(productId);
   }
 
   async findApprovedReviews(page: number, size: number) {
@@ -22,58 +25,24 @@ export class ReviewService {
     return this.reviewRepository.findReviewsByStatus(status, page, size);
   }
 
+  /**
+   * A product's OWN approved reviews — nothing else.
+   *
+   * This used to run a five-stage cascade that padded the result up to
+   * `size` (default 100) with reviews of other products in the same
+   * sub-category, then the same category, then any fabric product, then
+   * "generic" reviews, and finally — if all of that produced nothing — the
+   * newest approved reviews site-wide. Measured on real data: product
+   * 162853313 returned 100 reviews spanning 95 distinct products and none of
+   * its own, and the nonexistent product 999999 returned the same 100. Every
+   * PDP was presenting other products' reviews as its own, so the cascade is
+   * gone rather than moved behind a second response key: none of those
+   * reviews is about this product, and the "generic" (product_id IS NULL)
+   * bucket that could honestly be labelled is empty in production (0 of 296
+   * approved rows).
+   */
   async findProductReviews(productId: number, page: number, size: number) {
-    try {
-      let results: any[] = [];
-      
-      const productReviews = await this.reviewRepository.findProductReviews(productId, page, size);
-      if (Array.isArray(productReviews)) {
-        results = [...productReviews];
-      }
-      
-      if (results.length < size) {
-        const subCategoryReviews = await this.reviewRepository.findReviewsBySubCategory(productId, page, size - results.length);
-        if (Array.isArray(subCategoryReviews)) {
-          results = [...results, ...subCategoryReviews];
-        }
-      }
-      
-      if (results.length < size) {
-        const categoryReviews = await this.reviewRepository.findReviewsByCategory(productId, page, size - results.length);
-        if (Array.isArray(categoryReviews)) {
-          results = [...results, ...categoryReviews];
-        }
-      }
-      
-      if (results.length < size) {
-        const isFinished = await this.reviewRepository.isProductFinished(productId);
-        if (isFinished) {
-          const fabricReviews = await this.reviewRepository.findFabricReviews(page, size - results.length);
-          if (Array.isArray(fabricReviews)) {
-            results = [...results, ...fabricReviews];
-          }
-        }
-      }
-      
-      if (results.length < size) {
-        const genericReviews = await this.reviewRepository.findGenericReviews(page, size - results.length);
-        if (Array.isArray(genericReviews)) {
-          results = [...results, ...genericReviews];
-        }
-      }
-      
-      if (results.length === 0) {
-        const fallbackReviews = await this.reviewRepository.findApprovedReviews(page, size);
-        if (Array.isArray(fallbackReviews)) {
-          results = fallbackReviews;
-        }
-      }
-      
-      return results;
-    } catch (err) {
-      console.error("[findProductReviews error]:", err);
-      return [];
-    }
+    return this.reviewRepository.findProductReviews(productId, page, size);
   }
 
   async findPaginated(page: number, size: number) {

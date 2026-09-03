@@ -4,7 +4,7 @@ import { validate } from "./env.schema.js";
 // Fixture values only — never a real secret. See docs/TESTING.md.
 const baseValidConfig = {
   DATABASE_URL: "postgres://user:pass@localhost:5432/test",
-  AUTH_JWT_SECRET: "test-secret",
+  AUTH_JWT_SECRET: "test-secret-at-least-32-chars-long!!",
 };
 
 // Assembled at runtime rather than written as a literal: gitleaks' stripe rule
@@ -21,7 +21,7 @@ describe("env.schema validate()", () => {
   });
 
   it("fails naming the missing required key when DATABASE_URL is absent", () => {
-    expect(() => validate({ AUTH_JWT_SECRET: "test-secret" })).toThrow(/DATABASE_URL/);
+    expect(() => validate({ AUTH_JWT_SECRET: "test-secret-at-least-32-chars-long!!" })).toThrow(/DATABASE_URL/);
   });
 
   it("fails naming the missing required key when AUTH_JWT_SECRET is absent", () => {
@@ -30,7 +30,7 @@ describe("env.schema validate()", () => {
 
   it("never includes a secret value in the thrown error message", () => {
     try {
-      validate({ AUTH_JWT_SECRET: "test-secret" });
+      validate({ AUTH_JWT_SECRET: "test-secret-at-least-32-chars-long!!" });
       expect.fail("expected validate() to throw");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

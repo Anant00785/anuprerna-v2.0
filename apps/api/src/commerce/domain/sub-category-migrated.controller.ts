@@ -1,9 +1,8 @@
 import * as schema from "../../database/schema/schema.js";
-import { eq } from "drizzle-orm";
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, Inject, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Query, Inject, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
-import { keyedResponse, simpleResponse } from "../../common/response/rain-response.js";
+import { keyedResponse } from "../../common/response/rain-response.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
 
@@ -14,27 +13,20 @@ import { GateCode } from "../../auth/types/auth.types.js";
 export class SubCategoryMigratedDomainController {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: Database) {}
 
-  @ApiOperation({ summary: "Fetch featured sub-categories for landing pages" })
-  async get_get_featured_categoryName_sub_category(@Param('categoryName') categoryName: string) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
-  }
+  // `get_get_featured_categoryName_sub_category` was removed: it carried no
+  // @Get decorator, so it was never routed, and its body ignored the
+  // categoryName param and selected from `product` instead of `sub_category`.
+  // Dead, wrong, and unreachable — see git history if the landing-page
+  // "featured sub-categories" idea is ever picked up for real.
 
   @Get("/get/sub-category-list")
   @ApiOperation({ summary: "Fetch sub-categories" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_sub_category_list(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.subCategory).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // No limit: there are 98 sub_category rows and the previous limit(50)
+    // silently served the CMS fewer than half of them. Errors propagate —
+    // returning an empty list made a failed query look like an empty table.
+    const result = await this.db.select().from(schema.subCategory);
+    return keyedResponse("data", result ?? []);
   }
 }

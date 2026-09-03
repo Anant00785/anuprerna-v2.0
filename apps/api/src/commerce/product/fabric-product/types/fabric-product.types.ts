@@ -231,21 +231,33 @@ export interface ProductZohoTriggerDataInput {
 export interface ColorPort {
   /** ColorDAOController#retrieveEntity(id) */
   retrieveEntity(id: number): Promise<unknown | null>;
+
+  /** Batched form of the above — one `WHERE id = ANY($1)` instead of one query per CSV token. Order not guaranteed; callers map by id. */
+  retrieveEntities(ids: number[]): Promise<{ id: number }[]>;
 }
 
 export interface MaterialPort {
   /** MaterialDAOController#retrieveEntity(id) */
   retrieveEntity(id: number): Promise<unknown | null>;
+
+  /** Batched form of the above — one `WHERE id = ANY($1)` instead of one query per CSV token. Order not guaranteed; callers map by id. */
+  retrieveEntities(ids: number[]): Promise<{ id: number }[]>;
 }
 
 export interface PatternPort {
   /** PatternDAOController#retrieveEntity(id) */
   retrieveEntity(id: number): Promise<unknown | null>;
+
+  /** Batched form of the above — one `WHERE id = ANY($1)` instead of one query per CSV token. Order not guaranteed; callers map by id. */
+  retrieveEntities(ids: number[]): Promise<{ id: number }[]>;
 }
 
 export interface TagPort {
   /** TagDAOController#retrieveEntity(id) — Tag is marked complete in MIGRATION_CHECKPOINT.md, but its TS output wasn't available to import here; see module header. */
   retrieveEntity(id: number): Promise<unknown | null>;
+
+  /** Batched form of the above — one `WHERE id = ANY($1)` instead of one query per CSV token. Order not guaranteed; callers map by id. */
+  retrieveEntities(ids: number[]): Promise<{ id: number }[]>;
 }
 
 export interface MainProductPreviewPort {

@@ -1,5 +1,6 @@
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards, NotFoundException } from "@nestjs/common";
+import { parseIdParamStrict, toSafeNumberId } from "../../../common/params/id-param.js";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
@@ -19,18 +20,29 @@ export class ReviewController {
 
   @Get("/get/review/stats")
   @ApiOperation({ summary: "Get aggregated review statistics and ratings distribution." })
+  @ApiQuery({ name: "productId", required: false, type: Number, description: "Scope the statistics to one product." })
   @ApiResponse({ status: 200, description: "Review statistics." })
-  async retrieveReviewStats() {
-    const stats = await this.reviewService.findStatistics();
-    return keyedResponse("statistics", stats);
+  async retrieveReviewStats(@Query("productId") productId?: string) {
+    // The storefront (apps/storefront/src/components/product/loom.ts) calls
+    // this with ?productId= for the PDP rating line and reads `reviewStats`.
+    // It used to be answered with one site-wide figure under `statistics`, so
+    // every product showed the same count/rating and the FE read undefined.
+    const scoped = productId === undefined || productId === ""
+      ? undefined
+      : toSafeNumberId(parseIdParamStrict(productId, "productId"));
+    const stats = await this.reviewService.findStatistics(scoped);
+    return keyedResponse("reviewStats", stats);
   }
 
   @Get("/get/review/:reviewId")
   @ApiOperation({ summary: "Get review details by review ID." })
   @ApiParam({ name: "reviewId", type: Number, description: "Review unique identifier", example: 1 })
   @ApiResponse({ status: 200, description: "Review details." })
+  @ApiResponse({ status: 400, description: "Malformed review id." })
+  @ApiResponse({ status: 404, description: "No such review." })
   async retrieveReview(@Param("reviewId") reviewId: string) {
-    const review = await this.reviewService.findById(BigInt(reviewId));
+    const review = await this.reviewService.findById(parseIdParamStrict(reviewId, "reviewId"));
+    if (!review) throw new NotFoundException(`Review ${reviewId} not found.`);
     return keyedResponse("review", review);
   }
 
@@ -54,16 +66,12 @@ export class ReviewController {
     @Query("pageNumber") pageNumber = "0",
     @Query("pageSize") pageSize = "100"
   ) {
-    try {
-      const pId = parseInt(productId, 10) || 0;
-      const page = parseInt(pageNumber, 10) || 0;
-      const size = parseInt(pageSize, 10) || 100;
-      const reviews = await this.reviewService.findProductReviews(pId, page, size);
-      return keyedResponse("reviewList", reviews || []);
-    } catch (err) {
-      console.error("[retrieveProductReviewsForCustomer error]:", err);
-      return keyedResponse("reviewList", []);
-    }
+    const pId = toSafeNumberId(parseIdParamStrict(productId, "productId"));
+    if (pId === null) return keyedResponse("reviewList", []);
+    const page = parseInt(pageNumber, 10) || 0;
+    const size = parseInt(pageSize, 10) || 100;
+    const reviews = await this.reviewService.findProductReviews(pId, page, size);
+    return keyedResponse("reviewList", reviews);
   }
 
   @Get("/get/super-user/review")
@@ -90,7 +98,8 @@ export class ReviewController {
   @Get("/get/table-explorer/data/review/:id")
   @RequireGate(GateCode.CODE_SU)
   async getReviewById(@Param("id") id: string) {
-    const review = await this.reviewService.findById(BigInt(id));
+    const review = await this.reviewService.findById(parseIdParamStrict(id, "id"));
+    if (!review) throw new NotFoundException(`Review ${id} not found.`);
     return keyedResponse("review", review);
   }
 

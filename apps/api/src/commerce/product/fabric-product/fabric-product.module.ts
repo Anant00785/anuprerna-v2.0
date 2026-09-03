@@ -34,7 +34,7 @@ import { eq } from "drizzle-orm";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
-import { lookupById } from "../../shared/db-lookup.js";
+import { lookupById, lookupByIds } from "../../shared/db-lookup.js";
 import { ProfileModule } from "../../profile/profile.module.js";
 import { ProfileService } from "../../profile/service/profile.service.js";
 import { FabricProductController } from "../controller/fabric-product.controller.js";
@@ -44,7 +44,6 @@ import { MainProductPreviewService } from "../product-preview/service/main-produ
 import { ProductZohoRelationModule } from "../product-zoho-relation/product-zoho-relation.module.js";
 import { ProductZohoRelationService } from "../product-zoho-relation/service/product-zoho-relation.service.js";
 import { SegmentModule } from "../segment/segment.module.js";
-import { SegmentService } from "../segment/service/segment.service.js";
 import { SubCategoryModule } from "../sub-category/subcategory.module.js";
 import { SubCategoryService } from "../sub-category/service/subCategory.service.js";
 import { FabricProductService } from "./service/fabric-product.service.js";
@@ -68,10 +67,17 @@ import {
   ZohoAdapterPort,
 } from "./types/fabric-product.types.js";
 
-/** `retrieveEntity(id)` port over one table — a real select-by-id, not a stub. */
+/**
+ * `retrieveEntity(id)` / `retrieveEntities(ids)` port over one table — a real
+ * select-by-id, not a stub. The batched form exists because the CSV columns
+ * (color_id, material_id, ...) used to be resolved one round-trip per token.
+ */
 const tableLookup = (token: symbol, table: unknown) => ({
   provide: token,
-  useFactory: (db: Database) => ({ retrieveEntity: lookupById(db, table as never) }),
+  useFactory: (db: Database) => ({
+    retrieveEntity: lookupById(db, table as never),
+    retrieveEntities: lookupByIds(db, table as never),
+  }),
   inject: [DATABASE_CONNECTION],
 });
 
@@ -126,21 +132,47 @@ const zohoNotImplemented = (operation: string) => async (): Promise<never> => {
        * Source loads `fabricProfile.fabricProfileItemList` and sets each
        * item's `fabricPreview.totalQuantity = quantity + externalQuantity`
        * in place. Same two columns, joined here.
+       *
+       * `fabricPreview` is a PROJECTION, not the whole product row. A fabric
+       * profile averages 664 sibling products and peaks at 2712; embedding
+       * every column made one PDP ship 2.5 MB (8 MB at the tail) of fields no
+       * client reads. The columns kept below are exactly what the fabric
+       * picker consumes — verified against the storefront:
+       *   CustomizationCard.tsx (id, name, slug, price, heroImage)
+       *   ProductCustomFabricProfile.tsx (+ sku, totalQuantity, specialStatus)
+       *   product/loom.ts leanFabricProfile (id, name, slug, price, heroImage)
+       *   pdp/ProductDetailPage.tsx, ProductLightGallery.tsx (heroImage, totalQuantity)
+       * `specialStatusId` is carried because that is all the product row has
+       * (the resolved `specialStatus` object is assembled elsewhere); `unit`
+       * and `disabled` are kept because the picker prices and filters on them.
        */
       provide: FABRIC_PROFILE_ENRICH_PORT,
       useFactory: (db: Database): FabricProfileEnrichPort => ({
         retrieveEnrichedItems: async (fabricProfileId) => {
           const rows = await db
-            .select({ item: schema.fabricProfileItem, product: schema.product })
+            .select({
+              item: schema.fabricProfileItem,
+              id: schema.product.id,
+              sku: schema.product.sku,
+              name: schema.product.name,
+              slug: schema.product.slug,
+              price: schema.product.price,
+              unit: schema.product.unit,
+              heroImage: schema.product.heroImage,
+              disabled: schema.product.disabled,
+              specialStatusId: schema.product.specialStatusId,
+              quantity: schema.product.quantity,
+              externalQuantity: schema.product.externalQuantity,
+            })
             .from(schema.fabricProfileItem)
             .innerJoin(schema.product, eq(schema.fabricProfileItem.productId, schema.product.id))
             .where(eq(schema.fabricProfileItem.profileId, fabricProfileId));
 
-          return rows.map(({ item, product }) => ({
+          return rows.map(({ item, ...fabricPreview }) => ({
             ...item,
             fabricPreview: {
-              ...product,
-              totalQuantity: Number(product.quantity ?? 0) + Number(product.externalQuantity ?? 0),
+              ...fabricPreview,
+              totalQuantity: Number(fabricPreview.quantity ?? 0) + Number(fabricPreview.externalQuantity ?? 0),
             },
           }));
         },
@@ -149,21 +181,33 @@ const zohoNotImplemented = (operation: string) => async (): Promise<never> => {
     },
     {
       provide: SUB_CATEGORY_HIERARCHY_PORT,
-      useFactory: (
-        subCategories: SubCategoryService,
-        segments: SegmentService,
-        db: Database,
-      ): SubCategoryHierarchyPort => ({
+      useFactory: (subCategories: SubCategoryService, db: Database): SubCategoryHierarchyPort => ({
+        /**
+         * Was three strictly sequential round-trips (sub_category -> segment
+         * -> category), ~300ms each against Neon. The segment and category
+         * legs are now one LEFT JOIN.
+         *
+         * The sub_category leg still goes through SubCategoryService because
+         * its row->entity mapping (`mapRowToEntity` in
+         * sub-category/repository/subCategory.repository.ts) is module-private
+         * — inlining a copy here to fold it into the same join would duplicate
+         * that mapping. Export it and this collapses to a single query.
+         */
         retrieveHierarchy: async (subCategoryId) => {
           const subCategory = await subCategories.retrieveSubCategory(BigInt(subCategoryId));
           if (!subCategory) return null;
-          const segment = await segments.retrieveSegmentById(subCategory.segmentId);
-          if (!segment) return { subCategory, segment: null, category: null };
-          const category = await lookupById(db, schema.category)(segment.categoryId);
-          return { subCategory, segment, category };
+          const rows = await db
+            .select({ segment: schema.segment, category: schema.category })
+            .from(schema.segment)
+            .leftJoin(schema.category, eq(schema.segment.categoryId, schema.category.id))
+            .where(eq(schema.segment.id, BigInt(subCategory.segmentId)))
+            .limit(1);
+          const row = rows[0];
+          if (!row) return { subCategory, segment: null, category: null };
+          return { subCategory, segment: row.segment, category: row.category };
         },
       }),
-      inject: [SubCategoryService, SegmentService, DATABASE_CONNECTION],
+      inject: [SubCategoryService, DATABASE_CONNECTION],
     },
     {
       provide: FABRIC_PRODUCT_ZOHO_RELATION_PORT,

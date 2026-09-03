@@ -25,7 +25,10 @@ export class SettingsController {
   async getAllSettings() {
     try {
       const settings = await this.settingsService.getAllSettings();
-      return keyedResponse('settings', settings);
+      // Key MUST be `settingsList` — legacy Loom emits that and both the
+      // storefront (components/catalogue/loom.ts) and CMS (lib/admin-api.ts)
+      // read `settingsList`. `settings` rendered empty everywhere.
+      return keyedResponse('settingsList', settings);
     } catch (e: any) {
       throw new HttpException(simpleResponse(false, e.message), HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -16,7 +16,9 @@ describeGates(
   "FabricProductController",
   FabricProductController as never,
   [
-    ["getFabricProductBySlugV2", GateCode.CODE_SU],
+    // getFabricProductBySlugV2 is deliberately ungated — see the controller. It
+    // returns the same product as the public v1 slug route, so the gate only
+    // 401'd the storefront PDP while protecting nothing.
     ["getFabricProductData", GateCode.CODE_SU],
     // loom FabricProductController.getFabricOverviewList -> getEntity(..., CODE_SU,
     // UNAUTH_FABRIC_OVERVIEW_LIST_REQUEST). No frontend calls it, so the gate is safe.
@@ -26,5 +28,5 @@ describeGates(
     ["disableFabricProduct", GateCode.CODE_SU],
     ["triggerZohoWorkflow", GateCode.CODE_SU],
   ],
-  ["getFabricProduct", "getFabricProductBySlug", "getFabricFilterPreview", "getFabricFilterPreviewPage", "getFabricFilterPreviewByIds", "getFabricFilterPreviewFiltered"],
+  ["getFabricProduct", "getFabricProductBySlug", "getFabricProductBySlugV2", "getFabricFilterPreview", "getFabricFilterPreviewPage", "getFabricFilterPreviewByIds", "getFabricFilterPreviewFiltered"],
 );

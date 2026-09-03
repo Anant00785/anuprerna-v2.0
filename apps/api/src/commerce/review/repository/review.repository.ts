@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
-import { eq, and, sql, desc, isNull, ne } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ReviewInput } from "../dto/review.dto.js";
 
@@ -45,8 +45,10 @@ export class ReviewRepository {
     return rows[0] ? formatReview(rows[0]) : null;
   }
 
-  async findStatistics() {
-    const query = sql`SELECT COUNT(r.id) AS count, CEIL(COALESCE(AVG(r.rating), 0)) AS rating FROM review r WHERE r.status = 'APPROVED'`;
+  /** Site-wide when `productId` is omitted; that product's own otherwise. */
+  async findStatistics(productId?: number) {
+    const scope = productId === undefined ? sql`` : sql` AND r.product_id = ${productId}`;
+    const query = sql`SELECT COUNT(r.id) AS count, CEIL(COALESCE(AVG(r.rating), 0)) AS rating FROM review r WHERE r.status = 'APPROVED'${scope}`;
     const res = await this.db.execute(query);
     const rows = Array.isArray(res) ? res : (res?.rows || []);
     if (rows.length === 0) return { count: 0, rating: 0 };
@@ -72,96 +74,12 @@ export class ReviewRepository {
     return rows.map(formatReview);
   }
 
-  async findGenericReviews(page: number, size: number) {
-    const rows = await this.db.select().from(schema.review)
-        .where(and(isNull(schema.review.productId), eq(schema.review.status, 'APPROVED')))
-        .orderBy(desc(schema.review.createdAt))
-        .limit(size).offset(page * size);
-    return rows.map(formatReview);
-  }
-
   async findProductReviews(productId: number, page: number, size: number) {
     const rows = await this.db.select().from(schema.review)
         .where(and(eq(schema.review.productId, productId), eq(schema.review.status, 'APPROVED')))
         .orderBy(desc(schema.review.createdAt))
         .limit(size).offset(page * size);
     return rows.map(formatReview);
-  }
-
-  async findReviewsBySubCategory(productId: number, page: number, size: number) {
-    try {
-      const query = sql`
-          SELECT r.* FROM review r
-          JOIN product p ON r.product_id = p.id
-          WHERE p.sub_category_id = (SELECT sub_category_id FROM product WHERE id = ${productId})
-          AND p.id != ${productId}
-          AND r.status = 'APPROVED'
-          ORDER BY r.created_at DESC
-          LIMIT ${size} OFFSET ${page * size}
-      `;
-      const res = await this.db.execute(query);
-      const rows = Array.isArray(res) ? res : (res?.rows || []);
-      return rows.map(formatReview);
-    } catch {
-      return [];
-    }
-  }
-
-  async findReviewsByCategory(productId: number, page: number, size: number) {
-    try {
-      const query = sql`
-          SELECT r.* FROM review r
-          JOIN product p ON r.product_id = p.id
-          JOIN sub_category sc ON p.sub_category_id = sc.id
-          JOIN segment s ON sc.segment_id = s.id
-          JOIN category c ON s.category_id = c.id
-          WHERE c.id = (SELECT c2.id FROM category c2
-          JOIN segment s2 ON c2.id = s2.category_id
-          JOIN sub_category sc2 ON s2.id = sc2.segment_id
-          JOIN product p2 ON sc2.id = p2.sub_category_id
-          WHERE p2.id = ${productId})
-          AND p.id != ${productId}
-          AND sc.id != (SELECT p2.sub_category_id FROM product p2 WHERE p2.id = ${productId})
-          AND r.status = 'APPROVED'
-          ORDER BY r.created_at DESC
-          LIMIT ${size} OFFSET ${page * size}
-      `;
-      const res = await this.db.execute(query);
-      const rows = Array.isArray(res) ? res : (res?.rows || []);
-      return rows.map(formatReview);
-    } catch {
-      return [];
-    }
-  }
-
-  async findFabricReviews(page: number, size: number) {
-    try {
-      const query = sql`
-          SELECT r.* FROM review r
-          JOIN product p ON r.product_id = p.id
-          WHERE p.product_group = 'fabric'
-          AND r.status = 'APPROVED'
-          ORDER BY r.created_at DESC
-          LIMIT ${size} OFFSET ${page * size}
-      `;
-      const res = await this.db.execute(query);
-      const rows = Array.isArray(res) ? res : (res?.rows || []);
-      return rows.map(formatReview);
-    } catch {
-      return [];
-    }
-  }
-
-  async isProductFinished(productId: number): Promise<boolean> {
-    try {
-      const query = sql`SELECT product_group FROM product WHERE id = ${productId}`;
-      const res = await this.db.execute(query);
-      const rows = Array.isArray(res) ? res : (res?.rows || []);
-      if (rows.length === 0) return false;
-      return rows[0].product_group === 'finished';
-    } catch {
-      return false;
-    }
   }
 
   async findPaginated(page: number, size: number) {

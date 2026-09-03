@@ -54,6 +54,7 @@ import { ProductRepository } from "../../product/repository/product.repository.j
 import { sanitizeProduct } from "../../product/validators/product.sanitizer.js";
 import { validateProductInput } from "../../product/validators/product.validator.js";
 import { toInsertValues as toCoreInsertValues } from "../../product/mapper/product.mapper.js";
+import type { ProductView } from "../../product/types/product.types.js";
 import {
   COLOR_PORT,
   ColorPort,
@@ -105,32 +106,47 @@ export class FabricProductService {
     @Inject(ZOHO_ADAPTER_PORT) private readonly zohoAdapter: ZohoAdapterPort,
   ) {}
 
+  /**
+   * Shared body of prepareColor/prepareMaterial/preparePattern/prepareTag.
+   * The four source methods each split a comma-separated id column and did
+   * one `SELECT ... WHERE id = $1` per token — a genuine N+1 that cost a
+   * round-trip per colour/material/pattern/tag on every PDP. One
+   * `WHERE id = ANY($1)` now answers the whole column.
+   *
+   * Output is byte-identical to the per-token version: results are re-indexed
+   * back into CSV token order, duplicate tokens still yield duplicate entries,
+   * and a token with no matching row still yields `null` in its slot (that is
+   * what `retrieveEntity` returned for a miss).
+   */
+  private static async prepareCsvLookup(
+    csv: string | null,
+    port: { retrieveEntities(ids: number[]): Promise<{ id: number }[]> },
+  ): Promise<unknown[]> {
+    if (!csv || csv === BLANK_STRING_VALUE) return [];
+    const tokens = csv.split(",");
+    const rows = await port.retrieveEntities([...new Set(tokens.map(Number))]);
+    const byId = new Map(rows.map((row) => [Number(row.id), row]));
+    return tokens.map((token) => byId.get(Number(token)) ?? null);
+  }
+
   /** prepareColor(fabricProduct) */
-  private async prepareColor(colorId: string): Promise<unknown[]> {
-    if (colorId === BLANK_STRING_VALUE) return [];
-    const ids = colorId.split(",");
-    return Promise.all(ids.map((id) => this.color.retrieveEntity(Number(id))));
+  private prepareColor(colorId: string): Promise<unknown[]> {
+    return FabricProductService.prepareCsvLookup(colorId, this.color);
   }
 
   /** prepareMaterial(fabricProduct) */
-  private async prepareMaterial(materialId: string): Promise<unknown[]> {
-    if (materialId === BLANK_STRING_VALUE) return [];
-    const ids = materialId.split(",");
-    return Promise.all(ids.map((id) => this.material.retrieveEntity(Number(id))));
+  private prepareMaterial(materialId: string): Promise<unknown[]> {
+    return FabricProductService.prepareCsvLookup(materialId, this.material);
   }
 
   /** preparePattern(fabricProduct) */
-  private async preparePattern(patternId: string | null): Promise<unknown[]> {
-    if (!patternId || patternId === BLANK_STRING_VALUE) return [];
-    const ids = patternId.split(",");
-    return Promise.all(ids.map((id) => this.pattern.retrieveEntity(Number(id))));
+  private preparePattern(patternId: string | null): Promise<unknown[]> {
+    return FabricProductService.prepareCsvLookup(patternId, this.pattern);
   }
 
   /** prepareTag(fabricProduct) */
-  private async prepareTag(tagId: string): Promise<unknown[]> {
-    if (tagId === BLANK_STRING_VALUE) return [];
-    const ids = tagId.split(",");
-    return Promise.all(ids.map((id) => this.tag.retrieveEntity(Number(id))));
+  private prepareTag(tagId: string): Promise<unknown[]> {
+    return FabricProductService.prepareCsvLookup(tagId, this.tag);
   }
 
   /**
@@ -141,21 +157,33 @@ export class FabricProductService {
    * copy-pasted three times. Not a behavior change: every enrichment step
    * below runs for all three source methods.
    */
-  private async assembleView(fabricRow: { id: bigint; version: bigint; productId: number; gsm: number; addToSwatch: boolean; width: string }): Promise<FabricProductView | null> {
-    const product = await this.productService.retrieveProductById(BigInt(fabricRow.productId));
-    if (!product) return null;
+  private async assembleView(
+    pendingFabricRow: Promise<{ id: bigint; version: bigint; productId: number; gsm: number; addToSwatch: boolean; width: string } | null>,
+    product: ProductView,
+  ): Promise<FabricProductView | null> {
+    // Every enrichment below depends only on the already-loaded `product`
+    // row, so they all go in one round-trip batch. Previously sizeProfile,
+    // the sub-category hierarchy, the made-to-order fabric and the fabric
+    // profile items were each `await`ed on its own line, serialising ~5
+    // extra 300ms Neon round-trips behind each other for no reason. The
+    // fabric row itself is passed in unresolved so the slug path can
+    // overlap it with this batch instead of waiting on it first.
+    const [fabricRow, colors, materials, patterns, tags, relatedProductList, sizeProfile, hierarchy, mto, fabricProfileItems] =
+      await Promise.all([
+        pendingFabricRow,
+        this.prepareColor(product.colorId),
+        this.prepareMaterial(product.materialId),
+        this.preparePattern(product.patternId),
+        this.prepareTag(product.tagId),
+        this.mainProductPreview.prepareRelatedProductList(product.id),
+        product.sizeProfileId != null ? this.sizeProfilePrepare.prepareSizeProfile(product.sizeProfileId) : null,
+        this.subCategoryHierarchy.retrieveHierarchy(product.subCategoryId),
+        product.madeToOrderFabricId != null ? this.productService.retrieveProductById(BigInt(product.madeToOrderFabricId)) : null,
+        product.fabricProfileId != null ? this.fabricProfileEnrich.retrieveEnrichedItems(product.fabricProfileId) : [],
+      ]);
 
-    const [colors, materials, patterns, tags, relatedProductList] = await Promise.all([
-      this.prepareColor(product.colorId),
-      this.prepareMaterial(product.materialId),
-      this.preparePattern(product.patternId),
-      this.prepareTag(product.tagId),
-      this.mainProductPreview.prepareRelatedProductList(product.id),
-    ]);
+    if (!fabricRow) return null;
 
-    const sizeProfile = product.sizeProfileId != null ? await this.sizeProfilePrepare.prepareSizeProfile(product.sizeProfileId) : null;
-
-    const hierarchy = await this.subCategoryHierarchy.retrieveHierarchy(product.subCategoryId);
     // source: entity.getProduct().getSegment().setCategory(null) — the
     // segment object is hoisted with its own .category reference cleared,
     // to avoid a duplicated/circular payload. The port returns the pieces
@@ -164,15 +192,9 @@ export class FabricProductService {
     const category = hierarchy?.category ?? null;
     const segment = hierarchy?.segment ?? null;
 
-    let madeToOrderFabric: (typeof product & { totalQuantity: number }) | null = null;
-    if (product.madeToOrderFabricId != null) {
-      const mto = await this.productService.retrieveProductById(BigInt(product.madeToOrderFabricId));
-      if (mto) {
-        madeToOrderFabric = { ...mto, totalQuantity: mto.quantity + mto.externalQuantity };
-      }
-    }
-
-    const fabricProfileItems = product.fabricProfileId != null ? await this.fabricProfileEnrich.retrieveEnrichedItems(product.fabricProfileId) : [];
+    const madeToOrderFabric: (typeof product & { totalQuantity: number }) | null = mto
+      ? { ...mto, totalQuantity: mto.quantity + mto.externalQuantity }
+      : null;
 
     // source: entity.getProduct().getImageGallerySEOList().forEach(imageSeo -> imageSeo.setProduct(null))
     // ProductPreview (image-gallery-SEO) is its own migration step — no
@@ -205,7 +227,9 @@ export class FabricProductService {
   async retrieveFabricProduct(id: bigint): Promise<FabricProductView | null> {
     const fabricRow = await this.repo.retrieveEntity(id);
     if (!fabricRow) return null;
-    return this.assembleView(fabricRow);
+    const product = await this.productService.retrieveProductById(BigInt(fabricRow.productId));
+    if (!product) return null;
+    return this.assembleView(Promise.resolve(fabricRow), product);
   }
 
   /**
@@ -218,9 +242,10 @@ export class FabricProductService {
   async retrieveFabricProductBySlug(slug: string): Promise<FabricProductView | null> {
     const product = await this.productService.findBySlug(slug);
     if (!product) return null;
-    const fabricRow = await this.repo.findByProductId(product.id);
-    if (!fabricRow) return null;
-    return this.assembleView(fabricRow);
+    // findBySlug already returned the full product row; the old code threw it
+    // away and had assembleView re-select it by id. The fabric row lookup is
+    // handed over unresolved so it runs alongside the enrichment batch.
+    return this.assembleView(this.repo.findByProductId(product.id), product);
   }
 
   /** retrieveFabricProductBySlugV2(String slug) — functionally identical to V1 in source (see class doc). */

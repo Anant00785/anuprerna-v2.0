@@ -24,8 +24,8 @@ import { CartRepository, OptimisticLockError } from "../repository/cart.reposito
 import { toInsertValues, toUpdateValues } from "../mapper/cart.mapper.js";
 import { AddCartItemRequest, UpdateCartItemRequest } from "../dto/cart.dto.js";
 import { ActionCode } from "../../../common/errors/action-code.js";
-import { eq } from "drizzle-orm";
-import { cartItem, product, productFabric, productFinished } from "../../../database/schema/schema.js";
+import { eq, inArray } from "drizzle-orm";
+import { cartItem, finishProfile, finishProfileItem, product, productFabric, productFinished, sizeProfileOption } from "../../../database/schema/schema.js";
 import {
   CartItemData,
   CartItemView,
@@ -65,6 +65,153 @@ export class CartService {
    * plain data, not managed entities.
    */
   async prepareCartItems(items: (typeof cartItem.$inferSelect)[]): Promise<CartItemView[]> {
+    if (items.length === 0) return [];
+
+    /**
+     * Enrichment used to run entirely inside the `for` loop below, awaiting
+     * one query at a time: per cart line a preview join, a selectedFabric
+     * lookup, a selectedSizeOption lookup, and one lookup per finish CSV
+     * token. A p95 cart (10 lines) was 30-40 strictly sequential round-trips
+     * — ~10s against a 300ms-RTT database.
+     *
+     * Everything the loop needs is now fetched up front, once, batched by id
+     * (`WHERE id = ANY($1)`) and resolved in memory. The loop itself is
+     * unchanged in what it produces: the same preferred-then-fallback order
+     * per line, the same field projections, the same CSV token order, and the
+     * same "last finish wins" `finishDisplayName` assignment.
+     */
+    const db = (this.repo as any).db;
+    const distinct = (values: (number | null)[]) => [...new Set(values.filter((v): v is number => !!v))];
+
+    const fabricIds = distinct(items.map((row) => row.fabricProductId));
+    const finishedIds = distinct(items.map((row) => row.finishedProductId));
+    const selectedFabricIds = distinct(items.map((row) => row.selectedFabricId));
+    const sizeOptionIds = distinct(items.map((row) => row.selectedSizeOptionId));
+    const allFinishIds = distinct(
+      items.flatMap((row) =>
+        (row.selectedFinishId ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => /^\d+$/.test(s))
+          .map(Number),
+      ),
+    );
+
+    const batch = async <T>(ids: number[], run: (ids: number[]) => Promise<T[]>, key: (row: T) => number) =>
+      ids.length === 0 ? new Map<number, T>() : new Map((await run(ids)).map((row) => [key(row), row]));
+
+    const [fabricPreviews, finishedPreviews, sizeOptions, finishes, selectedFabrics] = await Promise.all([
+      batch(
+        fabricIds,
+        (ids) =>
+          db
+            .select({
+              id: productFabric.id,
+              version: productFabric.version,
+              gsm: productFabric.gsm,
+              width: productFabric.width,
+              addToSwatch: productFabric.addToSwatch,
+              productId: product.id,
+              product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                price: product.price,
+                unit: product.unit,
+                slug: product.slug,
+                heroImage: product.heroImage,
+                thumbnailImage: product.heroImage,
+                productGroup: product.productGroup,
+                madeToOrderProfileEnabled: product.madeToOrderProfileEnabled,
+                finishProfileEnabled: product.finishProfileEnabled,
+              },
+            })
+            .from(productFabric)
+            .innerJoin(product, eq(productFabric.productId, product.id))
+            .where(inArray(productFabric.id, ids.map(BigInt))),
+        (row: any) => Number(row.id),
+      ),
+      batch(
+        finishedIds,
+        (ids) =>
+          db
+            .select({
+              id: productFinished.id,
+              version: productFinished.version,
+              productId: product.id,
+              product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                price: product.price,
+                unit: product.unit,
+                slug: product.slug,
+                heroImage: product.heroImage,
+                thumbnailImage: product.heroImage,
+                productGroup: product.productGroup,
+              },
+            })
+            .from(productFinished)
+            .innerJoin(product, eq(productFinished.productId, product.id))
+            .where(inArray(productFinished.id, ids.map(BigInt))),
+        (row: any) => Number(row.id),
+      ),
+      batch(
+        sizeOptionIds,
+        (ids) => db.select().from(sizeProfileOption).where(inArray(sizeProfileOption.id, ids.map(BigInt))),
+        (row: any) => Number(row.id),
+      ),
+      batch(
+        allFinishIds,
+        async (ids) =>
+          (
+            await db
+              .select({ item: finishProfileItem, finishProfile })
+              .from(finishProfileItem)
+              .innerJoin(finishProfile, eq(finishProfileItem.profileId, finishProfile.id))
+              .where(inArray(finishProfileItem.id, ids.map(BigInt)))
+          ).map((row: any) => ({ ...row.item, finishProfile: row.finishProfile })),
+        (row: any) => Number(row.id),
+      ),
+      // No batched read path exists behind FABRIC_PREVIEW_PORT (cart.module.ts
+      // is owned elsewhere), so these stay per-id — but they now all issue
+      // together as one round-trip's worth of concurrent queries instead of
+      // one blocking await per cart line.
+      Promise.all(selectedFabricIds.map(async (id) => [id, await this.fabricPreview.retrieveFabricProductByProductId(id)] as const)).then(
+        (entries) => new Map(entries),
+      ),
+    ]);
+
+    // Fallback pass: ids with no product_fabric / product_finished row fall
+    // back to the bare product row, exactly as the per-line code did.
+    const fallbackIds = distinct([
+      ...fabricIds.filter((id) => !fabricPreviews.has(id)),
+      ...finishedIds.filter((id) => !finishedPreviews.has(id)),
+    ]);
+    const productFallbacks = await batch(
+      fallbackIds,
+      (ids) =>
+        db
+          .select({
+            id: product.id,
+            productId: product.id,
+            product: {
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              price: product.price,
+              unit: product.unit,
+              slug: product.slug,
+              heroImage: product.heroImage,
+              thumbnailImage: product.heroImage,
+              productGroup: product.productGroup,
+            },
+          })
+          .from(product)
+          .where(inArray(product.id, ids.map(BigInt))),
+      (row: any) => Number(row.id),
+    );
+
     const views: CartItemView[] = [];
 
     for (const row of items) {
@@ -95,128 +242,25 @@ export class CartService {
       };
 
       if (row.fabricProductId) {
-        try {
-          const rows = await (this.repo as any).db
-            .select({
-              id: productFabric.id,
-              version: productFabric.version,
-              gsm: productFabric.gsm,
-              width: productFabric.width,
-              addToSwatch: productFabric.addToSwatch,
-              productId: product.id,
-              product: {
-                id: product.id,
-                name: product.name,
-                sku: product.sku,
-                price: product.price,
-                unit: product.unit,
-                slug: product.slug,
-                heroImage: product.heroImage,
-                thumbnailImage: product.heroImage,
-                productGroup: product.productGroup,
-                madeToOrderProfileEnabled: product.madeToOrderProfileEnabled,
-                finishProfileEnabled: product.finishProfileEnabled,
-              },
-            })
-            .from(productFabric)
-            .innerJoin(product, eq(productFabric.productId, product.id))
-            .where(eq(productFabric.id, BigInt(row.fabricProductId)))
-            .limit(1);
-
-          if (rows.length > 0) {
-            view.fabricProductPreview = rows[0];
-          } else {
-            const prodRows = await (this.repo as any).db
-              .select({
-                id: product.id,
-                productId: product.id,
-                product: {
-                  id: product.id,
-                  name: product.name,
-                  sku: product.sku,
-                  price: product.price,
-                  unit: product.unit,
-                  slug: product.slug,
-                  heroImage: product.heroImage,
-                  thumbnailImage: product.heroImage,
-                  productGroup: product.productGroup,
-                },
-              })
-              .from(product)
-              .where(eq(product.id, BigInt(row.fabricProductId)))
-              .limit(1);
-            if (prodRows.length > 0) {
-              view.fabricProductPreview = prodRows[0];
-            } else {
-              view.fabricProductPreview = await this.fabricPreview.retrieveEntity(row.fabricProductId);
-            }
-          }
-        } catch (e) {
-          view.fabricProductPreview = await this.fabricPreview.retrieveEntity(row.fabricProductId);
-        }
+        view.fabricProductPreview =
+          fabricPreviews.get(row.fabricProductId) ??
+          productFallbacks.get(row.fabricProductId) ??
+          // Only reachable when neither table holds the id — one query, and
+          // only for a cart line pointing at a deleted product.
+          (await this.fabricPreview.retrieveEntity(row.fabricProductId));
       }
 
       if (row.finishedProductId) {
-        try {
-          const rows = await (this.repo as any).db
-            .select({
-              id: productFinished.id,
-              version: productFinished.version,
-              productId: product.id,
-              product: {
-                id: product.id,
-                name: product.name,
-                sku: product.sku,
-                price: product.price,
-                unit: product.unit,
-                slug: product.slug,
-                heroImage: product.heroImage,
-                thumbnailImage: product.heroImage,
-                productGroup: product.productGroup,
-              },
-            })
-            .from(productFinished)
-            .innerJoin(product, eq(productFinished.productId, product.id))
-            .where(eq(productFinished.id, BigInt(row.finishedProductId)))
-            .limit(1);
-
-          if (rows.length > 0) {
-            view.finishedProductPreview = rows[0];
-          } else {
-            const prodRows = await (this.repo as any).db
-              .select({
-                id: product.id,
-                productId: product.id,
-                product: {
-                  id: product.id,
-                  name: product.name,
-                  sku: product.sku,
-                  price: product.price,
-                  unit: product.unit,
-                  slug: product.slug,
-                  heroImage: product.heroImage,
-                  thumbnailImage: product.heroImage,
-                  productGroup: product.productGroup,
-                },
-              })
-              .from(product)
-              .where(eq(product.id, BigInt(row.finishedProductId)))
-              .limit(1);
-            if (prodRows.length > 0) {
-              view.finishedProductPreview = prodRows[0];
-            } else {
-              view.finishedProductPreview = await this.finishedPreview.retrieveEntity(row.finishedProductId);
-            }
-          }
-        } catch (e) {
-          view.finishedProductPreview = await this.finishedPreview.retrieveEntity(row.finishedProductId);
-        }
+        view.finishedProductPreview =
+          finishedPreviews.get(row.finishedProductId) ??
+          productFallbacks.get(row.finishedProductId) ??
+          (await this.finishedPreview.retrieveEntity(row.finishedProductId));
       }
       if (row.selectedFabricId) {
-        view.selectedFabric = await this.fabricPreview.retrieveFabricProductByProductId(row.selectedFabricId);
+        view.selectedFabric = selectedFabrics.get(row.selectedFabricId) ?? null;
       }
       if (row.selectedSizeOptionId) {
-        view.selectedSizeOption = await this.sizeProfileOption.retrieveSizeProfileOption(row.selectedSizeOptionId);
+        view.selectedSizeOption = sizeOptions.get(row.selectedSizeOptionId) ?? null;
       }
 
       if (view.selectedFinishId === "") {
@@ -230,7 +274,7 @@ export class CartService {
           .filter((s) => /^\d+$/.test(s));
         const resolved: unknown[] = [];
         for (const finishIdStr of finishIds) {
-          const item = await this.finishProfileItem.retrieveEntity(BigInt(finishIdStr));
+          const item = finishes.get(Number(finishIdStr));
           if (item) {
             view.finishDisplayName = item.finishProfile.displayName; // last-one-wins, see class doc
             resolved.push(item);

@@ -108,7 +108,7 @@ export interface ProductPort {
   /** ProductDAOController#updateProductInternal(product) — returns an ActionCode. */
   updateProductInternal(productId: number, disabled: boolean): Promise<number>;
   /** ProductJpaRepository#findProductBySlug(slug) */
-  findProductBySlug(slug: string): Promise<{ id: number } | null>;
+  findProductBySlug(slug: string): Promise<({ id: number } & Record<string, unknown>) | null>;
   /** ProductDAOController#retrieveProduct(id) (adds totalQuantity) */
   retrieveProduct(id: number): Promise<({ id: number } & Record<string, unknown>) | null>;
   /** Product#getProductZohoRelationList() as read by disableFinishedProduct */
