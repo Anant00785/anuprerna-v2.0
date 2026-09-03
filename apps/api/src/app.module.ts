@@ -12,11 +12,12 @@ import { ConfigModule } from "@nestjs/config";
 import { DatabaseModule } from "./database/database.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
+import { AppController } from "./app.controller.js";
 import { HealthController } from "./health/health.controller.js";
 import { validate } from "./common/config/env.schema.js";
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, validate }), DatabaseModule, AuthModule, CommerceModule],
-  controllers: [HealthController],
+  controllers: [AppController, HealthController],
 })
 export class AppModule {}
