@@ -47,14 +47,14 @@ describe('content-detail components with no sections', () => {
   });
 
   it('ContentBody does not throw when sections is missing', () => {
-    expect(() => render(<ContentBody description='' sections={missing} />)).not.toThrow();
+    expect(() => render(<ContentBody description='' sections={missing} imageStyle='plain' />)).not.toThrow();
   });
 
   it('all three still render normally when sections are present', () => {
     expect(() => {
       render(<MobileOnThisPage sections={[section()]} />);
       render(<TableOfContents sections={[section()]} />);
-      render(<ContentBody description='' sections={[section()]} />);
+      render(<ContentBody description='' sections={[section()]} imageStyle='plain' />);
     }).not.toThrow();
   });
 

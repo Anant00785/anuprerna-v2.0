@@ -1,3 +1,10 @@
+// The backend base URL for tests. Production code deliberately has NO default
+// (see src/lib/loom/config.ts) so a misconfigured deploy fails loudly instead of
+// silently calling the wrong backend — which means the TEST environment has to
+// supply one. MSW intercepts this origin; nothing leaves the machine.
+process.env.LOOM_BASE_URL ||= "http://127.0.0.1:3000";
+process.env.NEXT_PUBLIC_API_URL ||= "http://127.0.0.1:3000";
+
 import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { server } from "./src/test/msw";

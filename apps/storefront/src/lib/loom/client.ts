@@ -1,5 +1,5 @@
 import 'server-only';
-import { LOOM_BASE_URL, LOOM_DEFAULT_HEADERS } from './config';
+import { requireLoomBaseUrl, LOOM_DEFAULT_HEADERS } from './config';
 import { rewriteBloomscorpUrlsDeep } from './media';
 
 // ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ async function parse<T>(res: Response): Promise<T> {
 }
 
 export async function loomGet<T = unknown>(path: string, opts?: LoomRequestOptions): Promise<T> {
-  const url = LOOM_BASE_URL + (path.startsWith('/') ? path : '/' + path);
+  const url = requireLoomBaseUrl() + (path.startsWith('/') ? path : '/' + path);
   const res = await fetch(url, {
     method: 'GET',
     headers: buildHeaders(opts),
@@ -225,7 +225,7 @@ export async function loomPost<T = unknown, B = unknown>(
 ): Promise<T> {
   // DEMO WRITE-GUARD: block every Loom mutation except the allowlisted paths.
   assertPostAllowed(path);
-  const url = LOOM_BASE_URL + (path.startsWith('/') ? path : '/' + path);
+  const url = requireLoomBaseUrl() + (path.startsWith('/') ? path : '/' + path);
   const res = await fetch(url, {
     method: 'POST',
     headers: buildHeaders(opts, true),
@@ -246,7 +246,7 @@ async function loomWrite<T = unknown, B = unknown>(
   opts?: LoomRequestOptions,
 ): Promise<T> {
   assertWriteAllowed(method, path);
-  const url = LOOM_BASE_URL + (path.startsWith('/') ? path : '/' + path);
+  const url = requireLoomBaseUrl() + (path.startsWith('/') ? path : '/' + path);
   const res = await fetch(url, {
     method,
     headers: buildHeaders(opts, body != null),
