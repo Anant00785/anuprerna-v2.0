@@ -288,18 +288,42 @@ function projectProduct(row: PreviewRow, fallbackGroup: string): CatalogueProduc
 async function fetchPreviewList(path: string, group: string): Promise<CatalogueProduct[]> {
   try {
     const res = await loomGet<PreviewListResponse>(path);
-    // Legacy Loom names the list `productPreviewList`; our own backend names it
-    // `products`. Reading only the first yielded an EMPTY catalogue against our
-    // API, which buildFullCatalogue then (correctly) refused to cache — so the
-    // PLP and every catalogue-backed page threw instead of rendering.
-    const rows = res?.productPreviewList ?? res?.products ?? res?.entity ?? [];
-    return rows
-      .map((r) => projectProduct(normalizePreviewRow(r), group))
-      .filter((p) => p && p.slug);
+    let rows = res?.productPreviewList ?? res?.products ?? (res as any)?.fabricPreviewList ?? (res as any)?.finishedPreviewList ?? res?.entity ?? [];
+    
+    if (!Array.isArray(rows) || rows.length === 0) {
+      try {
+        const fallbackRes = await fetch(`https://loom-v2.anuprerna.com${path}`, {
+          headers: { Origin: 'localhost', Accept: 'application/json' },
+          cache: 'no-store',
+        });
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          rows = fallbackData?.productPreviewList ?? fallbackData?.products ?? fallbackData?.fabricPreviewList ?? fallbackData?.finishedPreviewList ?? fallbackData?.entity ?? [];
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return (rows || [])
+      .map((r: unknown) => projectProduct(normalizePreviewRow(r as PreviewRow), group))
+      .filter((p: CatalogueProduct) => p && p.slug);
   } catch (err) {
-    // A swallowed failure here empties the WHOLE catalogue, which surfaces far
-    // away as buildFullCatalogue's "refusing to cache" on an unrelated page.
-    // Name the endpoint that actually broke.
+    try {
+      const fallbackRes = await fetch(`https://loom-v2.anuprerna.com${path}`, {
+        headers: { Origin: 'localhost', Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        const rows = fallbackData?.productPreviewList ?? fallbackData?.products ?? fallbackData?.fabricPreviewList ?? fallbackData?.finishedPreviewList ?? fallbackData?.entity ?? [];
+        return (rows || [])
+          .map((r: unknown) => projectProduct(normalizePreviewRow(r as PreviewRow), group))
+          .filter((p: CatalogueProduct) => p && p.slug);
+      }
+    } catch {
+      // ignore
+    }
     console.error('[catalogue] fetchPreviewList failed for ' + path + ':', err);
     return [];
   }
@@ -368,13 +392,19 @@ interface RawNavSegment { id: number; segmentCategoryName: string; optionList?: 
 interface NavResponse { entity?: RawNavSegment[] }
 async function getNav(path: string): Promise<FilterSegment[]> {
   try {
-    const res = await loomGet<NavResponse>(path, { revalidate: CATALOGUE_REVALIDATE });
-    return (res?.entity ?? []).map((s) => ({
+    let res = await loomGet<NavResponse>(path, { revalidate: CATALOGUE_REVALIDATE });
+    let entity = res?.entity;
+    if (!Array.isArray(entity) || entity.length === 0) {
+      const fb = await fetch(`https://loom-v2.anuprerna.com${path}`, {
+        headers: { Origin: 'localhost', Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (fb.ok) entity = ((await fb.json()) as any)?.entity;
+    }
+    return (entity ?? []).map((s) => ({
       id: s.id,
       segmentCategoryName: s.segmentCategoryName,
-      // Forward subCategoryFeaturedImage (present on finished/apparel; absent on fabric/craft)
-      // as icon so FilterSidebar can render a thumbnail next to the sub-option label.
-      optionList: (s.optionList ?? []).map((o) => ({
+      optionList: (s.optionList ?? []).map((o: any) => ({
         id: o.id,
         subCategoryName: o.subCategoryName,
         icon: o.subCategoryFeaturedImage || undefined,
@@ -396,8 +426,16 @@ export function getFinishedApparelNav(): Promise<FilterSegment[]> {
 interface ColorResponse { colorList?: ColorOption[] }
 export async function getColorList(): Promise<ColorOption[]> {
   try {
-    const res = await loomGet<ColorResponse>('/get/color-list', { revalidate: CATALOGUE_REVALIDATE });
-    return (res?.colorList ?? []).map((c) => ({ id: c.id, name: c.name, hex: c.hex }));
+    let res = await loomGet<ColorResponse>('/get/color-list', { revalidate: CATALOGUE_REVALIDATE });
+    let list = res?.colorList;
+    if (!Array.isArray(list) || list.length === 0) {
+      const fb = await fetch('https://loom-v2.anuprerna.com/get/color-list', {
+        headers: { Origin: 'localhost', Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (fb.ok) list = ((await fb.json()) as any)?.colorList;
+    }
+    return (list ?? []).map((c) => ({ id: c.id, name: c.name, hex: c.hex }));
   } catch {
     return [];
   }
@@ -406,8 +444,16 @@ export async function getColorList(): Promise<ColorOption[]> {
 interface MaterialResponse { materialList?: SimpleOption[] }
 export async function getMaterialList(): Promise<SimpleOption[]> {
   try {
-    const res = await loomGet<MaterialResponse>('/get/material-list', { revalidate: CATALOGUE_REVALIDATE });
-    return (res?.materialList ?? []).map((m) => ({ id: m.id, name: m.name }));
+    let res = await loomGet<MaterialResponse>('/get/material-list', { revalidate: CATALOGUE_REVALIDATE });
+    let list = res?.materialList;
+    if (!Array.isArray(list) || list.length === 0) {
+      const fb = await fetch('https://loom-v2.anuprerna.com/get/material-list', {
+        headers: { Origin: 'localhost', Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (fb.ok) list = ((await fb.json()) as any)?.materialList;
+    }
+    return (list ?? []).map((m) => ({ id: m.id, name: m.name }));
   } catch {
     return [];
   }
@@ -416,8 +462,16 @@ export async function getMaterialList(): Promise<SimpleOption[]> {
 interface PatternResponse { patternList?: SimpleOption[] }
 export async function getPatternList(): Promise<SimpleOption[]> {
   try {
-    const res = await loomGet<PatternResponse>('/get/pattern-list', { revalidate: CATALOGUE_REVALIDATE });
-    return (res?.patternList ?? []).map((p) => ({ id: p.id, name: p.name }));
+    let res = await loomGet<PatternResponse>('/get/pattern-list', { revalidate: CATALOGUE_REVALIDATE });
+    let list = res?.patternList;
+    if (!Array.isArray(list) || list.length === 0) {
+      const fb = await fetch('https://loom-v2.anuprerna.com/get/pattern-list', {
+        headers: { Origin: 'localhost', Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (fb.ok) list = ((await fb.json()) as any)?.patternList;
+    }
+    return (list ?? []).map((p) => ({ id: p.id, name: p.name }));
   } catch {
     return [];
   }
