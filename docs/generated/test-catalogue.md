@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1671 tests across 296 files.**
+**1697 tests across 300 files.**
 
-- `apps/api` — 245 files, 1098 tests
+- `apps/api` — 246 files, 1105 tests
 - `apps/cms` — 17 files, 212 tests
-- `apps/storefront` — 33 files, 359 tests
+- `apps/storefront` — 36 files, 378 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -59,6 +59,15 @@
 - defaults click/utm attribution fields to null when undefined
 - does not set fabricProductId/finishedProductId/selectedFabricId/selectedSizeOptionId — those are attached separately by CartService after preview lookups
 - writes only quantity and lastUpdatedAt (source quirk #1: every other field is intentionally left untouched on update)
+
+### `apps/api/src/commerce/cart/repository/cart-insert-integrity.spec.ts` — 7
+- REJECTS an unknown tenant instead of inventing a guest account
+- REJECTS tenantId 0 rather than treating it as a new guest
+- REJECTS a finished product id that resolves to nothing — the INR 0.00 row
+- REJECTS a fabric product id that resolves to nothing
+- REJECTS an item referencing no product at all
+- INSERTS normally when the tenant and product both resolve
+- resolves a product id given as the underlying product_id (second lookup)
 
 ### `apps/api/src/commerce/cart/repository/cart.repository.spec.ts` — 12
 - reads only the given tenant
@@ -1928,6 +1937,13 @@
 - forwards an empty object for an unparseable body instead of throwing
 - relays a backend refusal instead of confirming an address that was never stored
 
+### `apps/storefront/src/components/content-detail/sections-missing.test.tsx` — 5
+- MobileOnThisPage does not throw when sections is missing
+- TableOfContents does not throw when sections is missing
+- ContentBody does not throw when sections is missing
+- all three still render normally when sections are present
+- handles an explicit empty list
+
 ### `apps/storefront/src/components/pdp/customization.test.tsx` — 7
 - renders default fabric and viewable fabric cards
 - calls onSelectFabric when an alternate fabric is clicked
@@ -1936,6 +1952,13 @@
 - renders selected finish chips with remove trigger
 - renders standard size buttons and selects size on click
 - expands custom size form when Custom Size is clicked
+
+### `apps/storefront/src/components/product/DiscoverCraft.test.tsx` — 5
+- renders nothing when there are no stories
+- renders a normal story
+- does NOT throw when title is null — the PDP outage
+- does NOT throw when title is undefined
+- still renders the other cards when one story has a null title
 
 ### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 12
 - maps a fabric row, deriving the product from fabricProductPreview.product
@@ -2166,6 +2189,17 @@
 - the API controller sources are reachable from the storefront
 - is declared on the API
 - is NOT role-gated — the storefront calls it with no token (Loom: ${evidence})
+
+### `apps/storefront/src/lib/loom/token.test.ts` — 9
+- accepts a token minted by apps/api (numeric sub + roles array)
+- accepts the older wrapper shape (customerId + roles)
+- accepts a numeric sub sent as a string
+- REJECTS a legacy Loom token — opaque sub, no cleartext roles
+- REJECTS a well-formed JWT carrying no roles claim
+- rejects malformed input
+- accepts a legacy token so auth/me falls through to the backend
+- accepts a token with no roles claim
+- still rejects structurally invalid input
 
 ### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 49
 - sets calculatedPrice from price for fabric products, no discount fields untouched
