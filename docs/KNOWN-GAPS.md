@@ -18,12 +18,12 @@ these are marked resolved instead.
 |---|---|---|---|
 | 1 | **The API never booted.** Four broken imports were concealed by files carrying `@ts-nocheck` — every gate (lint/typecheck/test/build) passed while `node dist/main.js` died at `MODULE_NOT_FOUND`. All gates were green and the server was still dead. | Commits `9f91ddc` (repaired 114 broken imports) and `ceab4c4` (corrected `ImageModule` import depth) | `apps/api` now boots and serves Swagger at `/docs` |
 | 2 | **The committed schema had drifted from production**: 116 tables/68 enums vs production's 117/45. The 23 extra enums were phantom non-`_enum` twins (`order_status` beside `order_status_enum`) left over from a database that carried two naming generations production never had. `custom_impact_factor` was missing entirely. | Commit `91cbd74` — re-introspected read-only against live production through a temporary tunnel (now closed) | `schema.ts` now declares 117 tables / 45 enums, matching production exactly |
-| 3 | **`TransactionStatus` was a numeric enum** (`PAID = 2`, etc.) written into a Postgres **string** enum column. Every transaction-status write would have been rejected outright by Postgres at runtime. | Commit `91cbd74` / `659250a` era work — corrected to string values matching the DB enum | `stripe-payment.service.spec.ts` and `razorpay-payment.service.ts` now use the string values |
-| 4 | **Auth was broken for all password accounts.** `gatekeeper.service.ts` used scrypt; the legacy Java system uses `bcrypt(pepper + password)` at cost 11. The mismatch would have locked out all 3,784 password accounts on cutover. | Commit `659250a`, per `documentation/bmx-nverse.md:895-904` and `NVerseLaunchSequence1.java:141-159` | Confirmed against real production hashes: all 7,254 accounts are `$2a$11$…`, 60 chars. Split 3,784 BASIC / 3,390 GOOGLE / 80 UNKNOWN |
-| 5 | **S3 uploads silently did nothing.** Category, segment and sub-category bound their storage ports to dummy adapters returning `""` while a real `ImageService` sat unused. | Commit `659250a` — all three now delegate to `ImageService` via `useFactory` adapters | `grep -rl ImageService` shows `category.module.ts`, `segment.module.ts`, `subcategory.module.ts` now import it |
-| 6 | **Six live customer-facing bugs**, all "falsy zero" or fabrication bugs: delivery-charge overcharge on free shipping, out-of-stock shown as in stock, free items (`unitPrice`/`totalPrice: 0`) repriced, the profile envelope (`{success, addressList: [...]}`) never unwrapped so `.map()` threw, CMS reporting a failed settings save as successful, and CMS services fabricating data (including a fake `{success: true}`) on backend failure. | Commit `659250a` | Tests now assert **correct** behaviour instead of pinning the bug — see `docs/TESTING.md` |
-| 7 | **The PLP discount calculation** was removed in commit `9361c3b`. | Commit `10aaae7` | Restored |
-| 8 | **No CI existed.** Nothing enforced lint/typecheck/test/build staying green on a PR. | `.github/workflows/ci.yml` added | Two jobs: `verify` (lint → typecheck → test with coverage → build) and a separate `integration` job against a real `pgvector/pgvector:pg16` Postgres. A gitleaks secret scan also runs. Green on `main` as of this pass — verified by re-running all four gates locally: lint 3/3, typecheck 6/6, test 6/6, build 5/5 |
+| 1 | **`TransactionStatus` was a numeric enum** (`PAID = 2`, etc.) written into a Postgres **string** enum column. Every transaction-status write would have been rejected outright by Postgres at runtime. | Commit `91cbd74` / `659250a` era work — corrected to string values matching the DB enum | `stripe-payment.service.spec.ts` and `razorpay-payment.service.ts` now use the string values |
+| 2 | **Auth was broken for all password accounts.** `gatekeeper.service.ts` used scrypt; the legacy Java system uses `bcrypt(pepper + password)` at cost 11. The mismatch would have locked out all 3,784 password accounts on cutover. | Commit `659250a`, per `documentation/bmx-nverse.md:895-904` and `NVerseLaunchSequence1.java:141-159` | Confirmed against real production hashes: all 7,254 accounts are `$2a$11$…`, 60 chars. Split 3,784 BASIC / 3,390 GOOGLE / 80 UNKNOWN |
+| 3 | **S3 uploads silently did nothing.** Category, segment and sub-category bound their storage ports to dummy adapters returning `""` while a real `ImageService` sat unused. | Commit `659250a` — all three now delegate to `ImageService` via `useFactory` adapters | `grep -rl ImageService` shows `category.module.ts`, `segment.module.ts`, `subcategory.module.ts` now import it |
+| 4 | **Six live customer-facing bugs**, all "falsy zero" or fabrication bugs: delivery-charge overcharge on free shipping, out-of-stock shown as in stock, free items (`unitPrice`/`totalPrice: 0`) repriced, the profile envelope (`{success, addressList: [...]}`) never unwrapped so `.map()` threw, CMS reporting a failed settings save as successful, and CMS services fabricating data (including a fake `{success: true}`) on backend failure. | Commit `659250a` | Tests now assert **correct** behaviour instead of pinning the bug — see `docs/TESTING.md` |
+| 5 | **The PLP discount calculation** was removed in commit `9361c3b`. | Commit `10aaae7` | Restored |
+| 6 | **No CI existed.** Nothing enforced lint/typecheck/test/build staying green on a PR. | `.github/workflows/ci.yml` added | Two jobs: `verify` (lint → typecheck → test with coverage → build) and a separate `integration` job against a real `pgvector/pgvector:pg16` Postgres. A gitleaks secret scan also runs. Green on `main` as of this pass — verified by re-running all four gates locally: lint 3/3, typecheck 6/6, test 6/6, build 5/5 |
 | 9 | Earlier revision said 50 auto-generated CRUD controllers "serve empty tables" and shadow real routes | Already corrected in a prior pass | They are dead code, wired into nothing — `RestApiControllers` is never imported anywhere. Correction carried forward below, unchanged |
 
 ## The one thing to say before anything else: the API still carries 0% of production traffic
@@ -51,7 +51,7 @@ what was wrong and where, since the history is useful.
 | 6 | CMS fabricated data on backend failure, including `createShipment` returning a fake success | `apps/cms/src/services/settings-service.ts`, `logistic-service.ts` |
 
 Two items from the prior pass remain open and are **not** part of the fixed six — see the CMS
-section below: `uploadReviewImage`'s missing multipart boundary, and `unwrapResponseData`'s
+section below: `uploadReviewImage`'s missing multipart boundary, and (until its deletion) `unwrapResponseData`'s
 arbitrary key selection.
 
 Cleared on inspection, worth recording as checked: logout **does** correctly clear all persisted
@@ -193,7 +193,34 @@ garbage, corrupting every stored email with no error raised anywhere in the pipe
 | `main.ts` deliberately stamps `additionalProperties: true` onto the OpenAPI doc | `apps/api/src/main.ts` — post-processes the generated Swagger doc to widen every request/response schema | The published API contract is untyped by design | Open — deliberate stopgap, not an oversight |
 | Several modules are empty shells | `apps/api/src/proxy/proxy.module.ts` is `@Module({})` | The strangler-fig proxy mechanism described in the root `CLAUDE.md` doesn't exist yet | Open, unchanged |
 | Committed dev scripts and test-credential doc at `apps/api/` root | `seed_dev_user.js`, `simple_seed.js`, `simple_test.js`, `test_auth.js`, `test_auth_complete.js`, `SOLUTION.md` (documents `test@example.com` / `password123`) | Dev debris in the shipped tree | Open, unverified this pass whether still present — re-check |
-| Several cross-domain ports still bound to null/dummy implementations | `SIZE_PROFILE_OPTION_PORT`, `FINISH_PROFILE_ITEM_PORT`, `EMAIL_ENCODER_PORT` (see above, deliberate), plus Badge/VolumeDiscount/MadeToOrder/CustomSize/Size/Finish/Fabric/ImageGallerySeo profile ports | These commerce sub-flows silently no-op or return null rather than fail loudly | Open |
+| ~~Several cross-domain ports still bound to null/dummy implementations~~ | Was: `SIZE_PROFILE_OPTION_PORT`, `FINISH_PROFILE_ITEM_PORT`, plus Badge/VolumeDiscount/MadeToOrder/CustomSize/Size/Finish/Fabric/ImageGallerySeo profile ports | **Resolved** — all ~30 `async () => null` providers across `auth`, `cart`, `review`, `product`, `fabric-product`, `finished-product`, `product-preview`, `sub-category` and `product-size-profile` are now bound to the owning module's service or to a real select-by-id over the owning table (`commerce/shared/db-lookup.ts`). Guarded by `apps/api/src/commerce/cross-module-ports.spec.ts`, which fails the build if any module re-introduces an `async () => null\|false\|[]` provider | Closed. `EMAIL_ENCODER_PORT` remains the one deliberate exception (see above); the three genuinely-unimplemented ports are in the section below |
+
+## Ports that now fail loudly instead of silently returning nothing
+
+Three cross-module dependencies genuinely have no implementation in `apps/api`. Rather than
+leave them as `async () => null` providers — which answered 200 with the data quietly missing —
+each is now wired to throw, or to a caller that already treats the result as a failure.
+
+| Port | Where | Why it can't be wired yet | What it does now |
+|---|---|---|---|
+| `ZOHO_ADAPTER_PORT` (`add/update/reTrigger` × fabric + finished product) | `commerce/product/fabric-product/fabric-product.module.ts`, `commerce/product/finished-product/finished-product.module.ts` | No Loom-product-to-Zoho-item mapping exists. `ZohoService.syncItem` needs a `ZohoItemPayload` nothing in the repo constructs, and `triggerFabricProductWorkflow`/`triggerFinishedProductWorkflow` only write a log line and return `true` | Throws `NotImplementedException` naming the port and this document. Previously a no-op, which would have left the Zoho catalogue permanently stale behind a 200 |
+| `CUSTOM_ORDER_ITEM_PORT.updateCustomProductReference` | `commerce/product/custom-product/custom-product.module.ts` | No CustomOrderItem module exists; source's `CustomOrderItemDAOController` has no counterpart | Returns `ActionCode.UPDATE_FAILURE`, which makes `CustomProductService.updateCustomProduct` throw `CustomProductOrderItemSyncError` — the same signal source raises when the sync fails. `SYNC_ERROR_LOGGER_PORT` now writes a real error log rather than swallowing it |
+| `AUTH0_VALIDATION_PORT` — *configuration*, not implementation | `auth/auth.module.ts` → `auth/service/auth0-validation.service.ts` | Now a real `jose` JWKS verifier (RS256 + issuer + `email` claim, matching `Auth0Service.java`). It needs `AUTH0_ISSUER` set | Throws `ServiceUnavailableException` when `AUTH0_ISSUER` is unset. It no longer answers `false` for a config problem — a token validator stuck on one answer is indistinguishable from a broken one. See the Google OAuth section above: this removes the "bound to a dummy that always rejects" half of that gap; the flow is still unexercised against a real account |
+
+## `commerce/profile` controllers are dead code that collides with live routes
+
+`ProfileModule` was never imported by any other module, so its four controllers had never been
+reachable. Two problems surfaced when the product modules began depending on `ProfileService`:
+`tenant-profile.controller.ts` references an unimported `Post` decorator and throws at import
+time, and every route the four controllers declare is already served by
+`commerce/tenant/controller/tenant.controller.ts` and `commerce/domain/*.controller.ts`.
+
+`ProfileModule` is therefore now **providers-only** (`ProfileService`, `ProfileRepository`), with
+the controllers left on disk unregistered.
+
+| Impact | None today — the routes were unreachable before and are unreachable now |
+|---|---|
+| Status | Open. Someone needs to reconcile the duplicate profile-route surface and either delete these controllers or retire the `tenant`/`domain` ones |
 
 ## Storefront
 
@@ -212,7 +239,7 @@ garbage, corrupting every stored email with no error raised anywhere in the pipe
 |---|---|---|---|
 | ~19 routes render fabricated data instead of calling their service (up from the ~15 counted in the prior pass — not re-fixed, just a wider recount) | `/diagnostics/host`, `/diagnostics/thread-dump`, `/diagnostics/application`, `/image-optimization/{attention,ledger,tools,history,queue}`, `/manage-workflow/{process,custom-process,artisan-payments,feedback,custom-feedback,template/add,template/update/[id]}`, `/view/[id]`, `/ai-embeddings`, `/manage-product/custom-product`, `/user/cart/[uid]` | These screens look functional in a demo but do not read or write real data | Open. `workflow-service.ts` already implements several of the needed reads — some of these pages just don't call it |
 | `uploadReviewImage` is likely broken | Sets `Content-Type: multipart/form-data` manually on a `FormData` body, so no `boundary` is generated | Multipart parsing fails server-side | Open — not part of the six fixed bugs |
-| `unwrapResponseData` picks arbitrarily on multi-array responses | First key in `Object.keys()` order wins, no name-based tie-break | Every CMS route passes through this function; a second array field added upstream silently misroutes | Open |
+| `unwrapResponseData` picks arbitrarily on multi-array responses | First key in `Object.keys()` order wins, no name-based tie-break | Was "every CMS route passes through this function" — untrue since `src/services/` was deleted, after which it had zero importers | **Resolved by deletion 2026-09-02** — `src/lib/api-helper.ts` and its 18 tests are gone. See the CMS section at the end of this document |
 | `hasValidJWT()` ignores expiry | Only checks the string is non-empty; `isTokenExpired()` exists and is correct but has zero callers | An expired token reads as valid client-side | Open |
 | No server-side auth guard | No `middleware.ts` anywhere in `apps/cms`; the only gate is a post-mount `useEffect` | Protected page code and its fetches run before any redirect fires | Open, security-adjacent |
 | JWT in localStorage, five obfuscated chunk keys | `apps/cms/src/lib/auth-service.ts` | Token theft via XSS not mitigated by chunking (obfuscation, not security) | Open |
@@ -352,3 +379,293 @@ so they passed while production was broken. They now assert the observed respons
 **Two throwaway tenants were created in the live Loom database during this verification:**
 `probe-x1@example.com` and `probe-x2@example.com` (password `Passw0rd!23`, unverified email,
 `BASIC` provider). Delete them when convenient.
+
+## The custom-made family — closed in the 2026-09-02 deferred-vertical pass
+
+Context: `node scripts/route-coverage.mjs` measures the NestJS API against the 694 routes of the
+Java Loom app. An earlier pass on 2026-09-02 closed the four families with confirmed live frontend
+callers and **deliberately deferred 15 custom-made routes, stubbing nothing** — the entry that
+stood here listed them. A second pass has now implemented 11 of the 15. The section below is
+rewritten to record what landed and what remains, rather than deleted.
+
+Coverage moved **637/694 (91.8%) -> 649/694 (93.5%)**; the `custom-made` MISSING family went
+**15 -> 4**.
+
+### Implemented
+
+| Method | Path | Gate | Java original |
+|---|---|---|---|
+| POST | `/add/custom-workflow` | CODE_SU | `CustomWorkflowDAOController.addWorkflow` |
+| PATCH | `/update/custom-workflow` | CODE_SU | `CustomWorkflowDAOController.updateWorkflow` |
+| GET | `/get/artisan/custom-workflow-list/{status}` | CODE_AR | `findAllCustomWorkflowsByArtisan` |
+| GET | `/get/custom-order/{orderId}/workflow-list` | CODE_SU | `findCustomWorkflowSummariesByOrderId` |
+| GET | `/get/custom-order/{orderId}/workflow/{orderItemId}` | CODE_CU | `getOrderwiseWorkflow` |
+| POST | `/trigger/impact/custom-order/{customOrderId}` | CODE_SU | `CustomImpactFactorDAOController.calculateCustomOrderImpact` |
+| GET | `/get/custom-size-profile-list` | CODE_SU | `CustomSizeProfileController.getCustomSizeProfileList` |
+| GET | `/get/custom-size-profile/{profileId}` | CODE_SU | `.getCustomSizeProfile` |
+| POST | `/add/custom-size-profile` | CODE_SU | `.createNewCustomSizeProfile` |
+| PATCH | `/update/custom-size-profile` | CODE_SU | `.updateCustomSizeProfile` |
+| DELETE | `/delete/custom-size-profile/{profileId}` | CODE_SU | `.deleteCustomSizeProfile` |
+
+Notes that matter for anyone reading the new code:
+
+- **`ImpactAssumptions` now has a port** (`commerce/impact/dto/impact-assumptions.ts`), read from
+  the `IMPACT_ASSUMPTIONS` settings row with Loom's full validity check (version > 0, non-negative
+  CO2/water rates, percentages as decimal fractions in [0,1]). It has **no default**: an absent or
+  incomplete configuration makes the engine write nothing and report
+  `IMPACT_ASSUMPTIONS_NOT_CONFIGURED` for every order item, as Loom does. The read route
+  `GET /get/impact/custom-order/{id}` now also sets `configurationError` in that case — it did not
+  before, so stale rows were rendered as current.
+- **The impact calculation is Loom's, not an approximation.** FABRIC: `fabricMeters = quantity`,
+  `co2OffsetKg = quantity x co2PerMeter`, `waterSavedLitres = quantity x waterPerMeter`,
+  `artisanHours = totalWorkHours = quantity x workflow.avgArtisanWorkHoursPerMeter`,
+  `womenArtisanHours = totalWorkHours x womenArtisanWorkPercentage`, `stitchingHours = 0`.
+  APPAREL: `totalWorkHours = stitchingHours = quantity x workflow.avgWorkHoursPerProduct`,
+  `womenStitchingHours = totalWorkHours x womenStitchingWorkPercentage`, and **no environmental
+  metrics at all** (Loom calls `applyEnvironmentalMetrics` only from the fabric branch). A missing
+  workflow or a missing rate yields a PARTIAL row naming the missing input, never a substituted
+  constant. Swatch fabric items are excluded and any stale row for them is deleted.
+- **The workflow status state machine is explicit** (`commerce/custom-workflow/dto/workflow-status.machine.ts`).
+  Loom sets any non-CREATED status and silently drops CREATED; this port keeps the same legal set
+  (`{CREATED,INITIATED,HALTED,COMPLETED} -> {INITIATED,HALTED,COMPLETED}`, and `CREATED -> CREATED`
+  as a no-op) but **400s** a request that asks to move a running workflow back to CREATED instead
+  of returning 200 having done nothing.
+- **Both writes are transactional.** `addCustomWorkflow` cascades workflow -> element + step_element
+  -> element + subprocess_element -> `workflow_custom_order_mapping` in one transaction; Loom
+  returns only the MAPPING's action code, so a workflow without its mapping is not a success, and
+  here it cannot commit at all. `updateCustomWorkflow` validates the base-pay conflict, synchronizes
+  the artisan assignments and updates the row in one transaction.
+- Both writes then recalculate the custom order's impact, reproducing Loom's
+  `publishCustomImpactRefresh`. The refresh runs after the write commits and a failure is logged,
+  not escalated into a false write failure.
+
+### Still absent, and why — none of these are stubbed
+
+**They do not exist; calling them 404s. Do not add a placeholder.**
+
+| Method | Path | Java method | Why still absent |
+|---|---|---|---|
+| GET | `/get/custom-workflow/{workflowId}` | `retrieveWorkflow` | Loom enriches the response with `ArtisanAssignmentService.populateWorkflowArtisanAssignments` and `WorkflowDAOController.populateArtisanPaymentStatus`. Neither is ported. A workflow returned without them would read to the CMS as "nobody is assigned and nobody is owed" — a fabricated answer, not a missing one. |
+| GET | `/get/custom-workflow/element/feedback` | `ElementFeedbackController.retrieveCustomWorkflowElementFeedbackList` | Lives on `ElementFeedbackController` in `commerce/workflow/`, outside this pass's ownership, and needs `findCustomWorkflowElementFeedbackByStatus` plus the email decoder (still a dummy — see the email-encryption section). |
+| GET | `/get/data-dump/custom-order` | `CustomOrderController` | `commerce/domain/custom-order*` was owned by another agent during this pass. No frontend caller; the CMS uses `/get/super-user/custom-order-list`. |
+| GET | `/get/data-dump/custom-order-item` | `CustomOrderController` | As above. |
+
+### One live route that now refuses a transition rather than half-performing it
+
+`PATCH /update/custom-workflow` throws `NotImplementedException` on the transition **into**
+`COMPLETED`. Loom's `previousStatus != COMPLETED && status == COMPLETED` edge calls
+`ArtisanPaymentRecordDAOController.calculateForWorkflow(workflowId)`, a 397-line payment engine that
+has no counterpart in `apps/api` (`commerce/artisanpayment/` is CRUD only, no `calculateForWorkflow`).
+Accepting the transition would mark a workflow done and never pay the artisans for it, which is the
+silent-data-loss failure mode this codebase has been removing. Every other transition is fully
+implemented, and re-saving an already-COMPLETED workflow is allowed (Loom does not re-run the
+payment calculation there either). Porting `calculateForWorkflow` into `commerce/artisanpayment/`
+lifts the refusal — that is the whole remaining work.
+
+### A discrepancy worth recording: `steps` on update
+
+`apps/cms/src/lib/workflow-ops.ts` records a measurement that `PATCH /update/custom-workflow`
+`{ steps }` "PERSISTS (verbatim)". That was measured against the deployed **anuprerna-backend**
+sandbox wrapper (its own note names `anuprerna-backend workflow.mapper.ts`), not against Loom.
+Loom's `CustomWorkflowDAOController.updateWorkflow` copies name, description, note, status, the
+artisan assignments and the planning metrics — **it never touches `steps`**. This port follows the
+Java. If the CMS depends on a step rewrite through this route, that is a behaviour the Node wrapper
+added and it needs its own decision, not a silent re-introduction here.
+
+### Also found, not fixed (outside the pass's ownership)
+
+- `apps/api/src/commerce/domain/order-migrated.controller.ts` — `get_get_customer_order_list_v2`
+  and `get_get_customer_order_list_all` are undecorated methods (so unrouted) that
+  `SELECT ... FROM product LIMIT 50` and return it under a `data` key as if it were an order list.
+  Dead, and misleading to read. The real routes now live on
+  `commerce/order/controller/order.controller.ts`.
+- `apps/api/src/commerce/workflow/controller/workflow.controller.ts` answers every route with the
+  key `data`, where Loom uses `workflowList` / `workflow`. The CMS reads Loom's keys
+  (`pickArray(j, "workflowList")`), so the standard-order workflow list is very likely broken in
+  the same way forex was. Not touched here — different owner — but it should be checked.
+- `apps/api/src/commerce/order/service/order.service.ts` previously exposed
+  `getProcessingOrders(customerId)`, which ignored `customerId` and returned every tenant's orders.
+  It had no callers and was replaced by the tenant-scoped `getProcessingOrderStatus`.
+
+## Storefront — 2026-09-02 documentation + test-gap pass
+
+Found while writing `apps/storefront/docs/` and filling the test gaps on
+`fix/flax-audit-remediation`. Everything below was read in the code, not inferred. Two stale rows in
+the "## Storefront" table above are corrected first.
+
+### Corrections to the Storefront table above
+
+| Stale claim | Reality on this branch |
+|---|---|
+| "No `/checkout` route at all — the storefront cannot complete a purchase" | Wrong now. `apps/storefront/src/app/checkout/page.tsx` exists and a four-step server-side checkout is wired: `/api/checkout/order` → `/api/checkout/payment-session` → the gateway → `/api/checkout/payment-callback`, with a sandbox gateway stand-in. See `apps/storefront/docs/cart-and-checkout.md`. Whether it completes against a *real* gateway is untested and unverified — the six Loom gateway action routes are still blocked by the write-guard |
+| "Still missing ~half the legacy route surface (30 routes)" | Undercounted. `find apps/storefront/src/app -name page.tsx` now returns 73, including `/wishlist`, `/review`, `/fabric-wholesaler[/[city]]`, the six `/b2b/*` PSEO pages and `/ads/[slug]` — all named as missing in that row. How much of the legacy surface is still absent was not re-measured in this pass |
+| "`dummy-data.ts` backs 9 of 10 profile routes" | The file is gone: `apps/storefront/src/lib/profile/dummy-data.ts` does not exist. Whether every profile page now has a live fetch was **not** verified in this pass — do not read this correction as "the profile pages are done" |
+
+### New items
+
+| # | Item | Evidence | Impact | Status |
+|---|---|---|---|---|
+| 1 | **Passwordless login is single-instance-only and breaks on every deploy.** The OTP store is a plain `Map` hung off the Node `global` — no file, no database, no cache | `apps/storefront/src/lib/auth/otp-store.ts` (12 lines, re-read and confirmed 2026-09-02) | Stated plainly: **every outstanding sign-in code is lost on any restart or redeploy**, and **a code issued by one instance cannot be read by another**. On Vercel, where requests may land on different lambdas and lambdas are recycled freely, a buyer can request a code and then find it rejected through no fault of their own. The passwordless lane is not safe to rely on in production as built | Open — **not fixed here.** A durable store is a backend decision (the backend already owns `relational.email_signin_code`), not a storefront one |
+| 2 | **`isWrapperToken`'s comment describes a check it does not perform.** The comment says it requires cleartext `customerId` and `roles` claims; the code only checks for three segments and a JSON-object payload | `apps/storefront/src/lib/loom/token.ts` | An agent reading the comment will believe stale/foreign tokens are filtered more tightly than they are. The genuine check is the HMAC + expiry in `verifyToken` | Open — comment, not behaviour |
+| 3 | **The write-guard allowlist is duplicated in `.harness/zero-mutation-gate.mjs`** and must be edited in two places | `apps/storefront/src/lib/loom/client.ts` says so itself, repeatedly | Two hand-synced copies of a security allowlist will drift | Open, known, and now tested on the storefront side (`src/lib/loom/client.test.ts`) — the gate's copy is still untested |
+| 4 | **Thirteen route handlers bypass both fetch wrappers**, building their own `fetch` from `env.NEXT_PUBLIC_SPRINGBOOT_API_URL` — `blogs`, `content/[blogId]`, `featured/[category]`, `navigation/{category,finish,story}/*`, `plp`, `plp/related`, `plp/segments`, `product`, `search`, `stories`, `stories/[storyId]` | `grep -rn NEXT_PUBLIC_SPRINGBOOT_API_URL apps/storefront/src/app` | Outside the demo write-guard and without Loom's required `Origin` header. All thirteen are GET-only today, so the write-guard gap is theoretical — nothing structural keeps it so. `apps/storefront/CLAUDE.md` says "ten"; the count is thirteen | Open |
+| 5 | **`NEXT_PUBLIC_API_MODE=nest` breaks 10 tests and most of the app.** Only `catalog.repository` and `cart.repository.getCart` have real `nest` branches; five route handlers merely swap the base URL and assume both backends serve the same shape (unverified). Auth, checkout, profile and wishlist have no `nest` branch at all | Measured: `NEXT_PUBLIC_API_MODE=nest pnpm vitest run src/lib/api` → 10 failed / 84 passed | The flag reads like a switch and is not one. `legacy` is the only mode that works | Open |
+| 6 | **`mergeGuestCartOnLogin` clears the guest cart even when every line failed to merge** | `apps/storefront/src/lib/guest-cart.ts` | Logging in during a backend outage silently loses the cart. Deliberate — the alternative is a double-add on the next login — but it is a silent data loss, not a neutral trade | Open, by design. Now pinned by a test so it cannot change unnoticed |
+| 7 | **`cartRepository.getCart()` swallows a 401 and returns an empty cart** | `apps/storefront/src/lib/api/repositories/cart.repository.ts`; asserted in `cart.repository.test.ts` and `cart.store.test.ts` | An expired session is indistinguishable from an empty cart in `stores/cart.store.ts`. The `/api/cart/*` routes get this right (`401 { reauth: true }`); this second read path does not | Open |
+| 8 | **`lib/pdp/pricing-engine.ts` is untested and typed `any` throughout** | `any` on every parameter; no `*.test.ts` beside it | It is the PDP price ladder — a money path — with no test and no types. Deliberately not tested: without the Angular `ProductInformationService` it was ported from, any test written now would pin the current output rather than the correct one | Open |
+| 9 | **Eight `src/app/api/auth/*` routes have no tests and were not verified**: `register`, `forgot`, `reset-password`, `verify-email`, `resend-verification`, `check-email`, `email-code/request`, `email-code/verify` | `find src/app/api/auth -name '*.test.ts'` → `login`, `me`, `guest-checkout` only | `email-code/verify` mints session tokens with no backend involvement, and `check-email` is an existence probe on the sign-in surface. Neither has a test | Open |
+| 10 | **`components/checkout/CheckoutPage.tsx` is dead code with zero importers** — `/checkout` renders `CheckoutShell` | `grep -rn CheckoutPage apps/storefront/src` finds no import | ~400 lines of a second, divergent checkout implementation that reads as live. It was the only caller of the fabricating `checkoutRepository.getShipmentList` fixed below | Open — should be deleted; not done here to keep this pass's diff to the defects named |
+| 11 | **`loomTableExplorerToken()` is dead code** in the proxy — declared with a comment explaining why it exists, then never called; the handler reads `process.env.LOOM_TABLE_EXPLORER_TOKEN` inline instead | `apps/storefront/src/app/api/backend/[...path]/route.ts` | Harmless, but it is the second-most-read file on the strangler boundary and it reads as if the function were the sanctioned accessor | Open |
+
+### Fixed in this pass
+
+Three defects, all of the same shape: **the code answered a failure with a plausible-looking value
+instead of admitting it had none.** That is the pattern this remediation exists to remove.
+
+| # | Bug | Where | Fix |
+|---|---|---|---|
+| 1 | **`GET /api/checkout/shipment` fabricated shipping prices.** When both upstreams failed it answered `200 { success: true }` with a hardcoded `DEFAULT_SHIPMENT_LIST` — ₹200 express, ₹150 regular, ₹3000 international DDP. The caller could not distinguish it from a live quote, and the figure flowed into a real order total: a buyer could be quoted, and charged, a price no backend ever produced | `apps/storefront/src/app/api/checkout/shipment/route.ts` | The fallback list is **deleted**. The route now answers `502 { shipmentList: [], success: false, message }`, relaying the backend's own message (the `/api/profile/addresses` pattern). An empty list from a *reachable* backend is treated the same way — "no options" is not a state the checkout may proceed past. Both `CheckoutShell` load paths already threw on `!res.ok` and render the error panel with a Retry button, verified by reading them, so the checkout stops instead of proceeding on a made-up number. `route.test.ts` asserts none of the fabricated amounts or ids can appear on any failure path |
+| 2 | **`checkoutRepository.getShipmentList()` carried the same defect twice over:** a hardcoded two-option fallback (₹110 / ₹200) on any failure, *and* per-field defaults written with `\|\|` — `Number(item.baseAmount) \|\| 110` overwrites a genuine `0`, the falsy-zero bug class already fixed twice in the cart adapters. A free-shipping option would have been silently charged ₹110 | `apps/storefront/src/lib/api/repositories/checkout.repository.ts` | Throws instead of fabricating; money fields read with `??` semantics so a real `0` survives; an option with no usable price is refused rather than defaulted. Its only caller is dead code (see "New items") and uses `Promise.allSettled`, so it shows no options rather than a wrong one. New `checkout.repository.test.ts` |
+| 3 | **Session tokens never expired server-side.** `decodeTokenPayload` verified the HMAC and nothing else; the `exp` claim `email-code/verify` writes into every token it mints was read by no one. A wrapper-minted session — including a stolen one — was valid forever, bounded only by the cookie's client-side `maxAge` | `apps/storefront/src/lib/auth/token-helper.ts`, `apps/storefront/src/app/api/auth/me/route.ts` | Expiry is enforced **in the helper, where every caller routes through**, not at the call site. New `verifyToken()` checks the HMAC, then `exp` (`>=`, so a token expiring exactly now is dead), and reports `expired` separately from `invalid`; a signed token with a missing or non-numeric `exp` is rejected too — a session with no stated lifetime is the same defect. `decodeTokenPayload` is now a thin wrapper over it, so its existing callers inherit the check. `/api/auth/me` uses the `expired` reason to **tear the cookie down** (`clearedSession()`) rather than fall through to Loom and leave a dead cookie in the browser. 8 new tests across `token-helper.test.ts` and `me/route.test.ts` |
+| 4 | **`POST /api/profile/addresses` reported a refused address as saved.** The backend answers HTTP 200 with `{ success: false, message }` for a rejected address; the route ignored the body and always returned `{ success: true, message: 'Address saved successfully.' }`. Both callers check `res.ok && data?.success`, so the buyer saw a confirmation and got no address | `apps/storefront/src/app/api/profile/addresses/route.ts` | The route now relays the backend's verdict: `{ success: false }` → `400` with the backend's message. Pinned by `route.test.ts` |
+
+---
+
+## CMS re-verified on `fix/flax-audit-remediation` (2026-09-02)
+
+This branch deleted `apps/cms/src/services/` (24 static-class service files) and replaced it with a
+fetch-based `src/lib/*-api.ts` layer. **The 60 tests that covered the service layer went with it**,
+leaving 33. That is the largest test regression in this repo's history and it happened silently,
+because a deleted test cannot fail. A replacement suite now exists — `apps/cms` runs **206 tests
+across 17 files**, weighted to the write paths.
+
+Full write-ups: [`frontend/cms/data-layer.md`](./frontend/cms/data-layer.md) and
+[`frontend/cms/auth-and-writes.md`](./frontend/cms/auth-and-writes.md).
+
+### Fixed in this pass
+
+| Item | Evidence | Fix |
+|---|---|---|
+| **Authentication bypass: `/api/auth/login` minted a valid session for ANY email and ANY password whenever `SANDBOX_ADMIN_TOKEN` was set** | `let token = process.env.SANDBOX_ADMIN_TOKEN` ran *before* the credential check and nothing cleared it when every auth endpoint refused; `middleware.ts` `tokenValid()` then accepted that exact value. Password auth was decorative — the same defect class as the `RolesGuard` bypass this remediation started from | **Restructured to fail closed.** The credential check (`POST /authenticate/email` against Loom) runs first and its *result* decides. The sandbox token is now an **additional** accepted credential and never a bypass: it requires `CMS_SANDBOX_LOGIN=true` **and** `NODE_ENV !== "production"` **and** a configured `CMS_SANDBOX_LOGIN_EMAIL` + `CMS_SANDBOX_LOGIN_PASSWORD` **and** an exact match. Mirrors the `PAYMENTS_LIVE_MODE` guard in `apps/api/src/common/config/env.schema.ts` — an explicit flag AND `NODE_ENV`, both required, defaulting to off. 8 regression tests in `src/app/api/auth/login/route.test.ts`, including that the sandbox path is refused under `NODE_ENV=production` and that a real backend credential still wins |
+| **`unwrapResponseData` was dead code with 18 tests protecting it** | Zero importers once `src/services/` went. Precisely the failure `TESTING.md` §2 warns about; `apps/cms/CLAUDE.md` also called it "the one choke point every response passes through", untrue since the service layer was removed | **`src/lib/api-helper.ts` and `api-helper.test.ts` deleted.** Nothing needed replacing: the envelope's `success` flag is read by `assertEnvelopeOk` and the list key by each module's own `pickArray`. The `src/test/msw.ts` comment and the `CLAUDE.md` claim were corrected |
+| `vitest.config.ts` coverage `include` listed `src/services/**`, a directory deleted on this branch | A glob matching nothing contributes nothing to the ratio, so the coverage number measured less than it appeared to | The list now names the real data layer plus the two server-side guards (`/api/crud`, `middleware.ts`); thresholds re-measured and re-set to (actual − 2%) |
+| `apps/cms/CLAUDE.md` described `src/services/`, `src/lib/api.ts` as the only client, "zero tests", and "there is no `middleware.ts`" | All four false on this branch | Rewritten. Two new reference docs added under `docs/frontend/cms/` and indexed from `docs/README.md` |
+
+### Corrections to entries earlier in this document
+
+| Entry above | Correction |
+|---|---|
+| CMS → "No server-side auth guard … no `middleware.ts` anywhere in `apps/cms`" | **Stale.** `apps/cms/src/middleware.ts` exists on this branch (104 lines) and gates every page and every `/api/*` route. The gap moved rather than closed — see the signature row below |
+| Security → "CMS proxy sets `Access-Control-Allow-Origin: *`" / "CMS proxy hardcodes `TARGET_HOST`" | **Path no longer exists.** There is no `apps/cms/src/app/api/backend/[...path]/route.ts` on this branch; the catch-all is now `src/app/api/loom/[...path]/route.ts`, which exports **only** `GET` and forwards only allowlisted path prefixes. The root `CLAUDE.md` strangler-boundary invariant still names the old path. Whether the wildcard-CORS and hardcoded-host problems survived the move is **unverified** — re-read the new route |
+| CMS → "13 of 24 service files have no try/catch" (in `apps/cms/CLAUDE.md`) | Obsolete: those files are gone. The replacement layer's problem is different — see "two error conventions" below |
+
+### Still open — CMS auth
+
+| Item | Evidence | Impact | Status |
+|---|---|---|---|
+| The middleware never verifies a JWT signature | `middleware.ts` `tokenValid()` decodes the payload and checks `exp` only; the signature segment is ignored | Any forged three-part token with a future `exp` is a valid session. Matters most for the screens that read via the server-side service token rather than the caller's, where the middleware is the only check | Open. Documented in the file as "the v1 bar"; tighten when the wrapper exposes a verification key |
+| **The CMS has no authentication of its own.** Loom is the sole credential authority; nothing in this repo stores or checks a password | `src/app/api/auth/login/route.ts` — the only credential check is `POST /authenticate/email` against Loom | If Loom is unreachable, nobody can sign in except through the explicitly-configured non-production sandbox credential. That is the correct failure mode, but it is a dependency, not authentication the CMS owns | Open and **deliberate — no credential store was invented.** Revisit at the auth cutover (`docs/features/0001-identity-dual-accept-auth.md`) |
+| `SANDBOX_ADMIN_TOKEN` is both the service credential and an accepted *session* token value | `sandbox-token.ts` / `loom-service-token.ts` vs `middleware.ts` `tokenValid()` | One secret carries two unrelated trust roles; leaking it as a service credential also grants a UI session. Now reachable only via the gated sandbox login, but the coupling remains | Open, structural |
+| `weave_user` identity is session-scoped, not attested | The cookie is written from the email typed at the login form; the Loom JWT carries only an opaque `sub` | `getIdentity()` — and therefore workflow-comment attribution and QC sign-off stamps — is who the *session* says it is, not a cryptographically attested identity | Open, documented in `feedback-identity.ts` and `signoff-identity.ts` |
+| Whether `CMS_ACCESS_USER` / `CMS_ACCESS_PASS` (the outer basic-auth gate) are set on the live Vercel deployment | Not readable from this repo | Defence in depth for the unsigned-JWT row above | **Unverified — someone with deployment access must check** |
+
+### Still open — CMS data layer
+
+| Item | Evidence | Impact | Status |
+|---|---|---|---|
+| The `*-api.ts` layer uses two incompatible error conventions | Six modules throw `BackendFetchError`; `whatsapp-api.ts` returns `Result<T>`; `custom-products-api.ts` does **both** (list returns `Result`, detail throws) | A caller has to know which convention it is holding. Ignoring an `ok:false` renders "no customers found" on a 500 — the exact failure `Result` was introduced to prevent | Open. Both conventions are now pinned by test so a change is visible |
+| `getWorkflowFeedbackList` swallows every failure, not just the documented one | `artisanflow-api.ts` — a bare `catch {}`; the comment above it justifies only the expected-forever 401 from the un-synced element-feedback route | A 500 or an envelope rejection on that route silently reads as "no pending feedback" on the order board | Open, **pinned not fixed** (`artisanflow-api.test.ts`): narrowing it changes what the board shows during a real outage, a product decision |
+| `pickArray` picks the first array on the envelope when the named key is absent | `artisanflow-api.ts` | The same order-dependent ambiguity the deleted `unwrapResponseData` carried, one layer up | Open, deliberate best-effort |
+| `src/lib/api.ts` (1,012 lines) still serves the older `'use client'` pages | 20 importers | Two data stacks run side by side; neither has replaced the other | Open — the migration is half-done, not finished |
+
+### Still open — CMS write paths
+
+| Item | Evidence | Impact | Status |
+|---|---|---|---|
+| Write logic is inlined into 48 client components | `grep -rl /api/crud src/app src/components \| grep -v src/app/api/` → 48 files | There is no reviewable write layer. `/api/crud` is the only file where a write can be inspected in one place, which is why it carries all the guards and 26 tests | Open, a structural consequence of deleting `src/services/` |
+| The dev-tooling write routes are untested | `POST /api/keywords`, `/api/story-mapping/override`, `/api/sync/run`, `/api/journey-tests/run`, `/api/pr-review/{enqueue,merge}`, `/api/feedback` + `/api/feedback/[id]` | Unprotected by tests, though `NEXT_PUBLIC_HIDE_DEV_TOOLS` hides most from the public deployment | Open — deliberately deprioritised below the entity write paths |
+| `/api/product/check-unique` sends no `Origin` header | Unlike every sibling bridge, which sends `Origin: localhost` | Harmless against the local wrapper; would fail against any backend applying `@NVerseDomainValidated` | Open, low severity, **unverified against a real Loom host** |
+| The 60 lost service tests are not fully replaced | They covered inventory, loyalty, report, review, settings, user, logistic and product domains whose replacements are now inline in client components | Those domains have no unit-testable seam, so the new suite covers the layer that exists rather than the one that was lost | Open. Extracting a hook or a plain function per write form is the remedy, per `TESTING.md` §5 |
+
+## apps/api service-layer audit — 2026-09-02, `fix/flax-audit-remediation`
+
+A deliberate sweep of the service/repository layer against the Java original at
+`/Users/saqlainrashid/Downloads/Anuprerna/loom/`, prioritised money → data integrity → tenant
+scoping. Everything here was found by reading the port beside its source, not by chasing coverage.
+
+### Fixed in this pass
+
+| # | What was wrong | Evidence | Impact | Fix |
+|---|---|---|---|---|
+| 1 | **Cart reads could return another customer's cart.** `CartRepository.findByTenantId` routed the tenant id through `ensureTenantExists`, whose last fallback is `SELECT id FROM loom_tenant LIMIT 1`. On any miss the read returned **that** tenant's cart items | `cart.repository.ts` before this pass; Loom's `findCartItemByTenant` is a plain derived finder with no such behaviour | Cross-tenant data disclosure on a gated customer route. `CODE_CU` proves the caller is *a* customer, never the owner — the guard cannot catch this | `findByTenantId` is now a plain scoped read; an unusable tenant id returns `[]`. The arbitrary-tenant fallback was also deleted from `ensureTenantExists`, which the insert path still uses. `cart.repository.spec.ts` |
+| 2 | **A GET created user accounts.** The same `ensureTenantExists` call INSERTed a guest `loom_tenant` row (with a shared hardcoded `$2b$10$defaultDummyHashedPasswordForGuestCart…` password) plus a `ROLE_CUSTOMER` grant, as a side effect of reading a cart | as above | Unbounded account creation from unauthenticated-ish reads; junk rows in `loom_tenant` | Removed from the read path. The insert path still calls it — see "Open" below |
+| 3 | **Cancelling an order left every item uncancelled.** `cancelOrder` stamped only `cancelled_at` + `cancellation_reason` | `OrderDAOController.updateOrderStatusToCancelled` also runs `orderItems.forEach(oi -> { oi.setOrderStatus(CANCELLED); oi.setUpdatedAt(now); })` | The customer-visible status in `findOrderPreviewsByTenant` is derived from `oi.order_status`, so a cancelled order still read `PROCESSING`/`DISPATCHED` to its owner | `OrderRepository.cancelOrder(id, reason)` now does both writes under one timestamp, and skips the item cascade entirely when the header write matched nothing. `order.repository.spec.ts` |
+| 4 | **Orders and custom orders were hard-deleted.** `db.delete(schema.orders)` | Both tables carry `deleted boolean NOT NULL DEFAULT false`; every Loom finder is `...AndDeletedFalse`. A hard DELETE also violates `stripe_transaction.fk_loom_order_id` | Irrecoverable loss of order history; FK violation on any order with a Stripe transaction | Both are now `set({ deleted: true })`, and `findById` / `findCustomOrderById` / both list reads filter `deleted = false` |
+| 5 | **`cancelCustomOrder(id, tenantId)` ignored `tenantId`.** The parameter was accepted and dropped | `cancelCustomOrder` before this pass; Loom reaches the entity through `findByIdAndTenantAndDeletedFalse` | Any authenticated tenant could cancel any other tenant's custom order by id | The tenant is now in the `WHERE`; a miss returns `false` and writes nothing, including no item cascade |
+| 6 | **A zero-value custom order was silently billed 1500.** `if (subTotal === 0) subTotal = 1500`, plus `String(item.price \|\| 1500)` and `String(item.quantity \|\| 10)` per item | `CustomOrderDAOController.addOrder` invents no price anywhere | Fabricated money on a live write path | Removed. The payload's totals are trusted; `Number(x) \|\| 0` keeps a genuine zero at zero |
+| 7 | **Every custom order's `adjusted_total` was 0.** The port never set it; the column defaults to `'0'` | Loom `addOrder`: `if (adjustedTotal == null \|\| adjustedTotal == 0) adjustedTotal = total`. Every later adjustment is `adjustedTotal + delta` | The order is permanently understated by its own total for every downstream adjustment | `createCustomOrder` now writes `adjustedTotal = subTotal` |
+| 8 | **`upsertExchangeRate` invented exchange rates.** With no prior snapshot it wrote GBP 106.80 / EUR 91.20 / USD 83.50 | `forex.repository.ts` before this pass | Three fabricated rates persisted into the table from which every foreign-currency price is derived | It now throws rather than seeding, and rejects an unsupported currency code or a non-positive/non-finite rate |
+| 9 | **Forex `record_date` was a full millisecond timestamp.** | Loom looks up `findFirstByRecordDate(getDateInMillisecondsWithoutTime(now))` | Rows written by the port can never be found by Loom's own reader; "latest rate" was also non-deterministic among same-day rows | `record_date` is stamped at UTC midnight and "latest" orders by `recordDate DESC, createdAt DESC` |
+| 10 | **A `version` of 0 was reported as `null`.** `r.version ? Number(r.version) : null` throughout `forex.repository.ts`; same shape for a zero rate | falsy-zero, the same class of bug as the six frontend ones fixed on 2026-08-12 | `version` is the optimistic-locking column; reporting it as `null` breaks the compare | Explicit `null`/`undefined` checks |
+| 11 | **`forex.repository.ts` carried `@ts-nocheck` over a real type error.** `createdAt: BigInt(now)` written into a `bigint({ mode: "number" })` column | surfaced the moment the pragma was removed | A wrong value in a `NOT NULL` column | Pragma removed, value corrected. The file now typechecks |
+| 12 | **`DiscountService.getAll` fabricated a coupon.** An empty or unreadable `discount` table returned `WELCOME15`, 15% off, minimum order 1000 | `discount.service.ts` before this pass | An invented discount served from a live gated route as though it were configuration | Removed. An empty catalogue returns `[]` |
+| 13 | **`findByCustomerIdPaginated` and `findCustomOrdersByTenant` fell back to tenant 1.** `Number(customerId) \|\| 1` | `order.repository.ts` before this pass | A malformed tenant id served tenant 1's orders | An unusable id now returns `[]` and issues no query |
+| 14 | **A spec asserted a falsehood about production.** `commerce/order/order.service.spec.ts` opened "This is the ONLY OrderService actually wired into the running app" | `order.module.ts` registers `./service/order.service.js` and lists only the four controllers under `controller/`; the top-level pair is imported by nothing but its own specs | Exactly the failure this repo's cardinal rule exists to prevent — a confident doc-comment describing code that does not run | Header corrected in place; the characterization tests are kept, relabelled as dead-code characterization |
+
+### Open — found this pass, deliberately not fixed
+
+| # | What | Evidence | Impact | Why not fixed / redo when |
+|---|---|---|---|---|
+| A | **`commerce/domain/` is 294 routes (a third of the API) with no service layer.** All 28 controllers inject `DATABASE_CONNECTION` and query Drizzle inline — no repository, validator, sanitizer, mapper or tenant scoping | `grep -l DATABASE_CONNECTION commerce/domain/*.controller.ts` → 28 of 28 | None of the repository-level tenant-scoping or soft-delete work in this pass protects any of it, and it cannot be unit-tested below the controller | Controllers were out of scope (another agent owns them). This is the single largest structural gap in `apps/api` |
+| B | **Five live gated endpoints return `SELECT * FROM product LIMIT 50` and ignore their path parameter.** `GET /get/impact/order/:orderId`, `POST /trigger/impact/order/:orderId`, `GET /get/impact/order/aggregation`, `GET /get/order/:orderId/workflow-list`, `GET /get/order/:orderId/workflow/:orderItemId` | `commerce/domain/order-migrated.controller.ts`; ten controllers in that directory contain at least one handler of this shape | Placeholder scaffolding shipped as real endpoints — they return products in answer to order and workflow queries | Controller scope. Fix by deleting the handlers or routing them at the real `OrderService`/`ImpactService` |
+| C | **`OrderService.createOrder` adopts an arbitrary tenant.** With no `tenantId` in the body and no authenticated tenant it runs `SELECT id FROM loom_tenant LIMIT 1`, and falls back to tenant `1` if even that fails | `service/order.service.ts`; Loom's `addOrder(LoomTenant tenant, …)` takes the tenant and has no fallback | An order attached to a stranger's account | The controller supplying the tenant is out of scope. Pinned by a test in `service/order.service.spec.ts` so the behaviour is visible. Redo when the create route is made to require an authenticated tenant |
+| D | **No forex snapshot is written onto an order.** Loom's `addOrder` ends with a switch on `order.getCurrency()` writing `rate.getUsd()/getEur()/getGbp()`, defaulting to `1.0` | `service/order.service.ts` writes no `exchangeRate`; the column is nullable so nothing complains | `orders.exchange_rate` is NULL for every order the port creates, so a foreign-currency order cannot be converted back to INR downstream | Not fixed deliberately: inventing `1.0` for a USD order is worse than a NULL. Needs the forex port wired into `OrderModule`. Pinned by a test that fails when the snapshot lands |
+| E | **`updateOrderStatusToProcessing` is not ported.** Any non-`CANCELLED` status writes only an audit note and moves no item or payment status | `OrderDAOController.updateOrderStatusToProcessing` moves eligible items to `PROCESSING` and `paymentStatus` to `PAID` (in-stock / made-to-order) or `PREPAID` (pre-order) | Payment success cannot advance an order | Out of this pass's budget. Pinned by a test |
+| F | **Cancellation reasons are hardcoded.** The port writes "Cancelled by user"/"Cancelled by admin" and never rejects | Loom returns `false` when `cancellationReason` is null or empty, and stores the caller's reason | The real reason is lost; an empty-reason cancel that Loom refuses succeeds here | Needs a DTO change on the controller. Low impact relative to A–E |
+| G | **`findExchangeRateByCode` answers an unknown currency with the whole snapshot.** `ForexHelperService` throws `IllegalArgumentException` | `forex.repository.ts` | A caller asking for JPY gets a 200 and three irrelevant rates | The current shape is what the `/forex` read route serves. Pinned by a test rather than changed |
+| H | **`ensureTenantExists` still creates guest tenants on the cart insert path**, with a shared hardcoded password hash (`$2b$10$defaultDummyHashedPasswordForGuestCart1234567890` — not a valid 60-char bcrypt hash, so it cannot authenticate, but it is committed and identical for every guest) | `cart.repository.ts` | Junk `loom_tenant` rows; a committed dummy credential | Guest-cart support is a product decision, not a bug to silently delete. Redo when guest carts are designed properly |
+| I | **`commerce/loyaltyprogram` is unaudited.** A 17-line `@ts-nocheck` pass-through service, one repository, no service or repository spec, and money columns throughout (`min_order_value`, `min_order_value_inr`, `exchange_rate numeric(8,4)`, `discount_percentage`, all `NOT NULL`) | `loyaltyprogram.service.ts`, `schema.loyaltyProgramConfig` | Same bug class as the forex findings above, unexamined | Ran out of budget. **Highest-priority remaining money module** |
+| J | **PARTIALLY RESOLVED — `forex`, `inventory` and `order` dead top-level pairs have since been deleted**, and the five orphaned specs left pointing at them (`forex/forex.controller.gates.spec.ts`, `inventory/inventory.controller.gates.spec.ts`, `order/order.controller.gates.spec.ts`, `order/order.controller.spec.ts`, `order/order.service.spec.ts`) were removed with them — each gated `create`/`getAll` handlers that no longer exist, and the co-located specs under `controller/`/`service/` cover the real handler sets. Still dead: **`commerce/<m>/<m>.service.ts` for** (`impact`, `material`, `navigation`) — the module registers `<m>/service/<m>.service.ts` instead. `misc` and `transmission` register the top-level file | each module's `*.module.ts` import line | Two services per domain, one unreachable, no marking on either. A reader (or an agent) will edit the wrong one — as the stale spec header in item 14 above shows already happened | Deleting them is a separate, mechanical change |
+| K | **310 of 665 `.ts` files under `apps/api/src` carry `@ts-nocheck`** (502 files are non-spec) | `grep -rl '@ts-nocheck' --include='*.ts' src \| wc -l` | The typechecker protects roughly half the tree. Removing the pragma from one file this pass immediately surfaced a real defect (item 11) | A per-file effort. Every `@ts-nocheck` removed should be assumed to reveal at least one bug |
+| L | **Service-layer coverage is still thin.** After this pass: 76 services with 9 co-located spec files, 55 repositories with 3, 38 mappers with 8 | `find src -name '*.service.ts' \| wc -l` etc. | Most business logic is unprotected | Deliberate: this pass went depth-first on money and tenant scoping rather than breadth-first on counts |
+
+---
+
+## `commerce/domain/` path-parameter, IDOR and `/track/*` pass
+
+Items A and B above are **partially closed**. What changed, and what is still open.
+
+### Closed this pass
+
+| What | Route(s) | Now |
+|---|---|---|
+| Ignored path parameter + arbitrary `SELECT * FROM product LIMIT 50` | `GET /get/impact/order/:orderId` | Real order impact summary for the requested id, tenant-scoped, keyed `impact` |
+| same | `GET /get/order/:orderId/workflow-list` | Loom's `findWorkflowSummariesByOrderId` ported verbatim, keyed `workflowList` |
+| Arbitrary product dump (no path param) | `GET /get/impact/order/aggregation` | Loom's `RETRIEVE_IMPACT_AGGREGATION` ported verbatim, keyed `impactAggregation` |
+| same | `GET /get/related-products/id/:csv` | Loom's `findRelatedProducts` native query per id, keyed `relatedProductsList` |
+| same | `GET /get/product-preview-list/:category` | Full preview list keyed `productPreviewList` (Loom ignores `{category}` too — reproduced, not invented) |
+| same, no Java original | `POST /trigger/impact/order/:orderId`, `GET /get/order/:orderId/workflow/:orderItemId`, `DELETE /delete/finished-product/:productId`, the two `GET /get/master/:masterId/worker/:artisanId/workflow/...` routes | `501 Not Implemented` |
+| Ignored `:id`, returned the first 50 rows | the seven `GET /get/table-explorer/data/<entity>/:id` readers in `address`, `category` (×2), `customer`, `product` (×2), `order` controllers | `WHERE id = :id`, one row or `null` |
+| **IDOR** | `GET /get/customer/loyalty/info` | Was `SELECT * FROM customer LIMIT 50` to any authenticated customer — 50 other people's rows incl. WhatsApp numbers. Now one row resolved from `@CurrentTenant()` |
+| **IDOR** | `GET /get/customer/custom-order/:orderId/fulfill`, `.../fulfillment-list` | Filtered on the path id alone; any customer could enumerate ids for others' shipment codes, tracking URLs, delivery dates. Now joined through `custom_order.tenant_id = @CurrentTenant()` |
+| **IDOR** | `GET /get/impact/order/:orderId` (`CODE_SUCU`) | Loom's `superUser ? null : tenant`, decided by the real `GatekeeperService` |
+| **Enumerable tracking** | `/track/order/:id`, `/track/awb/:id`, `/track/batch/:id` | Re-gated `CODE_SU` → `CODE_CU` and ownership-scoped (`tracking.service.ts`). `/track/all` stays `CODE_SU` |
+| **Write path that lied about writing** | `PUT`/`POST /manage/wishlist/:commaSeparatedSkuList` | Parsed the SKUs, wrote nothing, answered "Wishlist updated successfully." Now `CustomerDomainService.replaceWishlist` performs Loom's whole-list replace of `customer.wishlist` scoped by `@CurrentTenant()`; empty/oversize lists are `400` (Loom's `StringValidator(csv, 0, 9999)`), and a tenant with no `customer` row gets `success: false` (Loom's `ActionCode.NO_ACTION`) instead of a false success |
+| **Fabricated tracking records** | `TransmissionService.getAll()` | Returned two hardcoded records (`EMAIL_DISPATCH_TRANSMISSION` / `WHATSAPP_DISPATCH_TRANSMISSION`) whenever the table was empty. Override deleted — an empty table reads as empty |
+| **Invented delivery estimate and timeline** | `buildTrackingResponse` behind all four `/track/*` routes | `estimatedDelivery` was synthesized as `createdAt + 7 days` and the timeline fabricated `ORDER_PLACED` (−1d), `IN_TRANSIT` (+1d) and `DELIVERED` (+5d) with matching prose. Now: `estimatedDelivery` is always `null` (no ETA field exists), the timeline carries only the one status the record actually holds at the one timestamp it actually holds, absent fields surface as `null`, `createdAt` no longer falls back to `Date.now()`, and a record with no tracking information returns "No tracking information available" rather than a plausible blank envelope |
+
+### Still open
+
+| # | What | Why not fixed |
+|---|---|---|
+| M | **`commerce/domain/` still has no service layer for ~280 of its 294 routes.** Three services were extracted (`order-domain`, `product-domain`, `customer-domain`) covering only the routes fixed above; the rest remain inline Drizzle with swallowing catches | Deliberate. Extracting 294 routes is not a one-pass job; this pass went where correctness was actually broken. Item A stands for the remainder |
+| N | **Standard-order impact recalculation is not ported.** `POST /trigger/impact/order/:orderId` is `501` | Loom's `calculateOrderImpact` drives `ImpactCalculationService.calculateStandardImpact` per order item against persisted `ImpactAssumptions`. Only the **custom**-order engine is ported (`commerce/impact`). Redo by mirroring `CustomImpactCalculationService` for standard orders |
+| O | **`GET /get/order/:orderId/workflow/:orderItemId` has no Java original.** `RequestMapper.GET_ORDER_WORKFLOW_STATUS` is declared but no handler is mapped to it anywhere in loom | Response shape is undeterminable. `501` until someone specifies it |
+| P | **`DELETE /delete/finished-product/:productId` has no Java original.** Delete semantics (hard delete / disable / cascade to `product_finished`) unknown | `501`. A destructive endpoint that silently no-ops was worse |
+| Q | **`GET /get/master/:masterId/worker/:artisanId/workflow/:workflowId/assigned-element-details` returns two lists in Loom**, not one — `retrieveWorkflowStepElementListByArtisan` + `retrieveWorkflowSubProcessElementListByArtisan` | Neither query is ported. `501` rather than a 200 in the wrong envelope |
+| R | **`/track/*` has no guest path.** Tracking by a sequential order id without authentication is enumeration by construction | Fails closed (`CODE_CU`). A guest flow needs an unguessable per-shipment token, which does not exist in the schema. Add the column before adding the route |
+| S2 | **`/track/*` has no real ETA or carrier event source.** The fabricated ones are gone, so `estimatedDelivery` is now always `null` and the timeline holds a single status event | Correct but thin. `TransmissionPayload` stores no ETA and no event history; a real one needs either the carrier webhook or `order_item.estimated_delivery_to`. Do NOT re-add a computed estimate |
+| U | **`GET /get/product-preview-list/:category` diverges from Loom.** Loom's `findAll()` includes `disabled = true` rows; this reuses `ProductPreviewService.listActive` (`disabled = false`) and caps at 5000 | Deliberate: a disabled product must not appear in a public preview list. Flagged rather than silently matched |
+| V | **`GET /get/loyalty-program/config` and `PATCH /update/loyalty-program/config` have no Java counterpart at those paths.** Loom exposes `POST /enable/loyalty-program` (CODE_SU) and reads by customer; the customer-info route is `/get/customer/loyalty/info`, not `/get/customer/loyalty-info` | The handler semantics were ported (`enableLoyaltyProgram`: id → update, else onboard; reads are per-customer), but the *paths* were left as-is to avoid colliding with the concurrent route pass. Rename to the Loom paths in that pass |
+| W | **Loyalty adjustment/renewal/expiry emails are not sent.** Loom's `updateExistingProgram` fires onboard / renewal / adjustment / expiry notifications through `BloomsightEmailAdapterService`, and the renewal and expiry bodies carry `LoyaltyProgramCustomerMetrics` figures | Not ported. `getLoyaltyProgramCustomerMetricsList` is not available in this repo, and sending a money-bearing email with fabricated metrics is worse than sending none. The config writes themselves are complete and audited |
+| X | **`/download/report/:type` writes CSV, not PDF, and pdfkit was removed.** Loom's `ReportController` sets `text/csv` and a `.csv` filename; `FabricStockReport`/`FinishedStockReport` write rows through a `PrintWriter` | The previous TS code was a PDF generator over hardcoded placeholder stock rows. Both generators now run the real `product_zoho_relation` queries. Fields are written unquoted exactly as Java's `printf` does, so a product name containing a comma splits the row in both implementations — fix on both sides together if it matters |

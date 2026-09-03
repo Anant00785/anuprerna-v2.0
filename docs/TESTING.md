@@ -154,6 +154,18 @@ stricter automatically as more tests land — the ratchet only ever tightens.
 
 ---
 
+> **Branch note, `fix/flax-audit-remediation`, 2026-09-02.** The `apps/cms` figures below are the
+> `main` figures and no longer describe this branch. `main`'s 93 CMS tests were 33 for `src/lib`
+> plus **60 covering `src/services/*Service`, a layer this branch deleted** — those 60 tests went
+> with it, silently, because a deleted test cannot fail. The replacement suite for the
+> `src/lib/*-api.ts` layer that took its place now stands at **206 tests across 17 files**
+> (`cd apps/cms && pnpm test`), weighted to the write paths: `/api/crud` (26), `middleware.ts` (18),
+> `/api/auth/login` (17), `/api/product/{create,save}` (13), `artisanflow-api` (55). The 18 tests on
+> `src/lib/api-helper.ts` were **deleted with the module** — it had zero importers, so they were
+> protecting dead code and inflating the count (`TESTING.md` §2). It is not a
+> like-for-like restoration — see `docs/KNOWN-GAPS.md`, "CMS re-verified on
+> `fix/flax-audit-remediation`", for what the lost 60 covered that nothing now does.
+
 # Current baseline (2026-08-12)
 
 | Package | Test files | Tests | Coverage (lines) | Threshold |
@@ -274,3 +286,80 @@ meaningfully improve coverage; never lower one to make a build pass.
 
 `--passWithNoTests` has been removed from `apps/api` so an empty suite fails loudly rather than
 silently. It remains on `apps/cms` only until its first tests land, then goes.
+
+---
+
+# apps/api — writing a gate spec and a service spec (added 2026-09-02)
+
+Measured on `fix/flax-audit-remediation`, 2026-09-02: `cd apps/api && pnpm test` →
+**161 files, 2593 tests, 0 failing**. That is up from 151/2412 at the start of this pass; two
+agents were working concurrently, so both figures move. Re-measure rather than quoting these.
+
+The `588 tests` and `apps/api 330` figures earlier in this document are the 2026-08-12 baseline and
+are now stale. They are left in place because the surrounding prose is about that pass.
+
+Composition of `apps/api`'s suite, so nobody mistakes its size for coverage: **1,986 of the 2,593
+tests (77%) live in `*.controller.gates.spec.ts`**, and prove authorization and nothing else.
+Business logic below the controller has **9 service spec files against 76 services and 3 repository
+specs against 55 repositories**. See `docs/KNOWN-GAPS.md` item L.
+
+## Writing a gate spec
+
+One `*.controller.gates.spec.ts` per controller, beside it. Do not hand-roll the guard wiring — use
+the shared harness:
+
+```ts
+import { describeGates } from "../../../common/testing/gate-spec.js";
+import { GateCode } from "../../../auth/types/auth.types.js";
+import { ThingController } from "./thing.controller.js";
+
+describeGates(ThingController, {
+  getThing: GateCode.CODE_CU,
+  deleteThing: GateCode.CODE_SU,
+}, ["health"]);            // handlers that are deliberately public
+```
+
+The harness drives the **real** `RolesGuard` with the **real** `GatekeeperService` against the real
+`@RequireGate` metadata, using genuinely signed tokens. Per gated handler it asserts an accepted
+role passes, a rejected role raises `ForbiddenException`, and no header raises
+`UnauthorizedException`.
+
+**Spell the expected gate out literally.** Never read it back off the metadata — the point is that
+deleting or weakening a `@RequireGate` fails the spec instead of quietly opening the endpoint. Pick
+the gate from the corresponding Java controller under
+`loom/src/main/java/com/bloomscorp/loom/**/controller/`, and never widen one to make a test pass.
+Full detail: `apps/api/docs/AUTHORIZATION.md`.
+
+## Writing a service or repository spec
+
+Rules that made the difference in the 2026-09-02 audit, in order of how much they mattered:
+
+1. **The Java original is the authority, not the current output.** A test that pins what the port
+   returns today, without checking it against
+   `/Users/saqlainrashid/Downloads/Anuprerna/loom/src/main/java/com/bloomscorp/loom/`, is close to
+   worthless here — several bugs found this pass were exactly "the port silently changed a
+   default". Cite the source method in the test's comment, by name, so the next reader can check
+   you.
+2. **Check the code you are testing is reachable** before writing a line: `grep -rn "<file>" src`,
+   then read the owning `*.module.ts`. Six of eight `commerce/<m>/<m>.service.ts` files are dead,
+   and one existing spec confidently asserted the opposite (`docs/KNOWN-GAPS.md` item 14).
+3. **Assert what was written, not that a method was called.** For a repository, stub the Drizzle
+   builder so the `set(...)` / `values(...)` payload is captured, then assert on it —
+   `order.repository.spec.ts` and `forex.repository.spec.ts` are the worked examples. Asserting
+   `expect(repo.update).toHaveBeenCalled()` would have caught none of items 3–9.
+4. **Assert the statements NOT issued.** Half this pass's tenant-scoping tests are of the form
+   "returns `[]` and issues zero queries" or "returns `false` and does not cascade". A guard that
+   returns the right value while still running the write is not a guard.
+5. **Every money test gets its negative case.** Explicitly test 0, and test that a genuine zero
+   survives — `x || fallback` turning a legitimate `0` into a fabricated price is the single most
+   common bug in this codebase, frontend and backend alike.
+6. **Cover the five failure paths:** DB error (must propagate, never become a plausible empty
+   result), empty result, not-found, invalid input, and the boundary values.
+7. **When you find something wrong and cannot fix it, pin it and say so.** Write the test that
+   passes against the current wrong behaviour, comment *why* it is wrong with the source reference,
+   label it `PINS AN UNBUILT PATH` or `DIVERGENCE FROM LOOM`, and add the entry to
+   `docs/KNOWN-GAPS.md`. It then fails loudly the moment someone fixes it — which is the signal you
+   want. `service/order.service.spec.ts` has three of these.
+
+Do not write tests that restate the implementation, and do not chase a coverage number: see §6
+above.

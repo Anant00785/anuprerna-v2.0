@@ -1,41 +1,22 @@
-# LOOM API Migration & Swagger Gap Report
+# LOOM API Migration & Swagger Gap Report — WITHDRAWN
 
-**Audit Date**: August 13, 2026  
-**Source of Truth**: Java LOOM Original (`java-loom-original/`)  
-**Target Backend**: Anuprerna NestJS Backend (`anuprerna-v2.0/apps/api/`)  
+**Original date:** August 13, 2026
+**Withdrawn:** 2026-09-02
 
----
+This document's "Post-Migration Audit" column (54/54 modules wired, 351 Swagger
+endpoints, 100% real database integration) described intent, not the code. Its
+per-module "Active" claims are unreliable: several of the controllers it lists as
+active — `SkuGroupController`, `SpecialStatusController`, `BadgeProfileController`,
+`ProfileController`, `ContentController`, `CatalogController` — are not
+registered in any NestJS module and therefore serve nothing.
 
-## 📊 Summary Comparison
+Its one durable number is the legacy endpoint census: 686, against 694 measured.
 
-| Metric | Pre-Migration Audit | Post-Migration Audit |
-|--------|---------------------|----------------------|
-| **Java LOOM Total Endpoints** | 686 | 686 |
-| **Anuprerna Source Endpoints** | 540 | 540 |
-| **Swagger Exposed Endpoints** | 235 | **351** |
-| **Wired Domain Modules** | 31 / 54 | **54 / 54 (100%)** |
-| **TypeScript Build Errors** | 0 | **0** |
-| **Real Database Integration** | Partial | **100% (PostgreSQL)** |
+Swagger exposure was **not** re-measured for this correction — checking it needs a
+running server, and no static measurement in this repo supports the 351 figure.
+Treat Swagger coverage as **unknown/unmeasured** until someone exports
+`/docs-json` (`pnpm swagger:export`) and records the result.
 
----
-
-## 🛒 Domain Module Status
-
-- **Cart Module**: 9/9 Java LOOM endpoints active (`/get/cart-item/list`, `/add/cart-item`, `/update/cart-item`, `/delete/cart-item/{cartItemId}`, `/delete/all-cart-item`, `/get/tenant/cart-item/list`).
-- **Product Module**: Active with 11 domain controllers (`CategoryController`, `FabricProductController`, `FinishedProductController`, `ProductController`, `SegmentController`, `SubCategoryController`, `TagController`, `SkuGroupController`, `SpecialStatusController`, `ProductZohoRelationController`, `ProductSizeProfileController`).
-- **Order Module**: Active with 4 domain controllers (`OrderController`, `CustomOrderController`, `OrderFulfillmentController`, `OrderFeedbackController`).
-- **Workflow Module**: Active with 4 domain controllers (`WorkflowController`, `StepElementController`, `SubprocessElementController`, `ElementFeedbackController`).
-- **Review Module**: Active with statistics calculation (`/get/review/stats` returned `count: 293`, `rating: 5`).
-- **Forex Module**: Active with exchange rate listings (`/get/forex/exchange-rate/list` returned 871 rates).
-- **Artisan Payment Module**: Active with payment record tracking (`/get/artisan-payment/record/list`).
-- **Inventory Module**: Active with `InventoryController`.
-- **Payment Module**: Active with `PaymentController` (Razorpay & Stripe integration).
-- **Notification & Whatsapp Modules**: Active with email and WhatsApp transmission integration.
-
----
-
-## 📑 Verification Status
-
-1. **TypeScript Build**: `pnpm --filter @anuprerna/api build` passed with **0 errors**.
-2. **OpenAPI Spec**: `/docs-json` contains **351 exposed paths**.
-3. **Database Queries**: All controllers execute Drizzle ORM queries against PostgreSQL `loom-database`.
+**Read instead:** [`docs/migration-route-coverage.md`](../migration-route-coverage.md)
+— measured route coverage from `scripts/route-coverage.mjs`, including the 15
+declared-but-unregistered controllers this report counted as active.

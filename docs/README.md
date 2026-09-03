@@ -24,6 +24,8 @@ this repository. Both read the same artifacts, and both are held to the same rul
 | How is this tested, and how do I write a test here? | [`TESTING.md`](./TESTING.md) |
 | What is not done, and what is known to be wrong? | [`KNOWN-GAPS.md`](./KNOWN-GAPS.md) |
 | What does a specific legacy commerce endpoint do? | [`backend/commerce/02-api-documentation.md`](./backend/commerce/02-api-documentation.md) |
+| How does the CMS read data, and what happens when the backend fails? | [`frontend/cms/data-layer.md`](./frontend/cms/data-layer.md) |
+| How does the CMS authenticate, and which pages write what? | [`frontend/cms/auth-and-writes.md`](./frontend/cms/auth-and-writes.md) |
 | Why was a particular decision made? | [`adr/`](./adr) |
 | How do I run a cutover, rollback, or incident? | [`runbooks/`](./runbooks) |
 | The full team handbook (conventions, standards, rationale) | [`ENGINEERING-GUIDE.md`](./ENGINEERING-GUIDE.md) |

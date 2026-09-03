@@ -10,3 +10,7 @@ coverage/
 .pnpm-store/
 next-env.d.ts
 *.tsbuildinfo
+
+# Local runtime data — may contain real user PII. Never commit.
+.data/
+.env.bak*

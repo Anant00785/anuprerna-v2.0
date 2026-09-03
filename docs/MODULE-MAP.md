@@ -225,3 +225,50 @@ but `@ts-nocheck` coverage is still over half the codebase even after dropping f
 quoting them again if the branch has moved on. `@ts-nocheck` at 55.4% still means type errors
 across over half the backend are currently invisible to `tsc`; treat any refactor touching a
 `@ts-nocheck` file as untyped until that pragma is removed and the file is made to compile clean.
+
+---
+
+## 6. Re-verified 2026-09-02 (`fix/flax-audit-remediation`) — corrections to §2 and §5
+
+§5's counts are from 2026-08-12 and are now stale. Re-measured against the current branch:
+
+| Metric | 2026-08-12 | 2026-09-02 | How verified |
+|---|---:|---:|---|
+| `.ts` files under `apps/api/src` | 628 | **665** (502 non-spec) | `find apps/api/src -name '*.ts' \| wc -l` |
+| Files with `@ts-nocheck` | 348 (55.4%) | **310** (46.6% of all, ~62% of non-spec) | `grep -rl '@ts-nocheck' --include='*.ts' apps/api/src \| wc -l` |
+| Spec files | 52 | **161** | `pnpm test` file count |
+| Tests passing | 330 | **2593** | `cd apps/api && pnpm test` |
+| Controllers | 117 (repo-wide claim) | **98** under `apps/api/src` | `find apps/api/src -name '*.controller.ts' \| wc -l` |
+| Route decorators | not measured | **804**, of which **678** carry `@RequireGate` | decorator count across all controllers |
+| Services / repositories | not measured | **76 / 55**, with **9 / 3** co-located specs | `find … -name '*.service.ts'` etc. |
+
+### `commerce/domain` is missing from §2's 55 subdomains, and it is the biggest one
+
+`commerce/domain/` holds **28 controllers serving 294 routes** — more than a third of the API
+surface — registered directly in `commerce.module.ts` rather than behind a subdomain module. It has
+**no services and no repositories**: all 28 inject `DATABASE_CONNECTION` and query Drizzle inline.
+It is a parallel surface rather than a shadowing one (only 2 of its 292 distinct `(method, path)`
+pairs collide with a module controller). Some of its handlers are placeholder scaffolding shipped
+as live gated endpoints. Full write-up: `apps/api/docs/MODULES.md` §1 and `docs/KNOWN-GAPS.md`
+items A and B.
+
+### Duplicate services: six of eight top-level `<m>.service.ts` files are dead
+
+Eight `commerce/` subdomains contain both `<m>/<m>.service.ts` (a thin `CommerceDataService`
+subclass over a generic `commerce_<m>` blob table) and `<m>/service/<m>.service.ts` (the real
+domain service). The module registers exactly one:
+
+| subdomain | module registers | the other file |
+|---|---|---|
+| `forex`, `impact`, `inventory`, `material`, `navigation`, `order` | `./service/<m>.service.js` | **dead** — imported only by its own spec |
+| `misc`, `transmission` | `./<m>.service.js` | the `service/` file is the unused one |
+
+Nothing marks either file. An existing spec had already been misled by this and asserted in its
+header that the dead `OrderService` was "the ONLY OrderService actually wired into the running app"
+— see `docs/KNOWN-GAPS.md` item 14.
+
+### Where the module documentation lives now
+
+`apps/api/docs/MODULES.md` (per-module purpose, routes, tables, ports, failure behaviour),
+`apps/api/docs/AUTHORIZATION.md` (the `GateCode` → role mapping and how to gate a route), and
+`apps/api/docs/CROSS-MODULE-PORTS.md` (the port pattern and the guard test protecting it).

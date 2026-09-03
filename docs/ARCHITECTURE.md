@@ -243,3 +243,55 @@ file you're touching isn't under `@ts-nocheck` before trusting its types.
 - `docs/ENGINEERING-GUIDE.md` — conventions, stack rationale, work loop.
 - `docs/AGENT-HANDOFF.md` — handoff protocol and log.
 - `apps/*/CLAUDE.md` — per-app agent briefs; read before editing inside an app.
+
+---
+
+## 8. Inside `apps/api`: the layering, and where it is not honoured (added 2026-09-02)
+
+Verified on `fix/flax-audit-remediation`, 2026-09-02. §6 above describes how a request reaches the
+*legacy* backend; this section describes the shape of `apps/api` itself, for when it starts
+carrying traffic.
+
+### The intended layering
+
+```
+HTTP → Controller → RolesGuard (@RequireGate → GateCode → GatekeeperService)
+                  → Validator / Sanitizer (per-domain, under validators/)
+                  → Service    (business logic, ported 1:1 from a Loom DAOController)
+                  → Repository (Drizzle; the only layer that touches the DB)
+                  → Mapper     (row ⇄ DTO)
+     ← RainResponse envelope (common/response/)
+```
+
+Cross-module calls do **not** import each other's services. A consumer declares a `Symbol` port
+plus a narrow interface in its own `types/`, and the owning module binds it —
+`apps/api/docs/CROSS-MODULE-PORTS.md`.
+
+Three consequences of this layering that the code depends on:
+
+- **Authorization is role-only.** `RolesGuard` proves the caller holds a role the gate accepts. It
+  never proves the caller owns the row. **Row ownership is the repository's job** — every query
+  filtering on a tenant/customer id is a security boundary, and two of them were found leaking
+  across tenants on 2026-09-02 (`docs/KNOWN-GAPS.md` items 1 and 5).
+- **The repository is the only place a soft-delete or optimistic-locking `version` check can live.**
+  Both `orders`/`custom_order` (`deleted`) and `cart_item` (`version`) rely on this, and both had
+  regressed.
+- **The Java original is the specification.** Ported services carry per-method references to
+  `loom/src/main/java/com/bloomscorp/loom/**`. Divergences are meant to be commented in place; the
+  ones found silently changing a default are listed in `docs/KNOWN-GAPS.md`.
+
+### Where the layering is not honoured
+
+- **`commerce/domain/` — 28 controllers, 294 routes, no service layer.** More than a third of the
+  API's 804 route decorators. All 28 inject `DATABASE_CONNECTION` and query Drizzle inline: no
+  repository, no validator, no mapper, no tenant scoping, and nothing testable below the
+  controller. It is a parallel surface, not a shadowing one (2 route collisions out of 292). See
+  `apps/api/docs/MODULES.md` §1.
+- **Two services per subdomain in eight places, six of them dead.** `docs/MODULE-MAP.md` §6.
+- **`@ts-nocheck` on 310 of 665 files**, so the compiler is not enforcing the layer boundaries it
+  otherwise would.
+
+### Module documentation
+
+Per-module purpose, routes, tables, ports and failure behaviour: `apps/api/docs/MODULES.md`.
+Authorization: `apps/api/docs/AUTHORIZATION.md`. Ports: `apps/api/docs/CROSS-MODULE-PORTS.md`.
