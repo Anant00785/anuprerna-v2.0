@@ -9,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -95,18 +96,18 @@ export class SuperUserDomainController {
   @ApiBody({ type: SuperUserRegistrationDto })
   @ApiResponse({ status: 201, description: "Superuser registered" })
   async post_super_user_registration(@Body() body: SuperUserRegistrationDto) {
-    try {
-      const [inserted] = await this.db
-        .insert(schema.superUser)
-        .values({
-          tenantId: Number(body.tenantId || 1),
-        })
-        .returning();
+    // Loom's createNewSuperUser never guesses a tenant — registering without a
+    // tenant id must fail, not silently grant super-user on tenant 1.
+    if (!body?.tenantId) throw new BadRequestException("tenantId is required");
 
-      return keyedResponse("data", inserted ? [formatSuperUser(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.superUser)
+      .values({
+        tenantId: Number(body.tenantId),
+      })
+      .returning();
+
+    return keyedResponse("data", inserted ? [formatSuperUser(inserted)] : []);
   }
 
   @Get("/get/super-user/order-list/search")

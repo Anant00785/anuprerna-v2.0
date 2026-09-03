@@ -10,6 +10,7 @@ import {
   Inject,
   UseGuards,
   NotImplementedException,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,

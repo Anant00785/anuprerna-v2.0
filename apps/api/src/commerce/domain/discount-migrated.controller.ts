@@ -9,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -96,6 +97,18 @@ export class CreateDiscountCouponDto {
   @IsOptional()
   @IsString()
   usageType?: string;
+
+  @ApiProperty({ example: 1756857600000, description: "Validity start (epoch ms)" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  startDate!: number;
+
+  @ApiPropertyOptional({ example: 1759449600000, description: "Validity end (epoch ms); 0/omitted = no expiry" })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  endDate?: number;
 
   @ApiPropertyOptional({ example: true, description: "Active status" })
   @IsOptional()
@@ -315,26 +328,40 @@ export class DiscountMigratedDomainController {
   @ApiBody({ type: CreateDiscountCouponDto })
   @ApiResponse({ status: 201, description: "Discount coupon created" })
   async post_add_discount(@Body() body: CreateDiscountCouponDto) {
-    try {
-      const [inserted] = await (this.db as any)
-        .insert(schema.discount)
-        .values({
-          couponCode: body.couponCode || "FESTIVE20",
-          discountPercentage: body.discountPercentage || 20.0,
-          minimumOrderValue: body.minimumOrderValue || 1000,
-          discountType: body.discountType || "PERCENTAGE_OFF",
-          discountMethod: body.discountMethod || "MANUAL",
-          location: body.location || "DOMESTIC",
-          usageType: body.usageType || "MULTIPLE",
-          startDate: BigInt(Date.now()),
-          endDate: BigInt(Date.now() + 30 * 86400000),
-          active: body.active !== undefined ? body.active : true,
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatDiscount(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
+    // Loom's DiscountAddValidator requires a valid type/method/location/usage
+    // and a real date range from the caller. Nothing here is invented: a
+    // genuine 0% discount or 0 minimum survives, and a missing money value,
+    // coupon code or start date is a 400 — never FESTIVE20/20%/1000/+30 days.
+    if (!body?.couponCode) throw new BadRequestException("couponCode is required");
+    if (body.discountPercentage === undefined || body.discountPercentage === null) {
+      throw new BadRequestException("discountPercentage is required");
     }
+    if (body.minimumOrderValue === undefined || body.minimumOrderValue === null) {
+      throw new BadRequestException("minimumOrderValue is required");
+    }
+    if (!body.discountType) throw new BadRequestException("discountType is required");
+    if (!body.discountMethod) throw new BadRequestException("discountMethod is required");
+    if (!body.location) throw new BadRequestException("location is required");
+    if (!body.usageType) throw new BadRequestException("usageType is required");
+    if (!body.startDate) throw new BadRequestException("startDate is required");
+
+    const [inserted] = await (this.db as any)
+      .insert(schema.discount)
+      .values({
+        couponCode: body.couponCode,
+        discountPercentage: body.discountPercentage,
+        minimumOrderValue: body.minimumOrderValue,
+        discountType: body.discountType,
+        discountMethod: body.discountMethod,
+        location: body.location,
+        usageType: body.usageType,
+        startDate: BigInt(body.startDate),
+        // endDate 0 = no expiry (column default in the legacy schema).
+        endDate: BigInt(body.endDate ?? 0),
+        active: body.active !== undefined ? body.active : true,
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatDiscount(inserted)] : []);
   }
 
   @Patch("/update/discount")

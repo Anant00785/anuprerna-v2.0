@@ -9,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -17,9 +18,8 @@ import {
   ApiResponse,
   ApiTags,
   ApiProperty,
-  ApiPropertyOptional,
 } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString, IsNumber } from "class-validator";
+import { IsNotEmpty, IsString, IsNumber } from "class-validator";
 import { Type } from "class-transformer";
 import * as schema from "../../database/schema/schema.js";
 import { eq, desc } from "drizzle-orm";
@@ -28,6 +28,9 @@ import { keyedResponse, simpleResponse } from "../../common/response/rain-respon
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { GateCode } from "../../auth/types/auth.types.js";
 
+// Field names mirror Loom's LoyaltyProgramConfig entity (what the CMS
+// wholesale screen actually posts). LoyaltyProgramConfigValidator requires
+// every one of them (> 0, percentage <= 100) — no defaults are invented.
 export class EnableLoyaltyProgramDto {
   @ApiProperty({ example: 50934301, description: "Customer ID to enroll into loyalty program" })
   @IsNotEmpty()
@@ -35,28 +38,40 @@ export class EnableLoyaltyProgramDto {
   @Type(() => Number)
   customerId!: number;
 
-  @ApiPropertyOptional({ example: "EUR", description: "Currency (EUR, GBP, USD, INR)" })
-  @IsOptional()
+  @ApiProperty({ example: "EUR", description: "Currency (EUR, GBP, USD, INR)" })
+  @IsNotEmpty()
   @IsString()
-  currency?: string;
+  minimumOrderValueCurrency!: string;
 
-  @ApiPropertyOptional({ example: 1000, description: "Minimum order value" })
-  @IsOptional()
+  @ApiProperty({ example: 1000, description: "Minimum order value in the given currency" })
+  @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  minOrderValue?: number;
+  minimumOrderValue!: number;
 
-  @ApiPropertyOptional({ example: 12, description: "Discount percentage" })
-  @IsOptional()
+  @ApiProperty({ example: 90000, description: "Minimum order value converted to INR" })
+  @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  discountPercentage?: number;
+  minimumOrderValueINR!: number;
 
-  @ApiPropertyOptional({ example: 1, description: "Tenure in months" })
-  @IsOptional()
+  @ApiProperty({ example: 90.5, description: "Exchange rate used for the INR conversion" })
+  @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  tenure?: number;
+  exchangeRate!: number;
+
+  @ApiProperty({ example: 12, description: "Discount percentage" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  discountPercentage!: number;
+
+  @ApiProperty({ example: 1, description: "Tenure in months" })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  tenure!: number;
 }
 
 function formatLoyaltyConfig(r: any) {
@@ -92,60 +107,85 @@ export class LoyaltyMigratedDomainController {
   @ApiBody({ type: EnableLoyaltyProgramDto })
   @ApiResponse({ status: 201, description: "Loyalty program enabled" })
   async post_enable_loyalty_program(@Body() body: EnableLoyaltyProgramDto) {
-    try {
-      const customerId = Number(body.customerId || 50934301);
-      const currency = body.currency || "EUR";
-      const minOrderVal = body.minOrderValue ? String(body.minOrderValue) : "1000.00";
-      const discount = body.discountPercentage ? String(body.discountPercentage) : "12.00";
-      const tenure = body.tenure ? Number(body.tenure) : 1;
-      const now = Date.now();
-      const endDate = now + tenure * 30 * 24 * 60 * 60 * 1000;
-
-      // Check if already exists
-      const existing = await this.db
-        .select()
-        .from(schema.loyaltyProgramConfig)
-        .where(eq(schema.loyaltyProgramConfig.customerId, customerId))
-        .limit(1);
-
-      let resultRecord: any;
-      if (existing && existing.length > 0) {
-        const [updated] = await this.db
-          .update(schema.loyaltyProgramConfig)
-          .set({
-            minOrderValueCurrency: currency,
-            minOrderValue: minOrderVal,
-            discountPercentage: discount,
-            tenure: tenure,
-            active: true,
-            updatedAt: now,
-          })
-          .where(eq(schema.loyaltyProgramConfig.id, existing[0].id))
-          .returning();
-        resultRecord = updated;
-      } else {
-        const [inserted] = await this.db
-          .insert(schema.loyaltyProgramConfig)
-          .values({
-            customerId: customerId,
-            minOrderValueCurrency: currency,
-            minOrderValue: minOrderVal,
-            minOrderValueInr: minOrderVal,
-            exchangeRate: "1.0000",
-            tenure: tenure,
-            discountPercentage: discount,
-            startDate: now,
-            endDate: Number(endDate),
-            active: true,
-            createdAt: now,
-          })
-          .returning();
-        resultRecord = inserted;
-      }
-
-      return keyedResponse("data", resultRecord ? [formatLoyaltyConfig(resultRecord)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
+    // Mirrors Loom's LoyaltyProgramConfigValidator: every field is required
+    // and positive; percentage capped at 100. A missing value is a 400, never
+    // an enrollment of customer 50934301 on invented EUR/1000/12% terms.
+    if (!body || !(Number(body.customerId) > 0)) {
+      throw new BadRequestException("customerId is required");
     }
+    if (!body.minimumOrderValueCurrency) {
+      throw new BadRequestException("minimumOrderValueCurrency is required");
+    }
+    if (!(Number(body.minimumOrderValue) > 0)) {
+      throw new BadRequestException("minimumOrderValue must be a positive number");
+    }
+    if (!(Number(body.minimumOrderValueINR) > 0)) {
+      throw new BadRequestException("minimumOrderValueINR must be a positive number");
+    }
+    if (!(Number(body.exchangeRate) > 0)) {
+      throw new BadRequestException("exchangeRate must be a positive number");
+    }
+    if (!(Number(body.discountPercentage) > 0) || Number(body.discountPercentage) > 100) {
+      throw new BadRequestException("discountPercentage must be between 0 and 100");
+    }
+    if (!(Number(body.tenure) > 0)) {
+      throw new BadRequestException("tenure must be a positive number");
+    }
+
+    const customerId = Number(body.customerId);
+    const currency = body.minimumOrderValueCurrency;
+    const minOrderVal = String(body.minimumOrderValue);
+    const minOrderValInr = String(body.minimumOrderValueINR);
+    const exchangeRate = String(body.exchangeRate);
+    const discount = String(body.discountPercentage);
+    const tenure = Number(body.tenure);
+    const now = Date.now();
+    const endDate = now + tenure * 30 * 24 * 60 * 60 * 1000;
+
+    // Check if already exists
+    const existing = await this.db
+      .select()
+      .from(schema.loyaltyProgramConfig)
+      .where(eq(schema.loyaltyProgramConfig.customerId, customerId))
+      .limit(1);
+
+    let resultRecord: typeof schema.loyaltyProgramConfig.$inferSelect | undefined;
+    if (existing && existing.length > 0) {
+      const [updated] = await this.db
+        .update(schema.loyaltyProgramConfig)
+        .set({
+          minOrderValueCurrency: currency,
+          minOrderValue: minOrderVal,
+          minOrderValueInr: minOrderValInr,
+          exchangeRate: exchangeRate,
+          discountPercentage: discount,
+          tenure: tenure,
+          active: true,
+          updatedAt: now,
+        })
+        .where(eq(schema.loyaltyProgramConfig.id, existing[0].id))
+        .returning();
+      resultRecord = updated;
+    } else {
+      const [inserted] = await this.db
+        .insert(schema.loyaltyProgramConfig)
+        .values({
+          customerId: customerId,
+          minOrderValueCurrency: currency,
+          minOrderValue: minOrderVal,
+          minOrderValueInr: minOrderValInr,
+          exchangeRate: exchangeRate,
+          tenure: tenure,
+          discountPercentage: discount,
+          startDate: now,
+          endDate: Number(endDate),
+          active: true,
+          createdAt: now,
+        })
+        .returning();
+      resultRecord = inserted;
+    }
+
+    return keyedResponse("data", resultRecord ? [formatLoyaltyConfig(resultRecord)] : []);
   }
 }

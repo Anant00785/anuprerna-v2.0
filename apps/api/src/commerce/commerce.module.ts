@@ -45,6 +45,7 @@ import { TenantModule } from "./tenant/tenant.module.js";
 import { AddressModule } from "./address/address.module.js";
 import { OrderModule } from "./order/order.module.js";
 import { PaymentModule } from "./payment/payment.module.js";
+import { CheckoutModule } from "./checkout/checkout.module.js";
 import { DiscountModule } from "./discount/discount.module.js";
 import { InventoryModule } from "./inventory/inventory.module.js";
 import { ReviewModule } from "./review/review.module.js";
@@ -118,6 +119,7 @@ import { CustomerDomainService } from "./domain/customer-domain.service.js";
     AddressModule,
     OrderModule,
     PaymentModule,
+    CheckoutModule,
     DiscountModule,
     InventoryModule,
     ReviewModule,
@@ -149,6 +151,7 @@ import { CustomerDomainService } from "./domain/customer-domain.service.js";
     AddressModule,
     OrderModule,
     PaymentModule,
+    CheckoutModule,
     DiscountModule,
     InventoryModule,
     ReviewModule,

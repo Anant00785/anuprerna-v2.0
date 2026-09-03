@@ -9,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -297,21 +298,23 @@ export class ProfilesDomainController {
   @ApiBody({ type: CreateSizeProfileOptionDto })
   @ApiResponse({ status: 201, description: "Size option created" })
   async post_add_size_profile_option(@Body() body: CreateSizeProfileOptionDto) {
-    try {
-      const [inserted] = await this.db
-        .insert(schema.sizeProfileOption)
-        .values({
-          profileId: Number(body.profileId || 109845),
-          label: body.label || "L",
-          keyFeature: body.keyFeature || "",
-          sortOrder: body.sortOrder || 1,
-          consumedFabric: body.consumedFabric || "2.50",
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatSizeProfileOption(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Loom requires the parent profile and label; a missing value is a
+    // rejection, never a substitute id or invented measurement.
+    if (!body?.profileId) throw new BadRequestException("profileId is required");
+    if (!body.label) throw new BadRequestException("label is required");
+
+    const [inserted] = await this.db
+      .insert(schema.sizeProfileOption)
+      .values({
+        profileId: Number(body.profileId),
+        label: body.label,
+        keyFeature: body.keyFeature ?? "",
+        sortOrder: body.sortOrder ?? 0,
+        // Column default '0.0' applies when omitted — never invent a consumption.
+        ...(body.consumedFabric !== undefined ? { consumedFabric: body.consumedFabric } : {}),
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatSizeProfileOption(inserted)] : []);
   }
 
   @Patch("/update/size-profile-option")
@@ -384,21 +387,26 @@ export class ProfilesDomainController {
   @ApiBody({ type: CreateSizeProfileGuideDto })
   @ApiResponse({ status: 201, description: "Size guide created" })
   async post_add_size_profile_guide(@Body() body: CreateSizeProfileGuideDto) {
-    try {
-      const [inserted] = await this.db
-        .insert(schema.sizeProfileGuide)
-        .values({
-          profileId: Number(body.profileId || 2644),
-          optionId: Number(body.optionId || 4084),
-          guide: body.guide || "Bust",
-          value: body.value || 34,
-          sortOrder: body.sortOrder || 1,
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatSizeProfileGuide(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
+    // No substitute profile/option ids and no invented measurement: reject
+    // missing values. A genuine measurement of 0 is kept, not replaced.
+    if (!body?.profileId) throw new BadRequestException("profileId is required");
+    if (!body.optionId) throw new BadRequestException("optionId is required");
+    if (!body.guide) throw new BadRequestException("guide is required");
+    if (body.value === undefined || body.value === null) {
+      throw new BadRequestException("value is required");
     }
+
+    const [inserted] = await this.db
+      .insert(schema.sizeProfileGuide)
+      .values({
+        profileId: Number(body.profileId),
+        optionId: Number(body.optionId),
+        guide: body.guide,
+        value: body.value,
+        sortOrder: body.sortOrder ?? 0,
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatSizeProfileGuide(inserted)] : []);
   }
 
   @Patch("/update/size-profile-guide")
@@ -590,29 +598,28 @@ export class ProfilesDomainController {
   @ApiBody({ type: UpdateArtisanProfileDto })
   @ApiResponse({ status: 200, description: "Artisan profile updated" })
   async patch_update_artisan_profile(@Body() body: UpdateArtisanProfileDto) {
-    try {
-      const updateSet: any = {
-        lastUpdateTime: BigInt(Date.now()),
-      };
-      if (body.state) updateSet.state = body.state;
-      if (body.district) updateSet.district = body.district;
-      if (body.villageTown) updateSet.villageTown = body.villageTown;
-      if (body.postalCode) updateSet.postalCode = body.postalCode;
-      if (body.expertise) updateSet.expertise = body.expertise;
-      if (body.experience !== undefined) updateSet.experience = body.experience;
-      if (body.hasWhatsapp !== undefined) updateSet.hasWhatsapp = body.hasWhatsapp;
+    // Never fall back to a real artisan's id: an update without an id is a
+    // rejection, not a write against row 47916439.
+    if (!body?.id) throw new BadRequestException("Artisan ID is required");
 
-      const artisanId = body.id ? BigInt(body.id) : 47916439n;
-      const [updated] = await this.db
-        .update(schema.artisan)
-        .set(updateSet)
-        .where(eq(schema.artisan.id, artisanId))
-        .returning();
+    const updateSet: Partial<typeof schema.artisan.$inferInsert> = {
+      lastUpdateTime: Date.now(),
+    };
+    if (body.state) updateSet.state = body.state;
+    if (body.district) updateSet.district = body.district;
+    if (body.villageTown) updateSet.villageTown = body.villageTown;
+    if (body.postalCode) updateSet.postalCode = body.postalCode;
+    if (body.expertise) updateSet.expertise = body.expertise;
+    if (body.experience !== undefined) updateSet.experience = body.experience;
+    if (body.hasWhatsapp !== undefined) updateSet.hasWhatsapp = body.hasWhatsapp;
 
-      return keyedResponse("data", updated ? [formatArtisan(updated)] : []);
-    } catch (err) {
-      return simpleResponse(true, "Artisan profile updated successfully.");
-    }
+    const [updated] = await this.db
+      .update(schema.artisan)
+      .set(updateSet)
+      .where(eq(schema.artisan.id, BigInt(body.id)))
+      .returning();
+
+    return keyedResponse("data", updated ? [formatArtisan(updated)] : []);
   }
 
   @Get("/get/table-explorer/data/finish-profile-item/:id")

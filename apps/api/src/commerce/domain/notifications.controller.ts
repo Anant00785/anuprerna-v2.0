@@ -167,33 +167,53 @@ export class NotificationsDomainController {
     // try/catch below so the rejection is not swallowed into an empty 200.
     if (!body.orderId) throw new BadRequestException("orderId is required");
     if (!body.recipientEmail) throw new BadRequestException("recipientEmail is required");
-    const orderId = BigInt(body.orderId);
     const recipient = body.recipientEmail;
 
-    try {
+    // The tenant identity on the audit row comes from the order itself —
+    // Loom resolves it from the request context, never a hardcoded tenant.
+    const order = await this.findOrder(body.orderId);
 
-      const [inserted] = await (this.db as any)
-        .insert(schema.emailNotificationHistory)
-        .values({
-          triggerType: "PRE_ORDER_READY_TO_SHIP",
-          entityType: "ORDER",
-          entityId: orderId,
-          tenantId: 9365n,
-          tenantName: "Admin",
-          toEmails: [recipient],
-          templateId: "order_prepared_v1",
-          status: "POST_SUCCESS",
-          httpStatus: 200,
-          attemptCount: 1,
-          createdAt: BigInt(Date.now()),
-          sentAt: BigInt(Date.now()),
-        })
-        .returning();
+    const [inserted] = await this.db
+      .insert(schema.emailNotificationHistory)
+      .values({
+        triggerType: "PRE_ORDER_READY_TO_SHIP",
+        entityType: "ORDER",
+        entityId: Number(body.orderId),
+        tenantId: order.tenantId,
+        tenantName: order.tenantName,
+        toEmails: [recipient],
+        templateId: "order_prepared_v1",
+        status: "POST_SUCCESS",
+        httpStatus: 200,
+        attemptCount: 1,
+        createdAt: Date.now(),
+        sentAt: Date.now(),
+      })
+      .returning();
 
-      return keyedResponse("data", inserted ? [formatEmailHistory(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", inserted ? [formatEmailHistory(inserted)] : []);
+  }
+
+  /**
+   * Resolve an order's owning tenant (id, display name, email). 400 when the
+   * order or its tenant does not exist — never a substitute tenant.
+   */
+  private async findOrder(orderId: number | string, kind: "ORDER" | "CUSTOM_ORDER" = "ORDER") {
+    const idStr = String(orderId);
+    if (!/^\d+$/.test(idStr)) throw new BadRequestException(`Invalid order id: ${idStr}`);
+    const id = BigInt(idStr);
+    const [row] =
+      kind === "ORDER"
+        ? await this.db.select({ tenantId: schema.orders.tenantId }).from(schema.orders).where(eq(schema.orders.id, id)).limit(1)
+        : await this.db.select({ tenantId: schema.customOrder.tenantId }).from(schema.customOrder).where(eq(schema.customOrder.id, id)).limit(1);
+    if (!row) throw new BadRequestException(`Order ${idStr} not found`);
+    const [tenant] = await this.db
+      .select({ userName: schema.loomTenant.userName, email: schema.loomTenant.email })
+      .from(schema.loomTenant)
+      .where(eq(schema.loomTenant.id, BigInt(row.tenantId)))
+      .limit(1);
+    if (!tenant) throw new BadRequestException(`Tenant for order ${idStr} not found`);
+    return { tenantId: row.tenantId, tenantName: tenant.userName, email: tenant.email };
   }
 
   @Post("/send/email/confirmed-order/:orderId")
@@ -202,30 +222,29 @@ export class NotificationsDomainController {
   @ApiParam({ name: "orderId", example: 278006, type: Number })
   @ApiResponse({ status: 201, description: "Order confirmation email queued" })
   async post_send_email_confirmed_order_orderId(@Param("orderId") orderId: string) {
-    try {
-      const parsedOrderId = BigInt(orderId);
-      const [inserted] = await (this.db as any)
-        .insert(schema.emailNotificationHistory)
-        .values({
-          triggerType: "ORDER_CONFIRMATION",
-          entityType: "ORDER",
-          entityId: parsedOrderId,
-          tenantId: 9365n,
-          tenantName: "Admin",
-          toEmails: ["customer@example.com"],
-          templateId: "order_confirmation_v1",
-          status: "POST_SUCCESS",
-          httpStatus: 200,
-          attemptCount: 1,
-          createdAt: BigInt(Date.now()),
-          sentAt: BigInt(Date.now()),
-        })
-        .returning();
+    // Recipient and tenant come from the order's own tenant row — Loom
+    // resolves both server-side; nothing is addressed to an invented inbox.
+    const order = await this.findOrder(orderId);
 
-      return keyedResponse("data", inserted ? [formatEmailHistory(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.emailNotificationHistory)
+      .values({
+        triggerType: "ORDER_CONFIRMATION",
+        entityType: "ORDER",
+        entityId: Number(orderId),
+        tenantId: order.tenantId,
+        tenantName: order.tenantName,
+        toEmails: [order.email],
+        templateId: "order_confirmation_v1",
+        status: "POST_SUCCESS",
+        httpStatus: 200,
+        attemptCount: 1,
+        createdAt: Date.now(),
+        sentAt: Date.now(),
+      })
+      .returning();
+
+    return keyedResponse("data", inserted ? [formatEmailHistory(inserted)] : []);
   }
 
   @Post("/send/email/confirmed-custom-order/:orderId")
@@ -234,30 +253,29 @@ export class NotificationsDomainController {
   @ApiParam({ name: "orderId", example: 2440968, type: Number })
   @ApiResponse({ status: 201, description: "Custom order confirmation email queued" })
   async post_send_email_confirmed_custom_order_orderId(@Param("orderId") orderId: string) {
-    try {
-      const parsedOrderId = BigInt(orderId || "2440968");
-      const [inserted] = await (this.db as any)
-        .insert(schema.emailNotificationHistory)
-        .values({
-          triggerType: "CUSTOM_ORDER_CONFIRMATION",
-          entityType: "CUSTOM_ORDER",
-          entityId: parsedOrderId,
-          tenantId: 9365n,
-          tenantName: "Admin",
-          toEmails: ["customer@example.com"],
-          templateId: "custom_order_confirmation_v1",
-          status: "POST_SUCCESS",
-          httpStatus: 200,
-          attemptCount: 1,
-          createdAt: BigInt(Date.now()),
-          sentAt: BigInt(Date.now()),
-        })
-        .returning();
+    // No default order id and no invented recipient: the custom order must
+    // exist, and both tenant and inbox come from its own tenant row.
+    const order = await this.findOrder(orderId, "CUSTOM_ORDER");
 
-      return keyedResponse("data", inserted ? [formatEmailHistory(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.emailNotificationHistory)
+      .values({
+        triggerType: "CUSTOM_ORDER_CONFIRMATION",
+        entityType: "CUSTOM_ORDER",
+        entityId: Number(orderId),
+        tenantId: order.tenantId,
+        tenantName: order.tenantName,
+        toEmails: [order.email],
+        templateId: "custom_order_confirmation_v1",
+        status: "POST_SUCCESS",
+        httpStatus: 200,
+        attemptCount: 1,
+        createdAt: Date.now(),
+        sentAt: Date.now(),
+      })
+      .returning();
+
+    return keyedResponse("data", inserted ? [formatEmailHistory(inserted)] : []);
   }
 
   @Get("/get/cron-logs")
@@ -385,21 +403,21 @@ export class NotificationsDomainController {
   @ApiBody({ type: RetriggerEmailAuditLogDto })
   @ApiResponse({ status: 200, description: "Email retriggered" })
   async post_retrigger_email_audit_log(@Body() body: RetriggerEmailAuditLogDto) {
-    try {
-      const [updated] = await (this.db as any)
-        .update(schema.emailNotificationHistory)
-        .set({
-          status: "POST_SUCCESS",
-          attemptCount: 2,
-          sentAt: BigInt(Date.now()),
-        })
-        .where(eq(schema.emailNotificationHistory.id, BigInt(body.auditLogId || 1)))
-        .returning();
+    // No fallback onto audit row 1 — a missing id is a rejection.
+    if (!body?.auditLogId) throw new BadRequestException("auditLogId is required");
 
-      return simpleResponse(true, "Email retriggered successfully.");
-    } catch (err) {
-      return simpleResponse(false, "Failed to retrigger email.");
-    }
+    const [updated] = await this.db
+      .update(schema.emailNotificationHistory)
+      .set({
+        status: "POST_SUCCESS",
+        attemptCount: 2,
+        sentAt: Date.now(),
+      })
+      .where(eq(schema.emailNotificationHistory.id, BigInt(body.auditLogId)))
+      .returning();
+
+    if (!updated) throw new BadRequestException(`Email audit log ${body.auditLogId} not found`);
+    return simpleResponse(true, "Email retriggered successfully.");
   }
 
   @Patch("/customer/whatsapp/dismiss")

@@ -21,46 +21,38 @@ export class ProductMigratedDomainController {
   @Get("/get/product-preview-list/csv/:commaSeparatedCSVList")
   @ApiOperation({ summary: "Bulk product preview retrieval by SKU list" })
   async get_get_product_preview_list_csv_commaSeparatedCSVList(@Param('commaSeparatedCSVList') commaSeparatedCSVList: string) {
-    try {
-      const skuList = (commaSeparatedCSVList || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const skuList = (commaSeparatedCSVList || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-      if (skuList.length === 0) {
-        return { success: true, message: "", productPreviewList: [], data: [] };
-      }
-
-      const rows = await (this.db as any)
-        .select({
-          id: schema.product.id,
-          productId: schema.product.id,
-          name: schema.product.name,
-          sku: schema.product.sku,
-          heroImage: schema.product.heroImage,
-          price: schema.product.price,
-          unit: schema.product.unit,
-          slug: schema.product.slug,
-          productGroup: schema.product.productGroup,
-        })
-        .from(schema.product)
-        .where(inArray(schema.product.sku, skuList));
-
-      return {
-        success: true,
-        message: "",
-        productPreviewList: rows || [],
-        data: rows || [],
-      };
-    } catch (err) {
-      console.error("[Wishlist SKU Lookup Error]:", err);
-      return {
-        success: true,
-        message: "",
-        productPreviewList: [],
-        data: [],
-      };
+    if (skuList.length === 0) {
+      return { success: true, message: "", productPreviewList: [], data: [] };
     }
+
+    // No catch fabricating an empty success envelope: a DB failure propagates
+    // as an error instead of rendering as "no products found".
+    const rows = await (this.db as any)
+      .select({
+        id: schema.product.id,
+        productId: schema.product.id,
+        name: schema.product.name,
+        sku: schema.product.sku,
+        heroImage: schema.product.heroImage,
+        price: schema.product.price,
+        unit: schema.product.unit,
+        slug: schema.product.slug,
+        productGroup: schema.product.productGroup,
+      })
+      .from(schema.product)
+      .where(inArray(schema.product.sku, skuList));
+
+    return {
+      success: true,
+      message: "",
+      productPreviewList: rows || [],
+      data: rows || [],
+    };
   }
 
   @Get("/get/related-products/id/:csv")

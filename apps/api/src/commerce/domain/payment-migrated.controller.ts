@@ -9,6 +9,7 @@ import {
   Body,
   Inject,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -72,23 +73,23 @@ export class ApproveArtisanPaymentDto {
 }
 
 export class CalculateArtisanPaymentDto {
-  @ApiPropertyOptional({ example: 47913274, description: "Artisan ID" })
-  @IsOptional()
+  @ApiProperty({ example: 47913274, description: "Artisan ID" })
+  @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  artisanId?: number;
+  artisanId!: number;
 
-  @ApiPropertyOptional({ example: 10, description: "Quantity" })
-  @IsOptional()
+  @ApiProperty({ example: 10, description: "Quantity" })
+  @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  quantity?: number;
+  quantity!: number;
 
-  @ApiPropertyOptional({ example: 50, description: "Rate per unit/meter" })
-  @IsOptional()
+  @ApiProperty({ example: 50, description: "Rate per unit/meter" })
+  @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  rate?: number;
+  rate!: number;
 }
 
 function formatPaymentRecord(r: any) {
@@ -129,33 +130,37 @@ export class PaymentMigratedDomainController {
     @Param("workflowId") workflowId: string,
     @Body() body: CalculateArtisanPaymentDto,
   ) {
-    try {
-      const parsedWorkflowId = Number(workflowId || 54196624);
-      const artisanId = body?.artisanId ? Number(body.artisanId) : 47913274;
-      const quantity = body?.quantity ? String(body.quantity) : "10.000";
-      const rate = body?.rate ? String(body.rate) : "50.00";
-      const basePay = (parseFloat(quantity) * parseFloat(rate)).toFixed(2);
-
-      const [inserted] = await this.db
-        .insert(schema.artisanPaymentRecord)
-        .values({
-          artisanId: artisanId,
-          workflowId: parsedWorkflowId,
-          effectiveQuantity: quantity,
-          rate: rate,
-          basePayment: basePay,
-          totalIncentive: "0.00",
-          totalPayment: basePay,
-          status: "PENDING",
-          calculatedAt: Date.now(),
-          quantityType: "METER",
-        })
-        .returning();
-
-      return keyedResponse("data", inserted ? [formatPaymentRecord(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
+    // Loom validates the path id (`id != null && id > 0`) and never invents a
+    // workflow, artisan, quantity or rate — a missing value is a rejection.
+    const parsedWorkflowId = Number(workflowId);
+    if (!Number.isInteger(parsedWorkflowId) || parsedWorkflowId <= 0) {
+      throw new BadRequestException("Invalid workflow ID");
     }
+    if (body?.artisanId == null || body?.quantity == null || body?.rate == null) {
+      throw new BadRequestException("artisanId, quantity and rate are required");
+    }
+    const artisanId = Number(body.artisanId);
+    const quantity = String(body.quantity);
+    const rate = String(body.rate);
+    const basePay = (parseFloat(quantity) * parseFloat(rate)).toFixed(2);
+
+    const [inserted] = await this.db
+      .insert(schema.artisanPaymentRecord)
+      .values({
+        artisanId: artisanId,
+        workflowId: parsedWorkflowId,
+        effectiveQuantity: quantity,
+        rate: rate,
+        basePayment: basePay,
+        totalIncentive: "0.00",
+        totalPayment: basePay,
+        status: "PENDING",
+        calculatedAt: Date.now(),
+        quantityType: "METER",
+      })
+      .returning();
+
+    return keyedResponse("data", inserted ? [formatPaymentRecord(inserted)] : []);
   }
 
   @Get("/get/artisan-payment/artisan/:artisanId")
