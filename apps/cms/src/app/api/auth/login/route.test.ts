@@ -54,6 +54,7 @@ describe("/api/auth/login", () => {
     delete process.env.CMS_SANDBOX_LOGIN;
     delete process.env.CMS_SANDBOX_LOGIN_EMAIL;
     delete process.env.CMS_SANDBOX_LOGIN_PASSWORD;
+    process.env.CMS_SESSION_SECRET = "test-session-secret";
   });
   afterEach(() => {
     process.env = { ...savedEnv };
@@ -169,6 +170,7 @@ describe("/api/auth/login — the sandbox fallback fails closed", () => {
   }
 
   beforeEach(() => {
+    process.env.CMS_SESSION_SECRET = "test-session-secret";
     jar.clear();
     for (const k of [
       "SANDBOX_ADMIN_TOKEN",
@@ -270,5 +272,52 @@ describe("/api/auth/login — the sandbox fallback fails closed", () => {
 
     expect(res.status).toBe(200);
     expect(jar.get("weave_token")?.value).toBe("real.loom.jwt");
+  });
+});
+
+describe("/api/auth/login — HMAC session cookie", () => {
+  const savedEnv = { ...process.env };
+
+  beforeEach(() => {
+    jar.clear();
+    process.env.CMS_SESSION_SECRET = "test-session-secret";
+  });
+  afterEach(() => {
+    process.env = { ...savedEnv };
+  });
+
+  it("mints a weave_session cookie binding the issued token, which the middleware verifies", async () => {
+    authReturns(() => HttpResponse.json({ jwt: "real.loom.jwt" }));
+
+    const res = await login({ email: "amit@anuprerna.com", password: "pw" });
+
+    expect(res.status).toBe(200);
+    const session = jar.get("weave_session");
+    expect(session).toBeDefined();
+    expect(session!.opts).toMatchObject({ httpOnly: true });
+    const { verifySessionCookie } = await import("@/lib/session-hmac");
+    await expect(verifySessionCookie(session!.value, "real.loom.jwt", "test-session-secret")).resolves.toBe(true);
+    // …and it does NOT verify a different (forged) token.
+    await expect(verifySessionCookie(session!.value, "forged.loom.jwt", "test-session-secret")).resolves.toBe(false);
+  });
+
+  it("fails LOUDLY (500, no cookies) when CMS_SESSION_SECRET is unset — never an unverifiable session", async () => {
+    delete process.env.CMS_SESSION_SECRET;
+    authReturns(() => HttpResponse.json({ jwt: "real.loom.jwt" }));
+
+    const res = await login({ email: "amit@anuprerna.com", password: "pw" });
+
+    expect(res.status).toBe(500);
+    expect(jar.size).toBe(0);
+  });
+
+  it("signing out clears the session cookie too", async () => {
+    jar.set("weave_token", { value: "t", opts: {} });
+    jar.set("weave_session", { value: "s", opts: {} });
+    jar.set("weave_user", { value: "u", opts: {} });
+
+    await (DELETE() as unknown as Promise<Response>);
+
+    expect(jar.size).toBe(0);
   });
 });

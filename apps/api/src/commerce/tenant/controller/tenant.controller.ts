@@ -20,7 +20,7 @@ export class TenantController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Get super-user profile." })
   async getSuperUserProfile(@CurrentTenant() tenant: any) {
-    const tenantId = tenant?.id || 1;
+    const tenantId = Number(tenant?.id);
     const profile = await this.tenantService.getSuperUserProfile(tenantId);
     return keyedResponse('profile', profile);
   }
@@ -38,7 +38,7 @@ export class TenantController {
   @RequireGate(GateCode.CODE_CU)
   @ApiOperation({ summary: "Get customer profile." })
   async getCustomerProfile(@CurrentTenant() tenant: any) {
-    const tenantId = Number(tenant?.tenantId || tenant?.id || 1);
+    const tenantId = Number(tenant?.tenantId ?? tenant?.id);
     const profile = await this.tenantService.getCustomerProfile(tenantId);
     // Key is `customer`, NOT `profile`: Loom's CustomerController.getCustomerProfile()
     // builds through CustomerResponse/CustomerDataResponse, which call
@@ -58,7 +58,7 @@ export class TenantController {
     const errors = validateUpdateCustomerProfile(dto);
     if (errors.length > 0) throw new BadRequestException(errors.join(', '));
     const sanitized = sanitizeUpdateCustomerProfile(dto);
-    const tenantId = Number(tenant?.tenantId || tenant?.id);
+    const tenantId = Number(tenant?.tenantId ?? tenant?.id);
     const profile = await this.tenantService.updateCustomerProfile(tenantId, sanitized);
     return {
       success: true,

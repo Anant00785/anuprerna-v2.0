@@ -1,7 +1,21 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { and, eq, sql } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../database/database.module.js";
 import { CommerceDataService } from "../shared/commerce-data.service.js";
 import * as schema from "../../database/schema/schema.js";
+
+/**
+ * Loom LoomUtility.isDateWithInRange — compares at DAY granularity
+ * (timestamps truncated to their calendar date before comparison).
+ */
+function isDateWithinRange(startMs: number, endMs: number, checkMs: number): boolean {
+  const day = (ms: number) => {
+    const d = new Date(ms);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  };
+  return day(checkMs) >= day(startMs) && day(checkMs) <= day(endMs);
+}
 
 @Injectable()
 export class DiscountService extends CommerceDataService {
@@ -36,5 +50,43 @@ export class DiscountService extends CommerceDataService {
     // from a live route as if it were configuration. An empty catalogue is an
     // empty catalogue.
     return (await super.getAll()) ?? [];
+  }
+
+  /**
+   * Loom DiscountDAOController.applyVoucher, ported 1:1. Validates the coupon
+   * against the discount table and the caller's order history — never a
+   * fabricated approval. Action codes match VoucherApplicationEnhancedResponse:
+   * 0 applied, 1 invalid code, 2 minimum order value not satisfied,
+   * 3 not applicable (inactive), 4 expired, 5 already used (SINGLE usage).
+   */
+  async applyVoucher(tenantId: number, couponCode: string, cartValue: number): Promise<number> {
+    const rows = await this.database
+      .select()
+      .from(schema.discount)
+      .where(sql`lower(${schema.discount.couponCode}) = lower(${couponCode})`)
+      .limit(1);
+    const discount = rows[0];
+
+    if (!discount) return 1;
+    if (discount.minimumOrderValue > cartValue) return 2;
+    if (!discount.active) return 3;
+    if (!isDateWithinRange(discount.startDate, discount.endDate, Date.now())) return 4;
+
+    if (discount.usageType === "SINGLE") {
+      const used = await this.database
+        .select({ id: schema.orders.id })
+        .from(schema.orders)
+        .where(
+          and(
+            eq(schema.orders.tenantId, tenantId),
+            eq(schema.orders.deleted, false),
+            sql`lower(${schema.orders.couponCode}) = lower(${couponCode})`,
+          ),
+        )
+        .limit(1);
+      if (used.length > 0) return 5;
+    }
+
+    return 0;
   }
 }

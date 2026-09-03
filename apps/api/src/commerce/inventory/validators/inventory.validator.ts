@@ -14,6 +14,9 @@ export function validateInventoryAdjustment(input: InventoryAdjustmentInput): st
   if (!input.warehouseId) return 'Warehouse ID is required.';
   if (!input.reasonId) return 'Reason ID is required.';
   if (!input.items || input.items.length === 0) return 'At least one adjustment item is required.';
+  for (const item of input.items) {
+    if (!item.productId) return 'Each adjustment item requires a product ID.';
+  }
   return null;
 }
 

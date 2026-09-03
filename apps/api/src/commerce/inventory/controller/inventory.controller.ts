@@ -1,5 +1,5 @@
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
+import { BadRequestException, Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
@@ -168,8 +168,9 @@ export class InventoryController {
   @ApiBody({ type: CreateInventoryAdjustmentDto })
   @ApiResponse({ status: 201, description: "Adjustment recorded." })
   async addAdjustment(@Body() raw: CreateInventoryAdjustmentDto, @CurrentTenant() tenant: any) {
+    if (!tenant?.id) throw new BadRequestException("Authenticated tenant is required.");
     const input = parseInventoryAdjustmentInput(raw);
-    input.userId = tenant?.id || 1;
+    input.userId = Number(tenant.id);
     const sanitized = sanitizeInventoryAdjustment(input);
     const error = validateInventoryAdjustment(sanitized);
     if (error) return simpleResponse(false, error);
@@ -193,8 +194,9 @@ export class InventoryController {
   @ApiBody({ type: CreateInventoryRestockRequestDto })
   @ApiResponse({ status: 201, description: "Restock request submitted." })
   async addRestockRequest(@Body() raw: CreateInventoryRestockRequestDto, @CurrentTenant() tenant: any) {
+    if (!tenant?.id) throw new BadRequestException("Authenticated tenant is required.");
     const input = parseInventoryRestockRequestInput(raw);
-    input.tenantId = tenant?.id || 1;
+    input.tenantId = Number(tenant.id);
     const sanitized = sanitizeInventoryRestockRequest(input);
     const error = validateInventoryRestockRequest(sanitized);
     if (error) return simpleResponse(false, error);

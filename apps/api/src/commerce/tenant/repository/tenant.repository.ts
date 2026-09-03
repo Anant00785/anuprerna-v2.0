@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../../database/database.module.js';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../../database/schema/schema.js';
@@ -7,8 +7,21 @@ import * as schema from '../../../database/schema/schema.js';
 export class TenantRepository {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
-  async getSuperUserProfile(tenantId: any) {
-    const id = BigInt(tenantId || 1);
+  /**
+   * A tenant id must be a positive integer. This used to fall back to
+   * TENANT 1 on a missing or 0 id, so a caller with a bad id silently
+   * read/wrote another tenant's data. Reject instead.
+   */
+  private requireTenantId(tenantId: unknown): bigint {
+    const n = Number(tenantId);
+    if (!Number.isInteger(n) || n <= 0) {
+      throw new BadRequestException('A valid tenant id is required.');
+    }
+    return BigInt(n);
+  }
+
+  async getSuperUserProfile(tenantId: unknown) {
+    const id = this.requireTenantId(tenantId);
     const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, id)).limit(1);
     return result[0] ?? null;
   }
@@ -18,14 +31,14 @@ export class TenantRepository {
     return result[0] ?? null;
   }
 
-  async getCustomerProfile(tenantId: any) {
-    const id = BigInt(tenantId || 1);
+  async getCustomerProfile(tenantId: unknown) {
+    const id = this.requireTenantId(tenantId);
     const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, id)).limit(1);
     return result[0] ?? null;
   }
 
-  async updateCustomerProfile(tenantId: any, data: any) {
-    const id = BigInt(tenantId || 1);
+  async updateCustomerProfile(tenantId: unknown, data: any) {
+    const id = this.requireTenantId(tenantId);
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.userName !== undefined) {

@@ -66,10 +66,12 @@ Full detail: `docs/frontend/cms/data-layer.md`, `docs/frontend/cms/auth-and-writ
    `@NVerseDomainValidated` to 114 of its 249 controllers, and that check requires a **present and
    allowlisted** `Origin`. Removing it breaks production. See `docs/KNOWN-GAPS.md`.
 4. **Do not add `@ts-nocheck`** to any file here.
-5. **There IS a server-side guard now — and it still does not verify a JWT signature.**
-   `src/middleware.ts` gates every page (redirect to `/login`) and every `/api/*` route (401 JSON),
-   checking token shape and `exp` only. Treat it as a usability gate, not a security boundary; the
-   backend is the only real authority. `/api/auth/login` verifies credentials against Loom and
+5. **There IS a server-side guard now, and since 2026-09-03 a JWT session must be HMAC-bound.**
+   `src/middleware.ts` gates every page (redirect to `/login`) and every `/api/*` route (401 JSON).
+   The CMS holds no key for the Loom JWT itself, so login mints a `weave_session` cookie binding
+   the exact issued token under `CMS_SESSION_SECRET` (`src/lib/session-hmac.ts`); a bare
+   well-formed token is rejected, and an unset secret fails closed. The backend is still the only
+   authority for what it gates. `/api/auth/login` verifies credentials against Loom and
    nothing else — the sandbox token is an *additional* credential requiring `CMS_SANDBOX_LOGIN=true`,
    a non-production `NODE_ENV`, and a configured `CMS_SANDBOX_LOGIN_EMAIL`/`_PASSWORD` match; it is
    never a bypass. **Do not reintroduce a default-token fallback** — that was an authentication

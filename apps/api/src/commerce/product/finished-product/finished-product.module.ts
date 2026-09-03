@@ -11,7 +11,7 @@
  * item mapping exists in apps/api, and a no-op would silently leave Zoho
  * stale on every finished-product write. See docs/KNOWN-GAPS.md.
  */
-import { Module, NotImplementedException } from "@nestjs/common";
+import { BadRequestException, Module, NotImplementedException } from "@nestjs/common";
 import { AuthModule } from "../../../auth/auth.module.js";
 import { lookupById } from "../../shared/db-lookup.js";
 import { ProfileModule } from "../../profile/profile.module.js";
@@ -82,44 +82,66 @@ const zohoNotImplemented = (operation: string) => async (): Promise<never> => {
           const rows = await db.select().from(schema.product).where(eq(schema.product.id, BigInt(id)));
           return rows[0] ? { ...rows[0], id: Number(rows[0].id) } : null;
         },
-        async createProduct(product: any) {
+        async createProduct(input: unknown) {
+          // Required fields reject — this port used to invent a name
+          // ("Handwoven Finished Product"), a ₹1200 price (`||` also swallowed
+          // a genuine 0), and sub-category 3527 / SKU group 2576 fallbacks.
+          const product = (input ?? {}) as Record<string, unknown>;
           const timestamp = Date.now();
-          const baseName = product.name || "Handwoven Finished Product";
-          const sku = product.sku || `FINISHED-${timestamp}`;
-          const slug = product.slug || baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${timestamp}`;
+          if (typeof product.name !== "string" || product.name.trim().length === 0) {
+            throw new BadRequestException("name is required to create a product.");
+          }
+          const baseName = product.name.trim();
+          if (typeof product.price !== "number" || Number.isNaN(product.price)) {
+            throw new BadRequestException("price is required to create a product.");
+          }
+          if (typeof product.subCategoryId !== "number" || !Number.isInteger(product.subCategoryId)) {
+            throw new BadRequestException("subCategoryId is required to create a product.");
+          }
+          if (typeof product.skuGroupId !== "number" || !Number.isInteger(product.skuGroupId)) {
+            throw new BadRequestException("skuGroupId is required to create a product.");
+          }
+          if (typeof product.sku !== "string" || product.sku.trim().length === 0) {
+            throw new BadRequestException("sku is required to create a product.");
+          }
+          const sku = product.sku.trim();
+          const slug = typeof product.slug === "string" && product.slug.trim().length > 0
+            ? product.slug.trim()
+            : baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${timestamp}`;
           const validUnit = product.unit === "METER" ? "METER" : "UNIT";
+          const str = (v: unknown) => (typeof v === "string" ? v : "");
 
           const insertValues: typeof schema.product.$inferInsert = {
             name: baseName,
-            price: String(product.price || 1200),
+            price: String(product.price),
             sku,
             slug,
-            subCategoryId: product.subCategoryId || 3527,
-            skuGroupId: product.skuGroupId || 2576,
+            subCategoryId: product.subCategoryId,
+            skuGroupId: product.skuGroupId,
             unit: validUnit,
-            mainProductCheck: product.mainProductCheck ?? true,
-            productOverview: product.productOverview || "",
-            productCare: product.productCare || "",
-            materialId: product.materialId || "",
-            colorId: product.colorId || "",
-            patternId: product.patternId || "",
-            productVideo: product.productVideo || "",
+            mainProductCheck: typeof product.mainProductCheck === "boolean" ? product.mainProductCheck : true,
+            productOverview: str(product.productOverview),
+            productCare: str(product.productCare),
+            materialId: str(product.materialId),
+            colorId: str(product.colorId),
+            patternId: str(product.patternId),
+            productVideo: str(product.productVideo),
             productGroup: "finished",
             disabled: false,
             tagId: "",
-            metaTitle: product.metaTitle || "",
-            metaDescription: product.metaDescription || "",
-            heroImageAlt: product.heroImageAlt || "",
-            hoverImageAlt: product.hoverImageAlt || "",
-            productVideoAlt: product.productVideoAlt || "",
-            backwardCompatibleLink: product.backwardCompatibleLink || "",
+            metaTitle: str(product.metaTitle),
+            metaDescription: str(product.metaDescription),
+            heroImageAlt: str(product.heroImageAlt),
+            hoverImageAlt: str(product.hoverImageAlt),
+            productVideoAlt: str(product.productVideoAlt),
+            backwardCompatibleLink: str(product.backwardCompatibleLink),
           };
 
           try {
             const rows = await db.insert(schema.product).values(insertValues).returning();
             return rows[0] ? { id: Number(rows[0].id) } : null;
-          } catch (err: any) {
-            if (err?.code === "23505") {
+          } catch (err) {
+            if ((err as { code?: string })?.code === "23505") {
               const rows = await db
                 .insert(schema.product)
                 .values({
@@ -137,7 +159,8 @@ const zohoNotImplemented = (operation: string) => async (): Promise<never> => {
         async updateProduct(product: any) {
           const updateData: any = {};
           if (product.name) updateData.name = product.name;
-          if (product.price) updateData.price = String(product.price);
+          // `!== undefined` not truthiness: a genuine 0 price must be settable.
+          if (product.price !== undefined && product.price !== null) updateData.price = String(product.price);
           if (product.sku) updateData.sku = product.sku;
           if (product.subCategoryId) updateData.subCategoryId = product.subCategoryId;
           if (product.disabled !== undefined) updateData.disabled = product.disabled;

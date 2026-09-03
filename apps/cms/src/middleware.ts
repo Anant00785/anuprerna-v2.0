@@ -1,28 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySessionCookie } from "./lib/session-hmac";
 
 /**
  * Weave session enforcement.
  *
- *  - Every PAGE except the login route requires a valid session cookie
- *    (redirect to /login otherwise).
- *  - Every /api/* route returns 401 JSON when the session cookie is
- *    absent/expired (this INTENTIONALLY also gates api routes other lanes are
- *    building).
+ *  - Every PAGE except the login route requires a valid session (redirect to
+ *    /login otherwise).
+ *  - Every /api/* route returns 401 JSON when the session is absent/expired
+ *    (this INTENTIONALLY also gates api routes other lanes are building).
  *
- * v1 limitation: we decode the JWT payload and check `exp` but do NOT verify
- * the signature here (the wrapper/Loom remains the cryptographic authority).
- * Presence + well-formed (3-part) + unexpired is the v1 bar. Tighten to a real
- * signature verify when the wrapper exposes a verification key.
+ * The CMS holds no key for the Loom JWT in `weave_token`, so it cannot verify
+ * that signature — and it must not accept any well-formed unexpired JWT as a
+ * session (the old "presence + shape" bar admitted a hand-crafted token). A
+ * JWT session is admitted only when the `weave_session` cookie, minted by
+ * /api/auth/login after a REAL credential check and HMAC-bound to this exact
+ * token with CMS_SESSION_SECRET, verifies. No secret configured = no JWT
+ * session — fail closed. See src/lib/session-hmac.ts.
  */
 const COOKIE = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
 // Reachable WITHOUT a session (the login page + the login POST itself).
 const PUBLIC_PATHS = new Set<string>(["/login", "/api/auth/login"]);
 
-function tokenValid(token: string | undefined): boolean {
+async function tokenValid(token: string | undefined, sessionCookie: string | undefined): Promise<boolean> {
   if (!token) return false;
-  // Sandbox super-user session token (opaque 64-char, not a JWT).
-  if (token === process.env.SANDBOX_ADMIN_TOKEN) return true;
+  // Sandbox super-user session token (opaque 64-char, not a JWT) — an exact
+  // match against a server-held secret is a real credential in itself.
+  if (process.env.SANDBOX_ADMIN_TOKEN && token === process.env.SANDBOX_ADMIN_TOKEN) return true;
   const parts = token.split(".");
   if (parts.length !== 3) return false; // not a well-formed JWT
   try {
@@ -32,17 +36,20 @@ function tokenValid(token: string | undefined): boolean {
     if (typeof payload.exp === "number" && payload.exp * 1000 <= Date.now()) {
       return false; // expired
     }
-    return true;
   } catch {
     return false; // malformed payload
   }
+  // The CMS cannot verify the Loom JWT signature; it verifies its own
+  // login-time HMAC binding instead. Unset secret → fail closed.
+  const secret = process.env.CMS_SESSION_SECRET;
+  if (!secret) return false;
+  return verifySessionCookie(sessionCookie, token, secret);
 }
 
 // Outer access gate — active ONLY where CMS_ACCESS_USER/PASS are set (the public
 // Vercel deployment); unset on the VPS so localhost:3010 is unchanged. Sits IN
-// FRONT of the v1 session gate because that gate does not verify JWT signatures
-// and 69 screens read via a server-side service token — without this, a forged
-// cookie could read private data on a public URL.
+// FRONT of the session gate as defence in depth: 69 screens read via a
+// server-side service token, so the page gate is the only check for them.
 function basicAuthGate(req: NextRequest): NextResponse | null {
   const user = process.env.CMS_ACCESS_USER;
   const pass = process.env.CMS_ACCESS_PASS;
@@ -63,14 +70,15 @@ function basicAuthGate(req: NextRequest): NextResponse | null {
   });
 }
 
-export function middleware(req: NextRequest): NextResponse {
+export async function middleware(req: NextRequest): Promise<NextResponse> {
   const gate = basicAuthGate(req);
   if (gate) return gate;
   const { pathname } = req.nextUrl;
   if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
 
   const token = req.cookies.get(COOKIE)?.value;
-  if (tokenValid(token)) {
+  const sessionCookie = req.cookies.get(SESSION_COOKIE)?.value;
+  if (await tokenValid(token, sessionCookie)) {
     // Dev-only tools (Rebuild Map, QA Center, Code Review) are local-only —
     // Rebuild Map reads VPS-local files and throws server-side on Vercel's
     // serverless FS. Redirect instead of letting the page code execute.

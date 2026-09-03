@@ -178,16 +178,17 @@ function parseProductInput(body: unknown): ProductInput {
     ? b.imageGallerySEOList.map((item, i) => parseImageGallerySeoItem(item, i))
     : undefined;
 
-  const name = typeof b.name === "string" && b.name.trim().length > 0 ? b.name.trim() : "Handwoven Silk Scarf";
-  const sku = typeof b.sku === "string" && b.sku.trim().length > 0 ? b.sku.trim() : "SKU-" + Date.now();
-  const price = typeof b.price === "number" ? b.price : (Number(b.price) || 1200);
-  const subCategoryId = typeof b.subCategoryId === "number" ? b.subCategoryId : (Number(b.subCategoryId) || 25051);
-  const skuGroupId = typeof b.skuGroupId === "number" ? b.skuGroupId : (Number(b.skuGroupId) || 1);
-  const unit: Unit = typeof b.unit === "string" && (UNITS as readonly string[]).includes(b.unit) ? b.unit as Unit : "METER";
-  const mainProductCheck = typeof b.mainProductCheck === "boolean" ? b.mainProductCheck : true;
-  const productGroup: ProductGroup = typeof b.productGroup === "string" && (KNOWN_PRODUCT_GROUPS as readonly string[]).includes(b.productGroup)
-    ? b.productGroup as ProductGroup
-    : "FINISHED";
+  // Required fields REJECT when absent — no invented name/SKU, no ₹1200
+  // placeholder price (`||` would also have turned a genuine 0 price into
+  // 1200), no defaulting into sub-category 25051.
+  const name = requireNonEmptyString(b.name, "name").trim();
+  const sku = requireNonEmptyString(b.sku, "sku").trim();
+  const price = requireNumber(b.price, "price");
+  const subCategoryId = requireInt(b.subCategoryId, "subCategoryId");
+  const skuGroupId = requireInt(b.skuGroupId, "skuGroupId");
+  const unit: Unit = parseUnit(b.unit);
+  const mainProductCheck = parseOptionalBoolean(b.mainProductCheck, "mainProductCheck") ?? true;
+  const productGroup: ProductGroup = parseProductGroup(b.productGroup);
 
   return {
     id: b.id === undefined ? undefined : (parseOptionalInt(b.id, "id") ?? undefined),
@@ -196,7 +197,7 @@ function parseProductInput(body: unknown): ProductInput {
     sku,
     skuGroupId,
     price,
-    quantity: parseOptionalNumber(b.quantity, "quantity") ?? 100,
+    quantity: parseOptionalNumber(b.quantity, "quantity"), // DB default 0 when absent — never a placeholder 100
     externalQuantity: parseOptionalNumber(b.externalQuantity, "externalQuantity") ?? 0,
     unit,
     mainProductCheck,

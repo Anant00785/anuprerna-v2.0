@@ -1,8 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { ActionCode } from "../../../common/errors/action-code.js";
 import { InventoryRepository } from "../repository/inventory.repository.js";
 import { WarehouseInput, InventoryAdjustmentReasonInput, InventoryAdjustmentInput, InventoryRestockRequestInput } from "../dto/inventory.dto.js";
-import { RestockRequestStatus } from "../types/inventory.types.js";
 
 @Injectable()
 export class InventoryService {
@@ -72,55 +71,37 @@ export class InventoryService {
   }
 
   async addAdjustment(input: InventoryAdjustmentInput) {
-    try {
-      let warehouseId = input.warehouseId || 306145;
-      const wh = await this.repository.findWarehouseById(BigInt(warehouseId));
-      if (!wh) {
-        const anyWh = await this.repository.findWarehousesPaginated(0, 1);
-        warehouseId = anyWh[0] ? Number(anyWh[0].id) : warehouseId;
-      }
+    // The referenced warehouse and reason must exist — this used to fall back
+    // to hardcoded production ids (306145 / 306167) and even invent a default
+    // adjustment item for product 94504 when none was sent.
+    const wh = await this.repository.findWarehouseById(BigInt(input.warehouseId));
+    if (!wh) throw new BadRequestException(`Warehouse ${input.warehouseId} does not exist.`);
+    const reason = await this.repository.findReasonById(BigInt(input.reasonId));
+    if (!reason) throw new BadRequestException(`Adjustment reason ${input.reasonId} does not exist.`);
 
-      let reasonId = input.reasonId || 306167;
-      const r = await this.repository.findReasonById(BigInt(reasonId));
-      if (!r) {
-        const anyR = await this.repository.findReasonsPaginated(0, 1);
-        reasonId = anyR[0] ? Number(anyR[0].id) : reasonId;
-      }
+    const data = {
+      userId: input.userId,
+      adjustmentDate: input.adjustmentDate || Date.now(),
+      warehouseId: input.warehouseId,
+      referenceNo: input.referenceNo || `ADJ-${Date.now()}`,
+      reasonId: input.reasonId,
+      description: input.description || "",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
 
-      const data = {
-        userId: input.userId || 1,
-        adjustmentDate: input.adjustmentDate || Date.now(),
-        warehouseId,
-        referenceNo: input.referenceNo || `ADJ-${Date.now()}`,
-        reasonId,
-        description: input.description || "",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+    const items = input.items.map(item => ({
+      inventoryAdjustmentId: 0,
+      productId: item.productId,
+      quantityAvailable: (item.quantityAvailable ?? 0).toString(),
+      quantityAdjusted: (item.quantityAdjusted ?? 0).toString(),
+      quantityAtHand: (item.quantityAtHand ?? 0).toString(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }));
 
-      const rawItems = input.items && input.items.length > 0 ? input.items : [{
-        productId: 94504,
-        quantityAvailable: 50,
-        quantityAdjusted: -5,
-        quantityAtHand: 45,
-      }];
-
-      const items = rawItems.map(item => ({
-        inventoryAdjustmentId: 0,
-        productId: item.productId || 94504,
-        quantityAvailable: (item.quantityAvailable ?? 0).toString(),
-        quantityAdjusted: (item.quantityAdjusted ?? 0).toString(),
-        quantityAtHand: (item.quantityAtHand ?? 0).toString(),
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }));
-
-      const created = await this.repository.insertAdjustment(data, items);
-      return !!created;
-    } catch (err) {
-      console.error("[addAdjustment error]:", err);
-      return false;
-    }
+    const created = await this.repository.insertAdjustment(data, items);
+    return !!created;
   }
 
   // Inventory Restock Request
@@ -129,22 +110,19 @@ export class InventoryService {
   }
 
   async addRestockRequest(input: InventoryRestockRequestInput) {
-    try {
-      const created = await this.repository.insertRestockRequest({
-        tenantId: input.tenantId || 1,
-        productId: input.productId || 94504,
-        madeToOrderProductId: input.madeToOrderProductId ?? null,
-        sizeOptionId: input.sizeOptionId ?? null,
-        productGroup: input.productGroup || "FABRIC",
-        requestedQuantity: (input.requestedQuantity ?? 100).toString(),
-        createdAt: Date.now(),
-        status: (RestockRequestStatus.PENDING as any) || "PENDING",
-      });
-      return !!created;
-    } catch (err) {
-      console.error("[addRestockRequest error]:", err);
-      return false;
-    }
+    // tenantId / productId / productGroup / requestedQuantity are validated
+    // upstream — no hardcoded id or quantity fallbacks here.
+    const created = await this.repository.insertRestockRequest({
+      tenantId: input.tenantId,
+      productId: input.productId,
+      madeToOrderProductId: input.madeToOrderProductId ?? null,
+      sizeOptionId: input.sizeOptionId ?? null,
+      productGroup: input.productGroup,
+      requestedQuantity: input.requestedQuantity.toString(),
+      createdAt: Date.now(),
+      status: "PENDING",
+    });
+    return !!created;
   }
 
   async updateRestockRequestQuantity(id: bigint, quantity: number) {

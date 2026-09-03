@@ -4,7 +4,7 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. What `apps/api` exposes, and what the frontends actually call.
 
-**apps/api exposes 805 routes** across 96 controllers (DELETE 59, GET 490, PATCH 109, POST 146, PUT 1).
+**apps/api exposes 816 routes** across 96 controllers (DELETE 59, GET 488, PATCH 109, POST 159, PUT 1).
 
 **The frontends call 31 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
 gap is the migration. See `docs/KNOWN-GAPS.md`.
@@ -487,6 +487,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/get/table-explorer/data/custom-order-item` | `apps/api/src/commerce/domain/custom-order-migrated.controller.ts` |
 | GET | `/get/table-explorer/data/custom-order-item-fulfillment` | `apps/api/src/commerce/domain/custom-order-migrated.controller.ts` |
 | GET | `/get/table-explorer/data/custom-order/:id` | `apps/api/src/commerce/domain/custom-order-migrated.controller.ts` |
+| GET | `/get/table-explorer/data/customer` | `apps/api/src/commerce/domain/customer.controller.ts` |
 | GET | `/get/table-explorer/data/customer/:id` | `apps/api/src/commerce/domain/customer.controller.ts` |
 | GET | `/get/table-explorer/data/discount` | `apps/api/src/commerce/domain/discount-migrated.controller.ts` |
 | GET | `/get/table-explorer/data/element` | `apps/api/src/commerce/domain/table-explorer.controller.ts` |
@@ -658,9 +659,9 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | POST | `/otp/resend` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
 | POST | `/otp/send` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
 | POST | `/otp/verify` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
-| GET | `/poll/whatsapp/delivery-status` | `apps/api/src/commerce/domain/notifications.controller.ts` |
-| GET | `/poll/whatsapp/delivery-status/:id` | `apps/api/src/commerce/domain/notifications.controller.ts` |
-| GET | `/poll/whatsapp/delivery-status/stale` | `apps/api/src/commerce/domain/notifications.controller.ts` |
+| POST | `/poll/whatsapp/delivery-status` | `apps/api/src/commerce/domain/notifications.controller.ts` |
+| POST | `/poll/whatsapp/delivery-status/:id` | `apps/api/src/commerce/domain/notifications.controller.ts` |
+| POST | `/poll/whatsapp/delivery-status/stale` | `apps/api/src/commerce/domain/notifications.controller.ts` |
 | GET | `/redirect/blog` | `apps/api/src/commerce/compatibility/compatibility.controller.ts` |
 | GET | `/redirect/product` | `apps/api/src/commerce/compatibility/compatibility.controller.ts` |
 | GET | `/redirect/story` | `apps/api/src/commerce/compatibility/compatibility.controller.ts` |
@@ -742,13 +743,23 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | PATCH | `/update/forex` | `apps/api/src/commerce/domain/currency-location.controller.ts` |
 | PATCH | `/update/forex/exchange-rate` | `apps/api/src/commerce/forex/controller/forex.controller.ts` |
 | PATCH | `/update/image-optimization/discovery/run` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/discovery/run` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/main/pause` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/main/pause` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/main/resume` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/main/resume` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/main/settings` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/main/settings` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/requeue` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/requeue` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/tools/enabled` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/tools/enabled` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/tools/option` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/tools/option` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/image-optimization/tools/preset` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/tools/preset` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/workers/start` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
+| POST | `/update/image-optimization/workers/stop` | `apps/api/src/commerce/domain/image-optimization.controller.ts` |
 | PATCH | `/update/impact-factor` | `apps/api/src/commerce/impact/controller/impact.controller.ts` |
 | PATCH | `/update/inventory-adjustment-reason` | `apps/api/src/commerce/inventory/controller/inventory.controller.ts` |
 | PATCH | `/update/inventory-restock-request/quantity` | `apps/api/src/commerce/inventory/controller/inventory.controller.ts` |

@@ -230,8 +230,8 @@ export function parseCategoryNameParam(categoryName: unknown): string {
 export function parseCreateSubCategoryRequest(body: unknown): CreateSubCategoryInput {
   const b = (body ?? {}) as Record<string, unknown>;
   return {
-    segmentId: requireInt(b.segmentId ?? 66059, "segmentId"),
-    name: requireNonEmptyString(b.name ?? "SUB CATEGORY", "name"),
+    segmentId: requireInt(b.segmentId, "segmentId"),
+    name: requireNonEmptyString(b.name, "name"),
     metaTitle: parseOptionalString(b.metaTitle, "metaTitle"),
     metaDescription: parseOptionalString(b.metaDescription, "metaDescription"),
     avgWorkHoursPerMeter: parseOptionalNumber(b.avgWorkHoursPerMeter, "avgWorkHoursPerMeter"),

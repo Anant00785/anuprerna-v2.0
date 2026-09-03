@@ -240,7 +240,7 @@ export function parseInventoryAdjustmentReasonInput(raw: any): InventoryAdjustme
 export function parseInventoryAdjustmentInput(raw: any): InventoryAdjustmentInput {
   const items = Array.isArray(raw?.items) 
     ? raw.items.map((i: any) => ({
-        productId: Number(i?.productId ?? 94504),
+        productId: Number(i?.productId ?? 0),
         quantityAvailable: Number(i?.quantityAvailable ?? 0),
         quantityAdjusted: Number(i?.quantityAdjusted ?? 0),
         quantityAtHand: Number(i?.quantityAtHand ?? 0),
@@ -249,11 +249,11 @@ export function parseInventoryAdjustmentInput(raw: any): InventoryAdjustmentInpu
 
   return {
     id: raw?.id !== undefined ? Number(raw.id) : undefined,
-    userId: Number(raw?.userId ?? 1),
+    userId: Number(raw?.userId ?? 0),
     adjustmentDate: Number(raw?.adjustmentDate ?? Date.now()),
-    warehouseId: Number(raw?.warehouseId ?? 306145),
+    warehouseId: Number(raw?.warehouseId ?? 0),
     referenceNo: raw?.referenceNo ?? "",
-    reasonId: Number(raw?.reasonId ?? 306167),
+    reasonId: Number(raw?.reasonId ?? 0),
     description: raw?.description ?? "",
     items,
   };
@@ -262,12 +262,12 @@ export function parseInventoryAdjustmentInput(raw: any): InventoryAdjustmentInpu
 export function parseInventoryRestockRequestInput(raw: any): InventoryRestockRequestInput {
   return {
     id: raw?.id !== undefined ? Number(raw.id) : undefined,
-    tenantId: Number(raw?.tenantId ?? 1),
-    productId: Number(raw?.productId ?? 94504),
+    tenantId: Number(raw?.tenantId ?? 0),
+    productId: Number(raw?.productId ?? 0),
     madeToOrderProductId: raw?.madeToOrderProductId !== undefined && raw?.madeToOrderProductId !== null ? Number(raw.madeToOrderProductId) : undefined,
     sizeOptionId: raw?.sizeOptionId !== undefined && raw?.sizeOptionId !== null ? Number(raw.sizeOptionId) : undefined,
-    productGroup: raw?.productGroup ?? "FABRIC",
-    requestedQuantity: Number(raw?.requestedQuantity ?? 100),
+    productGroup: raw?.productGroup ?? "",
+    requestedQuantity: Number(raw?.requestedQuantity ?? 0),
   };
 }
 

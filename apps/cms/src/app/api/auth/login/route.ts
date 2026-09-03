@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { SESSION_COOKIE, mintSessionCookie } from "@/lib/session-hmac";
 
 const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8090";
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
@@ -132,14 +133,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // The middleware cannot verify the Loom JWT's signature (the CMS holds no
+  // key for it), so it verifies the HMAC session cookie minted HERE — after a
+  // real credential check — instead. Without the secret we cannot issue a
+  // verifiable session: fail loudly rather than mint one nothing will accept.
+  const sessionSecret = process.env.CMS_SESSION_SECRET;
+  if (!sessionSecret) {
+    return NextResponse.json(
+      { success: false, message: "CMS_SESSION_SECRET is not configured; sessions cannot be issued." },
+      { status: 500 },
+    );
+  }
+
   {
+    const maxAgeSeconds = 60 * 60 * 8; // 8 hours session
     const cookieStore = await cookies();
     cookieStore.set(COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      // 8 hours session
-      maxAge: 60 * 60 * 8,
+      maxAge: maxAgeSeconds,
+    });
+    cookieStore.set(SESSION_COOKIE, await mintSessionCookie(token, Date.now() + maxAgeSeconds * 1000, sessionSecret), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: maxAgeSeconds,
     });
 
     // Identity cookie (the token JWT carries no email/name).
@@ -173,5 +192,6 @@ export async function DELETE() {
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
   cookieStore.delete(USER_COOKIE);
+  cookieStore.delete(SESSION_COOKIE);
   return NextResponse.json({ success: true, message: "Signed out" });
 }

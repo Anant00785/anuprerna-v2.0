@@ -56,16 +56,20 @@ true for the two addresses in `OWNER_EMAILS` (`amit@`, `support@anuprerna.com`).
    `/rebuild-map`, `/journey-tests` and `/code-review` redirect to `/dashboard` so their
    VPS-local-filesystem server code never executes.
 
-All of the above is pinned by `src/middleware.test.ts` (18 tests).
+All of the above is pinned by `src/middleware.test.ts` (23 tests).
 
 ### 1.4 Where it is missing — stated plainly
 
-- **The JWT signature is never verified.** `tokenValid` decodes the payload and checks `exp`; the
-  signature segment is ignored. Any forged three-part token with a future `exp` is a valid session.
-  The file says so itself and calls it "the v1 bar". The backend remains the cryptographic
-  authority for anything it gates — but many CMS screens read via a **server-side service token**,
-  not the caller's, so for those the middleware IS the only check. (The middleware's own comment
-  puts that number at 69 screens; that figure is carried from the code and **unverified** here.)
+- **The Loom JWT's own signature still cannot be verified by the CMS** (it holds no key for it) —
+  but since 2026-09-03 a bare well-formed token is NOT a session. `/api/auth/login` mints a second
+  cookie, `weave_session`, HMAC-bound (`CMS_SESSION_SECRET`, `src/lib/session-hmac.ts`) to the
+  exact token it issued after a real Loom credential check, and `middleware.ts` admits a JWT
+  session only when that pair verifies. With the secret unset the gate fails CLOSED (and login
+  returns 500 rather than minting an unverifiable session) — set `CMS_SESSION_SECRET` in every
+  deployment. Forged three-part tokens with a future `exp` are no longer valid sessions. Many CMS
+  screens read via a **server-side service token**, not the caller's, so for those the middleware
+  IS the only check. (The middleware's own comment puts that number at 69 screens; that figure is
+  carried from the code and **unverified** here.)
 - **There is no CMS-owned credential store, and the CMS does not have real authentication of its
   own.** `/api/auth/login` asks the Loom backend to verify the email and password
   (`POST /authenticate/email`) and mints a session only if Loom returns a JWT. Loom is the sole

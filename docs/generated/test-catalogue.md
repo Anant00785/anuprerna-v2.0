@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1207 tests across 224 files.**
+**1318 tests across 238 files.**
 
-- `apps/api` — 173 files, 673 tests
-- `apps/cms` — 17 files, 202 tests
-- `apps/storefront` — 33 files, 330 tests
+- `apps/api` — 187 files, 760 tests
+- `apps/cms` — 17 files, 210 tests
+- `apps/storefront` — 33 files, 346 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -227,6 +227,23 @@
 - synchronizes assignments and updates the row in ONE transaction
 - leaves assignments alone when the body omits them, as Loom
 
+### `apps/api/src/commerce/discount/discount.apply-voucher.spec.ts` — 15
+- returns 1 for a coupon that does not exist — no invented approval
+- returns 2 when the cart is below the minimum order value
+- returns 2 for a genuine 0 cart value below the minimum — 0 is never replaced by a fallback total
+- returns 3 for an inactive coupon
+- returns 4 for an expired coupon
+- returns 5 when a SINGLE-use coupon was already applied to one of the tenant
+- returns 0 only when every database check passes
+- propagates a database error instead of approving anyway
+- rejects a missing cartTotal — it must never default to 2500
+- rejects a 0 cartTotal (Loom validator: cartValue > 0)
+- rejects a missing or too-short voucher code
+- accepts a well-formed request
+- rejects when no authenticated tenant is attached
+- maps a database-backed approval to success with NO fabricated amounts in the payload
+- maps an invalid code to a failure — never 
+
 ### `apps/api/src/commerce/discount/discount.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/discount/discount.service.spec.ts` — 6
@@ -255,10 +272,13 @@
 
 ### `apps/api/src/commerce/domain/customer.controller.gates.spec.ts` — 0
 
-### `apps/api/src/commerce/domain/customer.controller.spec.ts` — 3
+### `apps/api/src/commerce/domain/customer.controller.spec.ts` — 6
 - returns ONE row for the calling tenant, keyed 
 - IDOR: tenant B can never see tenant A
 - a tenant with no membership gets null, not somebody else
+- returns the paginated projection keyed 
+- an empty table reads as an empty list, not fabricated rows
+- missing or non-integer page/size is a 400, as Loom
 
 ### `apps/api/src/commerce/domain/diagnostics.controller.gates.spec.ts` — 0
 
@@ -275,6 +295,12 @@
 ### `apps/api/src/commerce/domain/misc-migrated.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/domain/notifications.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/domain/notifications.controller.poll.spec.ts` — 4
+- triggers the recent-window poll and wraps the summary under 
+- triggers the stale-backlog poll and wraps the summary under 
+- polls the single row and returns the all-zero summary when the row does not exist
+- rejects a non-numeric id with 400 rather than polling
 
 ### `apps/api/src/commerce/domain/order-migrated.controller.gates.spec.ts` — 0
 
@@ -378,6 +404,16 @@
 
 ### `apps/api/src/commerce/image/controller/image.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/image/service/image.service.spec.ts` — 8
+- is not configured when the environment is empty
+- treats a whitespace-only credential as absent
+- throws rather than attempting an upload when unconfigured
+- throws rather than attempting a PDF upload when unconfigured
+- reports a delete failure rather than throwing out of the fire-and-forget path
+- treats an empty url as nothing to delete, without touching S3
+- is configured once every value is present
+- accepts the legacy AWS_* names as well
+
 ### `apps/api/src/commerce/image/validators/image.validator.spec.ts` — 9
 - accepts an allowed mime type within the size limit
 - rejects a missing mimetype
@@ -420,6 +456,15 @@
 
 ### `apps/api/src/commerce/impact/impact.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/impact/repository/impact.repository.spec.ts` — 7
+- returns [] for an empty table — never the fabricated FABRIC/FINISHED rows
+- propagates a DB error instead of substituting plausible figures
+- returns the persisted rows untouched when they exist
+- returns null for a missing row — no 2.50 kg CO2 default
+- propagates a DB error
+- rejects a 0 tenantId — it must never resolve to tenant 1
+- writes the REAL ids it was given
+
 ### `apps/api/src/commerce/impact/service/custom-impact-calculation.service.spec.ts` — 11
 - maps only 
 - refuses every other group, including 
@@ -453,6 +498,26 @@
 - rejects a missing id before touching the service
 
 ### `apps/api/src/commerce/inventory/controller/inventory.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/inventory/dto/inventory.dto.spec.ts` — 10
+- a missing warehouseId fails validation instead of becoming 306145
+- a missing reasonId fails validation instead of becoming 306167
+- an item missing productId fails validation instead of becoming 94504
+- no items means rejection — an adjustment for product 94504 is never invented
+- real ids pass through unchanged and validate
+- a missing productId fails validation instead of becoming 94504
+- a missing tenantId fails validation instead of becoming 1
+- a missing requestedQuantity fails validation instead of becoming 100
+- a missing productGroup fails validation instead of becoming FABRIC
+- real values pass through unchanged
+
+### `apps/api/src/commerce/inventory/service/inventory.service.spec.ts` — 6
+- rejects when the warehouse does not exist — never substitutes another warehouse
+- rejects when the reason does not exist
+- writes exactly the ids and items it was given — no 306145/306167/94504 anywhere
+- propagates a database error instead of hiding it
+- writes exactly the tenant/product/quantity it was given
+- propagates a database error instead of hiding it
 
 ### `apps/api/src/commerce/inventory/validators/inventory.sanitizer.spec.ts` — 4
 - trims and HTML-escapes name and description
@@ -576,6 +641,12 @@
 - rejects when token is missing
 
 ### `apps/api/src/commerce/order/controller/custom-order.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/order/controller/custom-order.controller.tenant.spec.ts` — 4
+- createCustomOrder without a tenant fails and never reaches the service
+- getCustomerCustomOrderList without a tenant never queries as customer 1
+- cancelCustomOrder without a tenant fails and never cancels as customer 1
+- a real tenant id is the one passed through
 
 ### `apps/api/src/commerce/order/controller/order-customer-list.controller.spec.ts` — 11
 - returns the tenant
@@ -763,6 +834,18 @@
 
 ### `apps/api/src/commerce/product/controller/tag.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/product/finished-product/finished-product.port.spec.ts` — 2
+- a genuine 0 price is persisted as \
+- persists the real ids it was given
+
+### `apps/api/src/commerce/product/product/dto/product.dto.spec.ts` — 6
+- a genuine 0 price survives — it must NOT become 1200
+- keeps the real subCategoryId instead of 25051
+- leaves quantity undefined when absent (DB default 0) — never a placeholder 100
+- a genuine 0 quantity survives
+- still requires an id
+- accepts a full update body with a 0 price
+
 ### `apps/api/src/commerce/product/product/product.module.spec.ts` — 8
 - binds all fourteen cross-module ports
 - binds every port to a real provider — never a 
@@ -772,6 +855,11 @@
 - PRODUCT_SIZE_PROFILE_PORT actually issues the wholesale delete
 - PRODUCT_ZOHO_RELATION_PORT looks the relation up and writes 
 - IMAGE_GALLERY_SEO_PORT replaces the gallery rows instead of dropping them
+
+### `apps/api/src/commerce/product/sub-category/dto/subcategory.dto.spec.ts` — 3
+- rejects a missing segmentId instead of defaulting to 66059
+- rejects a missing name instead of inventing \
+- keeps the real segmentId it was given
 
 ### `apps/api/src/commerce/profile/controller/badge-profile.controller.gates.spec.ts` — 0
 
@@ -809,6 +897,17 @@
 - always returns null (unconditional stub)
 
 ### `apps/api/src/commerce/report/controller/report.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/report/service/report.service.spec.ts` — 9
+- emits Java
+- formats each row as Java
+- renders a genuine zero as 0.00 instead of a fabricated default
+- passes includeDisabled straight through to the query
+- emits Java
+- repeats the resolved size-profile quantity in both quantity columns, as Java does
+- renders 0.00 when no size profile matched the relation
+- rejects an unknown type — ReportFactoryService throws IllegalArgumentException
+- emits only the header when there are no rows, never placeholder data
 
 ### `apps/api/src/commerce/review/controller/review.controller.gates.spec.ts` — 0
 
@@ -915,6 +1014,12 @@
 
 ### `apps/api/src/commerce/table_explorer/controller/table_explorer.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/table_explorer/service/table_explorer.service.spec.ts` — 4
+- serves an allowlisted slug (orders) with pagination
+- rejects a non-allowlisted table name with 400 before any query runs
+- getTableRowById honours the allowlist and returns null for a missing row
+- every allowlisted name passes the gate (no self-blocking typos)
+
 ### `apps/api/src/commerce/tenant/controller/tenant.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/tenant/controller/tenant.controller.spec.ts` — 6
@@ -928,6 +1033,9 @@
 ### `apps/api/src/commerce/tenant/mapper/tenant.mapper.spec.ts` — 2
 - projects only id/name/email/phone/type, dropping extra row fields
 - projects only id/roleName/tenantId
+
+### `apps/api/src/commerce/tenant/repository/tenant.repository.spec.ts` — 1
+- still reads a real tenant id (numeric string accepted, as before)
 
 ### `apps/api/src/commerce/tenant/validators/tenant.sanitizer.spec.ts` — 2
 - trims name and phone
@@ -967,6 +1075,13 @@
 - propagates a service error rather than reporting success with an empty list
 
 ### `apps/api/src/commerce/whatsapp/controller/whatsapp.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/whatsapp/service/whatsapp-delivery-status-polling.service.spec.ts` — 5
+- pollSingle of a missing row returns the all-zero summary and queries nothing
+- advances a row when Freshchat reports a forward transition, writing only non-blank fields
+- never downgrades: a READ row reported as SENT only gets poll bookkeeping
+- groups by request_id (one GET per send) and matches rows by recipient
+- a 429 ends the run early with rateLimited=true; other failures are isolated
 
 ### `apps/api/src/commerce/workflow/controller/element-feedback.controller.gates.spec.ts` — 0
 
@@ -1034,7 +1149,7 @@
 
 ## apps/cms
 
-### `apps/cms/src/app/api/auth/login/route.test.ts` — 17
+### `apps/cms/src/app/api/auth/login/route.test.ts` — 20
 - rejects a malformed JSON body without touching the backend
 - requires both email and password
 - sends the backend BOTH username and email — the Loom contract keys the lookup on username
@@ -1052,6 +1167,9 @@
 - rejects a DIFFERENT email with the configured sandbox password
 - admits ONLY the configured sandbox credential, matched exactly
 - a real backend credential still wins without any sandbox configuration
+- mints a weave_session cookie binding the issued token, which the middleware verifies
+- fails LOUDLY (500, no cookies) when CMS_SESSION_SECRET is unset — never an unverifiable session
+- signing out clears the session cookie too
 
 ### `apps/cms/src/app/api/crud/route.test.ts` — 26
 - refuses a write path that is not in WRITE_REGISTRY
@@ -1250,18 +1368,23 @@
 - survives malformed preference JSON on one row instead of failing the whole list
 - returns ok:false rather than an empty consent list when the backend refuses
 
-### `apps/cms/src/middleware.test.ts` — 18
+### `apps/cms/src/middleware.test.ts` — 23
 - redirects an unauthenticated page request to /login, preserving where it was going
 - returns 401 JSON — not a redirect — for an unauthenticated /api/* call
 - lets the login page and the login POST through without a session
 - does NOT treat /api/auth/me as public — it is only reachable with a session
-- admits a well-formed, unexpired JWT
+- admits a well-formed, unexpired JWT accompanied by its login-minted session cookie
+- REJECTS a well-formed, unexpired JWT without the session cookie — presence + shape is no longer a session
+- rejects a forged JWT even when a session cookie exists for a DIFFERENT token
+- rejects a session cookie whose HMAC is wrong
+- rejects an EXPIRED session cookie even for the right token
+- fails CLOSED when CMS_SESSION_SECRET is unset — no JWT session verifies
 - rejects an EXPIRED JWT rather than accepting any non-empty string
 - rejects a token that is not a three-part JWT
 - rejects a JWT whose payload is not decodable JSON
-- admits a JWT with no exp claim — presence + shape is the v1 bar
+- admits a JWT with no exp claim when its session cookie binds it (the cookie carries the expiry)
 - PINNED: the raw SANDBOX_ADMIN_TOKEN is accepted as a session token
-- does not verify the JWT signature — any signature segment is accepted
+- does not accept ANY cookie value when SANDBOX_ADMIN_TOKEN is unset
 - challenges even the public login page — it sits IN FRONT of the session gate
 - challenges a request holding a valid session but no basic-auth header
 - passes a correct credential through to the session gate
@@ -1349,7 +1472,7 @@
 - renders standard size buttons and selects size on click
 - expands custom size form when Custom Size is clicked
 
-### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 10
+### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 12
 - maps a fabric row, deriving the product from fabricProductPreview.product
 - exposes the PREVIEW id as productId, since that is what /add/cart-item binds to
 - recomputes the unit price from the preview product plus makingCharge, as Loom stores no price
@@ -1359,7 +1482,9 @@
 - aggregates count and subtotal across the cartItemList
 - charges nothing on an empty cart rather than the flat shipping rate
 - defaults to an empty cart when called with no argument
-- applies flat 150 estimated shipping for non-empty carts
+- reports NO shipping quote for a non-empty cart rather than inventing a flat rate
+- does not scale, or otherwise invent, a rate as the cart grows
+- returns none of the invented shipping amounts at any cart size
 
 ### `apps/storefront/src/lib/api/adapters/legacy-catalog.adapter.test.ts` — 16
 - returns the placeholder for a missing/empty path
@@ -1444,8 +1569,11 @@
 - returns null (not a throw) when the product fetch fails
 - GETs /v1/products with page/limit/search/category/sortBy as query params
 
-### `apps/storefront/src/lib/api/repositories/checkout.repository.test.ts` — 6
+### `apps/storefront/src/lib/api/repositories/checkout.repository.test.ts` — 9
 - maps the backend
+- passes a real delivery estimate through
+- leaves a missing delivery estimate ABSENT rather than inventing 5/7 or 7/12 days
+- keeps a genuine same-day 0 estimate instead of turning it into 5 days
 - keeps a genuine 0 instead of substituting a default charge
 - throws — never a fabricated quote — when the backend fails
 - throws on a 500 rather than falling back to invented prices
@@ -1506,7 +1634,7 @@
 - accepts ordinary addresses
 - rejects the shapes that would produce an unreachable order
 
-### `apps/storefront/src/lib/checkout/checkout-calculations.test.ts` — 7
+### `apps/storefront/src/lib/checkout/checkout-calculations.test.ts` — 18
 - calculates shipping charge based on baseAmount and excess quantity per shipment option
 - calculates shipping charge based on baseAmount + excess qty * additionalAmount
 - supports explicit free shipping when flag is passed
@@ -1514,6 +1642,17 @@
 - computes 50% advance for made-to-order items plus shipping
 - applies coupon percentage discounts correctly
 - formats dates properly
+- reports no quote — not zero, not free — when no shipment is selected
+- withholds every figure that depends on shipping, rather than understating it
+- returns none of the amounts the old fallback invented
+- invents nothing for an international address either
+- still prices normally once a quote exists
+- keeps a 0 base amount instead of substituting a default charge
+- reports a free quote as free, and as HAVING a quote
+- does not charge a per-unit surcharge the quote priced at 0
+- returns undefined for a missing estimate instead of 
+- still honours a real 0 as same-day
+- offsets by a real day count
 
 ### `apps/storefront/src/lib/guest-cart.test.ts` — 17
 - merges quantities for an identical line instead of duplicating it
