@@ -182,7 +182,7 @@ export default function OrderSummary({ items, shipment, discounts, ctaLabel, onC
 
       <button
         type='button'
-        onClick={onCta}
+        onClick={() => onCta?.()}
         disabled={ctaDisabled}
         className='mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-clay/80 px-4 py-3.5 text-sm font-semibold uppercase tracking-[.08em] text-white transition hover:bg-clay disabled:opacity-50'
       >

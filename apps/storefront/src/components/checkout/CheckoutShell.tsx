@@ -684,8 +684,12 @@ export default function CheckoutShell() {
   }, [finalizeOrder]);
 
   // ---- TERMINAL ACTION — the REAL checkout sequence -------------------------
-  const placeOrder = async (preferredGateway?: string) => {
+  const placeOrder = async (preferredGateway?: string | unknown) => {
     if (payBusy) return;
+    const gateway =
+      typeof preferredGateway === 'string' && preferredGateway.trim().length > 0
+        ? preferredGateway.trim()
+        : (currency === 'INR' ? 'razorpay' : 'stripe');
     setPayBusy(true);
     setPayError('');
     if (!shippingAddress) {
@@ -730,7 +734,7 @@ export default function CheckoutShell() {
       setPayLabel('Opening a secure payment…');
       const session = await post('/api/checkout/payment-session', {
         orderId,
-        provider: preferredGateway || (currency === 'INR' ? 'razorpay' : 'stripe'),
+        provider: gateway,
       });
       if (!session.ok || session.data.success !== true) {
         setPayError('Could not start the payment. Your order is saved and unpaid.');
