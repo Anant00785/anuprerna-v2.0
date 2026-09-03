@@ -22,6 +22,7 @@ import LogisticsBlock from './LogisticsBlock';
 import { effectiveOrderProfile, orderTypeSuffix } from './order-profile';
 import { estimatedDeliveryString } from './delivery';
 import { useBuyerMode } from '@/components/BuyerModeProvider';
+import { useWishlistStore } from '@/stores/wishlist.store';
 
 interface ProductInfoPanelProps {
   product: ProductDetail;
@@ -253,6 +254,53 @@ export default function ProductInfoPanel({
   // Bulk DATA (pre-order/volume tiers/MOQ box) is UNIVERSAL (guest/b2c/b2b),
   // matching live anuprerna.com — buyer mode never gates or changes it.
   const [cartRefresh, setCartRefresh] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [inWishlist, setInWishlist] = useState(false);
+  const wishlistSkus = useWishlistStore((s) => s.skus);
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
+  const itemSku = product.sku || String(recordId);
+
+  useEffect(() => {
+    setInWishlist(wishlistSkus.includes(itemSku));
+  }, [wishlistSkus, itemSku]);
+
+  const handleCopyLink = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined') {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    const title = product.name || 'Anuprerna Sustainable Artisanal Product';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: `Check out ${title} on Anuprerna`, url });
+        return;
+      } catch {
+        /* share dismissed */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }, [product.name]);
+
+  const handleWishlistToggle = useCallback(() => {
+    toggleWishlist(product.name, itemSku);
+  }, [toggleWishlist, product.name, itemSku]);
+
   const [bulkOpen, setBulkOpen] = useState(false);
   const [preOrderOpen, setPreOrderOpen] = useState(false);
   const [priceDetailsOpen, setPriceDetailsOpen] = useState(false);
@@ -583,8 +631,8 @@ export default function ProductInfoPanel({
 
   return (
     <div className='flex flex-col gap-4'>
-      {/* Badge row: Made-To-Order + special-status pill */}
-      {(isMadeToOrder || product.specialStatus?.name) && (
+      {/* Top Header Row: Badges / Category on left + Action Icons (Copy, Share, Wishlist) on right */}
+      <div className='flex items-center justify-between gap-3'>
         <div className='flex flex-wrap items-center gap-1.5'>
           {isMadeToOrder && (
             <span className='inline-flex items-center gap-1 w-max rounded-full bg-[#FBF3E4] px-3 py-1 text-[11px] font-medium text-[#7D5A20]'>
@@ -597,8 +645,62 @@ export default function ProductInfoPanel({
               {product.specialStatus.name}
             </span>
           )}
+          {product.subCategory?.name && (
+            <span className='w-max rounded-full border border-black/10 px-3 py-0.5 text-[11px] font-medium text-black/60 capitalize'>
+              {product.subCategory.name}
+            </span>
+          )}
         </div>
-      )}
+
+        {/* Action Icons: Copy, Share, Wishlist */}
+        <div className='flex items-center gap-1 shrink-0 text-black/60'>
+          {/* Copy link */}
+          <button
+            type='button'
+            onClick={handleCopyLink}
+            title={copied ? 'Link copied!' : 'Copy product link'}
+            aria-label='Copy product link'
+            className='relative flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 transition text-black/70 hover:text-black cursor-pointer'
+          >
+            <span className='material-symbols-outlined text-[18px]'>
+              {copied ? 'check' : 'content_copy'}
+            </span>
+            {copied && (
+              <span className='absolute -top-7 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-0.5 rounded shadow whitespace-nowrap z-20'>
+                Copied!
+              </span>
+            )}
+          </button>
+
+          {/* Share */}
+          <button
+            type='button'
+            onClick={handleShare}
+            title='Share this product'
+            aria-label='Share product'
+            className='flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 transition text-black/70 hover:text-black cursor-pointer'
+          >
+            <span className='material-symbols-outlined text-[18px]'>share</span>
+          </button>
+
+          {/* Wishlist */}
+          <button
+            type='button'
+            onClick={handleWishlistToggle}
+            title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            aria-label='Wishlist'
+            className='flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 transition cursor-pointer'
+          >
+            <span
+              className={`material-symbols-outlined text-[20px] transition-all active:scale-125 ${
+                inWishlist ? 'text-red-500 fill-current' : 'text-black/70 hover:text-red-500'
+              }`}
+            >
+              {inWishlist ? 'favorite' : 'favorite_border'}
+            </span>
+          </button>
+        </div>
+      </div>
 
       {/* Product name */}
       <h1 className='text-2xl sm:text-3xl font-medium text-black leading-snug'>

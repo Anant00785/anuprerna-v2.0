@@ -29,41 +29,49 @@ const OPTIONS: { value: BuyerMode; label: string }[] = [
 ];
 
 export default function BuyerModeToggle({ className = '' }: { className?: string }) {
-  const { mode, setMode, lockedByAccount } = useBuyerMode();
+  const { mode, setMode, isBusinessAccount } = useBuyerMode();
+
+  // Non-business users (retail buyers / guests) should NEVER see a mode switch
+  if (!isBusinessAccount) {
+    return null;
+  }
+
   return (
     <div
       className={'inline-flex items-center gap-2 text-[13px] ' + className}
-      aria-label='Shopping mode (test)'
+      aria-label='Business view mode'
       data-testid='buyer-mode-toggle'
-      data-locked={lockedByAccount ? 'account' : 'off'}
     >
       <span className='text-gray-500 font-normal select-none'>
-        {lockedByAccount ? 'Your account:' : 'View as:'}
+        View as:
       </span>
       <div className='inline-flex items-center rounded-full border border-gray-300 bg-white p-0.5 shadow-2xs'>
-        {OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type='button'
-            disabled={lockedByAccount}
-            title={
-              lockedByAccount
-                ? 'Signed in — this follows your account. Change it in Account settings.'
-                : undefined
-            }
-            onClick={() => setMode(opt.value)}
-            aria-pressed={mode === opt.value}
-            className={
-              'px-3 py-1 rounded-full text-xs sm:text-[13px] font-medium transition-all ' +
-              (mode === opt.value
-                ? 'bg-[#7D5B20] text-white shadow-xs'
-                : 'text-gray-700 hover:text-black hover:bg-gray-100/70') +
-              (lockedByAccount ? ' cursor-not-allowed opacity-70' : '')
-            }
-          >
-            {opt.label}
-          </button>
-        ))}
+        <button
+          type='button'
+          onClick={() => setMode('b2b')}
+          aria-pressed={mode === 'b2b'}
+          className={
+            'px-3 py-1 rounded-full text-xs sm:text-[13px] font-medium transition-all ' +
+            (mode === 'b2b'
+              ? 'bg-[#7D5B20] text-white shadow-xs'
+              : 'text-gray-700 hover:text-black hover:bg-gray-100/70')
+          }
+        >
+          For my business
+        </button>
+        <button
+          type='button'
+          onClick={() => setMode('b2c')}
+          aria-pressed={mode === 'b2c'}
+          className={
+            'px-3 py-1 rounded-full text-xs sm:text-[13px] font-medium transition-all ' +
+            (mode === 'b2c'
+              ? 'bg-[#7D5B20] text-white shadow-xs'
+              : 'text-gray-700 hover:text-black hover:bg-gray-100/70')
+          }
+        >
+          For myself (Retail)
+        </button>
       </div>
     </div>
   );

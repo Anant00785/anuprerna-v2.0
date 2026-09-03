@@ -1,5 +1,6 @@
 'use client';
 import { useState, FormEvent, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import SocialButton from './SocialButton';

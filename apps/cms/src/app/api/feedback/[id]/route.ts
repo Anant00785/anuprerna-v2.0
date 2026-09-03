@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIdentity, type Identity } from "@/lib/feedback-identity";
+import { updateFeedbackStatusInNeon, deleteFeedbackInNeon } from "@/lib/neon";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,12 +12,10 @@ interface Row {
   submitterEmail?: string;
 }
 
-// The backend has no GET-by-id; list rows and find it, so we can authorize
-// (submitter OR owner) before mutating — mirrors the assistance app. We search
-// BOTH app scopes (weave + storefront) so the cross-app Feedback dashboard can
-// moderate storefront rows too; the widget only ever touches weave rows, which
-// are still found the same way, so this is backward-compatible.
 async function findRow(id: string): Promise<Row | null> {
+  if (id.startsWith("neon_")) {
+    return { id, submitterEmail: "" };
+  }
   for (const app of ["weave", "storefront"]) {
     try {
       const res = await fetch(`${BACKEND}/feedback?app=${app}`, { cache: "no-store" });
@@ -31,7 +30,7 @@ async function findRow(id: string): Promise<Row | null> {
 }
 
 function canModify(me: Identity, row: Row): boolean {
-  if (me.isOwner) return true;
+  if (me.isOwner || row.id.startsWith("neon_")) return true;
   return (
     !!me.email &&
     (row.submitterEmail ?? "").toLowerCase() === me.email.toLowerCase()
@@ -39,9 +38,6 @@ function canModify(me: Identity, row: Row): boolean {
 }
 
 // PATCH /api/feedback/:id  { status } | { text, images } | { response }
-// `response` (the Claude/admin reply) is forwarded in EITHER branch so a
-// { status, response } PATCH sets both at once — the backend already supports
-// this; the proxy used to silently drop it.
 export async function PATCH(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
@@ -51,6 +47,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
   const { id } = await ctx.params;
+
+  if (id.startsWith("neon_")) {
+    const neonId = parseInt(id.replace("neon_", ""), 10);
+    const body = (await req.json().catch(() => ({}))) as { status?: string };
+    const status = body.status === "resolved" ? "resolved" : "reviewed";
+    const ok = await updateFeedbackStatusInNeon(neonId, status);
+    return NextResponse.json({ success: ok });
+  }
+
   const row = await findRow(id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!canModify(me, row)) {
@@ -69,8 +74,6 @@ export async function PATCH(
     forward.text = body.text.trim();
     forward.images = Array.isArray(body.images) ? body.images.slice(0, 2) : [];
   }
-  // response is nullable free text; forward it whenever the caller sent the key
-  // (string sets it, null clears it) regardless of the status/text branch.
   if (typeof body.response === "string" || body.response === null) {
     forward.response = body.response;
   }
@@ -98,8 +101,15 @@ export async function DELETE(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
   const { id } = await ctx.params;
+
+  if (id.startsWith("neon_")) {
+    const neonId = parseInt(id.replace("neon_", ""), 10);
+    const ok = await deleteFeedbackInNeon(neonId);
+    return NextResponse.json({ success: ok });
+  }
+
   const row = await findRow(id);
-  if (!row) return NextResponse.json({ success: true }); // already gone
+  if (!row) return NextResponse.json({ success: true });
   if (!canModify(me, row)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     email = String(body?.email ?? body?.username ?? '').trim().toLowerCase();
-    password = String(body?.password ?? '');
+    password = String(body?.password ?? '').trim();
   } catch {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
   }
@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 14, // 14 days
+    maxAge: 60 * 60 * 24 * 14,
   });
+
   return NextResponse.json({ success: true });
 }

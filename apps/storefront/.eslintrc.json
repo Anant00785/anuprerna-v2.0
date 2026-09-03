@@ -1,4 +1,7 @@
 {
   "extends": "next/core-web-vitals",
-  "root": true
+  "rules": {
+    "@next/next/no-html-link-for-pages": "warn",
+    "@next/next/no-img-element": "warn"
+  }
 }

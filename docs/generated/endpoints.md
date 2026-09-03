@@ -4,7 +4,7 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. What `apps/api` exposes, and what the frontends actually call.
 
-**apps/api exposes 816 routes** across 96 controllers (DELETE 59, GET 488, PATCH 109, POST 159, PUT 1).
+**apps/api exposes 824 routes** across 98 controllers (DELETE 59, GET 492, PATCH 109, POST 163, PUT 1).
 
 **The frontends call 31 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
 gap is the migration. See `docs/KNOWN-GAPS.md`.
@@ -13,6 +13,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 
 | Method | Path | Controller |
 |---|---|---|
+| GET | `/` | `apps/api/src/app.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/domain/currency-location.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/forex/controller/forex.controller.ts` |
 | GET | `/` | `apps/api/src/commerce/forex/controller/forex.controller.ts` |
@@ -118,6 +119,13 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | POST | `/check-email/tenant` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
 | GET | `/check/unique-product/name/:name` | `apps/api/src/commerce/domain/product-migrated.controller.ts` |
 | GET | `/check/unique-product/sku/:sku` | `apps/api/src/commerce/domain/product-migrated.controller.ts` |
+| POST | `/checkout/order` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
+| GET | `/checkout/order-status/:token` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
+| POST | `/checkout/payment-callback` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
+| GET | `/checkout/payment-mode` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
+| POST | `/checkout/payment-session` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
+| POST | `/checkout/sandbox-gateway/complete` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
+| GET | `/checkout/shipment-list` | `apps/api/src/commerce/checkout/controller/checkout.controller.ts` |
 | POST | `/checkout/stripe/webhook` | `apps/api/src/commerce/payment/controller/payment.controller.ts` |
 | POST | `/confirm/verification/email` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
 | POST | `/create/impact` | `apps/api/src/commerce/impact/impact.controller.ts` |

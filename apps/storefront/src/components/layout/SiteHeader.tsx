@@ -415,7 +415,7 @@ interface CartLine { id?: number; productId?: number; quantity?: number; [k: str
 
 export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
   const { user, logout } = useAuth();
-  const { mode: buyerMode, setMode: setBuyerMode } = useBuyerMode();
+  const { mode: buyerMode, setMode: setBuyerMode, isBusinessAccount } = useBuyerMode();
   const { formatCode2 } = useCurrency();
   const [detailsItem, setDetailsItem] = useState<CartItem | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -728,24 +728,26 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
                   {/* FIX 4: wired account dropdown */}
                   {acctOpen && (
                     <div className='absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl py-2 text-sm z-50 overflow-hidden' style={{ border: '1px solid #EFEEE9' }}>
-                      {/* Active Mode Badge & 1-Click Switch */}
-                      <div className='px-4 py-2.5 bg-[#FAF9F7] border-b border-[#EFEEE9] mb-1'>
-                        <div className='flex items-center justify-between'>
-                          <span className='text-[11px] font-bold uppercase tracking-wider text-bark/80 flex items-center gap-1'>
-                            <span className='material-symbols-outlined text-[15px] text-clay'>
-                              {buyerMode === 'b2b' ? 'domain' : 'person'}
+                      {/* Active Mode Badge & 1-Click Switch ONLY for Business accounts */}
+                      {isBusinessAccount && (
+                        <div className='px-4 py-2.5 bg-[#FAF9F7] border-b border-[#EFEEE9] mb-1'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-[11px] font-bold uppercase tracking-wider text-bark/80 flex items-center gap-1'>
+                              <span className='material-symbols-outlined text-[15px] text-clay'>
+                                {buyerMode === 'b2b' ? 'domain' : 'person'}
+                              </span>
+                              {buyerMode === 'b2b' ? 'Business Mode' : 'Retail Mode'}
                             </span>
-                            {buyerMode === 'b2b' ? 'Business Mode' : 'Retail Mode'}
-                          </span>
-                          <button
-                            type='button'
-                            onClick={() => setBuyerMode(buyerMode === 'b2b' ? 'b2c' : 'b2b')}
-                            className='text-[11px] font-medium text-clay hover:underline cursor-pointer'
-                          >
-                            {buyerMode === 'b2b' ? 'Switch to Retail' : 'Switch to Business'}
-                          </button>
+                            <button
+                              type='button'
+                              onClick={() => setBuyerMode(buyerMode === 'b2b' ? 'b2c' : 'b2b')}
+                              className='text-[11px] font-medium text-clay hover:underline cursor-pointer'
+                            >
+                              {buyerMode === 'b2b' ? 'Switch to Retail' : 'Switch to Business'}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <Link href='/profile' className='block px-4 py-2 hover:bg-sand'>Dashboard</Link>
                       <Link href='/profile/order' className='block px-4 py-2 hover:bg-sand'>Orders</Link>

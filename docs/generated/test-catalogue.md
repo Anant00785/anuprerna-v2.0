@@ -4,9 +4,9 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1318 tests across 238 files.**
+**1345 tests across 240 files.**
 
-- `apps/api` — 187 files, 760 tests
+- `apps/api` — 189 files, 787 tests
 - `apps/cms` — 17 files, 210 tests
 - `apps/storefront` — 33 files, 346 tests
 - `packages/types` — 1 files, 2 tests
@@ -112,6 +112,37 @@
 ### `apps/api/src/commerce/catalog/controller/catalog-pdf.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/catalog/controller/catalog.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/checkout/checkout.e2e.spec.ts` — 27
+- guest order: subtotal from verified line prices, shipping from the shipment record, client totals discarded
+- rejects a line priced below the catalogue price
+- accepts a legitimately volume-discounted price at qualifying quantity, rejects it below the tier
+- rejects a line naming a product that does not exist
+- rejects an unknown shipping method rather than inventing a rate
+- prices a non-INR order with the day
+- refuses a non-INR order when no exchange rate is on file
+- a body-supplied guest cannot override the token identity
+- no token and no guest identity -> 401
+- a guest email that belongs to a registered account is refused with exists:true
+- an invalid bearer token is rejected, never downgraded to guest
+- reusing the same guest email reuses the same guest tenant
+- is unguessable (32 random bytes) and stored only as a SHA-256 hash
+- order -> payment session -> signed callback marks the order paid; replay is idempotent
+- an invalid signature does not mark the order paid
+- a callback naming a provider order this API never created is refused
+- a missing signature is refused before any verification
+- order -> session -> signed callback marks the order paid, all on the bearer token
+- another customer
+- cannot open a session, post a callback, or read status for another order
+- a guest with no token at all gets 401 on the payment steps
+- projects the order without leaking internals, and flips to PAID after the callback
+- verifies the session against Stripe itself before handing it to the success handler
+- refuses an unpaid session, a session for a different order, and a non-cs id
+- payment-mode answers from the configured providers, honestly when unconfigured
+- shipment-list is guest-readable and keyed like the Loom envelope
+- the sandbox gateway is a genuine 404 — no sandbox provider exists in this API
+
+### `apps/api/src/commerce/checkout/controller/checkout.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/compatibility/compatibility.controller.gates.spec.ts` — 0
 

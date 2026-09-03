@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Img from '@/components/ui/Img';
 import type { SeoProduct } from './loom';
 import ProductGrid from './ProductGrid';

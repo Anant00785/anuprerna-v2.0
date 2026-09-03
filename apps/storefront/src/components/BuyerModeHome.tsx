@@ -35,6 +35,7 @@ import WholesalePartner from './WholesalePartner';
 import Reviews from './Reviews';
 import FinishedProducts from './FinishedProducts';
 import News from './News';
+import HomeFeedbackSection from './home/HomeFeedbackSection';
 import { useBuyerMode } from './BuyerModeProvider';
 import type { ReactNode } from 'react';
 
@@ -88,6 +89,7 @@ export default function BuyerModeHome({
         <ArtisanFlow />
         <Reviews />
         <FinishedProducts />
+        <HomeFeedbackSection />
         <News />
       </>
     );
@@ -106,6 +108,7 @@ export default function BuyerModeHome({
       {manufacturing}
       <WholesaleInvitation />
       <WholesalePartner />
+      <HomeFeedbackSection />
       <News />
     </>
   );

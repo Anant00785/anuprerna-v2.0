@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getCachedProduct, getReviewStats, getProductReviews, getRelatedStories } from '@/components/product/loom';
 import { getFabricProducts, getFinishedProducts } from '@/components/catalogue/loom';
 import ImageGallery from '@/components/product/ImageGallery';
@@ -229,16 +230,16 @@ export default async function ProductDetailPage({
         <div className='mx-auto max-w-screen-xl px-4 py-3 text-xs text-black/50 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap'>
           <Link href='/' className='hover:text-clay transition-colors'>Home</Link>
           <span className='material-symbols-outlined text-[12px]'>chevron_right</span>
-          <a
+          <Link
             href={isFinished ? '/products/finished' : '/products/fabric'}
             className='hover:text-clay transition-colors capitalize'
           >
             {isFinished ? 'Finished Products' : 'Fabric'}
-          </a>
+          </Link>
           {product.subCategory?.name && (
             <>
               <span className='material-symbols-outlined text-[12px]'>chevron_right</span>
-              <a href={craftHref} className='hover:text-clay transition-colors'>{product.subCategory.name}</a>
+              <Link href={craftHref} className='hover:text-clay transition-colors'>{product.subCategory.name}</Link>
             </>
           )}
           <span className='material-symbols-outlined text-[12px]'>chevron_right</span>

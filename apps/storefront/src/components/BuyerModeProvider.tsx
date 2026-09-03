@@ -51,6 +51,10 @@ interface BuyerModeState {
   /** TRUE while a real account is signed in: the mode comes from that account's
    *  stored buyer type and the manual toggle cannot override it. */
   lockedByAccount: boolean;
+  /** TRUE ONLY if the logged-in user is an authenticated Business / Wholesale account. */
+  isBusinessAccount: boolean;
+  /** TRUE ONLY if the user is authorized to switch between Business and Retail modes. */
+  canSwitchMode: boolean;
   setMode: (m: BuyerMode) => void;
 }
 
@@ -82,36 +86,61 @@ export function BuyerModeProvider({ children }: { children: React.ReactNode }) {
     setModeState((prev) => (c !== prev ? c : prev));
   }, []);
 
-  // LOGIN -> MODE bridge (the sanctioned auth coupling). A real login drives the
-  // buyer-mode from the profile: authenticated => profile.buyerType (b2c|b2b);
-  // logout => back to guest. GUESTS who never logged in are left untouched, so the
-  // manual toggle still works for them. Runs only after auth resolves (not while
-  // loading) to avoid clobbering the cookie during the initial SSR/hydration pass.
   const { user, loading } = useAuth();
   const wasAuthedRef = useRef(false);
-  // The account is the source of truth for a signed-in buyer. Re-asserted on
-  // every auth resolution (not just the first) so a manual flip cannot survive.
-  const lockedByAccount = !loading && !!user;
+
+  // Determine if the user is a registered/logged-in Business account
+  const isBusinessAccount = Boolean(
+    user && (
+      (user as Record<string, unknown>).buyerType === 'b2b' ||
+      (user as Record<string, unknown>).isBusiness === true ||
+      (user as Record<string, unknown>).accountType === 'business' ||
+      (user as Record<string, unknown>).companyName ||
+      (user as Record<string, unknown>).gstNumber ||
+      (user as Record<string, unknown>).activeWholesaleProgram ||
+      (user as Record<string, unknown>).wholesaleProgramActive ||
+      (user as Record<string, unknown>).isWholesaleMember
+    )
+  );
+
+  // ONLY business accounts are permitted to switch between Business and Retail
+  const canSwitchMode = isBusinessAccount;
+  const lockedByAccount = !loading && !!user && !isBusinessAccount;
+
   useEffect(() => {
     if (loading) return;
     if (user) {
       wasAuthedRef.current = true;
-      const bt: BuyerMode = (user as { buyerType?: unknown }).buyerType === 'b2b' ? 'b2b' : 'b2c';
-      setModeFromAuth(bt);
+      if (isBusinessAccount) {
+        // Business user: preserve their current cookie choice if they switched to retail ('b2c'), else default to 'b2b'
+        const existingCookie = readCookie();
+        if (existingCookie === 'b2c' || existingCookie === 'b2b') {
+          setModeFromAuth(existingCookie);
+        } else {
+          setModeFromAuth('b2b');
+        }
+      } else {
+        // Retail user: always fixed to retail mode ('b2c')
+        setModeFromAuth('b2c');
+      }
     } else {
       // Not signed in: always standard normal retail website
       wasAuthedRef.current = false;
       setModeFromAuth(DEFAULT_BUYER_MODE);
     }
-  }, [user, loading, setModeFromAuth]);
+  }, [user, loading, isBusinessAccount, setModeFromAuth]);
 
   const setMode = useCallback((m: BuyerMode) => {
+    // Only business accounts can switch to b2b
+    if (!isBusinessAccount && m === 'b2b') {
+      return;
+    }
     setModeState(m);
     if (typeof document !== 'undefined') {
       document.cookie =
         BUYER_MODE_COOKIE + '=' + m + '; path=/; max-age=' + BUYER_MODE_MAX_AGE + '; SameSite=Lax';
     }
-  }, []);
+  }, [isBusinessAccount]);
 
   return (
     <Ctx.Provider
@@ -122,6 +151,8 @@ export function BuyerModeProvider({ children }: { children: React.ReactNode }) {
         showBulkData: showsBulkData(mode),
         wholesaleCta: wholesaleCta(mode),
         lockedByAccount,
+        isBusinessAccount,
+        canSwitchMode,
         setMode,
       }}
     >

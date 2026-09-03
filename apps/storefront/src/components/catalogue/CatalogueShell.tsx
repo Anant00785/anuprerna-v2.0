@@ -162,7 +162,8 @@ function num(v: string | null): number | null {
  * Hydrate FilterState from LIVE URL params.
  * Accepts both live format and the old demo format for backward compat.
  */
-function hydrateLiveParams(sp: URLSearchParams): { state: FilterState; sort: SortKey; page: number } | null {
+function hydrateLiveParams(sp: URLSearchParams | null): { state: FilterState; sort: SortKey; page: number } | null {
+  if (!sp) return null;
   // Check if any relevant params are present
   const hasParams =
     sp.has('calculatedPrice') || sp.has('gsm') || sp.has('total_quantity') ||
@@ -227,23 +228,36 @@ function hydrateLiveParams(sp: URLSearchParams): { state: FilterState; sort: Sor
  * Normalise raw parsed URL craft/color/material/pattern values back to canonical
  * option names so the matching checkboxes appear checked.
  */
-function normaliseFilterState(raw: FilterState, filters: CatalogueFilters): FilterState {
+function normaliseFilterState(raw: FilterState, filters?: CatalogueFilters | null): FilterState {
+  if (!raw) return EMPTY_FILTER_STATE;
+  if (!filters) return raw;
+
+  const segments = Array.isArray(filters.segments) ? filters.segments : [];
   const craftOptions: string[] =
     filters.segmentLabel === 'Category'
-      ? filters.segments.map((s) => s.segmentCategoryName)
+      ? segments.map((s) => s?.segmentCategoryName || '').filter(Boolean)
       : Array.from(
-          new Set(filters.segments.flatMap((s) => s.optionList.map((o) => o.subCategoryName))),
+          new Set(
+            segments.flatMap((s) =>
+              Array.isArray(s?.optionList)
+                ? s.optionList.map((o) => o?.subCategoryName || '').filter(Boolean)
+                : []
+            ),
+          ),
         );
 
-  const resolve = (values: string[], options: string[]): string[] =>
-    values.map((v) => {
-      const lv = v.toLowerCase().replace(/-/g, ' ');
-      return options.find((o) => (o ?? "").toLowerCase() === lv) ?? v;
-    });
+  const resolve = (values: string[] | undefined, options: string[]): string[] =>
+    (values || [])
+      .map((v) => {
+        if (!v) return '';
+        const lv = v.toLowerCase().replace(/-/g, ' ');
+        return options.find((o) => (o ?? '').toLowerCase() === lv) ?? v;
+      })
+      .filter(Boolean);
 
-  const colorNames = filters.colors.map((c) => c.name);
-  const materialNames = filters.materials.map((m) => m.name);
-  const patternNames = filters.patterns.map((p) => p.name);
+  const colorNames = Array.isArray(filters.colors) ? filters.colors.map((c) => c?.name || '').filter(Boolean) : [];
+  const materialNames = Array.isArray(filters.materials) ? filters.materials.map((m) => m?.name || '').filter(Boolean) : [];
+  const patternNames = Array.isArray(filters.patterns) ? filters.patterns.map((p) => p?.name || '').filter(Boolean) : [];
 
   return {
     ...raw,

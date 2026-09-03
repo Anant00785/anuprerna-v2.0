@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Img from '@/components/ui/Img';
 import CardPrice from './CardPrice';
 import type { SeoProduct, SeoBlogItem } from './loom';
