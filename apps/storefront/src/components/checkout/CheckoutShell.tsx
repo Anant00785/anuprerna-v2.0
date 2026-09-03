@@ -527,7 +527,24 @@ export default function CheckoutShell() {
       const p = it.fabricProductPreview?.product;
       const tier = p ? discountedUnitPrice(p, q) : 0;
       const unitPrice = tier > 0 ? tier : cartUnitPrice(it);
+      // The backend rejects a line that names no product ("Order line N names
+      // no product"), and this used to send none at all — so EVERY order failed
+      // at creation.
+      //
+      // It must be the PRODUCT's id, not the preview's: a fabric/finished
+      // preview row and the product it wraps have different ids, and passing
+      // the preview's is rejected with "names a product that does not exist".
+      const fp = it.fabricProductPreview;
+      const fin = (it as { finishedProductPreview?: { id?: number; product?: { id?: number } } })
+        .finishedProductPreview;
+      const productId =
+        (it as { productId?: number }).productId ??
+        fp?.product?.id ??
+        fin?.product?.id ??
+        p?.id;
       return {
+        productId,
+        cartItemId: it.id,
         orderType: effectiveOrderType(it),
         productGroup: it.productGroup || p?.productGroup || '',
         // RUPEES, always — the catalogue has one price per product and it is in

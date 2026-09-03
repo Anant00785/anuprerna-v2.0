@@ -10,6 +10,9 @@ export interface VolumeTier {
 }
 
 export interface CartProduct {
+  /** The PRODUCT's own id — distinct from the wrapping preview's id, and the
+   *  one order creation must name (the backend rejects a preview id). */
+  id?: number;
   name?: string;
   slug?: string;
   sku?: string;

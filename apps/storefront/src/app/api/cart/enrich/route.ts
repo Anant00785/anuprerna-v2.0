@@ -45,9 +45,15 @@ interface ThinItem {
   sku?: string;
   makingCharge?: number;
   price?: number;
+  /** Hydrated preview, as our own backend returns it. Legacy Loom sent the id
+   *  flat instead, so both shapes are accepted. */
+  fabricProductPreview?: { id?: number; product?: { id?: number } } | null;
+  finishedProductPreview?: { id?: number; product?: { id?: number } } | null;
 }
 
 interface EnrichedProduct {
+  /** The PRODUCT's id — what order creation names. Distinct from the preview id. */
+  id?: number;
   name?: string;
   slug?: string;
   sku?: string;
@@ -189,7 +195,14 @@ export async function POST(request: Request) {
       try {
         const group = (it.productGroup || 'fabric').toLowerCase();
         const isFinished = group === 'finished';
-        const recordId = isFinished ? it.finishedProductId : it.fabricProductId;
+        // The id may arrive FLAT (`fabricProductId`, legacy Loom's shape) or
+        // nested under the hydrated preview (`fabricProductPreview.id`, what
+        // our own backend returns). Reading only the flat field left every
+        // account-cart line unenriched — no name, no image, and no product id
+        // for order creation to name.
+        const recordId = isFinished
+          ? it.finishedProductId ?? it.finishedProductPreview?.id
+          : it.fabricProductId ?? it.fabricProductPreview?.id;
         const list = isFinished ? finished : fabric;
         const cat = findInCatalogue(list, recordId, it.sku);
 
@@ -273,6 +286,14 @@ export async function POST(request: Request) {
             : { orderType: 'in-stock', moq: 1, deliveryFromDays: null, deliveryToDays: null, preOrder: false };
         }
         const product: EnrichedProduct = {
+          // The PRODUCT's own id (not the preview's), which order creation must
+          // name — the backend rejects a preview id with "names a product that
+          // does not exist". Carried through here because the enriched bundle
+          // REPLACES the raw preview on the checkout's cart lines.
+          id:
+            it.fabricProductPreview?.product?.id ??
+            it.finishedProductPreview?.product?.id ??
+            (typeof detail?.id === 'number' ? detail.id : undefined),
           name: cat?.name || detail?.name,
           slug: cat?.slug || detail?.slug,
           sku: cat?.sku || detail?.sku || it.sku,

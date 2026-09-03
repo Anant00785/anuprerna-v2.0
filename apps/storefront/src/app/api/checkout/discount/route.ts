@@ -12,6 +12,10 @@ export async function GET() {
     const data = await loomGet<{ discountList?: unknown[] }>('/get/discount-list', { token });
     return NextResponse.json({ ...data, authenticated: true });
   } catch {
-    return NextResponse.json({ discountList: [], authenticated: false });
+    // `/get/discount-list` is an ADMIN read — a customer bearer gets 403. That
+    // is the backend behaving correctly, not a broken session, so the answer is
+    // "no vouchers to show", NOT `authenticated: false`. Reporting the latter
+    // made a signed-in shopper's checkout look half logged-out.
+    return NextResponse.json({ discountList: [], authenticated: true });
   }
 }
