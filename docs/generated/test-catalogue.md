@@ -4,9 +4,9 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1721 tests across 302 files.**
+**1729 tests across 302 files.**
 
-- `apps/api` — 247 files, 1119 tests
+- `apps/api` — 247 files, 1127 tests
 - `apps/cms` — 17 files, 212 tests
 - `apps/storefront` — 37 files, 388 tests
 - `packages/types` — 1 files, 2 tests
@@ -1483,9 +1483,17 @@
 - trims name and phone before they reach the service
 - returns the payload under 
 
-### `apps/api/src/commerce/tenant/mapper/tenant.mapper.spec.ts` — 2
-- projects only id/name/email/phone/type, dropping extra row fields
-- projects only id/roleName/tenantId
+### `apps/api/src/commerce/tenant/mapper/tenant.mapper.spec.ts` — 10
+- maps the REAL column names, not name/phone/type
+- splits the display name into first and last
+- converts a bigint id to a number so it survives JSON
+- never silently drops the name — the exact reported failure
+- defaults buyerType to b2c and to b2b for a wholesale role
+- handles a single-word name and a missing name
+- returns null for no row
+- maps role and user_id, which are the real columns
+- tolerates snake_case rows
+- returns null for no row
 
 ### `apps/api/src/commerce/tenant/repository/tenant.repository.spec.ts` — 1
 - still reads a real tenant id (numeric string accepted, as before)

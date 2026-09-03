@@ -39,19 +39,17 @@ export class TenantRepository {
 
   async updateCustomerProfile(tenantId: unknown, data: any) {
     const id = this.requireTenantId(tenantId);
+    // `loom_tenant` has NO `name` column — the display name lives in `user_name`.
+    // This used to set `updateData.name`, which Drizzle rejects as an unknown
+    // column, so a profile edit that touched the name failed outright. Every
+    // spelling the callers use (name / userName / firstName+lastName) now
+    // resolves to the one real column.
     const updateData: any = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.userName !== undefined) {
-      updateData.userName = data.userName;
-      if (!updateData.name) updateData.name = data.userName;
-    }
-    if (data.firstName !== undefined || data.lastName !== undefined) {
-      const combined = [data.firstName, data.lastName].filter(Boolean).join(" ").trim();
-      if (combined) {
-        updateData.name = combined;
-        updateData.userName = combined;
-      }
-    }
+    const fullName =
+      [data.firstName, data.lastName].filter(Boolean).join(" ").trim() ||
+      (data.name !== undefined ? String(data.name).trim() : "") ||
+      (data.userName !== undefined ? String(data.userName).trim() : "");
+    if (fullName) updateData.userName = fullName;
     if (data.contactNumber !== undefined) updateData.contactNumber = data.contactNumber;
     if (data.phone !== undefined) updateData.contactNumber = data.phone;
     if (data.gender !== undefined) updateData.gender = data.gender;
