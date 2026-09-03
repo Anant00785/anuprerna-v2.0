@@ -68,6 +68,15 @@ export class FilterController {
         return keyedResponse("products", products);
     }
 
+    @Get("/get/finished-preview-list")
+    @ApiOperation({ summary: "Get finished preview list (public alias for storefront SSR)." })
+    @ApiQuery({ name: "category", description: "Filter by category name", example: "Apparel", required: false })
+    async getFinishedPreviewListAlias(
+        @Query("category") category?: string
+    ) {
+        return this.getFinishedFilterPreviewList(category);
+    }
+
     @Get("/get/filter/fabric/filtered")
     @ApiOperation({ summary: "Get filtered fabric filter preview list." })
     async getFilteredFabricFilterPreviewList(

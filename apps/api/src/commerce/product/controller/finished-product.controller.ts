@@ -135,7 +135,7 @@ export class FinishedProductController {
   }
 
   /** FinishedProductDAOController#retrieveFinishedProductData(int page, int size) */
-  @Get(["/get/table-explorer/data/finished-product", "/get/finished-preview-list"])
+  @Get("/get/table-explorer/data/finished-product")
   @ApiOperation({ summary: "Paginated projection of finished products." })
   @ApiResponse({ status: 200, description: "Page of finished product data." })
   @RequireGate(GateCode.CODE_SU)
