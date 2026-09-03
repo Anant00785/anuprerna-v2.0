@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     email = String(body?.email ?? '').trim().toLowerCase();
-    code = String(body?.code ?? '').replace(/\s+/g, '').trim();
+    code = String(body?.code ?? '').trim();
   } catch {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
   }
@@ -19,8 +19,23 @@ export async function POST(req: Request) {
   }
 
   // 1. Verify OTP code
-  const entry = otpStore.get(email);
-  const isValid = Boolean(entry && entry.code.replace(/\s+/g, '') === code && Date.now() <= entry.expiresAt);
+  // No universal-code backdoor: only the OTP this server actually issued, and
+  // only before it expires. The check now runs against Postgres rather than a
+  // per-instance Map — see lib/auth/otp-store.ts for why a valid code used to be
+  // rejected as expired seconds after it was issued. verify() also consumes the
+  // code on success and caps wrong guesses, so the delete here is gone.
+  let isValid = false;
+  try {
+    isValid = await otpStore.verify(email, code);
+  } catch (err) {
+    // A store outage is not a bad code. Saying "invalid or expired" here would
+    // send the user round the request/verify loop forever against a dead store.
+    console.error('[Storefront Email OTP] verification store unavailable:', err);
+    return NextResponse.json(
+      { success: false, message: 'Could not verify the code right now. Please try again.' },
+      { status: 503 },
+    );
+  }
 
   if (!isValid) {
     return NextResponse.json(
@@ -28,9 +43,6 @@ export async function POST(req: Request) {
       { status: 401 },
     );
   }
-
-  // Clear used OTP
-  otpStore.delete(email);
 
   // Identity comes from the verified email alone — no user records are read
   // from or written to disk.

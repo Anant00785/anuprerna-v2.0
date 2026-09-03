@@ -29,7 +29,9 @@ interface ContentBodyProps {
 
 export default function ContentBody({ description, sections, imageStyle }: ContentBodyProps) {
   // Sort sections by sortOrder ascending
-  const sorted = [...sections].sort((a, b) => a.sortOrder - b.sortOrder);
+  // Same guard as TableOfContents / MobileOnThisPage: blogContentSectionList is
+  // absent on some content records and `[...undefined]` throws "is not iterable".
+  const sorted = [...(sections ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <div className='min-w-0'>

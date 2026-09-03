@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { loomPost } from '@/lib/loom/client';
+import { loomPost, LoomError } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
-import { isWrapperToken } from '@/lib/loom/token';
+import { isCartCapableToken } from '@/lib/loom/token';
 
 export async function POST(request: Request) {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
@@ -10,9 +10,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Not authenticated.' }, { status: 401 });
   }
 
-  if (!isWrapperToken(token)) {
+  // A token this STOREFRONT signed (passwordless email-OTP login, see
+  // /api/auth/email-code/verify) carries `sub: <email>` and no tenant identity
+  // the API knows. The API verifies signatures with its own key, so such a
+  // token can never authorise a cart write — the session is real for browsing
+  // and useless for the cart. Say that, rather than "expired", which sends the
+  // customer round a sign-in loop that cannot fix it.
+  if (!isCartCapableToken(token)) {
     return NextResponse.json(
-      { success: false, reauth: true, message: 'Your session has expired — please sign in again.' },
+      { success: false, reauth: true, message: 'Please sign in with your email and password to use the cart.' },
       { status: 401 },
     );
   }
@@ -29,7 +35,26 @@ export async function POST(request: Request) {
   try {
     const result = await loomPost('/add/cart-item', body, { token });
     return NextResponse.json(result);
-  } catch {
+  } catch (err) {
+    // This catch used to discard `err` entirely and answer a flat 502 "Could not
+    // add the item to your cart." That message was the ONLY signal, for every
+    // cause — expired session, rejected payload, backend down — so a stale login
+    // was indistinguishable from an outage in both the UI and the logs.
+    const status = err instanceof LoomError ? err.status : 0;
+    console.error(
+      '[cart/add] POST /add/cart-item failed',
+      JSON.stringify({ status, body: err instanceof LoomError ? err.body : String(err) }).slice(0, 500),
+    );
+
+    // 401/403 is a dead session, not a server fault. The browser already knows
+    // how to handle `reauth` (see the same signal above for a non-wrapper token),
+    // so surface it instead of burying it in a generic failure.
+    if (status === 401 || status === 403) {
+      return NextResponse.json(
+        { success: false, reauth: true, message: 'Your session has expired — please sign in again.' },
+        { status: 401 },
+      );
+    }
     return NextResponse.json({ success: false, message: 'Could not add the item to your cart.' }, { status: 502 });
   }
 }

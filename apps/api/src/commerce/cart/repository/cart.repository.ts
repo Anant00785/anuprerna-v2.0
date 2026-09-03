@@ -43,11 +43,11 @@
  * exactly what Hibernate's `OptimisticLockException` signals — surfaced
  * here as `OptimisticLockError`.
  */
-import { Inject, Injectable } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { and, eq, gte, isNotNull, lte } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { DATABASE_CONNECTION, type Database } from "../../../database/database.module.js";
-import { cartItem, loomTenant, userRole, productFabric, productFinished, sizeProfileOption } from "../../../database/schema/schema.js";
+import { cartItem, loomTenant, productFabric, productFinished, sizeProfileOption } from "../../../database/schema/schema.js";
 import { CartItemData, CartItemSummaryRow, OrderType, Unit } from "../types/cart.types.js";
 
 export interface InsertCartItemValues {
@@ -329,51 +329,33 @@ export class CartRepository {
     return rows[0] ? mapRowToCartItemData(rows[0]) : null;
   }
 
-  async ensureTenantExists(tenantId: number): Promise<number> {
-    try {
-      if (tenantId && tenantId > 0) {
-        const byId = await this.db.select({ id: loomTenant.id }).from(loomTenant).where(eq(loomTenant.id, BigInt(tenantId))).limit(1);
-        if (byId.length > 0) return Number(byId[0].id);
-      }
-
-      const now = Date.now();
-      const uniqueSuffix = Math.random().toString(36).substring(2, 10);
-      const userEmail = `guest_${now}_${uniqueSuffix}@anuprerna.com`;
-      const userUid = crypto.randomUUID();
-      const created = await this.db.insert(loomTenant).values({
-        loomId: userUid,
-        email: userEmail,
-        emailVerified: true,
-        contactNumber: '',
-        contactNumberVerified: false,
-        userPassword: '$2b$10$defaultDummyHashedPasswordForGuestCart1234567890',
-        creationTime: now,
-        active: true,
-        suspended: false,
-        banned: false,
-        deleted: false,
-        userName: `guest_${uniqueSuffix}`,
-        gender: 'UNDEFINED',
-        provider: 'BASIC',
-      }).returning({ id: loomTenant.id });
-
-      if (created.length > 0) {
-        const newId = created[0].id;
-        await this.db.insert(userRole).values({
-          role: 'ROLE_CUSTOMER',
-          userId: BigInt(newId),
-        }).catch(() => {});
-        return Number(newId);
-      }
-    } catch (err) {
-      console.warn("[CartRepository] ensureTenantExists fallback:", err);
+  /**
+   * The caller is already past the CODE_CU gate, so `tenantId` came out of a
+   * SIGNATURE-VERIFIED token. If no such tenant exists, the token is stale or
+   * was issued against a different database — an authentication fault, not a
+   * cart problem.
+   *
+   * This used to CREATE a `guest_<ts>_<rand>@anuprerna.com` tenant (plus a
+   * ROLE_CUSTOMER grant) on a miss and attach the cart to it. The customer then
+   * saw an empty cart and appeared logged out, because their item had been
+   * filed under an account that had existed for milliseconds — and production
+   * accumulated a junk tenant per click. Fabricating an identity to make a
+   * write succeed is never the right answer; the write must fail.
+   */
+  async assertTenantExists(tenantId: number): Promise<number> {
+    if (!Number.isFinite(tenantId) || tenantId <= 0) {
+      throw new UnauthorizedException("Please sign in again to update your cart.");
     }
+    const byId = await this.db
+      .select({ id: loomTenant.id })
+      .from(loomTenant)
+      .where(eq(loomTenant.id, BigInt(tenantId)))
+      .limit(1);
 
-    // No "borrow an arbitrary existing tenant" fallback: returning
-    // `SELECT id FROM loom_tenant LIMIT 1` here attached the caller's cart
-    // item to a stranger's account. If a tenant could be neither found nor
-    // created, hand back the id we were given and let the foreign key decide.
-    return tenantId;
+    if (byId.length === 0) {
+      throw new UnauthorizedException("Please sign in again to update your cart.");
+    }
+    return Number(byId[0].id);
   }
 
   /** BehemothCRUDDAOController#addNewEntity(cartItem) equivalent */
@@ -382,13 +364,9 @@ export class CartRepository {
     let cleanFinishedId: number | null = null;
     let cleanSelectedFabricId: number | null = null;
     let cleanSizeOptionId: number | null = null;
-    let validTenantId = data.tenantId;
-
-    try {
-      validTenantId = await this.ensureTenantExists(data.tenantId);
-    } catch (e) {
-      console.warn("[CartRepository] ensureTenantExists error:", e);
-    }
+    // Not wrapped in try/catch: swallowing this turned an unusable session into
+    // a silent write against a fabricated tenant.
+    const validTenantId = await this.assertTenantExists(data.tenantId);
 
     try {
       if (data.fabricProductId && data.fabricProductId > 0) {
@@ -425,7 +403,28 @@ export class CartRepository {
         if (byId.length > 0) cleanSizeOptionId = Number(byId[0].id);
       }
     } catch (e) {
-      console.warn("[CartRepository] FK lookup fallback:", e);
+      // A failed lookup is not "no product". Swallowing it here is what let an
+      // unresolvable id fall through to a NULL FK below.
+      if (e instanceof BadRequestException || e instanceof UnauthorizedException) throw e;
+      console.warn("[CartRepository] FK lookup failed:", e);
+      throw e;
+    }
+
+    // A cart row carries NO price of its own — `cart_item` has no price column,
+    // and the line total is derived at read time from the product behind these
+    // FKs. So a row whose product id did not resolve is unpriceable by
+    // construction: it renders as "INR 0.00" in the cart and would carry a zero
+    // line into checkout. Previously an id that matched nothing was silently
+    // written as NULL and the insert succeeded, which is how orphan rows
+    // (fabric_product_id IS NULL AND finished_product_id IS NULL) got created.
+    if (data.fabricProductId && data.fabricProductId > 0 && cleanFabricId === null) {
+      throw new BadRequestException("That fabric product could not be found.");
+    }
+    if (data.finishedProductId && data.finishedProductId > 0 && cleanFinishedId === null) {
+      throw new BadRequestException("That product could not be found.");
+    }
+    if (cleanFabricId === null && cleanFinishedId === null) {
+      throw new BadRequestException("A cart item must reference a product.");
     }
 
     const payload: InsertCartItemValues = {

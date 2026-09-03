@@ -18,7 +18,10 @@ interface TocEntry {
 export default function MobileOnThisPage({ sections }: { sections: ContentSection[] }) {
   const [open, setOpen] = useState(false);
 
-  const sorted = [...sections].sort((a, b) => a.sortOrder - b.sortOrder);
+  // `sections` is typed ContentSection[] but the content API omits
+  // blogContentSectionList entirely on some records, and `[...undefined]`
+  // throws "is not iterable" — which took out the whole content page.
+  const sorted = [...(sections ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
   const entries: TocEntry[] = sorted
     .map((s, idx) => ({ heading: s.heading, anchorId: 'section-' + idx }))
     .filter((e) => e.heading && e.heading.trim() !== '');

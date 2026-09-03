@@ -23,12 +23,23 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   const targetPath = path.join("/");
   const url = new URL(request.url);
 
+  // No "http://127.0.0.1:3000" fallback: on Vercel that silently proxied every
+  // call into the void when the env var was missing, and the route still
+  // answered, so it looked like a backend problem rather than a config one.
   const nestBase = (
     process.env.NEXT_PUBLIC_API_URL ||
     env.NEXT_PUBLIC_API_URL ||
     env.NEXT_PUBLIC_NEST_API_URL ||
-    "http://127.0.0.1:3000"
+    ""
   ).replace(/\/$/, "");
+
+  if (!nestBase) {
+    console.error("[Storefront Proxy] NEXT_PUBLIC_API_URL is not set — refusing to proxy.");
+    return NextResponse.json(
+      { success: false, message: "Backend URL is not configured." },
+      { status: 500 },
+    );
+  }
 
   const targetUrl = `${nestBase}/${targetPath}${url.search}`;
   console.log(`[Storefront Proxy] ${request.method} ${targetPath} -> ${targetUrl}`);

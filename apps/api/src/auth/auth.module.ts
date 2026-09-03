@@ -28,6 +28,7 @@ import { TenantLookupRepository } from "./repository/tenant-lookup.repository.js
 import { RolesGuard } from "../common/auth/roles.guard.js";
 import { Auth0ValidationService } from "./service/auth0-validation.service.js";
 import { AUTH0_VALIDATION_PORT } from "./types/auth.types.js";
+import { PasswordResetService } from "./service/password-reset.service.js";
 
 @Module({
   controllers: [AuthController, LoomLegacyAuthController],
@@ -37,6 +38,7 @@ import { AUTH0_VALIDATION_PORT } from "./types/auth.types.js";
     RolesGuard,
     Auth0ValidationService,
     { provide: AUTH0_VALIDATION_PORT, useExisting: Auth0ValidationService },
+    PasswordResetService,
   ],
   exports: [GatekeeperService, TenantLookupRepository, RolesGuard],
 })

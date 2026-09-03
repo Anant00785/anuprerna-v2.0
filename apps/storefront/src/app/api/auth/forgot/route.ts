@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
+import { loomPost } from '@/lib/loom/client';
 
-// POST { email }
-// STUBBED FOR PUBLIC DEMO: previously proxied to Loom /send/verification/email,
-// which sent a REAL password-reset email. Disabled on this public preview — NO
-// loomPost is issued. Returns success so the UI shows its confirmation state.
+/**
+ * POST { email } — start a password reset.
+ *
+ * This used to be a STUB: it logged the address, issued no request, and returned
+ * `{ success: true }`. The API endpoint behind it was stubbed too, so the whole
+ * chain reported "email sent successfully" while nothing was sent and no token
+ * was ever issued. Both halves are real now.
+ *
+ * The response deliberately does NOT reveal whether the address has an account —
+ * the API answers identically either way, and this route must not add a
+ * distinction the API was careful to avoid.
+ */
 export async function POST(req: Request) {
   let email = '';
   try {
@@ -17,11 +26,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'Email is required.' }, { status: 400 });
   }
 
-  // DEMO STUB: do NOT call loomPost('/send/verification/email', ...).
-  console.log('[forgot stub] demo mode — password email disabled for:', email);
-  return NextResponse.json({
-    success: true,
-    demo: true,
-    message: 'Demo mode — password emails are disabled on this preview.',
-  });
+  try {
+    const result = await loomPost<{ success?: boolean; message?: string }>(
+      '/send/password-reset/email',
+      { email },
+    );
+    return NextResponse.json({
+      success: result?.success !== false,
+      message: result?.message ?? 'If that email is registered, a password reset link is on its way.',
+    });
+  } catch (err) {
+    // A backend failure is reported, not masked as a sent email. Telling the
+    // customer to go and check an inbox that will stay empty is worse than
+    // telling them to try again.
+    console.error('[auth/forgot] /send/password-reset/email failed:', err);
+    return NextResponse.json(
+      { success: false, message: 'Could not start a password reset right now. Please try again.' },
+      { status: 502 },
+    );
+  }
 }

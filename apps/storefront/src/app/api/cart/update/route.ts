@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { loomGet, loomPatch } from '@/lib/loom/client';
 import { LOOM_JWT_COOKIE } from '@/lib/loom/config';
-import { isWrapperToken } from '@/lib/loom/token';
+import { isCartCapableToken } from '@/lib/loom/token';
 
 export async function PATCH(request: Request) {
   const token = (await cookies()).get(LOOM_JWT_COOKIE)?.value;
   if (!token) {
     return NextResponse.json({ success: false, message: 'Not authenticated.' }, { status: 401 });
   }
-  if (!isWrapperToken(token)) {
+  if (!isCartCapableToken(token)) {
     return NextResponse.json(
-      { success: false, reauth: true, message: 'Your session has expired — please sign in again.' },
+      { success: false, reauth: true, message: 'Please sign in with your email and password to use the cart.' },
       { status: 401 },
     );
   }

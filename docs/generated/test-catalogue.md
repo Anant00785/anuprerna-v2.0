@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1671 tests across 296 files.**
+**1729 tests across 302 files.**
 
-- `apps/api` — 245 files, 1098 tests
+- `apps/api` — 247 files, 1127 tests
 - `apps/cms` — 17 files, 212 tests
-- `apps/storefront` — 33 files, 359 tests
+- `apps/storefront` — 37 files, 388 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -46,6 +46,22 @@
 - fails closed on an unknown gate code
 - fails closed when the roles claim is missing or not an array
 
+### `apps/api/src/auth/service/password-reset.service.spec.ts` — 14
+- answers identically for an unknown email — no membership oracle
+- writes the token HASHED, never in plaintext
+- stamps an expiry ~30 minutes out
+- issues no token at all for an unknown email
+- rejects an empty email
+- hashes the new password with the gatekeeper (bcrypt(pepper+password))
+- consumes the token — a replayed link cannot reset twice
+- refuses when the token was already consumed by a concurrent request
+- refuses an expired token and changes nothing
+- refuses an unknown token
+- gives one message for unknown, used and expired — no oracle
+- enforces a minimum password length before touching anything
+- requires both a token and a password
+- looks the token up by its HASH, not the raw value
+
 ### `apps/api/src/commerce/address/address.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/artisanpayment/controller/artisanpayment.controller.gates.spec.ts` — 0
@@ -59,6 +75,15 @@
 - defaults click/utm attribution fields to null when undefined
 - does not set fabricProductId/finishedProductId/selectedFabricId/selectedSizeOptionId — those are attached separately by CartService after preview lookups
 - writes only quantity and lastUpdatedAt (source quirk #1: every other field is intentionally left untouched on update)
+
+### `apps/api/src/commerce/cart/repository/cart-insert-integrity.spec.ts` — 7
+- REJECTS an unknown tenant instead of inventing a guest account
+- REJECTS tenantId 0 rather than treating it as a new guest
+- REJECTS a finished product id that resolves to nothing — the INR 0.00 row
+- REJECTS a fabric product id that resolves to nothing
+- REJECTS an item referencing no product at all
+- INSERTS normally when the tenant and product both resolve
+- resolves a product id given as the underlying product_id (second lookup)
 
 ### `apps/api/src/commerce/cart/repository/cart.repository.spec.ts` — 12
 - reads only the given tenant
@@ -1458,9 +1483,17 @@
 - trims name and phone before they reach the service
 - returns the payload under 
 
-### `apps/api/src/commerce/tenant/mapper/tenant.mapper.spec.ts` — 2
-- projects only id/name/email/phone/type, dropping extra row fields
-- projects only id/roleName/tenantId
+### `apps/api/src/commerce/tenant/mapper/tenant.mapper.spec.ts` — 10
+- maps the REAL column names, not name/phone/type
+- splits the display name into first and last
+- converts a bigint id to a number so it survives JSON
+- never silently drops the name — the exact reported failure
+- defaults buyerType to b2c and to b2b for a wholesale role
+- handles a single-word name and a missing name
+- returns null for no row
+- maps role and user_id, which are the real columns
+- tolerates snake_case rows
+- returns null for no row
 
 ### `apps/api/src/commerce/tenant/repository/tenant.repository.spec.ts` — 1
 - still reads a real tenant id (numeric string accepted, as before)
@@ -1928,6 +1961,13 @@
 - forwards an empty object for an unparseable body instead of throwing
 - relays a backend refusal instead of confirming an address that was never stored
 
+### `apps/storefront/src/components/content-detail/sections-missing.test.tsx` — 5
+- MobileOnThisPage does not throw when sections is missing
+- TableOfContents does not throw when sections is missing
+- ContentBody does not throw when sections is missing
+- all three still render normally when sections are present
+- handles an explicit empty list
+
 ### `apps/storefront/src/components/pdp/customization.test.tsx` — 7
 - renders default fabric and viewable fabric cards
 - calls onSelectFabric when an alternate fabric is clicked
@@ -1936,6 +1976,13 @@
 - renders selected finish chips with remove trigger
 - renders standard size buttons and selects size on click
 - expands custom size form when Custom Size is clicked
+
+### `apps/storefront/src/components/product/DiscoverCraft.test.tsx` — 5
+- renders nothing when there are no stories
+- renders a normal story
+- does NOT throw when title is null — the PDP outage
+- does NOT throw when title is undefined
+- still renders the other cards when one story has a null title
 
 ### `apps/storefront/src/lib/api/adapters/legacy-cart.adapter.test.ts` — 12
 - maps a fabric row, deriving the product from fabricProductPreview.product
@@ -2065,6 +2112,18 @@
 - issues a DELETE to delete/address/:id
 - unwraps the legacy {success,message,orderList} envelope into an Order[]
 
+### `apps/storefront/src/lib/auth/otp-store.test.ts` — 10
+- a code issued by one instance verifies from another — the reported bug
+- creates its table on first use
+- never stores the code in plaintext
+- rejects a wrong code
+- rejects an expired code
+- consumes the code — it cannot be replayed
+- burns the code after 5 wrong guesses
+- rejects an email with no outstanding code
+- re-issuing replaces the previous code and clears attempts
+- throws rather than silently falling back when DATABASE_URL is unset
+
 ### `apps/storefront/src/lib/auth/token-helper.test.ts` — 16
 - round-trips a payload it signed itself
 - produces the three-segment JWS shape with an HS256 header
@@ -2166,6 +2225,17 @@
 - the API controller sources are reachable from the storefront
 - is declared on the API
 - is NOT role-gated — the storefront calls it with no token (Loom: ${evidence})
+
+### `apps/storefront/src/lib/loom/token.test.ts` — 9
+- accepts a token minted by apps/api (numeric sub + roles array)
+- accepts the older wrapper shape (customerId + roles)
+- accepts a numeric sub sent as a string
+- REJECTS a legacy Loom token — opaque sub, no cleartext roles
+- REJECTS a well-formed JWT carrying no roles claim
+- rejects malformed input
+- accepts a legacy token so auth/me falls through to the backend
+- accepts a token with no roles claim
+- still rejects structurally invalid input
 
 ### `apps/storefront/src/lib/plp/filter-engine.test.ts` — 49
 - sets calculatedPrice from price for fabric products, no discount fields untouched
