@@ -40,7 +40,16 @@ async function bootstrap() {
   // this API directly in local development. Not a real conflict with the
   // ConfigService line above - both are needed, git just saw adjacent edits.
   app.enableCors({
-    origin: ['http://localhost:3001', 'http://localhost:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3000'],
+    origin: [
+      'http://localhost:3001',
+      'http://localhost:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:3000',
+      'https://anuprerna-v2-0-storefront-zeta.vercel.app',
+      'https://anuprerna-v2-0-cms-green.vercel.app',
+      'https://anuprerna.com',
+      'https://www.anuprerna.com',
+    ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
