@@ -493,3 +493,56 @@ describe("range URL round trip", () => {
     expect(filterProducts(products, controls)).toHaveLength(3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mega-menu deep links.
+//
+// The header links to a SUB-CATEGORY by name (`?craft=handloom-jacquard` for
+// fabric, `?sub=...` for finished), but the PLP's URL decoder only ever looked
+// for a PARENT-segment key (`?embroidery-technique=...`). Nothing matched, so
+// every mega-menu link landed on "Showing 0 Products" with the products sitting
+// right there in the feed. This pins the sub-option matching the decoder relies
+// on: slug-insensitive, and scoped to the sub-options, not the parents.
+// ---------------------------------------------------------------------------
+describe("sub-category deep link matching", () => {
+  const products = [
+    makeProduct({ id: 1, segment_category: "EMBROIDERY TECHNIQUE", sub_category: "HANDLOOM JACQUARD" }),
+    makeProduct({ id: 2, segment_category: "EMBROIDERY TECHNIQUE", sub_category: "HANDLOOM JACQUARD" }),
+    makeProduct({ id: 3, segment_category: "EMBROIDERY TECHNIQUE", sub_category: "KANTHA EMBROIDERY" }),
+    makeProduct({ id: 4, segment_category: "DYED PLAIN WEAVES", sub_category: "HANDWOVEN LINEN" }),
+  ];
+
+  /** The decoder's matching rule, as ProductListingPage applies it. */
+  const activateSub = (controls: FilterControls, slugValue: string) => {
+    const wanted = slugValue.split(",").map((v) => v.trim().toLowerCase().replace(/[\s-]+/g, ""));
+    controls.cohorts.forEach((g) => {
+      if (g.key.type !== "sub" || !g.cohort) return;
+      g.cohort.options.forEach((p) =>
+        p.subOptions?.forEach((sub) => {
+          if (wanted.includes(sub.value.toLowerCase().replace(/[\s-]+/g, ""))) sub.active = true;
+        })
+      );
+    });
+  };
+
+  it("a hyphenated slug selects the matching sub-category and nothing else", () => {
+    const controls = controlsFor(products);
+    activateSub(controls, "handloom-jacquard");
+    const out = filterProducts(products, controls);
+    expect(out).toHaveLength(2);
+    expect(out.every((p) => p.sub_category === "HANDLOOM JACQUARD")).toBe(true);
+  });
+
+  it("does NOT widen to the whole parent segment", () => {
+    const controls = controlsFor(products);
+    activateSub(controls, "kantha-embroidery");
+    // 3 products share the EMBROIDERY TECHNIQUE parent; only 1 is Kantha.
+    expect(filterProducts(products, controls)).toHaveLength(1);
+  });
+
+  it("an unknown slug activates nothing rather than emptying the grid", () => {
+    const controls = controlsFor(products);
+    activateSub(controls, "no-such-craft");
+    expect(filterProducts(products, controls)).toHaveLength(products.length);
+  });
+});

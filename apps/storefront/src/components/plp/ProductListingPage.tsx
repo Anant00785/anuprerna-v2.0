@@ -133,6 +133,25 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
           cohortGroup.cohort.options[0].active = Boolean(inStockVal);
         }
       } else if (key.type === "sub" && cohortGroup.cohort) {
+        // The mega menu links to a SUB-CATEGORY by name — `?craft=handloom-jacquard`
+        // for fabric, `?sub=...` for finished — while this decoder only ever
+        // looked for a parent-segment key (`?embroidery-technique=...`). Nothing
+        // matched, so every mega-menu link landed on "Showing 0 Products" even
+        // though the products were right there. Both forms are now accepted.
+        const directSub = params.get("craft") || params.get("sub");
+        if (directSub) {
+          const wanted = directSub
+            .split(",")
+            .map((v) => v.trim().toLowerCase().replace(/[\s-]+/g, ""));
+          cohortGroup.cohort.options.forEach((parentOpt) => {
+            parentOpt.subOptions?.forEach((sub) => {
+              if (wanted.includes(sub.value.toLowerCase().replace(/[\s-]+/g, ""))) {
+                sub.active = true;
+              }
+            });
+          });
+        }
+
         cohortGroup.cohort.options.forEach((parentOpt) => {
           const segKey = parentOpt.value.toLowerCase().replace(/[\s-]+/g, "-");
           const paramVal = params.get(segKey) || params.get(parentOpt.value.toLowerCase().replace(/\s+/g, "-"));
