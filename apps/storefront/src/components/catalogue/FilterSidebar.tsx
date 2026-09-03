@@ -324,15 +324,15 @@ export default function FilterSidebar({ filters, facets, state, onChange, onClea
   // Per-option result counts (Amazon-style). Missing key => 0.
   // Guarded against a missing/null option name (e.g. a craft sub-category
   // without a name) — those otherwise reach facetKey()'s toLowerCase() call.
-  const craftCount = (sub: string) => (sub ? facets.craft[facetKey(sub)] ?? 0 : 0);
-  const colorCount = (name: string) => facets.color[facetKey(name)] ?? 0;
-  const materialCount = (name: string) => facets.material[facetKey(name)] ?? 0;
-  const patternCount = (name: string) => facets.pattern[facetKey(name)] ?? 0;
+  const craftCount = (sub: string) => (sub ? facets?.craft?.[facetKey(sub)] ?? 0 : 0);
+  const colorCount = (name: string) => facets?.color?.[facetKey(name)] ?? 0;
+  const materialCount = (name: string) => facets?.material?.[facetKey(name)] ?? 0;
+  const patternCount = (name: string) => facets?.pattern?.[facetKey(name)] ?? 0;
 
-  const isFinished = filters.segmentLabel === 'Category';
+  const isFinished = filters?.segmentLabel === 'Category';
 
   const [craftFull, setCraftFull] = useState(false);
-  const craftGroups = filters.segments;
+  const craftGroups = Array.isArray(filters?.segments) ? filters.segments : [];
   const shownGroups = craftFull ? craftGroups : craftGroups.slice(0, 2);
 
   const activeCount =
