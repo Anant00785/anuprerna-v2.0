@@ -18,15 +18,24 @@ export class WorkflowController {
   @Get('get/workflow-template-list')
   @RequireGate(GateCode.CODE_SU)
   async getWorkflowTemplateList() {
+    // Key is `workflowTemplateList`, matching Loom's
+    // ResponseParameter.WORKFLOW_TEMPLATE_LIST (ResponseParameter.java:230) and
+    // what apps/cms/src/lib/artisanflow-api.ts reads. It answered `data`, which
+    // the CMS only tolerated because pickArray falls back to "any array in the
+    // object" — its sibling below had no such fallback and always saw null.
     const templates = await this.workflowService.getWorkflowTemplates();
-    return keyedResponse('data', templates);
+    return keyedResponse('workflowTemplateList', templates);
   }
 
   @Get('get/workflow-template/:templateId')
   @RequireGate(GateCode.CODE_SU)
   async getWorkflowTemplate(@Param('templateId') templateId: number) {
+    // ResponseParameter.WORKFLOW_TEMPLATE (ResponseParameter.java:229). The CMS
+    // reads `j.workflowTemplate` with NO fallback, so under the old `data` key
+    // every single-template read resolved to null — the template editor could
+    // never load a template.
     const template = await this.workflowService.getWorkflowTemplateById(templateId);
-    return keyedResponse('data', template);
+    return keyedResponse('workflowTemplate', template);
   }
 
   @Post('add/workflow-template')
@@ -64,7 +73,9 @@ export class WorkflowController {
   @RequireGate(GateCode.CODE_SU)
   async getWorkflowList(@Param('status') status: string) {
     const workflows = await this.workflowService.getWorkflowsByStatus(status);
-    return keyedResponse('data', workflows);
+    // ResponseParameter.WORKFLOW_LIST. Survived under `data` only because the
+    // CMS's pickArray falls back to "any array in the object" — not a contract.
+    return keyedResponse('workflowList', workflows);
   }
 
   @Get('get/artisan/workflow-list/:status')
@@ -81,7 +92,9 @@ export class WorkflowController {
   @RequireGate(GateCode.CODE_SU)
   async getWorkflow(@Param('workflowId') workflowId: number) {
     const workflow = await this.workflowService.getWorkflowById(workflowId);
-    return keyedResponse('data', workflow);
+    // ResponseParameter.WORKFLOW. The CMS reads `j.workflow` with NO fallback,
+    // so under `data` every single-workflow read resolved to null.
+    return keyedResponse('workflow', workflow);
   }
 
   @Post('add/workflow')

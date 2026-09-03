@@ -15,9 +15,14 @@ function makeDb(rows: unknown[] = []) {
     limit: () => Promise.resolve(rows),
   };
   const setFn = vi.fn(() => ({ where: () => Promise.resolve() }));
+  const onConflictDoUpdate = vi.fn(() => Promise.resolve());
+  const values = vi.fn(() => ({ onConflictDoUpdate }));
   return {
     select: vi.fn(() => chain),
     update: vi.fn(() => ({ set: setFn })),
+    insert: vi.fn(() => ({ values })),
+    _values: values,
+    _onConflictDoUpdate: onConflictDoUpdate,
   };
 }
 
@@ -43,6 +48,21 @@ describe("TenantRepository tenant-id guard", () => {
     );
     expect(db.update).not.toHaveBeenCalled();
     expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it.each(BAD_IDS)("setSelectedCurrency(%j) rejects without writing", async (id) => {
+    const db = makeDb();
+    await expect(new TenantRepository(db).setSelectedCurrency(id, "USD")).rejects.toBeInstanceOf(BadRequestException);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("setSelectedCurrency upserts the caller's own customer row", async () => {
+    const db = makeDb();
+    await new TenantRepository(db).setSelectedCurrency(42, "USD");
+    expect(db._values).toHaveBeenCalledWith({ tenantId: 42, defaultCurrency: "USD" });
+    expect(db._onConflictDoUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ set: { defaultCurrency: "USD" } }),
+    );
   });
 
   it("still reads a real tenant id (numeric string accepted, as before)", async () => {

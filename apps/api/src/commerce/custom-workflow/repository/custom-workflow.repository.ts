@@ -412,6 +412,165 @@ export class CustomWorkflowRepository {
   }
 
   /**
+   * Loom: `CustomWorkflowDAOController.retrieveWorkflow(workflowId)` — the
+   * detail behind GET /get/custom-workflow/{workflowId}.
+   *
+   * Loom loads the Workflow ORM entity, then:
+   *   - returns null when no `workflow_custom_order_mapping` row exists, which
+   *     is what makes the route CUSTOM-only: a standard-order workflow id is a
+   *     null entity here, never a partial answer,
+   *   - blanks `workflowTemplate.steps` (only `{id, name}` survive on the wire),
+   *   - copies the mapping's custom order / order item ids onto the entity,
+   *   - picks custom_product vs product by `mapping.custom`,
+   *   - calls ArtisanAssignmentService.populateWorkflowArtisanAssignments, which
+   *     is exactly a projection of `workflow_artisan_mapping` and is the
+   *     `artisanAssignments` block below. `base_pay` is carried too — it is on
+   *     the row and the CMS reads it (ArtisanAssignment.basePay).
+   *
+   * One statement: the step/sub-process tree and the assignments are aggregated
+   * as jsonb rather than fanned out, so a workflow with no steps is [] and a
+   * missing workflow is zero rows — the two stay distinguishable.
+   */
+  async findCustomWorkflowDetail(workflowId: number): Promise<Record<string, unknown> | null> {
+    const result = await this.db.execute(sql`
+      SELECT
+        w.id                            AS "id",
+        w.name                          AS "name",
+        w.description                   AS "description",
+        w.note                          AS "note",
+        CAST(w.status AS TEXT)          AS "status",
+        CAST(w.type AS TEXT)            AS "type",
+        w.estimated_start_date          AS "estimatedStartDate",
+        w.estimated_end_date            AS "estimatedEndDate",
+        w.created_at                    AS "createdAt",
+        w.updated_at                    AS "updatedAt",
+        w.avg_artisan_work_hours_per_meter AS "avgArtisanWorkHoursPerMeter",
+        w.avg_work_hours_per_product    AS "avgWorkHoursPerProduct",
+        w.fabric_used_per_product_in_meters AS "fabricUsedPerProductInMeters",
+        wt.id                           AS "templateId",
+        wt.name                         AS "templateName",
+        wcom.custom_order_id            AS "referenceOrderId",
+        wcom.custom_order_item_id       AS "referenceOrderItemId",
+        wcom.custom                     AS "custom",
+        CASE WHEN wcom.custom THEN wcom.custom_product_id ELSE wcom.product_id END AS "referenceProductId",
+        (
+          SELECT COALESCE(jsonb_agg(ordered_steps.step ORDER BY ordered_steps.step_id), '[]'::jsonb)
+          FROM (
+            SELECT
+              se.id AS step_id,
+              jsonb_build_object(
+                'id', se.id,
+                'name', se.name,
+                'status', CAST(se.status AS TEXT),
+                'parentStepId', se.parent_step_id,
+                'previousStepId', se.previous_step_id,
+                'nextStepId', se.next_step_id,
+                'primaryStep', se.primary_step,
+                'estimatedDays', se.estimated_days,
+                'estimatedStartDate', se.estimated_start_date,
+                'estimatedEndDate', se.estimated_end_date,
+                'actualStartDate', se.actual_start_date,
+                'actualEndDate', se.actual_end_date,
+                'feedbackRequired', se.feedback_required,
+                'properties', se.properties,
+                'element', (
+                  SELECT jsonb_build_object(
+                    'id', e.id,
+                    'elementId', e.element_id,
+                    'type', CAST(e.type AS TEXT),
+                    'posX', e.pos_x,
+                    'posY', e.pos_y
+                  )
+                  FROM element e WHERE e.id = se.element_id
+                ),
+                'subProcesses', (
+                  SELECT COALESCE(jsonb_agg(ordered_subs.sub ORDER BY ordered_subs.sub_id), '[]'::jsonb)
+                  FROM (
+                    SELECT
+                      sp.id AS sub_id,
+                      jsonb_build_object(
+                        'id', sp.id,
+                        'name', sp.name,
+                        'status', CAST(sp.status AS TEXT),
+                        'parentSubProcessId', sp.parent_subprocess_id,
+                        'previousSubProcessId', sp.previous_subprocess_id,
+                        'nextSubProcessId', sp.next_subprocess_id,
+                        'primarySubProcess', sp.primary_subprocess,
+                        'estimatedDays', sp.estimated_days,
+                        'estimatedStartDate', sp.estimated_start_date,
+                        'estimatedEndDate', sp.estimated_end_date,
+                        'actualStartDate', sp.actual_start_date,
+                        'actualEndDate', sp.actual_end_date,
+                        'feedbackRequired', sp.feedback_required,
+                        'properties', sp.properties,
+                        'element', (
+                          SELECT jsonb_build_object(
+                            'id', e2.id,
+                            'elementId', e2.element_id,
+                            'type', CAST(e2.type AS TEXT),
+                            'posX', e2.pos_x,
+                            'posY', e2.pos_y,
+                            -- CMS: WorkflowSubProcess.element.feedback (SubProcessFeedback).
+                            -- The LATEST feedback row, whatever its status — the CMS
+                            -- renders PENDING evidence too, and filtering to APPROVED
+                            -- here would read as "nothing was ever submitted".
+                            'feedback', (
+                              SELECT jsonb_build_object(
+                                'id', ef.id,
+                                'text', ef.text,
+                                'image', ef.image,
+                                'video', ef.video,
+                                'status', CAST(ef.status AS TEXT),
+                                'remarks', ef.remarks,
+                                'uploader', CAST(ef.uploader AS TEXT),
+                                'updatedAt', ef.updated_at,
+                                'uploadedBy', ef.uploaded_by,
+                                'approvedBy', ef.approved_by,
+                                'feedbackUploaded', ef.feedback_uploaded
+                              )
+                              FROM element_feedback ef
+                              WHERE ef.element_id = sp.element_id
+                              ORDER BY ef.updated_at DESC, ef.id DESC
+                              LIMIT 1
+                            )
+                          )
+                          FROM element e2 WHERE e2.id = sp.element_id
+                        )
+                      ) AS sub
+                    FROM subprocess_element sp
+                    WHERE sp.step_id = se.id
+                  ) ordered_subs
+                )
+              ) AS step
+            FROM step_element se
+            WHERE se.workflow_id = w.id
+          ) ordered_steps
+        )                               AS "steps",
+        (
+          SELECT COALESCE(
+            jsonb_agg(
+              jsonb_build_object(
+                'artisanId', wam.artisan_id,
+                'quantityOfFabricInMeters', wam.quantity_of_fabric_in_meters,
+                'quantityOfProducts', wam.quantity_of_products,
+                'basePay', wam.base_pay
+              ) ORDER BY wam.artisan_id
+            ), '[]'::jsonb)
+          FROM workflow_artisan_mapping wam
+          WHERE wam.workflow_id = w.id
+        )                               AS "artisanAssignments"
+      FROM workflow w
+        JOIN workflow_custom_order_mapping wcom ON wcom.workflow_id = w.id
+        LEFT JOIN workflow_template wt ON wt.id = w.workflow_template_id
+      WHERE w.id = ${workflowId}
+      LIMIT 1
+    `);
+    const rows = (result as { rows?: unknown[] })?.rows ?? (result as unknown[]);
+    const row = Array.isArray(rows) ? (rows[0] as Record<string, unknown> | undefined) : undefined;
+    return row ?? null;
+  }
+
+  /**
    * Direct port of Loom's `findOrderwiseCustomWorkflow` @NamedNativeQuery — a
    * flat step x sub-process product that the service folds back into a tree,
    * exactly as `CustomWorkflowDAOController.getOrderwiseWorkflow` does.
@@ -544,6 +703,41 @@ export interface OrderwiseWorkflowStep {
   previousStepElementId: string | null;
   nextStepElementId: string | null;
   subProcesses: OrderwiseWorkflowSubProcess[];
+}
+
+/**
+ * Loom: the serialised Workflow ORM entity behind GET /get/custom-workflow/{id}.
+ * Field names are the CMS's `CustomWorkflowDetail`
+ * (apps/cms/src/lib/artisanflow-api.ts) — they must not drift.
+ */
+export interface CustomWorkflowArtisanAssignment {
+  artisanId: number;
+  quantityOfFabricInMeters?: number;
+  quantityOfProducts?: number;
+  basePay?: number;
+}
+
+export interface CustomWorkflowDetail {
+  id: number;
+  name: string | null;
+  description: string | null;
+  note: string | null;
+  status: string | null;
+  type: string | null;
+  custom: boolean;
+  estimatedStartDate: number | null;
+  estimatedEndDate: number | null;
+  createdAt: number | null;
+  updatedAt: number | null;
+  avgArtisanWorkHoursPerMeter: number | null;
+  avgWorkHoursPerProduct: number | null;
+  fabricUsedPerProductInMeters: number | null;
+  workflowTemplate: { id: number; name: string | null } | null;
+  referenceOrderId: number | null;
+  referenceOrderItemId: number | null;
+  referenceProductId: number | null;
+  steps: unknown[];
+  artisanAssignments: CustomWorkflowArtisanAssignment[];
 }
 
 /** Loom: workflow/pojo/OrderwiseWorkflow. */

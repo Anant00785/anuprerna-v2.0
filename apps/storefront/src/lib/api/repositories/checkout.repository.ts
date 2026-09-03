@@ -139,15 +139,24 @@ export const checkoutRepository = {
       },
     );
 
-    let discountPercentage = 10;
+    // NEVER seed a discount. This read `let discountPercentage = 10` and then
+    // `Number(...) || 10`, so (a) a backend that returned no payload still
+    // produced 10% off, and (b) `||` treats 0 as absent, so a legitimate 0%
+    // coupon — FREE_SHIPPING, where the benefit is the shipping, not a
+    // percentage — rendered as 10% off that nobody granted. Same class as the
+    // hardcoded WELCOME15 removed earlier: money invented on the client.
     const respPayload = (response as any)?.payload || (response as any)?.data;
-    if (respPayload && typeof respPayload === "object") {
-      discountPercentage = Number(respPayload.discountPercentage) || 10;
-    }
+    const raw = Number((respPayload as any)?.discountPercentage);
+    const discountPercentage = Number.isFinite(raw) ? raw : 0;
+
+    // A refusal must not read as a success. The backend rejects an unknown,
+    // expired or ineligible code with success:false and a reason; defaulting to
+    // true here would apply a coupon the server declined.
+    const success = response.success === true;
 
     return {
-      success: response.success ?? true,
-      message: response.message || "Voucher applied successfully",
+      success,
+      message: response.message || (success ? "Voucher applied successfully" : "That coupon could not be applied."),
       discountPercentage,
     };
   },

@@ -68,6 +68,22 @@ export class TenantRepository {
     return this.getCustomerProfile(tenantId);
   }
 
+  /**
+   * The buyer's display currency. `customer` is the one-row-per-tenant
+   * preferences table (`unique_customer` on tenant_id), so this is an upsert:
+   * a tenant that has never had a customer row still gets their choice stored.
+   * Currency is stored upper-case, matching the existing `default_currency`
+   * values ("INR").
+   */
+  async setSelectedCurrency(tenantId: unknown, currency: string) {
+    const id = this.requireTenantId(tenantId);
+    await this.db
+      .insert(schema.customer)
+      .values({ tenantId: Number(id), defaultCurrency: currency })
+      .onConflictDoUpdate({ target: schema.customer.tenantId, set: { defaultCurrency: currency } });
+    return currency;
+  }
+
   async getUserRoles(limit: number, offset: number) {
     return this.db.select().from(schema.userRole).limit(limit).offset(offset);
   }

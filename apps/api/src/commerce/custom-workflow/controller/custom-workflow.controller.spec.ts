@@ -17,6 +17,7 @@ const tenant = (id = 42) =>
 
 function make(over: Record<string, unknown> = {}) {
   const service = {
+    getCustomWorkflowDetail: vi.fn().mockResolvedValue(null),
     getCustomWorkflowList: vi.fn().mockResolvedValue([]),
     getArtisanCustomWorkflowList: vi.fn().mockResolvedValue([]),
     getCustomOrderWorkflowList: vi.fn().mockResolvedValue([]),
@@ -49,6 +50,41 @@ const validAddBody = {
     },
   ],
 };
+
+describe("GET /get/custom-workflow/:workflowId", () => {
+  it("returns the detail under Loom's `workflow` key (ResponseParameter.WORKFLOW)", async () => {
+    const workflow = { id: 7, name: "Weaving", steps: [], artisanAssignments: [{ artisanId: 55 }] };
+    const { controller, service } = make({ getCustomWorkflowDetail: vi.fn().mockResolvedValue(workflow) });
+
+    await expect(controller.getCustomWorkflow("7")).resolves.toEqual({
+      success: true,
+      message: "",
+      workflow,
+    });
+    expect(service.getCustomWorkflowDetail).toHaveBeenCalledWith(7);
+  });
+
+  it("renders a missing / non-custom workflow as a null payload, as Loom's empty entity does", async () => {
+    const { controller } = make();
+    await expect(controller.getCustomWorkflow("7")).resolves.toEqual({
+      success: true,
+      message: "",
+      workflow: null,
+    });
+  });
+
+  it("rejects a non-numeric workflowId instead of querying with NaN", async () => {
+    const { controller, service } = make();
+    await expect(controller.getCustomWorkflow("abc")).rejects.toThrow(BadRequestException);
+    expect(service.getCustomWorkflowDetail).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-positive workflowId", async () => {
+    const { controller, service } = make();
+    await expect(controller.getCustomWorkflow("0")).rejects.toThrow(BadRequestException);
+    expect(service.getCustomWorkflowDetail).not.toHaveBeenCalled();
+  });
+});
 
 describe("GET /get/custom-workflow-list/:status", () => {
   it("returns previews under Loom's `workflowList` key", async () => {

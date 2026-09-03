@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1729 tests across 302 files.**
+**1770 tests across 305 files.**
 
-- `apps/api` — 247 files, 1127 tests
+- `apps/api` — 249 files, 1161 tests
 - `apps/cms` — 17 files, 212 tests
-- `apps/storefront` — 37 files, 388 tests
+- `apps/storefront` — 38 files, 395 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -287,7 +287,11 @@
 
 ### `apps/api/src/commerce/custom-workflow/controller/custom-workflow.controller.gates.spec.ts` — 0
 
-### `apps/api/src/commerce/custom-workflow/controller/custom-workflow.controller.spec.ts` — 19
+### `apps/api/src/commerce/custom-workflow/controller/custom-workflow.controller.spec.ts` — 23
+- returns the detail under Loom
+- renders a missing / non-custom workflow as a null payload, as Loom
+- rejects a non-numeric workflowId instead of querying with NaN
+- rejects a non-positive workflowId
 - returns previews under Loom
 - returns an empty workflowList when no workflow matches the status
 - passes the status through to the service
@@ -314,7 +318,7 @@
 - flags entersCompleted only when the workflow was NOT already COMPLETED
 - ${from} -> CREATED is rejected, not silently ignored
 
-### `apps/api/src/commerce/custom-workflow/service/custom-workflow.service.spec.ts` — 22
+### `apps/api/src/commerce/custom-workflow/service/custom-workflow.service.spec.ts` — 27
 - upper-cases the status, as Loom
 - does not blow up on a missing status
 - resolves the artisan from the tenant and queries with that id
@@ -337,6 +341,26 @@
 - rejects a base-pay conflict and commits nothing
 - synchronizes assignments and updates the row in ONE transaction
 - leaves assignments alone when the body omits them, as Loom
+- maps the row onto the CMS CustomWorkflowDetail contract
+- omits the absent quantity key rather than emitting a null that reads as zero
+- returns an EMPTY assignment list, not a fabricated one, for an unassigned workflow
+- is null for a workflow with no custom-order mapping (a standard-order id)
+- propagates a query failure instead of returning null — absent and broken must differ
+
+### `apps/api/src/commerce/discount/discount.apply-coupon.spec.ts` — 13
+- approves a real row and returns ITS percentage under 
+- returns the row
+- checks the minimum order value when a cartTotal IS supplied
+- rejects an unknown code with no payload, never a zero-discount success
+- rejects an inactive coupon
+- rejects an expired coupon
+- rejects a SINGLE-use coupon the tenant already redeemed
+- rejects a coupon with a minimum order value when no cart total was sent, and SAYS SO
+- reports a genuine below-minimum cart as below-minimum, not as an unknown cart
+- treats a non-numeric cartTotal as UNKNOWN, not as 0
+- refuses without an authenticated tenant rather than checking a global usage history
+- rejects a code shorter than Loom
+- propagates a database failure instead of returning a rejection that reads as a real verdict
 
 ### `apps/api/src/commerce/discount/discount.apply-voucher.spec.ts` — 15
 - returns 1 for a coupon that does not exist — no invented approval
@@ -1473,6 +1497,19 @@
 - getTableRowById honours the allowlist and returns null for a missing row
 - every allowlisted name passes the gate (no self-blocking typos)
 
+### `apps/api/src/commerce/tenant/controller/customer-account.controller.spec.ts` — 11
+- rejects a choice outside myself|business|skip
+- does NOT report success for a declaration it cannot store
+- answers with the keys the order dashboard reads, and offers nothing
+- rejects an unknown action
+- does not pretend a dismissal was recorded
+- saves a name against the caller
+- succeeds with nothing written when the buyer typed nothing
+- saves the name but reports the business details it cannot store
+- rejects an unrecognised sourcing value
+- stores the currency upper-cased against the caller
+- rejects a currency the storefront does not support
+
 ### `apps/api/src/commerce/tenant/controller/tenant.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/tenant/controller/tenant.controller.spec.ts` — 6
@@ -1495,7 +1532,8 @@
 - tolerates snake_case rows
 - returns null for no row
 
-### `apps/api/src/commerce/tenant/repository/tenant.repository.spec.ts` — 1
+### `apps/api/src/commerce/tenant/repository/tenant.repository.spec.ts` — 2
+- setSelectedCurrency upserts the caller
 - still reads a real tenant id (numeric string accepted, as before)
 
 ### `apps/api/src/commerce/tenant/validators/tenant.sanitizer.spec.ts` — 2
@@ -2111,6 +2149,15 @@
 - POSTs the address body to add/address and returns the response
 - issues a DELETE to delete/address/:id
 - unwraps the legacy {success,message,orderList} envelope into an Order[]
+
+### `apps/storefront/src/lib/auth/error-message.test.ts` — 7
+- translates every known code to something actionable
+- gives the wrong-password case a message about the password
+- replaces a code embedded in a longer sentence
+- passes a real human message through untouched
+- falls back for an empty or missing message
+- uses the caller fallback when one is given
+- does not swallow an UNKNOWN code — it should look odd, not vanish
 
 ### `apps/storefront/src/lib/auth/otp-store.test.ts` — 10
 - a code issued by one instance verifies from another — the reported bug

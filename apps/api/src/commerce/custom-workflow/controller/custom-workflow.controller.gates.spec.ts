@@ -2,6 +2,7 @@
  * Every gate below is the one its Java original passes to getEntity/postEntity
  * in workflow/controller/CustomWorkflowController.java:
  *
+ *   retrieveWorkflow              CODE_SU
  *   retrieveWorkflowList          CODE_SU
  *   retrieveWorkflowListForArtisan CODE_AR
  *   retrieveOrderWiseWorkflowList CODE_SU
@@ -18,6 +19,7 @@ describeGates(
   "CustomWorkflowController",
   CustomWorkflowController as never,
   [
+    ["getCustomWorkflow", GateCode.CODE_SU],
     ["getCustomWorkflowList", GateCode.CODE_SU],
     ["getArtisanCustomWorkflowList", GateCode.CODE_AR],
     ["getCustomOrderWorkflowList", GateCode.CODE_SU],

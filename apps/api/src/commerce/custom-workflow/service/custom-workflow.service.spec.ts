@@ -60,6 +60,7 @@ function make(options: Options = {}) {
     findAllCustomWorkflowsByArtisan: vi.fn().mockResolvedValue([]),
     findCustomWorkflowSummariesByOrderId: vi.fn().mockResolvedValue([]),
     findOrderwiseCustomWorkflow: vi.fn().mockResolvedValue([]),
+    findCustomWorkflowDetail: vi.fn().mockResolvedValue(null),
   };
 
   const impact = { calculateCustomOrderImpact: vi.fn().mockResolvedValue({ orderId: 300 }) };
@@ -318,5 +319,100 @@ describe("updateCustomWorkflow", () => {
     await service.updateCustomWorkflow(updateInput({ artisanAssignments: null }));
     expect(writeRepo.synchronizeArtisanAssignments).not.toHaveBeenCalled();
     expect(writeRepo.existsConflictingBasePay).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Loom: CustomWorkflowDAOController.retrieveWorkflow. The shape here is the
+ * CMS's CustomWorkflowDetail (apps/cms/src/lib/artisanflow-api.ts) — a drift in
+ * any of these key names is an empty CMS screen with no error, which is exactly
+ * how the `data` vs `workflowTemplateList` mismatch was missed twice.
+ */
+describe("CustomWorkflowService.getCustomWorkflowDetail", () => {
+  const row = () => ({
+    id: "7",
+    name: "Weaving",
+    description: "Handloom run",
+    note: null,
+    status: "IN_PROGRESS",
+    type: "CUSTOM_ORDER",
+    estimatedStartDate: "1700000000000",
+    estimatedEndDate: "1700900000000",
+    createdAt: "1699000000000",
+    updatedAt: "1699500000000",
+    avgArtisanWorkHoursPerMeter: "1.50",
+    avgWorkHoursPerProduct: null,
+    fabricUsedPerProductInMeters: null,
+    templateId: "3",
+    templateName: "Standard saree",
+    referenceOrderId: "300",
+    referenceOrderItemId: "400",
+    custom: true,
+    referenceProductId: "12",
+    steps: [{ id: 11, name: "Dyeing", subProcesses: [] }],
+    artisanAssignments: [{ artisanId: 55, quantityOfFabricInMeters: 12.5, quantityOfProducts: null, basePay: 300 }],
+  });
+
+  it("maps the row onto the CMS CustomWorkflowDetail contract", async () => {
+    const { service, repo } = make();
+    repo.findCustomWorkflowDetail.mockResolvedValue(row());
+
+    await expect(service.getCustomWorkflowDetail(7)).resolves.toEqual({
+      id: 7,
+      name: "Weaving",
+      description: "Handloom run",
+      note: null,
+      status: "IN_PROGRESS",
+      type: "CUSTOM_ORDER",
+      custom: true,
+      estimatedStartDate: 1_700_000_000_000,
+      estimatedEndDate: 1_700_900_000_000,
+      createdAt: 1_699_000_000_000,
+      updatedAt: 1_699_500_000_000,
+      avgArtisanWorkHoursPerMeter: 1.5,
+      avgWorkHoursPerProduct: null,
+      fabricUsedPerProductInMeters: null,
+      workflowTemplate: { id: 3, name: "Standard saree" },
+      referenceOrderId: 300,
+      referenceOrderItemId: 400,
+      referenceProductId: 12,
+      steps: [{ id: 11, name: "Dyeing", subProcesses: [] }],
+      artisanAssignments: [{ artisanId: 55, quantityOfFabricInMeters: 12.5, basePay: 300 }],
+    });
+    expect(repo.findCustomWorkflowDetail).toHaveBeenCalledWith(7);
+  });
+
+  it("omits the absent quantity key rather than emitting a null that reads as zero", async () => {
+    const { service, repo } = make();
+    repo.findCustomWorkflowDetail.mockResolvedValue({
+      ...row(),
+      artisanAssignments: [{ artisanId: 55, quantityOfFabricInMeters: null, quantityOfProducts: 4, basePay: null }],
+    });
+
+    const detail = await service.getCustomWorkflowDetail(7);
+    expect(detail?.artisanAssignments).toEqual([{ artisanId: 55, quantityOfProducts: 4 }]);
+    expect(detail?.artisanAssignments[0]).not.toHaveProperty("quantityOfFabricInMeters");
+    expect(detail?.artisanAssignments[0]).not.toHaveProperty("basePay");
+  });
+
+  it("returns an EMPTY assignment list, not a fabricated one, for an unassigned workflow", async () => {
+    const { service, repo } = make();
+    repo.findCustomWorkflowDetail.mockResolvedValue({ ...row(), artisanAssignments: [], steps: [] });
+
+    const detail = await service.getCustomWorkflowDetail(7);
+    expect(detail?.artisanAssignments).toEqual([]);
+    expect(detail?.steps).toEqual([]);
+  });
+
+  it("is null for a workflow with no custom-order mapping (a standard-order id)", async () => {
+    const { service, repo } = make();
+    repo.findCustomWorkflowDetail.mockResolvedValue(null);
+    await expect(service.getCustomWorkflowDetail(7)).resolves.toBeNull();
+  });
+
+  it("propagates a query failure instead of returning null — absent and broken must differ", async () => {
+    const { service, repo } = make();
+    repo.findCustomWorkflowDetail.mockRejectedValue(new Error("connection reset"));
+    await expect(service.getCustomWorkflowDetail(7)).rejects.toThrow("connection reset");
   });
 });
