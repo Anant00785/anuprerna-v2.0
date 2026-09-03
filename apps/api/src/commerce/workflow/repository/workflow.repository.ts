@@ -11,12 +11,22 @@ export class WorkflowRepository {
   ) {}
 
   // --- Workflow Templates ---
+  /**
+   * Loom: `findAllByDeletedFalse()` (WorkflowTemplateRepository:106). Ours
+   * selected every row including soft-deleted ones, so scratch templates
+   * ('Fabric Test Template', 'dfdfdfdd', 'fabric test 2') would appear in the
+   * CMS picker as if they were real production workflows.
+   */
   async getWorkflowTemplates() {
-    return this.db.select().from(schema.workflowTemplate);
+    return this.db.select().from(schema.workflowTemplate).where(eq(schema.workflowTemplate.deleted, false));
   }
 
+  /** Loom: `findByIdAndDeletedFalse(Long id)` (WorkflowTemplateRepository:90). */
   async getWorkflowTemplateById(templateId: number) {
-    const res = await this.db.select().from(schema.workflowTemplate).where(eq(schema.workflowTemplate.id, BigInt(templateId)));
+    const res = await this.db
+      .select()
+      .from(schema.workflowTemplate)
+      .where(and(eq(schema.workflowTemplate.id, BigInt(templateId)), eq(schema.workflowTemplate.deleted, false)));
     return res[0] || null;
   }
 
