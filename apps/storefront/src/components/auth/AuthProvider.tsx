@@ -8,10 +8,17 @@ import { mergeGuestCartOnLogin } from '@/lib/guest-cart';
 // never visible to this client code.
 
 export interface AuthUser {
+  id?: number | string;
   name?: string;
   firstName?: string;
   lastName?: string;
+  /** Loom's own field name for the display name on some profile shapes. */
+  userName?: string;
   email?: string;
+  phone?: string;
+  contactNumber?: string;
+  avatarUrl?: string;
+  buyerType?: string;
   [k: string]: unknown;
 }
 

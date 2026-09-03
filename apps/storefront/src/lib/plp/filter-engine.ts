@@ -113,6 +113,40 @@ export function calculateProductPrice(product: PLPProduct): PLPProduct {
 }
 
 /**
+ * URL parameter name for a range filter. `calculatedPrice` is an internal field
+ * name, so the shopper-facing param is `price`; the others already read well.
+ * Shared by the read and write sides of the PLP's URL sync so a range
+ * round-trips instead of being silently reset.
+ */
+export function rangeParamKey(fieldKey: string): string {
+  return fieldKey === "calculatedPrice" ? "price" : fieldKey;
+}
+
+/**
+ * Serialise a range for the URL, or `null` when it is still at full bounds — an
+ * un-narrowed range is not a filter and does not belong in the query string.
+ */
+export function serializeRange(range: FilterRangeOption): string | null {
+  const { value1, value2, defaultMin, defaultMax } = range;
+  if (value1 > defaultMin || value2 < defaultMax) return `${value1}-${value2}`;
+  return null;
+}
+
+/**
+ * Apply a `from-to` URL value onto a range cohort, clamped to the cohort's
+ * catalogue-derived bounds. Bounds themselves are NEVER taken from the URL, so
+ * a stale or hand-edited link cannot select an impossible window. A malformed
+ * value leaves the range untouched.
+ */
+export function applyRangeParam(range: FilterRangeOption, raw: string | null | undefined): void {
+  if (!raw) return;
+  const [from, to] = raw.split("-").map((n) => Number(n));
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from > to) return;
+  range.value1 = Math.max(range.defaultMin, Math.min(from, range.defaultMax));
+  range.value2 = Math.min(range.defaultMax, Math.max(to, range.defaultMin));
+}
+
+/**
  * Build filter control cohorts from product list
  */
 export function prepareFilterControls(
@@ -279,16 +313,22 @@ export function filterProducts(
         });
       }
     } else if (key.type === "sub") {
+      // A parent segment only widens the selection to its whole segment when
+      // NONE of its own sub-options are selected. Once the shopper picks a
+      // specific sub-option, that is the narrower intent and the parent must
+      // not pull its siblings back in — selecting "Handloom Jacquard" (162)
+      // previously returned all 513 products under "Embroidery Technique",
+      // because the parent auto-activates when every sub is ticked and the
+      // two lists were OR'd together.
       const activeParents: string[] = [];
       const activeSubValues: string[] = [];
       group.cohort.options.forEach((parentOpt) => {
-        if (parentOpt.active) {
+        const activeSubs = (parentOpt.subOptions || []).filter((subOpt) => subOpt.active);
+        activeSubs.forEach((subOpt) => {
+          activeSubValues.push(subOpt.value.trim().toLowerCase());
+        });
+        if (parentOpt.active && activeSubs.length === 0) {
           activeParents.push(parentOpt.value.trim().toLowerCase());
-        }
-        if (parentOpt.subOptions) {
-          parentOpt.subOptions.forEach((subOpt) => {
-            if (subOpt.active) activeSubValues.push(subOpt.value.trim().toLowerCase());
-          });
         }
       });
 
@@ -296,8 +336,7 @@ export function filterProducts(
         result = result.filter((p) => {
           const seg = (p.segment_category || "").trim().toLowerCase();
           const sub = (p.sub_category || "").trim().toLowerCase();
-          return (activeParents.length > 0 && activeParents.includes(seg)) ||
-                 (activeSubValues.length > 0 && activeSubValues.includes(sub));
+          return activeParents.includes(seg) || activeSubValues.includes(sub);
         });
       }
     } else if (key.type === "csv") {

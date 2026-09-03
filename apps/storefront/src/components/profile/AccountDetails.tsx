@@ -4,14 +4,16 @@ import React, { useEffect, useState } from 'react';
 import { UserProfile } from '@/types/domain/profile';
 import { EditNameModal, ChangePasswordModal } from './AccountModals';
 import { profileRepository } from '@/lib/api/repositories/profile.repository';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface AccountDetailsProps {
   profile?: UserProfile;
 }
 
 export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initialProfile }) => {
-  const { jwt, user: authUser, setUser } = useAuthStore();
+  // The bearer is the httpOnly `loom_jwt` cookie, attached server-side by the
+  // /api/backend proxy. Nothing token-shaped is readable from here any more.
+  const { user: authUser, refresh: refreshAuth } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(initialProfile || null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -23,7 +25,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
     async function loadLiveProfile() {
       setLoading(true);
       try {
-        const liveData = await profileRepository.getCustomerProfile(jwt || undefined);
+        const liveData = await profileRepository.getCustomerProfile();
         if (liveData) {
           const resolvedName =
             liveData.name ||
@@ -38,17 +40,14 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
               id: Number(liveData.id) || Number(authUser?.id) || 1001,
               name: resolvedName,
               email: liveData.email || authUser?.email || "customer@anuprerna.com",
-              avatarUrl: liveData.gender || authUser?.avatarUrl,
+              avatarUrl: liveData.gender || (authUser?.avatarUrl as string | undefined),
             },
           };
           setProfile(formattedProfile);
-          setUser({
-            ...authUser,
-            ...liveData,
-            name: resolvedName,
-            firstName: liveData.firstName || resolvedName.split(" ")[0] || "",
-            lastName: liveData.lastName || resolvedName.split(" ").slice(1).join(" ") || "",
-          });
+          // The AuthProvider owns the session user and re-reads it from
+          // /api/auth/me, so the profile is refreshed rather than written
+          // into a client-side copy that could drift from the server.
+          void refreshAuth();
         }
       } catch (err) {
         if (authUser) {
@@ -71,7 +70,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
     }
 
     loadLiveProfile();
-  }, [jwt]);
+  }, []);
 
   const handleSaveName = async (firstName: string, lastName: string) => {
     setSaving(true);
@@ -83,8 +82,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
           firstName,
           lastName,
           email: profile?.tenant.email,
-        },
-        jwt || undefined
+        }
       );
 
       setProfile((prev) =>
@@ -99,12 +97,10 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
           : prev
       );
 
-      setUser({
-        ...authUser,
-        name: fullName,
-        firstName,
-        lastName,
-      });
+          // The AuthProvider owns the session user and re-reads it from
+          // /api/auth/me, so the profile is refreshed rather than written
+          // into a client-side copy that could drift from the server.
+          void refreshAuth();
     } catch (err) {
       setProfile((prev) =>
         prev
@@ -117,12 +113,10 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ profile: initial
             }
           : prev
       );
-      setUser({
-        ...authUser,
-        name: fullName,
-        firstName,
-        lastName,
-      });
+          // The AuthProvider owns the session user and re-reads it from
+          // /api/auth/me, so the profile is refreshed rather than written
+          // into a client-side copy that could drift from the server.
+          void refreshAuth();
     } finally {
       setSaving(false);
       setIsEditNameOpen(false);

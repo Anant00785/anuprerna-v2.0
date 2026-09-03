@@ -4,14 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { AddressItem } from '@/types/domain/profile';
 import { AddressModal } from './AddressModal';
 import { profileRepository } from '@/lib/api/repositories/profile.repository';
-import { useAuthStore } from '@/stores/auth.store';
+
 
 interface AddressBookProps {
   initialAddresses?: AddressItem[];
 }
 
 export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] }) => {
-  const { jwt } = useAuthStore();
+
   const [addresses, setAddresses] = useState<AddressItem[]>(initialAddresses);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +45,7 @@ export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] 
 
   const handleDelete = async (id: number) => {
     try {
-      await profileRepository.deleteAddress(id, jwt || undefined);
+      await profileRepository.deleteAddress(id);
       setSaveError(null);
     } catch (err: any) {
       // Previously `catch {}` then removed it from the list anyway, so a failed
@@ -97,9 +97,9 @@ export const AddressBook: React.FC<AddressBookProps> = ({ initialAddresses = [] 
 
     try {
       if (editingAddress) {
-        await profileRepository.updateAddress(payload, jwt || undefined);
+        await profileRepository.updateAddress(payload);
       } else {
-        await profileRepository.addAddress(payload, jwt || undefined);
+        await profileRepository.addAddress(payload);
       }
       setSaveError(null);
     } catch (err: any) {

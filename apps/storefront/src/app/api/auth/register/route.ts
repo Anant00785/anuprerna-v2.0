@@ -47,13 +47,30 @@ export async function POST(req: Request) {
 
   // The BACKEND owns the account. Nothing about this registration — least of
   // all the password — is persisted by the storefront.
+  //
+  // Loom reports a REFUSED registration as HTTP 200 with `success:false` in the
+  // body, not as an error status. This used to only catch a thrown error, so a
+  // refusal fell straight through to the `success: true` below: the shopper was
+  // told "Account created successfully", no account existed, and the very next
+  // sign-in failed with "username or password is incorrect" — pointing at the
+  // password when the real problem was that registration never happened.
+  // The body is now the verdict, exactly as `authenticateEmail` treats it.
   try {
-    await loomPost('/customer/registration/email', {
-      tenant: { name, email, password, contactNumber: phone },
-      buyerChoice: buyerChoice || (buyerType === 'b2b' ? 'business' : 'myself'),
-      companyName,
-      gstNumber,
-    });
+    const result = await loomPost<{ success?: boolean; message?: string }>(
+      '/customer/registration/email',
+      {
+        tenant: { name, email, password, contactNumber: phone },
+        buyerChoice: buyerChoice || (buyerType === 'b2b' ? 'business' : 'myself'),
+        companyName,
+        gstNumber,
+      },
+    );
+    if (result?.success !== true) {
+      return NextResponse.json(
+        { success: false, message: result?.message || 'Could not create the account.' },
+        { status: 400 },
+      );
+    }
   } catch (e: unknown) {
     const msg = (e as { body?: { message?: string } })?.body?.message || 'Could not create the account.';
     const status = (e as { status?: number })?.status ?? 502;

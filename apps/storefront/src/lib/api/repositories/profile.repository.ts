@@ -84,22 +84,21 @@ export interface WholesaleInfo {
   nextTierProgress?: number;
 }
 
+/**
+ * In the BROWSER there is deliberately no token to attach: the session is the
+ * httpOnly `loom_jwt` cookie, which JS cannot read, and the /api/backend proxy
+ * turns it into an Authorization header server-side.
+ *
+ * This used to fall back to reading a JWT out of the `anuprerna-auth`
+ * localStorage key written by the (now deleted) client auth store. That key was
+ * never populated by any mounted login form, so the fallback always produced no
+ * header — and it was a standing XSS exfiltration target besides.
+ *
+ * `explicitToken` remains for SERVER-side callers, which hold a real token and
+ * do not pass through the proxy.
+ */
 function getAuthHeaders(explicitToken?: string): Record<string, string> {
-  const headers: Record<string, string> = {};
-  let token = explicitToken;
-  if (!token && typeof window !== "undefined") {
-    try {
-      const stored = localStorage.getItem("anuprerna-auth") || localStorage.getItem("loom_auth");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        token = parsed.jwt || parsed.token || parsed.state?.jwt || parsed.state?.token;
-      }
-    } catch {}
-  }
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
+  return explicitToken ? { Authorization: `Bearer ${explicitToken}` } : {};
 }
 
 export const profileRepository = {

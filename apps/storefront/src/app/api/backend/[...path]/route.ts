@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
+import { LOOM_JWT_COOKIE } from "@/lib/loom/config";
 
 // The legacy backend's `loom.config.table-explorer.access-token`. This was
 // hardcoded here and pushed in aa17d9d; it is in git history permanently and
@@ -59,7 +60,14 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   const isAuthEntryPoint = /^(authenticate|customer\/registration|check-email|validate\/provider|send\/password-reset|reset\/password)\b/.test(
     targetPath
   );
-  const authCookie = request.cookies.get("jwt_token")?.value;
+  // `loom_jwt` is the ONE session cookie (httpOnly, set by /api/auth/*). It is
+  // deliberately unreadable from JS, so the browser cannot attach the bearer
+  // itself — this proxy is what turns the session into an Authorization header.
+  // The old `jwt_token` cookie this used to read was written by a login form
+  // that is no longer mounted, so it was always absent and every proxied call
+  // went out unauthenticated (401). See docs/KNOWN-GAPS.md.
+  const authCookie = request.cookies.get(LOOM_JWT_COOKIE)?.value
+    ?? request.cookies.get("jwt_token")?.value;
   if (authCookie && !requestHeaders.has("authorization") && !isAuthEntryPoint) {
     requestHeaders.set("Authorization", `Bearer ${authCookie}`);
   }

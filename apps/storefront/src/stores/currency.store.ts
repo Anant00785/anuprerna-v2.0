@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { apiRequest } from "@/lib/api/client";
 import { profileRepository } from "@/lib/api/repositories/profile.repository";
-import { useAuthStore } from "./auth.store";
+
 
 export type SupportedCurrency = "inr" | "usd" | "gbp" | "eur";
 
@@ -69,13 +69,12 @@ export const useCurrencyStore = create<CurrencyState>((set, get) => ({
     }
     set({ selectedCurrency: cleanCurrency });
 
-    // Sync to user profile if authenticated
-    const jwt = useAuthStore.getState().jwt;
-    if (jwt) {
-      profileRepository.updateSelectedForex(cleanCurrency, jwt).catch(() => {
-        // Silent catch if backend sync fails
-      });
-    }
+    // Sync to the user profile. The bearer is the httpOnly `loom_jwt` cookie,
+    // attached server-side by the /api/backend proxy; signed out, the server
+    // rejects it and the choice simply stays local to this browser.
+    profileRepository.updateSelectedForex(cleanCurrency).catch(() => {
+      // Silent catch if backend sync fails
+    });
   },
 
   fetchForexRates: async () => {

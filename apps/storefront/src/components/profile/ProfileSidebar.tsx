@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface ProfileSidebarProps {
   /** Optional override; normally the signed-in tenant is used. */
@@ -20,7 +20,7 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   // The default here used to be the literal string 'Ananya Sharma', and the layout
   // passed that same invented name explicitly — so every signed-in customer saw
   // someone else's name beside their own orders.
-  const user = useAuthStore((s) => s.user);
+  const { user } = useAuth();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   const resolvedName =

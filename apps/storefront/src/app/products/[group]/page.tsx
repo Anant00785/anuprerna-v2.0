@@ -1,6 +1,3 @@
-import { TopBar } from "@/components/navigation/TopBar";
-import { Header } from "@/components/navigation/Header";
-import { Footer } from "@/components/navigation/Footer";
 import { ProductListingPage } from "@/components/plp/ProductListingPage";
 import { Metadata } from "next";
 
@@ -31,10 +28,7 @@ export default async function ProductGroupPage({
 
   return (
     <main className="min-h-screen bg-white text-gray-900 font-sans">
-      <TopBar />
-      <Header />
       <ProductListingPage group={groupType} />
-      <Footer />
     </main>
   );
 }

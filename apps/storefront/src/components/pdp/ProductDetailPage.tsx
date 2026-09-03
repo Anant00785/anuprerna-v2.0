@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCurrencyStore, SupportedCurrency } from "@/stores/currency.store";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useCartStore } from "@/stores/cart.store";
 import { useWishlistStore } from "@/stores/wishlist.store";
 import { cartRepository } from "@/lib/api/repositories/cart.repository";
@@ -203,14 +203,14 @@ export function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const [showCustomizationOptions, setShowCustomizationOptions] = useState(true);
 
   // Add to Cart state. Loom resolves the cart's owner from the bearer token, so
-  // the call only works signed in; `hydrated` gates the persist-backed auth store,
-  // which is empty during SSR and the first client render (same as the header).
+  // the call only works signed in. The session is the httpOnly `loom_jwt`
+  // cookie, read via /api/auth/me — not the old client-side auth store, which
+  // no mounted login form populated, so this always read "signed out" and every
+  // Add to Cart bounced a signed-in buyer to /auth.
   const [cartStatus, setCartStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
   const [cartError, setCartError] = useState<string | null>(null);
-  const storeLoggedIn = useAuthStore((s) => s.isLoggedIn);
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
-  const isLoggedIn = hydrated && storeLoggedIn;
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !authLoading && !!user;
   const refreshCart = useCartStore((s) => s.refresh);
   const openCart = useCartStore((s) => s.open);
 

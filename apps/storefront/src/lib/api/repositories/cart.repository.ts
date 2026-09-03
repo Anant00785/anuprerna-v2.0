@@ -1,32 +1,81 @@
-import { env } from "@/env";
 import { Cart, CartItem } from "@/types/domain/cart";
-import { apiRequest } from "../client";
 import { mapLegacyCartToDomain } from "../adapters/legacy-cart.adapter";
-import { mapNestCartToDomain } from "../adapters/nest-cart.adapter";
-import { LegacyCartItemDto, LegacyCartListResponse } from "../dto/legacy-springboot.dto";
-import { NestApiResponse, NestCartDto } from "../dto/nestjs.dto";
-import { RainTreeResponse } from "./auth.repository";
-import { useAuthStore } from "@/stores/auth.store";
+import { LegacyCartItemDto } from "../dto/legacy-springboot.dto";
 
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {};
-  if (typeof window !== "undefined") {
-    const jwt = useAuthStore.getState().jwt;
-    if (jwt) {
-      headers["Authorization"] = `Bearer ${jwt}`;
-    }
+// ---------------------------------------------------------------------------
+// ONE cart stack.
+//
+// This repository used to talk to `/api/backend/*`, which proxies to the NEST /
+// Spring base URL and authenticated off a `jwt_token` cookie that no mounted
+// login form ever wrote. Every call therefore went out unauthenticated, to the
+// wrong backend, and 401'd — and `getCart` swallowed that into an empty cart,
+// which is what surfaced to buyers as "your cart is empty" and as a delete
+// button that did nothing.
+//
+// The cart now goes through the SAME `/api/cart/*` BFF routes checkout already
+// used: server-side, Loom-backed, authenticated from the httpOnly `loom_jwt`
+// cookie. Drawer, PDP and checkout consequently read and write one cart.
+//
+// Errors are RAISED, never masked. An empty cart and an unreachable cart are
+// different facts and the UI must be able to tell them apart.
+// ---------------------------------------------------------------------------
+
+/** Thrown when the session is gone. The UI prompts a re-login rather than lying about an empty cart. */
+export class CartAuthError extends Error {
+  constructor(message = "Your session has expired — please sign in again.") {
+    super(message);
+    this.name = "CartAuthError";
   }
-  return headers;
+}
+
+export const EMPTY_CART: Cart = {
+  items: [],
+  itemCount: 0,
+  subtotal: 0,
+  discount: 0,
+  estimatedShipping: 0,
+  total: 0,
+  currency: "INR",
+};
+
+type BffResponse = {
+  success?: boolean;
+  message?: string;
+  reauth?: boolean;
+  cartItemList?: unknown[];
+  entity?: unknown[];
+  authenticated?: boolean;
+};
+
+async function readBody(response: Response): Promise<BffResponse> {
+  try {
+    return (await response.json()) as BffResponse;
+  } catch {
+    return {};
+  }
 }
 
 /**
- * What Loom's `POST /add/cart-item` actually binds to: the `CartItem` JPA entity
- * (loom `cart/controller/CartController.java` `addCartItem`), sent flat, not wrapped.
- * Field names and defaults mirror fabric's `ProductCartService.addFabricProduct` /
- * `addFinishedProduct`, which is the code running in production today.
- *
- * The owning tenant is NOT part of the body — Loom resolves it from the bearer
- * token, so this call only works for a signed-in customer.
+ * Every cart mutation answers the same way, so the failure handling lives here
+ * once. Loom reports some failures as HTTP 200 with `success:false`, so the
+ * status code alone is not the verdict.
+ */
+async function mutate(url: string, init: RequestInit): Promise<void> {
+  const response = await fetch(url, { ...init, cache: "no-store" });
+  const body = await readBody(response);
+
+  if (response.status === 401 || body.reauth) {
+    throw new CartAuthError(body.message);
+  }
+  if (!response.ok || body.success === false) {
+    throw new Error(body.message || "We could not update your cart. Please try again.");
+  }
+}
+
+/**
+ * What Loom's `POST /add/cart-item` binds to: the `CartItem` JPA entity, sent
+ * flat, not wrapped. The owning tenant is NOT part of the body — Loom resolves
+ * it from the bearer token, so this only works for a signed-in customer.
  */
 export interface AddCartItemInput {
   /** `FabricPreview` id (the PDP payload's top-level `id`), for `productGroup: "fabric"`. */
@@ -49,9 +98,9 @@ export interface AddCartItemInput {
 
 /**
  * Loom rejects a zero foreign key outright (there is no id 0 to join to), so
- * fabric deletes those keys before sending rather than sending 0. The columns
- * Loom marks NOT NULL (`selectedFinishId`, `customSize`, `productGroup`,
- * `orderType`, `makingCharge`) always have to be present.
+ * those keys are deleted rather than sent as 0. The columns Loom marks NOT NULL
+ * (`selectedFinishId`, `customSize`, `productGroup`, `orderType`,
+ * `makingCharge`) always have to be present.
  */
 function toLegacyCartItem(input: AddCartItemInput): Record<string, unknown> {
   const body: Record<string, unknown> = {
@@ -61,8 +110,6 @@ function toLegacyCartItem(input: AddCartItemInput): Record<string, unknown> {
     sku: input.sku,
     orderType: input.orderType ?? "IN_STOCK",
     productGroup: input.productGroup ?? "fabric",
-    // Always sent (Loom's NOT NULL column), unlike the foreign keys below,
-    // which are omitted when absent because Loom cannot join on 0.
     selectedSizeOptionId: input.selectedSizeOptionId ?? 0,
     selectedFinishId: input.selectedFinishId ?? "",
     makingCharge: input.makingCharge ?? 0,
@@ -77,91 +124,61 @@ function toLegacyCartItem(input: AddCartItemInput): Record<string, unknown> {
 
 export const cartRepository = {
   /**
-   * Get active user cart
+   * Read the cart. Signed out yields an empty cart (a fact, not a failure);
+   * a transport or backend failure THROWS so the drawer can say so.
    */
   async getCart(): Promise<Cart> {
-    if (env.NEXT_PUBLIC_API_MODE === "nest") {
-      const response = await apiRequest<NestApiResponse<NestCartDto>>("/v1/cart", {}, "nest");
-      return mapNestCartToDomain(response.data);
+    const response = await fetch("/api/cart", { cache: "no-store" });
+    const body = await readBody(response);
+
+    // Signed out is a legitimately empty cart, not an error.
+    if (body.authenticated === false) return EMPTY_CART;
+
+    if (response.status === 401 || body.reauth) throw new CartAuthError(body.message);
+    if (!response.ok || body.success === false) {
+      throw new Error(body.message || "We could not load your cart.");
     }
-    try {
-      const response = await apiRequest<LegacyCartListResponse>(
-        "/get/cart-item/list",
-        { headers: getAuthHeaders(), next: { revalidate: 0 } } as RequestInit
-      );
-      return mapLegacyCartToDomain(response.cartItemList ?? []);
-    } catch (err) {
-      console.warn("Failed to fetch cart:", err);
-      return {
-        items: [],
-        itemCount: 0,
-        subtotal: 0,
-        discount: 0,
-        estimatedShipping: 0,
-        total: 0,
-        currency: "INR",
-      };
-    }
+
+    const rows = (body.cartItemList ?? body.entity ?? []) as LegacyCartItemDto[];
+    return mapLegacyCartToDomain(rows);
   },
 
-  /**
-   * Add item to cart.
-   */
+  /** Add an item to the cart. */
   async addToCart(input: AddCartItemInput): Promise<void> {
-    const response = await apiRequest<RainTreeResponse>(
-      "/add/cart-item",
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(toLegacyCartItem(input)),
-      }
-    );
-    if (!response.success && response.message) {
-      throw new Error(response.message || "Failed to add item to cart");
-    }
+    await mutate("/api/cart/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(toLegacyCartItem(input)),
+    });
   },
 
   /**
-   * Change the quantity on an existing cart row.
+   * Change the quantity on an existing row.
+   *
+   * Only `{id, quantity}` is sent. The previous version re-serialised the whole
+   * row from the cached preview, which re-sent the BASE price (silently
+   * discarding any volume discount) and dropped `selectedFabricId`,
+   * `selectedSizeOptionId` and `customSize` — so bumping the quantity on a
+   * customised or bulk line wiped the customisation and re-priced it upward.
+   * Loom re-prices the row itself, so quantity is the only thing to send.
    */
   async updateQuantity(item: CartItem, quantity: number): Promise<void> {
-    const row = (item.source ?? {}) as LegacyCartItemDto;
-    const preview = row.fabricProductPreview ?? row.finishedProductPreview;
-    const body = {
-      ...toLegacyCartItem({
-        fabricProductId: row.fabricProductPreview?.id,
-        finishedProductId: row.finishedProductPreview?.id,
-        quantity,
-        unit: row.unit ?? preview?.product?.unit ?? "METER",
-        price: preview?.product?.price ?? item.unitPrice,
-        sku: preview?.product?.sku ?? "",
-        orderType: row.orderType as AddCartItemInput["orderType"],
-        productGroup: row.productGroup as AddCartItemInput["productGroup"],
-        selectedFinishId: row.selectedFinishId,
-        makingCharge: row.makingCharge,
-      }),
-      id: Number(item.id),
-    };
-    const response = await apiRequest<RainTreeResponse>(
-      "/update/cart-item",
-      { method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(body) }
-    );
-    if (!response.success && response.message) {
-      throw new Error(response.message || "Failed to update the quantity");
-    }
+    await mutate("/api/cart/update", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: Number(item.id), quantity }),
+    });
   },
 
   /**
-   * Remove a single row from the cart. `cartItemId` is the domain CartItem's
-   * `id` — Loom's `cart_item` primary key, not a product id.
+   * Remove a single row. `cartItemId` is the domain CartItem's `id` — Loom's
+   * `cart_item` primary key, not a product id.
    */
   async removeCartItem(cartItemId: string): Promise<void> {
-    const response = await apiRequest<RainTreeResponse>(
-      `/delete/cart-item/${encodeURIComponent(cartItemId)}`,
-      { method: "DELETE", headers: getAuthHeaders() }
-    );
-    if (!response.success && response.message) {
-      throw new Error(response.message || "Failed to remove item from cart");
-    }
+    await mutate("/api/cart/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: Number(cartItemId) }),
+    });
   },
 };

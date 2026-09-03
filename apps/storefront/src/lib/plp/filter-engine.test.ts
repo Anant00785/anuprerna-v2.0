@@ -6,6 +6,9 @@ import {
   sortProducts,
   getActiveFilterChips,
   clearAllFilters,
+  rangeParamKey,
+  serializeRange,
+  applyRangeParam,
   FABRIC_FILTER_KEYS,
 } from "./filter-engine";
 import { PLPProduct, PLPMetadataInfo, FilterControls } from "@/types/domain/plp";
@@ -213,6 +216,46 @@ describe("filterProducts", () => {
     expect(result.map((p) => p.id)).toEqual([1]);
   });
 
+  // Regression: selecting a sub-option used to OR against the whole parent
+  // segment, so checking one craft (e.g. "Handloom Jacquard") returned every
+  // product under its parent ("Embroidery Technique") — 513 instead of 162 on
+  // the live fabric PLP. A sub-option selection must narrow to that sub-option.
+  it("narrows to the selected sub-option even when its parent is also active", () => {
+    const controls = controlsFor(products);
+    const sub = controls.cohorts.find((c) => c.key.key === "segment_category");
+    const parent = sub!.cohort!.options.find((o) => o.value === "Sarees")!;
+    parent.active = true;
+    parent.subOptions?.forEach((s) => {
+      s.active = s.value === "Silk";
+    });
+    const result = filterProducts(products, controls);
+    expect(result.map((p) => p.id)).toEqual([1]);
+  });
+
+  it("returns the whole parent segment when a parent is active with no sub-option selected", () => {
+    const controls = controlsFor(products);
+    const sub = controls.cohorts.find((c) => c.key.key === "segment_category");
+    const parent = sub!.cohort!.options.find((o) => o.value === "Sarees")!;
+    parent.active = true;
+    parent.subOptions?.forEach((s) => {
+      s.active = false;
+    });
+    const result = filterProducts(products, controls);
+    expect(result.map((p) => p.id).sort()).toEqual([1, 2]);
+  });
+
+  it("unions sub-options selected across different parent segments", () => {
+    const controls = controlsFor(products);
+    const sub = controls.cohorts.find((c) => c.key.key === "segment_category");
+    sub!.cohort!.options.forEach((parentOpt) => {
+      parentOpt.subOptions?.forEach((s) => {
+        if (s.value === "Silk" || s.value === "Wool") s.active = true;
+      });
+    });
+    const result = filterProducts(products, controls);
+    expect(result.map((p) => p.id).sort()).toEqual([1, 3]);
+  });
+
   it("filters inStock toggle to products with quantity > 0", () => {
     const controls = controlsFor(products);
     const toggle = controls.cohorts.find((c) => c.key.key === "inStock");
@@ -371,5 +414,82 @@ describe("clearAllFilters", () => {
     expect(getActiveFilterChips(cleared)).toEqual([]);
     const clearedPrice = cleared.cohorts.find((c) => c.key.key === "calculatedPrice")!;
     expect(clearedPrice.rangeCohort!.value1).toBe(clearedPrice.rangeCohort!.defaultMin);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Range <-> URL round trip.
+//
+// The PLP rebuilds its filter controls from the catalogue on EVERY searchParams
+// change. Ranges had no representation in the URL, so that rebuild reset
+// value1/value2 to the full bounds: dragging the price slider and then touching
+// any other control (a checkbox, sort, a page change) silently dropped the price
+// filter, leaving the chip and the visible products disagreeing.
+// ---------------------------------------------------------------------------
+describe("range URL round trip", () => {
+  const products = [
+    makeProduct({ id: 1, calculatedPrice: 654 }),
+    makeProduct({ id: 2, calculatedPrice: 9729 }),
+    makeProduct({ id: 3, calculatedPrice: 16700 }),
+  ];
+
+  it("names the price param `price`, not the internal calculatedPrice field", () => {
+    expect(rangeParamKey("calculatedPrice")).toBe("price");
+    expect(rangeParamKey("gsm")).toBe("gsm");
+    expect(rangeParamKey("total_quantity")).toBe("total_quantity");
+  });
+
+  it("does not serialise a range still at its full bounds — that is not a filter", () => {
+    const controls = controlsFor(products);
+    const price = controls.cohorts.find((c) => c.key.key === "calculatedPrice")!;
+    expect(serializeRange(price.rangeCohort!)).toBeNull();
+  });
+
+  it("serialises a narrowed range as from-to", () => {
+    const controls = controlsFor(products);
+    const price = controls.cohorts.find((c) => c.key.key === "calculatedPrice")!;
+    price.rangeCohort!.value1 = 9729;
+    expect(serializeRange(price.rangeCohort!)).toBe("9729-16700");
+  });
+
+  it("SURVIVES a controls rebuild: the filter still applies after re-preparing from the URL", () => {
+    // The user narrows the price range.
+    const controls = controlsFor(products);
+    const price = controls.cohorts.find((c) => c.key.key === "calculatedPrice")!;
+    price.rangeCohort!.value1 = 9729;
+    const serialized = serializeRange(price.rangeCohort!);
+    expect(filterProducts(products, controls)).toHaveLength(2);
+
+    // Anything that changes searchParams rebuilds the controls from scratch.
+    const rebuilt = controlsFor(products);
+    const rebuiltPrice = rebuilt.cohorts.find((c) => c.key.key === "calculatedPrice")!;
+    applyRangeParam(rebuiltPrice.rangeCohort!, serialized);
+
+    expect(rebuiltPrice.rangeCohort!.value1).toBe(9729);
+    expect(filterProducts(products, rebuilt)).toHaveLength(2);
+  });
+
+  it("clamps an out-of-range URL value to the catalogue bounds", () => {
+    const controls = controlsFor(products);
+    const price = controls.cohorts.find((c) => c.key.key === "calculatedPrice")!;
+    applyRangeParam(price.rangeCohort!, "-5-999999");
+    expect(price.rangeCohort!.value1).toBeGreaterThanOrEqual(price.rangeCohort!.defaultMin);
+    expect(price.rangeCohort!.value2).toBeLessThanOrEqual(price.rangeCohort!.defaultMax);
+  });
+
+  it("ignores a malformed or inverted URL value rather than filtering everything away", () => {
+    const controls = controlsFor(products);
+    const price = controls.cohorts.find((c) => c.key.key === "calculatedPrice")!;
+    const { value1, value2 } = price.rangeCohort!;
+
+    applyRangeParam(price.rangeCohort!, "abc");
+    applyRangeParam(price.rangeCohort!, "");
+    applyRangeParam(price.rangeCohort!, null);
+    expect(price.rangeCohort!.value1).toBe(value1);
+    expect(price.rangeCohort!.value2).toBe(value2);
+
+    // Inverted (to < from) would otherwise select nothing at all.
+    applyRangeParam(price.rangeCohort!, "16700-654");
+    expect(filterProducts(products, controls)).toHaveLength(3);
   });
 });

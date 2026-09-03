@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { useAuthStore } from "./auth.store";
+
 import { useToastStore } from "./toast.store";
 import { profileRepository } from "@/lib/api/repositories/profile.repository";
 
@@ -34,14 +34,15 @@ export const useWishlistStore = create<WishlistState>()(
           useToastStore.getState().showToast(title, sku, exists ? "info" : "success");
         }
 
-        // Sync with backend profile if logged in
-        const { jwt, isLoggedIn } = useAuthStore.getState();
-        if (isLoggedIn && jwt) {
-          const csv = nextSkus.join(",");
-          profileRepository.updateCustomerProfile({ wishlist: csv }, jwt).catch((err) => {
-            console.warn("Failed to sync wishlist to customer profile:", err);
-          });
-        }
+        // Sync with the backend profile. Authentication is the httpOnly
+        // `loom_jwt` cookie, attached server-side by the /api/backend proxy —
+        // this store cannot read it, so it makes the call unconditionally and
+        // lets the server reject it when there is no session. The wishlist
+        // stays usable signed out; it just is not persisted to a profile.
+        const csv = nextSkus.join(",");
+        profileRepository.updateCustomerProfile({ wishlist: csv }).catch((err) => {
+          console.warn("Failed to sync wishlist to customer profile:", err);
+        });
       },
 
       isInWishlist: (sku: string) => {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ForexDropdown } from "./ForexDropdown";
 import { CustomerDropdown } from "./CustomerDropdown";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useCartStore } from "@/stores/cart.store";
 import { useWishlistStore } from "@/stores/wishlist.store";
 import { CartDrawer } from "./CartDrawer";
@@ -34,15 +34,16 @@ import {
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const wishlistSkus = useWishlistStore((s) => s.skus);
-  // Was `useState(false)` / `useState("Guest")` with no setter ever called, so the
-  // header read "Sign In" even while the profile pages showed the signed-in user.
-  // `hydrated` gates it: the auth store is `persist`-backed, so on the server and
-  // the first client render it is still empty — reading it directly would trip a
-  // hydration mismatch.
-  const { isLoggedIn: storeLoggedIn, user } = useAuthStore();
+  // The session comes from the httpOnly `loom_jwt` cookie via /api/auth/me.
+  // This used to read a `persist`-backed client store that no mounted login form
+  // ever wrote — so it showed a STALE name from some earlier session while every
+  // authenticated call 401'd. `authLoading` covers SSR and the first client
+  // render, so there is no hydration mismatch to gate separately.
+  const { user, loading: authLoading, logout } = useAuth();
+  const isLoggedIn = !authLoading && !!user;
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-  const isLoggedIn = hydrated && storeLoggedIn;
+  // The wishlist store IS persisted, so it still needs the hydration gate.
   const wishlistCount = hydrated ? wishlistSkus.length : 0;
   const tenantName =
     user?.name ||
@@ -935,7 +936,7 @@ export function Header() {
             <CustomerDropdown
               tenantName={tenantName}
               isLoggedIn={isLoggedIn}
-              onLogout={() => useAuthStore.getState().logout()}
+              onLogout={() => { void logout(); }}
             />
           )}
         </div>

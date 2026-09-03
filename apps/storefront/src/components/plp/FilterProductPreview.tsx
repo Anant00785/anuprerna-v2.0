@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { PLPProduct } from "@/types/domain/plp";
 import { useCurrencyStore } from "@/stores/currency.store";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useWishlistStore } from "@/stores/wishlist.store";
 
 interface FilterProductPreviewProps {
@@ -21,12 +21,14 @@ export const FilterProductPreview: React.FC<FilterProductPreviewProps> = ({
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const isInWishlistStore = useWishlistStore((s) => s.isInWishlist);
 
-  // Gated on `hydrated` for the same reason as the header: the auth store is
-  // persist-backed and is empty on the server and first client render.
-  const storeLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  // The session comes from the httpOnly `loom_jwt` cookie via /api/auth/me.
+  // `authLoading` already covers SSR and the first client render for auth.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !authLoading && !!user;
+  // The WISHLIST store is `persist`-backed, so it is empty on the server and the
+  // first client render and still needs its own hydration gate.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-  const isLoggedIn = hydrated && storeLoggedIn;
 
   const { selectedCurrency, convertPrice } = useCurrencyStore();
   const currencyCode = selectedCurrency.toUpperCase();

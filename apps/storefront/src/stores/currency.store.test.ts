@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { useHandlers, PROXY_BASE, envelope } from "@/test/msw";
 import { useCurrencyStore, type SupportedCurrency } from "./currency.store";
-import { useAuthStore } from "./auth.store";
 
 // currency.store initializes `selectedCurrency` from localStorage at module
 // load (getInitialCurrency()). To observe different localStorage states we
@@ -50,7 +49,6 @@ describe("currency.store", () => {
       ],
       isLoading: false,
     });
-    useAuthStore.getState().logout();
   });
 
   describe("getExchangeRate", () => {
@@ -163,15 +161,28 @@ describe("currency.store", () => {
       expect(localStorage.getItem("selectedCurrency")).toBe("gbp");
     });
 
-    it("does not call the profile sync endpoint when unauthenticated (no jwt)", () => {
-      // MSW's onUnhandledRequest: "error" means an unexpected call to
-      // customer/update/selected-forex here would fail this test on its own.
-      expect(() => useCurrencyStore.getState().setCurrency("usd")).not.toThrow();
-      expect(useAuthStore.getState().jwt).toBeNull();
+    it("attaches NO client-side Authorization header — the proxy adds the session cookie", async () => {
+      // The bearer is the httpOnly `loom_jwt` cookie, unreadable from JS. The
+      // store must not invent an Authorization header of its own; the
+      // /api/backend proxy attaches one server-side.
+      let capturedAuth: string | null = null;
+      const called = new Promise<void>((resolve) => {
+        useHandlers(
+          http.post(`${PROXY_BASE}/customer/update/selected-forex`, ({ request }) => {
+            capturedAuth = request.headers.get("authorization");
+            resolve();
+            return HttpResponse.json({ success: true });
+          })
+        );
+      });
+
+      useCurrencyStore.getState().setCurrency("usd");
+      await called;
+
+      expect(capturedAuth).toBeNull();
     });
 
-    it("syncs the selection to the profile endpoint when authenticated", async () => {
-      useAuthStore.getState().setToken("jwt-abc");
+    it("syncs the selection to the profile endpoint", async () => {
       let capturedAuth: string | null = null;
       let capturedBody: unknown;
       let resolveCall: () => void;
@@ -190,12 +201,11 @@ describe("currency.store", () => {
       useCurrencyStore.getState().setCurrency("usd");
       await called;
 
-      expect(capturedAuth).toBe("Bearer jwt-abc");
+      expect(capturedAuth).toBeNull();
       expect(capturedBody).toEqual({ currency: "usd" });
     });
 
     it("silently swallows a failed profile sync (fire-and-forget, no throw)", async () => {
-      useAuthStore.getState().setToken("jwt-abc");
       let called = false;
       const failed = new Promise<void>((resolve) => {
         useHandlers(

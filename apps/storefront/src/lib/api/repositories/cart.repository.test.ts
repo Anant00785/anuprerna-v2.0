@@ -1,18 +1,16 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
-import { cartRepository } from "./cart.repository";
-import { mapLegacyCartToDomain } from "../adapters/legacy-cart.adapter";
-import { useHandlers, PROXY_BASE, envelope } from "@/test/msw";
-import { env } from "@/env";
+import { cartRepository, CartAuthError } from "./cart.repository";
+import { useHandlers } from "@/test/msw";
 
-// cartRepository has zero importers anywhere in apps/storefront outside the
-// dead `lib/api/index.ts` barrel (see report) — tested anyway since it's the
-// designed Path-A cart flow per docs/DATA-FLOW.md §1.
+// The cart goes through the SAME server-side `/api/cart/*` BFF routes checkout
+// uses: Loom-backed, authenticated from the httpOnly `loom_jwt` cookie. It used
+// to call `/api/backend/*`, which proxies to a DIFFERENT backend and
+// authenticated off a cookie no mounted login form ever wrote — so every call
+// 401'd and `getCart` turned that into an empty cart. These tests pin the
+// contract that replaced it: errors surface, they are never masked as "empty".
 
-const originalMode = env.NEXT_PUBLIC_API_MODE;
-afterEach(() => {
-  env.NEXT_PUBLIC_API_MODE = originalMode;
-});
+const BFF = "http://localhost:3000/api";
 
 const cartRow = {
   id: 166340327,
@@ -35,170 +33,88 @@ const cartRow = {
   },
 };
 
-describe("cartRepository.getCart (legacy)", () => {
-  it("reads Loom's cartItemList envelope, not payload/content/data", async () => {
+describe("cartRepository.getCart", () => {
+  it("reads the cart from the /api/cart BFF route, not the /api/backend proxy", async () => {
     let capturedUrl: string | undefined;
     useHandlers(
-      http.get(`${PROXY_BASE}/get/cart-item/list`, ({ request }) => {
+      http.get(`${BFF}/cart`, ({ request }) => {
         capturedUrl = request.url;
-        return HttpResponse.json(envelope("cartItemList", [cartRow]));
+        return HttpResponse.json({ authenticated: true, cartItemList: [cartRow] });
       })
     );
+
     const cart = await cartRepository.getCart();
-    expect(capturedUrl).toBe(`${PROXY_BASE}/get/cart-item/list`);
+
+    expect(capturedUrl).toContain("/api/cart");
+    expect(capturedUrl).not.toContain("/api/backend");
+    expect(cart.items).toHaveLength(1);
+    expect(cart.items[0].id).toBe("166340327");
     expect(cart.itemCount).toBe(2);
-    expect(cart.subtotal).toBe(892);
   });
 
-  it("returns an empty cart — not a crash — when Loom sends the old payload key", async () => {
-    // Regression guard: this repository used to read `payload`/`content`/`data`,
-    // none of which Loom sends, so a full cart always mapped to an empty one.
+  it("treats a signed-out session as a genuinely empty cart, not an error", async () => {
     useHandlers(
-      http.get(`${PROXY_BASE}/get/cart-item/list`, () =>
-        HttpResponse.json(envelope("payload", { cartId: "c1", items: [cartRow] }))
-      )
+      http.get(`${BFF}/cart`, () => HttpResponse.json({ authenticated: false, entity: [] }))
     );
+
     const cart = await cartRepository.getCart();
+
+    expect(cart.items).toEqual([]);
     expect(cart.itemCount).toBe(0);
   });
 
-  it("swallows a fetch failure and returns an empty cart rather than throwing", async () => {
+  it("THROWS on a backend failure instead of reporting an empty cart", async () => {
+    // The old behaviour returned an empty cart here, which is why a buyer with
+    // items in Loom was told "your cart is empty".
     useHandlers(
-      http.get(`${PROXY_BASE}/get/cart-item/list`, () =>
-        HttpResponse.json({ success: false, message: "boom" }, { status: 500 })
+      http.get(`${BFF}/cart`, () =>
+        HttpResponse.json({ success: false, cartItemList: [] }, { status: 502 })
       )
     );
-    await expect(cartRepository.getCart()).resolves.toEqual({
-      items: [],
-      itemCount: 0,
-      subtotal: 0,
-      discount: 0,
-      estimatedShipping: 0,
-      total: 0,
-      currency: "INR",
-    });
+
+    await expect(cartRepository.getCart()).rejects.toThrow();
   });
 
-  it("also swallows a 401 the same way — getCart never surfaces auth failure to the caller", async () => {
+  it("raises CartAuthError on a 401 so the UI can offer sign-in", async () => {
     useHandlers(
-      http.get(`${PROXY_BASE}/get/cart-item/list`, () =>
-        HttpResponse.json({ success: false, message: "unauthorized" }, { status: 401 })
+      http.get(`${BFF}/cart`, () =>
+        HttpResponse.json({ success: false, message: "Not authenticated." }, { status: 401 })
       )
     );
-    const cart = await cartRepository.getCart();
-    expect(cart.itemCount).toBe(0);
-  });
-});
 
-describe("cartRepository.getCart (nest)", () => {
-  it("fetches /v1/cart and maps the NestApiResponse envelope to a domain Cart", async () => {
-    env.NEXT_PUBLIC_API_MODE = "nest";
+    await expect(cartRepository.getCart()).rejects.toBeInstanceOf(CartAuthError);
+  });
+
+  it("raises CartAuthError when the BFF flags an expired session with reauth", async () => {
     useHandlers(
-      http.get(`${PROXY_BASE}/v1/cart`, () =>
-        HttpResponse.json({
-          statusCode: 200,
-          message: "",
-          data: { id: "c2", items: [], itemCount: 0, subtotal: 0, discountTotal: 0, shippingFee: 0, grandTotal: 0, currency: "INR" },
-        })
+      http.get(`${BFF}/cart`, () =>
+        HttpResponse.json({ success: false, reauth: true, message: "expired" }, { status: 401 })
       )
     );
-    const cart = await cartRepository.getCart();
-    expect(cart.id).toBe("c2");
+
+    await expect(cartRepository.getCart()).rejects.toBeInstanceOf(CartAuthError);
   });
 });
 
-describe("cartRepository.addToCart (legacy)", () => {
-  // The shape below is the one verified against live Loom through the dev proxy:
-  // it answers `{"success": true}`, and `{productId, qty}` (what this repository
-  // used to send) comes back 200 with
-  // `{"success": false, "message": "The request contains incorrect information."}`.
-  const input = {
-    fabricProductId: 163523574,
-    quantity: 2,
-    unit: "METER",
-    price: 446,
-    sku: "DSG1210474",
-  } as const;
-
-  it("POSTs the flat Loom CartItem entity to /add/cart-item", async () => {
-    let capturedBody: unknown;
+describe("cartRepository.addToCart", () => {
+  it("POSTs the flat Loom CartItem entity to /api/cart/add", async () => {
+    let body: any;
     useHandlers(
-      http.post(`${PROXY_BASE}/add/cart-item`, async ({ request }) => {
-        capturedBody = await request.json();
-        return HttpResponse.json({ success: true, message: "" });
+      http.post(`${BFF}/cart/add`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ success: true });
       })
     );
-    await cartRepository.addToCart({ ...input });
-    expect(capturedBody).toEqual({
+
+    await cartRepository.addToCart({
       fabricProductId: 163523574,
-      quantity: 2,
+      quantity: 3,
       unit: "METER",
       price: 446,
       sku: "DSG1210474",
-      orderType: "IN_STOCK",
-      productGroup: "fabric",
-      selectedSizeOptionId: 0,
-      selectedFinishId: "",
-      makingCharge: 0,
-      customSize: {},
     });
-  });
 
-  it("omits zero/absent foreign keys rather than sending 0, which Loom cannot join", async () => {
-    let capturedBody: any;
-    useHandlers(
-      http.post(`${PROXY_BASE}/add/cart-item`, async ({ request }) => {
-        capturedBody = await request.json();
-        return HttpResponse.json({ success: true, message: "" });
-      })
-    );
-    await cartRepository.addToCart({ ...input, selectedFabricId: 0, finishedProductId: 0 });
-    expect(capturedBody).not.toHaveProperty("selectedFabricId");
-    expect(capturedBody).not.toHaveProperty("finishedProductId");
-  });
-
-  it("throws on Loom's 200 + {success:false} rejection instead of reporting a silent success", async () => {
-    useHandlers(
-      http.post(`${PROXY_BASE}/add/cart-item`, () =>
-        HttpResponse.json({ success: false, message: "The request contains incorrect information." })
-      )
-    );
-    await expect(cartRepository.addToCart({ ...input })).rejects.toThrow(
-      /The request contains incorrect information/
-    );
-  });
-
-  it("propagates a server error instead of swallowing it, unlike getCart", async () => {
-    useHandlers(
-      http.post(`${PROXY_BASE}/add/cart-item`, () =>
-        HttpResponse.json({ success: false, message: "boom" }, { status: 500 })
-      )
-    );
-    await expect(cartRepository.addToCart({ ...input })).rejects.toThrow(/API Error \[500\]/);
-  });
-});
-
-describe("cartRepository.updateQuantity (legacy)", () => {
-  it("PATCHes the whole row back with the new quantity, rebuilt from item.source", async () => {
-    // Loom re-binds the entire CartItem entity on update — omitting a field
-    // writes null and trips its NOT NULL columns — so the original values have
-    // to be echoed. This body is the one verified against live Loom.
-    let capturedBody: unknown;
-    let capturedMethod: string | undefined;
-    useHandlers(
-      http.patch(`${PROXY_BASE}/update/cart-item`, async ({ request }) => {
-        capturedMethod = request.method;
-        capturedBody = await request.json();
-        return HttpResponse.json({ success: true, message: "" });
-      })
-    );
-
-    const cart = mapLegacyCartToDomain([cartRow]);
-    await cartRepository.updateQuantity(cart.items[0], 3);
-
-    expect(capturedMethod).toBe("PATCH");
-    expect(capturedBody).toEqual({
-      id: 166340327,
+    expect(body).toMatchObject({
       fabricProductId: 163523574,
       quantity: 3,
       unit: "METER",
@@ -206,46 +122,153 @@ describe("cartRepository.updateQuantity (legacy)", () => {
       sku: "DSG1210474",
       orderType: "IN_STOCK",
       productGroup: "fabric",
-      selectedSizeOptionId: 0,
-      selectedFinishId: "",
-      makingCharge: 0,
-      customSize: {},
     });
   });
 
-  it("throws on Loom's 200 + {success:false} rejection", async () => {
+  it("omits zero/absent foreign keys rather than sending 0, which Loom cannot join", async () => {
+    let body: any;
     useHandlers(
-      http.patch(`${PROXY_BASE}/update/cart-item`, () =>
-        HttpResponse.json({ success: false, message: "bad quantity" })
+      http.post(`${BFF}/cart/add`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ success: true });
+      })
+    );
+
+    await cartRepository.addToCart({
+      fabricProductId: 0,
+      finishedProductId: undefined,
+      selectedFabricId: 0,
+      quantity: 1,
+      unit: "METER",
+      price: 100,
+      sku: "X",
+    });
+
+    expect(body).not.toHaveProperty("fabricProductId");
+    expect(body).not.toHaveProperty("finishedProductId");
+    expect(body).not.toHaveProperty("selectedFabricId");
+    // NOT NULL columns are still always present.
+    expect(body).toHaveProperty("selectedFinishId", "");
+    expect(body).toHaveProperty("customSize");
+    expect(body).toHaveProperty("makingCharge", 0);
+  });
+
+  it("throws on Loom's 200 + {success:false} rejection instead of reporting a silent success", async () => {
+    useHandlers(
+      http.post(`${BFF}/cart/add`, () =>
+        HttpResponse.json({ success: false, message: "Out of stock" })
       )
     );
-    const cart = mapLegacyCartToDomain([cartRow]);
-    await expect(cartRepository.updateQuantity(cart.items[0], 3)).rejects.toThrow(/bad quantity/);
+
+    await expect(
+      cartRepository.addToCart({ quantity: 1, unit: "METER", price: 1, sku: "X" })
+    ).rejects.toThrow("Out of stock");
+  });
+
+  it("raises CartAuthError when the session has expired", async () => {
+    useHandlers(
+      http.post(`${BFF}/cart/add`, () =>
+        HttpResponse.json({ success: false, reauth: true }, { status: 401 })
+      )
+    );
+
+    await expect(
+      cartRepository.addToCart({ quantity: 1, unit: "METER", price: 1, sku: "X" })
+    ).rejects.toBeInstanceOf(CartAuthError);
   });
 });
 
-describe("cartRepository.removeCartItem (legacy)", () => {
-  it("DELETEs /delete/cart-item/{cartItemId} using the cart row id", async () => {
-    let capturedUrl: string | undefined;
-    let capturedMethod: string | undefined;
+describe("cartRepository.updateQuantity", () => {
+  it("sends ONLY {id, quantity} so Loom re-prices the row itself", async () => {
+    // Re-serialising the row here is what silently dropped volume discounts and
+    // wiped fabric/size/customSize selections on every quantity change.
+    let body: any;
     useHandlers(
-      http.delete(`${PROXY_BASE}/delete/cart-item/:id`, ({ request }) => {
-        capturedUrl = request.url;
-        capturedMethod = request.method;
-        return HttpResponse.json({ success: true, message: "" });
+      http.patch(`${BFF}/cart/update`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ success: true });
       })
     );
-    await cartRepository.removeCartItem("166340327");
-    expect(capturedUrl).toBe(`${PROXY_BASE}/delete/cart-item/166340327`);
-    expect(capturedMethod).toBe("DELETE");
+
+    await cartRepository.updateQuantity(
+      {
+        id: "166340327",
+        productId: "163523574",
+        product: { id: "1", slug: "s", name: "n", sku: "K", price: 446, currency: "INR", thumbnail: "", gallery: [], inStock: true },
+        quantity: 2,
+        unitPrice: 446,
+        discountedUnitPrice: 400,
+        totalPrice: 800,
+        source: cartRow,
+      },
+      25
+    );
+
+    expect(body).toEqual({ id: 166340327, quantity: 25 });
+    // The base price must NOT be echoed back — that is what re-priced bulk
+    // lines upward and discarded the tier discount.
+    expect(body).not.toHaveProperty("price");
   });
 
   it("throws on Loom's 200 + {success:false} rejection", async () => {
     useHandlers(
-      http.delete(`${PROXY_BASE}/delete/cart-item/:id`, () =>
-        HttpResponse.json({ success: false, message: "not your cart item" })
+      http.patch(`${BFF}/cart/update`, () =>
+        HttpResponse.json({ success: false, message: "Minimum order quantity is 25" })
       )
     );
-    await expect(cartRepository.removeCartItem("1")).rejects.toThrow(/not your cart item/);
+
+    await expect(
+      cartRepository.updateQuantity(
+        {
+          id: "1",
+          productId: "1",
+          product: { id: "1", slug: "s", name: "n", sku: "K", price: 1, currency: "INR", thumbnail: "", gallery: [], inStock: true },
+          quantity: 1,
+          unitPrice: 1,
+          totalPrice: 1,
+        },
+        2
+      )
+    ).rejects.toThrow("Minimum order quantity is 25");
+  });
+});
+
+describe("cartRepository.removeCartItem", () => {
+  it("POSTs the cart row id to /api/cart/remove", async () => {
+    let body: any;
+    useHandlers(
+      http.post(`${BFF}/cart/remove`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ success: true });
+      })
+    );
+
+    await cartRepository.removeCartItem("166340327");
+
+    expect(body).toEqual({ id: 166340327 });
+  });
+
+  it("throws on Loom's 200 + {success:false} rejection so the row can report it", async () => {
+    // A delete that failed used to only console.error, which is why the button
+    // looked dead.
+    useHandlers(
+      http.post(`${BFF}/cart/remove`, () =>
+        HttpResponse.json({ success: false, message: "Could not remove the cart item." })
+      )
+    );
+
+    await expect(cartRepository.removeCartItem("1")).rejects.toThrow(
+      "Could not remove the cart item."
+    );
+  });
+
+  it("raises CartAuthError on an expired session", async () => {
+    useHandlers(
+      http.post(`${BFF}/cart/remove`, () =>
+        HttpResponse.json({ success: false, reauth: true }, { status: 401 })
+      )
+    );
+
+    await expect(cartRepository.removeCartItem("1")).rejects.toBeInstanceOf(CartAuthError);
   });
 });

@@ -20,6 +20,9 @@ import {
   sortProducts,
   getActiveFilterChips,
   clearAllFilters,
+  rangeParamKey,
+  serializeRange,
+  applyRangeParam,
 } from "@/lib/plp/filter-engine";
 import { FilterBanner } from "./FilterBanner";
 import { FilterContainer } from "./FilterContainer";
@@ -163,6 +166,23 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
           });
         }
       }
+
+      // RANGE (Price / GSM / Availability).
+      //
+      // Ranges had NO branch on either side of the URL sync, while the effect
+      // above re-runs `prepareFilterControls` on every `searchParams` change —
+      // which resets value1/value2 to the full catalogue bounds. So dragging the
+      // price slider and then touching ANY other control (a checkbox, sort, a
+      // page change) silently threw the price filter away, leaving the chip's
+      // range and the visible products disagreeing.
+      //
+      // Bounds (min/max/defaultMin/defaultMax) still come from the catalogue and
+      // are never read from the URL — only the user's chosen window is, clamped
+      // to those bounds so a stale or hand-edited URL cannot select an
+      // impossible range.
+      if (cohortGroup.rangeCohort) {
+        applyRangeParam(cohortGroup.rangeCohort, params.get(rangeParamKey(key.key)));
+      }
     });
   };
 
@@ -213,6 +233,14 @@ function ProductListingContent({ group = "fabric" }: ProductListingPageProps) {
           } else {
             current.delete(key.key);
           }
+        }
+
+        // A range is only written once it is actually narrowed; at full bounds
+        // it is not a filter and does not belong in the URL.
+        if (cohortGroup.rangeCohort) {
+          const serialized = serializeRange(cohortGroup.rangeCohort);
+          if (serialized) current.set(rangeParamKey(key.key), serialized);
+          else current.delete(rangeParamKey(key.key));
         }
       });
 

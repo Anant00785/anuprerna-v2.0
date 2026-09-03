@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrencyStore } from "@/stores/currency.store";
 import { useCartStore } from "@/stores/cart.store";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { cartRepository } from "@/lib/api/repositories/cart.repository";
 import { ProductCustomFabricProfile, FabricProfileItem } from "./ProductCustomFabricProfile";
 import { ProductFinishProfile, FinishProfileItem } from "./ProductFinishProfile";
@@ -70,7 +70,9 @@ export function ProductPreOrderDialog({
   const router = useRouter();
   const { selectedCurrency, convertPrice } = useCurrencyStore();
   const { refresh: refreshCart, open: openCart } = useCartStore();
-  const { isLoggedIn } = useAuthStore();
+  // One session: the httpOnly `loom_jwt` cookie via /api/auth/me.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !authLoading && !!user;
   const currencyCode = selectedCurrency.toUpperCase();
 
   const [selectedFabric, setSelectedFabric] = useState<FabricProfileItem | null>(initialSelectedFabric);

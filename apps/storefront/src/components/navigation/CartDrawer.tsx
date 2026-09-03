@@ -3,15 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCartStore } from "@/stores/cart.store";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useCurrencyStore } from "@/stores/currency.store";
 import { useWishlistStore } from "@/stores/wishlist.store";
 import { cartRepository } from "@/lib/api/repositories/cart.repository";
 import type { CartItem } from "@/types/domain/cart";
 
 export function CartDrawer() {
-  const { cart, isOpen, isLoading, error, close, refresh } = useCartStore();
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const { cart, isOpen, isLoading, error, needsReauth, close, refresh } = useCartStore();
+  // The ONE session: the httpOnly `loom_jwt` cookie, as reported by /api/auth/me.
+  // This used to read `useAuthStore`, which no mounted login form ever populated,
+  // so a signed-in buyer was permanently shown the "Sign in to view items" panel.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !!user;
   const { selectedCurrency, convertPrice } = useCurrencyStore();
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -28,13 +32,28 @@ export function CartDrawer() {
       maximumFractionDigits: 2,
     });
 
+  // A failed mutation is shown ON the row it failed on. Previously these only
+  // console.error'd, so a delete that 401'd looked exactly like a delete that
+  // worked — the button appeared dead.
+  const reportItemError = (item: CartItem, err: unknown, fallback: string) => {
+    setItemErrors((prev) => ({
+      ...prev,
+      [item.id]: err instanceof Error ? err.message : fallback,
+    }));
+  };
+
   const handleRemove = async (item: CartItem) => {
     setBusyId(item.id);
     try {
       await cartRepository.removeCartItem(item.id);
+      setItemErrors((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
       await refresh();
     } catch (err) {
-      console.error("Failed to remove cart item:", err);
+      reportItemError(item, err, "Could not remove this item.");
     } finally {
       setBusyId(null);
     }
@@ -43,11 +62,13 @@ export function CartDrawer() {
   const handleMoveToWishlist = async (item: CartItem) => {
     setBusyId(item.id);
     try {
-      toggleWishlist(item.product.name, item.product.sku || item.productId);
+      // Remove FIRST: if the cart call fails the item stays put, and the
+      // wishlist has not been written for something still sitting in the cart.
       await cartRepository.removeCartItem(item.id);
+      toggleWishlist(item.product.name, item.product.sku || item.productId);
       await refresh();
     } catch (err) {
-      console.error("Failed to move to wishlist:", err);
+      reportItemError(item, err, "Could not move this item to your wishlist.");
     } finally {
       setBusyId(null);
     }
@@ -151,7 +172,11 @@ export function CartDrawer() {
 
         {/* Scrollable Items Container */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {!isLoggedIn ? (
+          {authLoading ? (
+            <div className="py-24 flex justify-center">
+              <div className="w-10 h-10 border-4 border-[#D4A373] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : !isLoggedIn ? (
             <div className="py-20 text-center flex flex-col items-center gap-4">
               <span className="material-symbols-outlined text-6xl text-gray-300">shopping_bag</span>
               <p className="text-gray-600 text-sm font-medium">Sign in to view items in your cart.</p>
@@ -172,13 +197,23 @@ export function CartDrawer() {
               <p role="alert" className="text-sm font-bold text-red-600 mb-2">
                 {error}
               </p>
-              <button
-                type="button"
-                onClick={() => refresh()}
-                className="text-xs text-[#7D5A20] font-semibold underline"
-              >
-                Retry
-              </button>
+              {needsReauth ? (
+                <Link
+                  href="/auth"
+                  onClick={close}
+                  className="inline-block mt-1 bg-[#D4A373] hover:bg-[#b58356] text-white px-8 py-2.5 rounded-lg font-bold text-sm transition-colors shadow-sm"
+                >
+                  Sign In
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => refresh()}
+                  className="text-xs text-[#7D5A20] font-semibold underline"
+                >
+                  Retry
+                </button>
+              )}
             </div>
           ) : items.length === 0 ? (
             <div className="py-24 text-center flex flex-col items-center gap-3">

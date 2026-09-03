@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AddressItem } from "@/types/domain/profile";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface EditAddressModalProps {
   isOpen: boolean;
@@ -44,7 +44,7 @@ export function EditAddressModal({
   addressType = "SHIPPING",
   title = "Edit Address",
 }: EditAddressModalProps) {
-  const user = useAuthStore((s) => s.user);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     id: address?.id,
