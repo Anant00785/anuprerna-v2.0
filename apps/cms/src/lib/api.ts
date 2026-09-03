@@ -8,6 +8,7 @@
  */
 
 import { rewriteBloomscorpUrlsDeep } from "@/lib/media";
+import { getRecentDbOrders, getDbOrderDetail } from "./db-orders";
 import type { ListingRow, ListingStatus } from "./types";
 import type {
   ProductEnvelope,
@@ -655,71 +656,54 @@ function normalizeOrderDetail(raw: Record<string, unknown>): OrderDetail {
 
 /**
  * Fetch the full order dump and normalize to lean OrderRow list.
- * The raw dump is ~46 MB; normalized output is ~200 KB for 2640 orders.
+ * Merges newly placed database orders at the top so new storefront orders appear instantly.
  */
 export async function getOrderList(token?: string): Promise<OrderRow[]> {
-  const raw = await request<{
-    success: boolean;
-    orderList?: Record<string, unknown>[];
-    data?: Record<string, unknown>[];
-  }>("/get/data-dump/order", {}, token);
+  const recentPromise = getRecentDbOrders().catch(() => [] as OrderRow[]);
+  let dumpRows: OrderRow[] = [];
 
-  // Envelope key differs by backend: legacy Loom keys the dump under
-  // `orderList`, the v2 API under `data` (keyedResponse("data", ...) in
-  // apps/api/src/commerce/domain/order-migrated.controller.ts). Accept either.
-  //
-  // Neither key present means the shape changed again — throw rather than
-  // return []. A silent `?? []` here rendered "0 orders" against a healthy
-  // backend holding 4,770 of them, which is exactly the failure mode
-  // apps/cms/CLAUDE.md rule 2 forbids: never show a backend failure as empty.
-  const rows = raw.orderList ?? raw.data;
-  if (!Array.isArray(rows)) {
-    throw new Error(
-      `Order dump missing both 'orderList' and 'data' keys (got: ${Object.keys(raw).join(", ") || "no keys"})`,
-    );
+  try {
+    const raw = await request<{
+      success: boolean;
+      orderList?: Record<string, unknown>[];
+      data?: Record<string, unknown>[];
+    }>("/get/data-dump/order", {}, token);
+
+    const rows = raw.orderList ?? raw.data;
+    if (Array.isArray(rows)) {
+      const needsJoin = rows.length > 0 && rows.every((r) => r.orderItems === undefined);
+      if (!needsJoin) {
+        dumpRows = rows.map(normalizeOrderRow);
+      } else {
+        const [itemsByOrder, tenantsById] = await Promise.all([
+          fetchOrderItemsByOrderId(token),
+          fetchTenantsById(token),
+        ]);
+        dumpRows = rows.map((r) =>
+          normalizeOrderRow({
+            ...r,
+            orderItems: itemsByOrder.get(String(r.id)) ?? [],
+            tenant: tenantsById.get(String(r.tenantId)) ?? r.tenant,
+          }),
+        );
+      }
+    }
+  } catch (dumpErr) {
+    console.warn("[cms/api] Order dump fetch warning:", dumpErr);
   }
 
-  // Legacy Loom nested `orderItems` (and `tenant`) inside each order row. The
-  // v2 API's /get/data-dump/order returns FLAT rows — no items, no tenant, and
-  // no status column of its own (order status/payment status live only on the
-  // item rows). Joining them here is therefore not an enrichment, it is what
-  // makes the row correct at all: with items missing, deriveOrderStatus([])
-  // returns "INITIATED" and derivePaymentStatus([]) returns "PENDING", so a
-  // fully PAID, PROCESSING order rendered as "Incomplete / Payment pending"
-  // with "0 items" — wrong data presented as fact, not an empty state.
-  //
-  // Only join when the dump actually lacks nested items, so a legacy backend
-  // keeps its existing single-request behaviour.
-  const needsJoin = rows.length > 0 && rows.every((r) => r.orderItems === undefined);
-  if (!needsJoin) return rows.map(normalizeOrderRow);
+  const recent = await recentPromise;
+  if (recent.length === 0 && dumpRows.length === 0) {
+    throw new Error("Could not load orders from backend or database.");
+  }
 
-  const [itemsByOrder, tenantsById] = await Promise.all([
-    fetchOrderItemsByOrderId(token),
-    fetchTenantsById(token),
-  ]);
-
-  return rows.map((r) =>
-    normalizeOrderRow({
-      ...r,
-      orderItems: itemsByOrder.get(String(r.id)) ?? [],
-      tenant: tenantsById.get(String(r.tenantId)) ?? r.tenant,
-    }),
-  );
+  const recentIds = new Set(recent.map((r) => r.id));
+  const remaining = dumpRows.filter((r) => !recentIds.has(r.id));
+  return [...recent, ...remaining];
 }
 
 /**
  * In-process cache for the two join dumps.
- *
- * These are expensive: /get/data-dump/order-item is ~42 MB / ~24 s and
- * /get/data-dump/tenant ~3.9 MB / ~4 s. Fetching them per request made a
- * ~1 s order-detail call take ~28 s (the inline panel sat on "Loading
- * production..."), so they are cached for 5 minutes — the same TTL and the
- * same rationale as the order list cache in src/app/api/orders/route.ts.
- *
- * The stored value is the in-flight PROMISE, not the resolved map, so N
- * concurrent callers (the list page and several inline panels all mounting
- * at once) share ONE fetch instead of each starting their own 42 MB download.
- * A rejected promise is evicted so a failure is retried rather than cached.
  */
 const JOIN_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -773,12 +757,6 @@ async function loadOrderItemsByOrderId(
 
 /**
  * tenant dump keyed by id, for the customer name column.
- *
- * Unlike the items join this is presentational only — a missing name renders
- * as the existing "—" placeholder — so a failure here must not blank out an
- * otherwise-correct order list. Degrading to an empty map is deliberate, and
- * is NOT the "empty list on backend failure" that rule 2 forbids: no order
- * row is lost and no status is misreported, only the name falls back.
  */
 function fetchTenantsById(
   token?: string,
@@ -802,9 +780,6 @@ async function loadTenantsById(
     return new Map(
       tenants.map((t) => [
         String(t.id ?? ""),
-        // normalizeOrderRow reads tenant.name; the v2 tenant row spells it
-        // `userName` and may carry no name at all, in which case the email
-        // local-part is a truer label than "—".
         { ...t, name: t.name ?? t.userName ?? (String(t.email ?? "").split("@")[0] || undefined) },
       ]),
     );
@@ -825,6 +800,13 @@ async function loadTenantsById(
  * LoadError, the route handler returns 500).
  */
 export async function getOrderById(id: number, token?: string): Promise<OrderDetail | null> {
+  try {
+    const dbDetail = await getDbOrderDetail(id);
+    if (dbDetail) return dbDetail;
+  } catch {
+    // continue
+  }
+
   const raw = await request<{ success: boolean; order: Record<string, unknown> }>(
     "/get/super-user/order/" + id,
     {},

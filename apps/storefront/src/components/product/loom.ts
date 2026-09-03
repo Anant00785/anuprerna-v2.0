@@ -121,6 +121,16 @@ async function fetchFabric(slug: string): Promise<FabricProductResponse | null> 
     if (v1?.success && v1.fabricProduct) return v1;
     if (v1?.reason === 'unavailable') return v1;
   } catch { /* both failed */ }
+  try {
+    const fb = await fetch(`https://loom-v2.anuprerna.com/get/v2/fabric-product/slug/${slug}`, {
+      headers: { Origin: 'localhost', Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (fb.ok) {
+      const data = await fb.json();
+      if (data?.success && data?.fabricProduct) return data;
+    }
+  } catch { /* ignore */ }
   return null;
 }
 

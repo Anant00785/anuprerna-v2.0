@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     email = String(body?.email ?? '').trim().toLowerCase();
-    code = String(body?.code ?? '').trim();
+    code = String(body?.code ?? '').replace(/\s+/g, '').trim();
   } catch {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
   }
@@ -19,10 +19,8 @@ export async function POST(req: Request) {
   }
 
   // 1. Verify OTP code
-  // No universal-code backdoor: only the OTP this server actually issued, and
-  // only before it expires.
   const entry = otpStore.get(email);
-  const isValid = Boolean(entry && entry.code === code && Date.now() <= entry.expiresAt);
+  const isValid = Boolean(entry && entry.code.replace(/\s+/g, '') === code && Date.now() <= entry.expiresAt);
 
   if (!isValid) {
     return NextResponse.json(

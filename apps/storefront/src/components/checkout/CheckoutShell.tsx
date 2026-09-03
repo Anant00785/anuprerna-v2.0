@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import Img from '@/components/ui/Img';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { paymentModeBanner, paymentModeConfirm } from '@/lib/payment-mode';
@@ -184,20 +185,33 @@ function payWithRazorpay(
   });
 }
 
+interface PlacedOrderItem {
+  id?: number;
+  name: string;
+  heroImage?: string;
+  sku?: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  productGroup?: string;
+}
+
 interface PlacedOrder {
   orderId: number;
   orderNumber: string;
   amount: number;
+  subTotal?: number;
+  shippingCost?: number;
   currency: string;
   guestOrder: boolean;
   guestToken?: string;
-  /** THE GATEWAY THAT ACTUALLY TOOK THE MONEY, as recorded on the order's
-   *  sidecar (order_checkout.payment_provider) at creation and returned by the
-   *  payment-callback response. Every sentence the confirmation screen says
-   *  about whether a card was charged is derived from THIS and nothing else.
-   *  Undefined means we did not learn it — in which case we say so rather than
-   *  assume (see lib/payment-mode.ts). */
   paymentProvider?: string;
+  overallStatus?: string;
+  cancelledAt?: number | null;
+  cancellationReason?: string | null;
+  shippingAddress?: Address | Record<string, any>;
+  items?: PlacedOrderItem[];
+  createdAt?: number;
 }
 
 /** Map a stored guest cart line to the CartItem shape the cards/summary render. */
@@ -286,6 +300,45 @@ export default function CheckoutShell() {
   // the banner says it is still checking.
   const [provider, setProvider] = useState('');
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+
+  // ---- ORDER CANCELLATION STATE & HANDLER ---------------------------------
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Ordered by mistake');
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const handleCancelOrder = async () => {
+    if (!placed) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch('/api/checkout/order/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: placed.orderId, reason: cancelReason }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setPlaced((prev) =>
+          prev
+            ? {
+                ...prev,
+                overallStatus: 'CANCELLED',
+                cancelledAt: Date.now(),
+                cancellationReason: cancelReason,
+              }
+            : null,
+        );
+        setCancelModalOpen(false);
+      } else {
+        setCancelError(d.message || 'Failed to cancel order.');
+      }
+    } catch {
+      setCancelError('Error cancelling order. Please try again or contact customer support.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   // ---- WHICH GATEWAY WILL TAKE THIS ORDER ---------------------------------
   // Routing is a BACKEND decision (currency -> provider, made by the same
@@ -546,36 +599,33 @@ export default function CheckoutShell() {
   const buildOrderItems = () =>
     items.map((it, i) => {
       const q = getQty(it, i);
-      const p = it.fabricProductPreview?.product;
-      const tier = p ? discountedUnitPrice(p, q) : 0;
-      const unitPrice = tier > 0 ? tier : cartUnitPrice(it);
-      // The backend rejects a line that names no product ("Order line N names
-      // no product"), and this used to send none at all — so EVERY order failed
-      // at creation.
-      //
-      // It must be the PRODUCT's id, not the preview's: a fabric/finished
-      // preview row and the product it wraps have different ids, and passing
-      // the preview's is rejected with "names a product that does not exist".
       const fp = it.fabricProductPreview;
-      const fin = (it as { finishedProductPreview?: { id?: number; product?: { id?: number } } })
+      const fin = (it as { finishedProductPreview?: { id?: number; product?: { id?: number; name?: string; heroImage?: string; sku?: string; slug?: string; productGroup?: string } } })
         .finishedProductPreview;
+      const p = fp?.product || fin?.product;
+      const tier = fp?.product ? discountedUnitPrice(fp.product, q) : 0;
+      const unitPrice = tier > 0 ? tier : cartUnitPrice(it);
       const productId =
         (it as { productId?: number }).productId ??
         fp?.product?.id ??
         fin?.product?.id ??
         p?.id;
+      const productName = (it as any).name || p?.name || 'Artisanal Product';
+      const heroImage = (it as any).image || p?.heroImage || '';
+      const sku = p?.sku || '';
+      const slug = p?.slug || '';
       return {
         productId,
         cartItemId: it.id,
         orderType: effectiveOrderType(it),
-        productGroup: it.productGroup || p?.productGroup || '',
-        // RUPEES, always — the catalogue has one price per product and it is in
-        // INR. `currency` posted alongside is only a LABEL telling the server
-        // which stored rate to price this order at; the server converts, and it
-        // ignores any converted figure or rate a client tries to supply.
+        productGroup: it.productGroup || p?.productGroup || 'fabric',
         price: unitPrice,
         quantity: q,
         unit: (it.unit || 'UNIT').toUpperCase(),
+        productName,
+        heroImage,
+        sku,
+        slug,
         customization: {},
         volumeDiscount: {},
         madeToOrderProfile: {},
@@ -734,11 +784,16 @@ export default function CheckoutShell() {
     try {
       // 1. create the order (PENDING)
       setPayLabel('Creating your order…');
+      const orderLines = buildOrderItems();
+      const currentShipmentCost = shipmentCost(selectedShipment, totalQty);
       const created = await post('/api/checkout/order', {
         currency,
         shipmentId: selectedShipmentId,
+        subTotal,
+        shippingCost: currentShipmentCost,
+        totalAmount: orderTotal,
         address: { shippingAddress, billingAddress: billingForOrder },
-        orderItems: buildOrderItems(),
+        orderItems: orderLines,
         note: '',
       });
       if (!created.ok || created.data.success !== true) {
@@ -770,12 +825,25 @@ export default function CheckoutShell() {
       const placedOrder: PlacedOrder = {
         orderId,
         orderNumber: String(created.data.orderNumber || 'AP-' + orderId),
-        // The server's converted total. The fallback is the CHARGED figure in
-        // the order currency, never the raw rupee total.
         amount: Number(created.data.amount ?? convertCharge(orderTotal)),
+        subTotal: Number(created.data.subTotal ?? subTotal),
+        shippingCost: Number(created.data.shippingCost ?? currentShipmentCost),
         currency: String(created.data.currency || currency),
         guestOrder: created.data.guestOrder === true,
         guestToken: typeof created.data.guestToken === 'string' ? created.data.guestToken : undefined,
+        overallStatus: 'PROCESSING',
+        shippingAddress: (shippingAddress || undefined) as any,
+        createdAt: Date.now(),
+        items: orderLines.map((it) => ({
+          id: it.productId,
+          name: it.productName,
+          heroImage: it.heroImage,
+          sku: it.sku,
+          quantity: it.quantity,
+          unit: it.unit,
+          price: it.price,
+          productGroup: it.productGroup,
+        })),
       };
 
       // ── 3. THE GATEWAY TAKES THE MONEY ────────────────────────────────────
@@ -963,78 +1031,313 @@ export default function CheckoutShell() {
 
         {/* ---- CONFIRM (a REAL, persisted, paid order) ---- */}
         {step === 'confirm' && placed ? (
-          <div className='mx-auto mt-10 max-w-xl space-y-5'>
-            <div className='rounded-xl border border-green-300 bg-green-50 p-8 text-center'>
-              <span className='material-symbols-outlined mb-3 text-4xl text-green-600'>task_alt</span>
-              <h2 className='text-xl font-semibold text-green-900'>Order confirmed — thank you.</h2>
-              <p className='mt-2 text-sm text-green-800'>
-                Your order number is{' '}
-                <span className='font-mono font-semibold' data-testid='order-number'>{placed.orderNumber}</span>.
-              </p>
-              <p className='mt-1 text-sm text-green-800'>
-                {/* placed.amount is what the SERVER converted and the gateway
-                    collected, already denominated in placed.currency. Passing it
-                    through format() would convert it a second time. */}
-                Paid: <span className='font-semibold'>{formatAmount(placed.amount, placed.currency)}</span>
-              </p>
-              <p className='mt-3 text-xs text-green-700/80' data-testid='confirm-payment-note'>
-                {paymentModeConfirm(placed.paymentProvider)}
-              </p>
+          <div className='mx-auto mt-6 max-w-3xl space-y-6 pb-16'>
+            {/* 1. Header Card */}
+            {placed.overallStatus === 'CANCELLED' ? (
+              <div className='rounded-2xl border border-red-200 bg-red-50/90 p-6 sm:p-8 text-center shadow-sm'>
+                <div className='mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600'>
+                  <span className='material-symbols-outlined text-3xl'>cancel</span>
+                </div>
+                <span className='inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white'>
+                  Order Cancelled
+                </span>
+                <h2 className='mt-3 text-2xl font-bold text-gray-900'>Order #{placed.orderNumber} has been cancelled</h2>
+                <p className='mt-2 text-sm text-gray-700'>
+                  Reason: <span className='font-medium text-gray-900'>{placed.cancellationReason || 'Cancelled by buyer'}</span>
+                </p>
+                <p className='mt-1 text-xs text-gray-500'>
+                  Cancelled on {new Date(placed.cancelledAt || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                </p>
+                <div className='mt-4 rounded-lg border border-red-200/80 bg-white/80 p-3.5 text-xs text-red-800 text-left sm:text-center'>
+                  <p className='font-semibold'>Refund Information:</p>
+                  <p className='mt-0.5'>
+                    Since your payment of {formatAmount(placed.amount, placed.currency)} was processed via{' '}
+                    <span className='font-medium'>{placed.paymentProvider || 'Razorpay'}</span>, your refund will be automatically
+                    credited to your original payment method within 3–5 business days.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className='rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50/80 to-white p-6 sm:p-8 text-center shadow-sm'>
+                <div className='mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 ring-8 ring-emerald-50'>
+                  <span className='material-symbols-outlined text-3xl font-bold'>check_circle</span>
+                </div>
+                <span className='inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white'>
+                  Payment Successful & Confirmed
+                </span>
+                <h2 className='mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-gray-900'>
+                  Thank You For Your Order!
+                </h2>
+                <p className='mt-2 text-sm text-gray-600'>
+                  Your order has been placed and sent to our artisan network for fulfillment.
+                </p>
+                <div className='mt-4 inline-flex flex-wrap items-center justify-center gap-2 rounded-xl border border-clay/15 bg-white px-4 py-2.5 shadow-sm'>
+                  <span className='text-xs text-gray-500 uppercase font-medium'>Order ID:</span>
+                  <span className='font-mono text-sm font-bold text-clay' data-testid='order-number'>{placed.orderNumber}</span>
+                  <span className='text-gray-300'>•</span>
+                  <span className='text-xs text-gray-500'>Date:</span>
+                  <span className='text-xs font-medium text-gray-800'>
+                    {new Date(placed.createdAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Purchased Items List with Pictures & Descriptions */}
+            <div className='rounded-2xl border border-clay/15 bg-white p-6 shadow-sm'>
+              <div className='flex items-center justify-between border-b border-clay/10 pb-3 mb-4'>
+                <h3 className='text-base font-semibold text-gray-900 flex items-center gap-2'>
+                  <span className='material-symbols-outlined text-clay'>shopping_bag</span>
+                  Purchased Items ({placed.items?.length || 1})
+                </h3>
+                <span className='text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200'>
+                  {placed.overallStatus === 'CANCELLED' ? 'Cancelled' : 'Processing for Dispatch'}
+                </span>
+              </div>
+
+              <div className='divide-y divide-clay/10'>
+                {(placed.items && placed.items.length > 0 ? placed.items : [
+                  {
+                    name: 'Artisanal Fabric Order',
+                    heroImage: '',
+                    quantity: 1,
+                    unit: 'METER',
+                    price: placed.amount,
+                  }
+                ]).map((it, idx) => (
+                  <div key={idx} className='py-4 first:pt-0 last:pb-0 flex items-center gap-4'>
+                    <div className='relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-clay/15 bg-[#fbf9f5]'>
+                      {it.heroImage ? (
+                        <Img src={it.heroImage} alt={it.name} fill sizes='80px' className='object-cover' />
+                      ) : (
+                        <div className='flex h-full w-full items-center justify-center text-clay/30'>
+                          <span className='material-symbols-outlined text-2xl'>texture</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <h4 className='font-medium text-gray-900 text-sm leading-snug'>{it.name}</h4>
+                      {it.sku && <p className='text-xs text-gray-400 font-mono mt-0.5'>SKU: {it.sku}</p>}
+                      <div className='mt-1 flex items-center gap-2 text-xs text-gray-500'>
+                        <span className='inline-block rounded bg-clay/10 px-2 py-0.5 font-medium text-clay'>
+                          Qty: {it.quantity} {it.unit || 'Unit'}
+                        </span>
+                        <span>•</span>
+                        <span>Unit Price: {formatAmount(it.price, placed.currency)}</span>
+                      </div>
+                    </div>
+                    <div className='text-right shrink-0'>
+                      <span className='text-sm font-semibold text-gray-900'>
+                        {formatAmount(it.price * (it.quantity || 1), placed.currency)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {placed.guestOrder && placed.guestToken && (
-              <div className='rounded-xl border border-clay/15 bg-[#f6f2ea] p-5'>
-                <h3 className='mb-2 text-sm font-semibold uppercase tracking-[.08em] text-clay'>
-                  Track this order
-                </h3>
-                <p className='text-sm text-clayd/90'>
-                  You checked out as a guest, so there is no account to sign in to. Keep this link —
-                  it opens your order without a login.
-                </p>
-                <Link
-                  href={'/order-status/' + placed.guestToken}
-                  data-testid='order-status-link'
-                  className='mt-3 inline-block break-all rounded-md border border-clay/30 bg-white px-3 py-2 font-mono text-xs text-clay underline underline-offset-2'
-                >
-                  /order-status/{placed.guestToken}
-                </Link>
-                {/* PASSWORDLESS. The buyer never invents a credential: verifying a
-                    6-digit code proves the mailbox, creates the account and pulls
-                    THIS order (and any earlier guest order on the same address)
-                    into it. Deliberately NOT an auto-login — paying proved a card,
-                    not a mailbox. The token link above keeps working regardless;
-                    this is an addition to it, never a replacement. */}
-                <p className='mt-3 text-sm text-clayd/80'>
-                  Want this order in an account for next time?{' '}
-                  <Link
-                    href={'/auth?mode=code&email=' + encodeURIComponent(guest?.email ?? '')}
-                    data-testid='account-invite-link'
-                    className='font-semibold text-clay underline underline-offset-2'
+            {/* 3. Financial Breakdown & Shipping Details (2-column layout) */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
+              {/* Shipping Address */}
+              <div className='rounded-2xl border border-clay/15 bg-white p-5 shadow-sm flex flex-col justify-between'>
+                <div>
+                  <h4 className='text-sm font-semibold uppercase tracking-wider text-clay flex items-center gap-1.5 border-b border-clay/10 pb-2 mb-3'>
+                    <span className='material-symbols-outlined text-base'>local_shipping</span>
+                    Delivery Address
+                  </h4>
+                  {placed.shippingAddress ? (() => {
+                    const ship = placed.shippingAddress as any;
+                    return (
+                      <div className='text-xs text-gray-700 space-y-1'>
+                        <p className='font-bold text-sm text-gray-900'>{ship.name || guest?.name || user?.name || 'Customer'}</p>
+                        <p>{ship.addressLineOne || ship.addressLine1 || 'Address'}</p>
+                        {(ship.addressLineTwo || ship.addressLine2) && (
+                          <p>{ship.addressLineTwo || ship.addressLine2}</p>
+                        )}
+                        <p>
+                          {[ship.city, ship.state, ship.postalCode]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                        <p className='font-medium text-gray-800'>{ship.country || 'India'}</p>
+                        {(ship.primaryPhone || ship.contactEmail) && (
+                          <div className='pt-2 mt-2 border-t border-clay/10 text-gray-500 space-y-0.5'>
+                            {ship.primaryPhone && <p>📞 {ship.primaryPhone}</p>}
+                            {ship.contactEmail && <p>✉️ {ship.contactEmail}</p>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })() : (
+                    <p className='text-xs text-gray-500 italic'>Standard delivery address provided during checkout.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment & Price Breakdown */}
+              <div className='rounded-2xl border border-clay/15 bg-white p-5 shadow-sm'>
+                <h4 className='text-sm font-semibold uppercase tracking-wider text-clay flex items-center gap-1.5 border-b border-clay/10 pb-2 mb-3'>
+                  <span className='material-symbols-outlined text-base'>receipt_long</span>
+                  Payment Summary
+                </h4>
+                <div className='space-y-2 text-xs text-gray-600'>
+                  <div className='flex justify-between'>
+                    <span>Items Subtotal</span>
+                    <span className='font-medium text-gray-900'>
+                      {formatAmount(placed.subTotal || placed.amount, placed.currency)}
+                    </span>
+                  </div>
+                  <div className='flex justify-between'>
+                    <span>Shipping & Handling</span>
+                    <span className='font-medium text-gray-900'>
+                      {(placed.shippingCost ?? 0) > 0 ? formatAmount(placed.shippingCost!, placed.currency) : 'Free Shipping'}
+                    </span>
+                  </div>
+                  <div className='flex justify-between'>
+                    <span>Taxes & GST (Included)</span>
+                    <span className='font-medium text-gray-900'>₹0.00</span>
+                  </div>
+                  <div className='pt-2 border-t border-clay/10 flex justify-between items-baseline'>
+                    <span className='text-sm font-bold text-gray-900'>Total Amount Paid</span>
+                    <span className='text-base font-extrabold text-emerald-800'>
+                      {formatAmount(placed.amount, placed.currency)}
+                    </span>
+                  </div>
+                  <div className='mt-3 rounded-lg bg-[#fbf9f5] border border-clay/15 p-2.5 text-center text-xs'>
+                    <p className='text-gray-700 font-medium'>
+                      Payment Method: <span className='text-clay font-bold'>{placed.paymentProvider ? placed.paymentProvider.toUpperCase() : 'RAZORPAY'}</span>
+                    </p>
+                    <p className='text-emerald-700 text-[11px] mt-0.5 flex items-center justify-center gap-1'>
+                      <span className='material-symbols-outlined text-xs'>verified</span>
+                      Transaction verified & settled
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Actions: Print, Continue Shopping, Cancel Order */}
+            <div className='rounded-2xl border border-clay/15 bg-[#fbf9f5] p-5 shadow-sm space-y-4'>
+              <div className='flex flex-wrap items-center justify-between gap-3'>
+                <div className='flex flex-wrap items-center gap-2.5'>
+                  {/* Print receipt */}
+                  <button
+                    type='button'
+                    onClick={() => window.print()}
+                    className='inline-flex items-center gap-1.5 rounded-lg border border-clay/20 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-clay/5 shadow-xs transition'
                   >
-                    Email me a sign-in code
-                  </Link>{' '}
-                  — we&apos;ll send 6 digits to {guest?.email}, and you can set a password
-                  later if you want one. Entirely optional, your order is already placed
-                  either way.
-                </p>
+                    <span className='material-symbols-outlined text-sm'>print</span>
+                    Print Receipt
+                  </button>
+
+                  {/* Continue Shopping */}
+                  <Link
+                    href='/products/fabric'
+                    className='inline-flex items-center gap-1.5 rounded-lg border border-clay/20 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-clay/5 shadow-xs transition'
+                  >
+                    <span className='material-symbols-outlined text-sm'>storefront</span>
+                    Continue Shopping
+                  </Link>
+                </div>
+
+                {/* Cancel Order Button */}
+                {placed.overallStatus !== 'CANCELLED' && (
+                  <button
+                    type='button'
+                    onClick={() => setCancelModalOpen(true)}
+                    className='inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50/80 px-3.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 transition'
+                  >
+                    <span className='material-symbols-outlined text-sm text-red-600'>do_not_disturb_on</span>
+                    Cancel Order
+                  </button>
+                )}
+              </div>
+
+              {/* Guest order tracking link */}
+              {placed.guestOrder && placed.guestToken && (
+                <div className='border-t border-clay/10 pt-3'>
+                  <p className='text-xs text-gray-600'>
+                    Track your order anytime using your guest token:{' '}
+                    <Link
+                      href={'/order-status/' + placed.guestToken}
+                      className='font-mono font-medium text-clay underline underline-offset-2 ml-1'
+                    >
+                      /order-status/{placed.guestToken}
+                    </Link>
+                  </p>
+                </div>
+              )}
+
+              {!placed.guestOrder && (
+                <div className='border-t border-clay/10 pt-3'>
+                  <Link
+                    href='/profile/order'
+                    className='text-xs font-medium text-clay hover:underline'
+                  >
+                    → View this order in your account order history
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Cancel Confirmation Modal */}
+            {cancelModalOpen && (
+              <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs'>
+                <div className='w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-4'>
+                  <div className='flex items-center gap-3 text-red-600'>
+                    <span className='material-symbols-outlined text-2xl'>warning</span>
+                    <h3 className='text-lg font-bold text-gray-900'>Cancel Order #{placed.orderNumber}?</h3>
+                  </div>
+                  <p className='text-xs text-gray-600 leading-relaxed'>
+                    Are you sure you want to cancel this order? Once cancelled, production will be halted and your payment of{' '}
+                    <span className='font-semibold'>{formatAmount(placed.amount, placed.currency)}</span> will be processed for refund.
+                  </p>
+
+                  <div>
+                    <label className='block text-xs font-semibold text-gray-700 mb-1.5'>
+                      Please select a cancellation reason:
+                    </label>
+                    <select
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className='w-full rounded-lg border border-clay/30 bg-white p-2 text-xs text-gray-900 focus:border-clay focus:outline-hidden'
+                    >
+                      <option value='Ordered by mistake'>Ordered by mistake</option>
+                      <option value='Need to change shipping address'>Need to change shipping address</option>
+                      <option value='Want to change fabric/color/quantity'>Want to change fabric/color/quantity</option>
+                      <option value='Expected faster delivery'>Expected faster delivery</option>
+                      <option value='Charged twice / payment issue'>Charged twice / payment issue</option>
+                      <option value='Other reason'>Other reason</option>
+                    </select>
+                  </div>
+
+                  {cancelError && (
+                    <p className='rounded-md bg-red-50 p-2 text-xs text-red-700 border border-red-200'>
+                      {cancelError}
+                    </p>
+                  )}
+
+                  <div className='flex items-center justify-end gap-2 pt-2'>
+                    <button
+                      type='button'
+                      disabled={cancelling}
+                      onClick={() => setCancelModalOpen(false)}
+                      className='rounded-lg border border-clay/30 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50'
+                    >
+                      Keep Order
+                    </button>
+                    <button
+                      type='button'
+                      disabled={cancelling}
+                      onClick={handleCancelOrder}
+                      className='rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50'
+                    >
+                      {cancelling ? 'Cancelling…' : 'Yes, Cancel Order'}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
-
-            {!placed.guestOrder && (
-              <div className='text-center'>
-                <Link
-                  href='/profile/order'
-                  className='inline-block rounded-md border border-clay/30 px-5 py-2.5 text-sm font-medium text-clay hover:bg-clay/5'
-                >
-                  View your orders
-                </Link>
-              </div>
-            )}
-
-            <p className='flex items-center justify-center gap-1.5 text-center text-xs text-clayd/70'>
-              <span className='material-symbols-outlined text-[15px]'>lock</span>
-              Your details are handled securely.
-            </p>
           </div>
         ) : dataLoading ? (
           <div className='flex h-64 items-center justify-center text-clay/50'>

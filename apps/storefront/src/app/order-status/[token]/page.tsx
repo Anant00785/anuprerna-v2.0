@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { loomGet } from '@/lib/loom/client';
+import { getAllLocalOrders } from '@/lib/order-db';
 
 // =====================================================================================
 // /order-status/<token> — the GUEST ORDER-STATUS view.
@@ -63,6 +64,39 @@ export default async function Page({ params }: { params: Promise<{ token: string
   } catch {
     order = null;
   }
+
+  if (!order) {
+    const local = getAllLocalOrders().find((o) => o.guestToken === token);
+    if (local) {
+      order = {
+        id: local.id,
+        orderNumber: local.orderNumber,
+        createdAt: local.createdAt,
+        subTotal: local.subTotal,
+        shippingCost: local.shippingCost,
+        total: local.total,
+        currency: local.currency,
+        address: { shippingAddress: local.shippingAddress },
+        orderItems: local.items.map((it) => ({
+          id: it.id,
+          orderType: it.orderType,
+          productGroup: it.productGroup,
+          quantity: it.quantity,
+          unit: it.unit,
+          price: it.price,
+          currency: it.currency,
+          orderStatus: it.orderStatus,
+          paymentStatus: it.paymentStatus,
+        })),
+        buyerEmail: local.customerEmail,
+        guestOrder: true,
+        paymentState: local.overallStatus === 'CANCELLED' ? 'CANCELLED' : 'PAID',
+        paymentProvider: local.paymentMode,
+        accountInvite: { available: false },
+      };
+    }
+  }
+
   if (!order) notFound();
 
   const ship = order.address?.shippingAddress ?? {};

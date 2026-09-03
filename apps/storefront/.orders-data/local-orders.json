@@ -1,0 +1,171 @@
+[
+  {
+    "id": 1788455831279,
+    "orderNumber": "AP-482673",
+    "customerName": "Artisan Collector",
+    "customerEmail": "artisanbuyer@anuprerna.com",
+    "customerPhone": "9829012345",
+    "subTotal": 2400,
+    "shippingCost": 0,
+    "total": 2400,
+    "currency": "INR",
+    "paymentMode": "RAZORPAY",
+    "paymentStatus": "PAID",
+    "overallStatus": "CANCELLED",
+    "shippingAddress": {
+      "name": "Artisan Collector",
+      "addressLineOne": "45 Heritage Lane",
+      "city": "Jaipur",
+      "state": "Rajasthan",
+      "postalCode": "302001",
+      "country": "India",
+      "primaryPhone": "9829012345",
+      "contactEmail": "artisanbuyer@anuprerna.com"
+    },
+    "billingAddress": {
+      "name": "Artisan Collector",
+      "addressLineOne": "45 Heritage Lane",
+      "city": "Jaipur",
+      "state": "Rajasthan",
+      "postalCode": "302001",
+      "country": "India",
+      "primaryPhone": "9829012345",
+      "contactEmail": "artisanbuyer@anuprerna.com"
+    },
+    "items": [
+      {
+        "id": 106932643,
+        "orderId": 1788455831279,
+        "productName": "Handwoven Matka Silk Fabric",
+        "heroImage": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6",
+        "sku": "MAT-SLK-002",
+        "slug": "",
+        "orderType": "IN_STOCK",
+        "productGroup": "fabric",
+        "quantity": 4,
+        "unit": "METER",
+        "price": 600,
+        "currency": "INR",
+        "orderStatus": "CANCELLED",
+        "paymentStatus": "PAID"
+      }
+    ],
+    "createdAt": 1788455831280,
+    "guestOrder": true,
+    "guestToken": "gt_gduci4vb4ukmtlsfban",
+    "cancelledAt": 1788455873879,
+    "cancellationReason": "Testing cancellation in CMS and storefront"
+  },
+  {
+    "id": 1788455755223,
+    "orderNumber": "AP-702303",
+    "customerName": "Anuprerna VIP Buyer",
+    "customerEmail": "vipbuyer@anuprerna.com",
+    "customerPhone": "9876543210",
+    "subTotal": 1500,
+    "shippingCost": 0,
+    "total": 1500,
+    "currency": "INR",
+    "paymentMode": "RAZORPAY",
+    "paymentStatus": "PAID",
+    "overallStatus": "PROCESSING",
+    "shippingAddress": {
+      "name": "Anuprerna VIP Buyer",
+      "addressLineOne": "100 Heritage Road",
+      "city": "Kolkata",
+      "state": "West Bengal",
+      "postalCode": "700001",
+      "country": "India",
+      "primaryPhone": "9876543210",
+      "contactEmail": "vipbuyer@anuprerna.com"
+    },
+    "billingAddress": {
+      "name": "Anuprerna VIP Buyer",
+      "addressLineOne": "100 Heritage Road",
+      "city": "Kolkata",
+      "state": "West Bengal",
+      "postalCode": "700001",
+      "country": "India",
+      "primaryPhone": "9876543210",
+      "contactEmail": "vipbuyer@anuprerna.com"
+    },
+    "items": [
+      {
+        "id": 106932643,
+        "orderId": 1788455755223,
+        "productName": "Handloom Mulberry Silk Fabric",
+        "heroImage": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6",
+        "sku": "MSF-001",
+        "slug": "",
+        "orderType": "IN_STOCK",
+        "productGroup": "fabric",
+        "quantity": 3,
+        "unit": "METER",
+        "price": 500,
+        "currency": "INR",
+        "orderStatus": "PROCESSING",
+        "paymentStatus": "PAID"
+      }
+    ],
+    "createdAt": 1788455755223,
+    "guestOrder": true,
+    "guestToken": "gt_gu1afgkj62tmtlsdolz"
+  },
+  {
+    "id": 1788455708456,
+    "orderNumber": "AP-194590",
+    "customerName": "Test Buyer",
+    "customerEmail": "testbuyer@example.com",
+    "customerPhone": "9876543210",
+    "subTotal": 790,
+    "shippingCost": 200,
+    "total": 990,
+    "currency": "INR",
+    "paymentMode": "RAZORPAY",
+    "paymentStatus": "PAID",
+    "overallStatus": "CANCELLED",
+    "shippingAddress": {
+      "name": "Test Buyer",
+      "addressLineOne": "Flat 402, Lotus Heights",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "postalCode": "400001",
+      "country": "India",
+      "primaryPhone": "9876543210",
+      "contactEmail": "testbuyer@example.com"
+    },
+    "billingAddress": {
+      "name": "Test Buyer",
+      "addressLineOne": "Flat 402, Lotus Heights",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "postalCode": "400001",
+      "country": "India",
+      "primaryPhone": "9876543210",
+      "contactEmail": "testbuyer@example.com"
+    },
+    "items": [
+      {
+        "id": 106932643,
+        "orderId": 1788455708456,
+        "productName": "Pure Khadi Cotton Fabric",
+        "heroImage": "https://images.unsplash.com/photo-1584917865442-de89df76afd3",
+        "sku": "KHD-COT-001",
+        "slug": "",
+        "orderType": "IN_STOCK",
+        "productGroup": "fabric",
+        "quantity": 2,
+        "unit": "METER",
+        "price": 395,
+        "currency": "INR",
+        "orderStatus": "CANCELLED",
+        "paymentStatus": "PAID"
+      }
+    ],
+    "createdAt": 1788455708456,
+    "guestOrder": true,
+    "guestToken": "gt_nhjheipijmtlscoiw",
+    "cancelledAt": 1788455714871,
+    "cancellationReason": "Testing cancellation flow"
+  }
+]

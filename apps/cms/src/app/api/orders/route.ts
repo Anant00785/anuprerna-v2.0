@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderList } from "@/lib/api";
 import { getSandboxToken } from "@/lib/sandbox-token";
+import { getRecentDbOrders } from "@/lib/db-orders";
 import type { OrderRow } from "@/lib/api";
 
 // ── In-process cache (module-level; survives across requests in one worker) ──
@@ -55,7 +56,13 @@ export async function GET(req: NextRequest) {
   const status = (searchParams.get("status") ?? "").toUpperCase().trim();
 
   try {
-    const all = await getCachedOrders(token);
+    const [recentDb, cached] = await Promise.all([
+      getRecentDbOrders().catch(() => [] as OrderRow[]),
+      getCachedOrders(token),
+    ]);
+
+    const recentIds = new Set(recentDb.map((r) => r.id));
+    const all = [...recentDb, ...cached.filter((r) => !recentIds.has(r.id))];
 
     // Global search first (matches live: search spans every status); the status
     // tab is a post-filter on top. Per-status counts + the overdue tally are
