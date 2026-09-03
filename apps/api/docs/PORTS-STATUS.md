@@ -1,5 +1,13 @@
 # TODO — Remaining Integration Blockers
 
+> **SUPERSEDED for the port items (2026-09-02).** Every `async () => null` cross-module port
+> described below is now bound to a real provider — see `docs/KNOWN-GAPS.md`
+> ("Several cross-domain ports…" → resolved, and "Ports that now fail loudly…"). The three
+> remaining gaps are `ZOHO_ADAPTER_PORT` (throws), `CUSTOM_ORDER_ITEM_PORT` (fails the
+> transaction) and `EMAIL_ENCODER_PORT` (deliberate). `apps/api/src/commerce/cross-module-ports.spec.ts`
+> fails the build if a null-returning provider reappears. The "missing file" inventory below is
+> still worth reading as history, but most of those domains have since landed.
+
 > **Moved from the repo root on 2026-08-12** (was `TODO.md`). Records the cross-domain ports still
 > bound to `null`-returning dummies, and the files the migration upload never delivered. Items here are
 > real, actionable debt — cross-referenced from `docs/MODULE-MAP.md` and `docs/KNOWN-GAPS.md`.
