@@ -9,7 +9,7 @@
  * The CMS reads these keys verbatim — apps/cms/src/lib/custom-products-api.ts.
  */
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { BadRequestException, Body, Controller, Get, HttpCode, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, HttpCode, NotFoundException, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { keyedResponse, simpleResponse } from "../../../common/response/rain-response.js";
@@ -41,8 +41,15 @@ export class CustomProductController {
   @ApiOperation({ summary: "One custom product by id." })
   @ApiParam({ name: "productId", type: Number, example: 1 })
   @ApiResponse({ status: 200, description: "Custom product." })
+  @ApiResponse({ status: 404, description: "No custom product with that id." })
   async getCustomProduct(@Param("productId") productId: string) {
-    return keyedResponse("customProduct", await this.service.getCustomProduct(idOf(productId, "productId")));
+    const product = await this.service.getCustomProduct(idOf(productId, "productId"));
+    // 404, not a 200 carrying null: the CMS detail page cannot tell an absent
+    // record from a broken read otherwise. Paired with the 404 -> null catch in
+    // apps/cms/src/lib/custom-products-api.ts#getCustomProductById; do not flip
+    // one without the other.
+    if (!product) throw new NotFoundException("No custom product matched this id.");
+    return keyedResponse("customProduct", product);
   }
 
   @Post("/add/custom-product")

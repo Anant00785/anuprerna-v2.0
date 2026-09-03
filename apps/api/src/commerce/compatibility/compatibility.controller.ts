@@ -131,5 +131,4 @@ export class CompatibilityController {
       return { success: true, response: `${BASE_REDIRECT_URL}/404` };
     }
   }
-
 }

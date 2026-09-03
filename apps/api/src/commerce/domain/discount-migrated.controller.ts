@@ -200,15 +200,11 @@ export class DiscountMigratedDomainController {
   @ApiOperation({ summary: "Fetch tier volume discount profiles" })
   @ApiResponse({ status: 200, description: "Volume discount profiles list" })
   async get_get_volume_discount_profile_list() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.volumeDiscountProfile)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.volumeDiscountProfile)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
   }
 
   @Get("/get/volume-discount-profile/:profileId")
@@ -217,15 +213,11 @@ export class DiscountMigratedDomainController {
   @ApiParam({ name: "profileId", example: 2605, type: Number })
   @ApiResponse({ status: 200, description: "Volume discount profile detail" })
   async get_get_volume_discount_profile_profileId(@Param("profileId") profileId: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.volumeDiscountProfile)
-        .where(eq(schema.volumeDiscountProfile.id, BigInt(profileId)));
-      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.volumeDiscountProfile)
+      .where(eq(schema.volumeDiscountProfile.id, BigInt(profileId)));
+    return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
   }
 
   @Post("/add/volume-discount-profile")
@@ -234,19 +226,15 @@ export class DiscountMigratedDomainController {
   @ApiBody({ type: CreateVolumeDiscountProfileDto })
   @ApiResponse({ status: 201, description: "Volume discount profile created" })
   async post_add_volume_discount_profile(@Body() body: CreateVolumeDiscountProfileDto) {
-    try {
-      const [inserted] = await (this.db as any)
-        .insert(schema.volumeDiscountProfile)
-        .values({
-          profileName: body.profileName || "Wholesale Tier Discount",
-          disclaimer: body.disclaimer || "Volume discount terms apply.",
-          timeOfCreation: BigInt(Date.now()),
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatVolumeDiscountProfile(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await (this.db as any)
+      .insert(schema.volumeDiscountProfile)
+      .values({
+        profileName: body.profileName || "Wholesale Tier Discount",
+        disclaimer: body.disclaimer || "Volume discount terms apply.",
+        timeOfCreation: BigInt(Date.now()),
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatVolumeDiscountProfile(inserted)] : []);
   }
 
   @Patch("/update/volume-discount-profile")
@@ -255,21 +243,17 @@ export class DiscountMigratedDomainController {
   @ApiBody({ type: UpdateVolumeDiscountProfileDto })
   @ApiResponse({ status: 200, description: "Volume discount profile updated" })
   async patch_update_volume_discount_profile(@Body() body: UpdateVolumeDiscountProfileDto) {
-    try {
-      const updateSet: any = {};
-      if (body.profileName) updateSet.profileName = body.profileName;
-      if (body.disclaimer) updateSet.disclaimer = body.disclaimer;
+    const updateSet: any = {};
+    if (body.profileName) updateSet.profileName = body.profileName;
+    if (body.disclaimer) updateSet.disclaimer = body.disclaimer;
 
-      const [updated] = await (this.db as any)
-        .update(schema.volumeDiscountProfile)
-        .set(updateSet)
-        .where(eq(schema.volumeDiscountProfile.id, BigInt(body.id)))
-        .returning();
+    const [updated] = await (this.db as any)
+      .update(schema.volumeDiscountProfile)
+      .set(updateSet)
+      .where(eq(schema.volumeDiscountProfile.id, BigInt(body.id)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatVolumeDiscountProfile(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatVolumeDiscountProfile(updated)] : []);
   }
 
   @Delete("/delete/volume-discount-profile/:profileId")
@@ -311,15 +295,11 @@ export class DiscountMigratedDomainController {
   @ApiParam({ name: "discountId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Discount coupon detail" })
   async get_get_discount_discountId(@Param("discountId") discountId: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.discount)
-        .where(eq(schema.discount.id, BigInt(discountId)));
-      return keyedResponse("data", (rows || []).map(formatDiscount));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.discount)
+      .where(eq(schema.discount.id, BigInt(discountId)));
+    return keyedResponse("data", (rows || []).map(formatDiscount));
   }
 
   @Post("/add/discount")
@@ -370,23 +350,19 @@ export class DiscountMigratedDomainController {
   @ApiBody({ type: UpdateDiscountCouponDto })
   @ApiResponse({ status: 200, description: "Discount coupon updated" })
   async patch_update_discount(@Body() body: UpdateDiscountCouponDto) {
-    try {
-      const updateSet: any = {};
-      if (body.couponCode) updateSet.couponCode = body.couponCode;
-      if (body.discountPercentage !== undefined) updateSet.discountPercentage = body.discountPercentage;
-      if (body.minimumOrderValue !== undefined) updateSet.minimumOrderValue = body.minimumOrderValue;
-      if (body.active !== undefined) updateSet.active = body.active;
+    const updateSet: any = {};
+    if (body.couponCode) updateSet.couponCode = body.couponCode;
+    if (body.discountPercentage !== undefined) updateSet.discountPercentage = body.discountPercentage;
+    if (body.minimumOrderValue !== undefined) updateSet.minimumOrderValue = body.minimumOrderValue;
+    if (body.active !== undefined) updateSet.active = body.active;
 
-      const [updated] = await (this.db as any)
-        .update(schema.discount)
-        .set(updateSet)
-        .where(eq(schema.discount.id, BigInt(body.id)))
-        .returning();
+    const [updated] = await (this.db as any)
+      .update(schema.discount)
+      .set(updateSet)
+      .where(eq(schema.discount.id, BigInt(body.id)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatDiscount(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatDiscount(updated)] : []);
   }
 
   @Delete("/delete/discount/:discountId")
@@ -410,15 +386,11 @@ export class DiscountMigratedDomainController {
   @ApiOperation({ summary: "Inspect VolumeDiscountProfileItem entity by ID" })
   @ApiParam({ name: "id", example: 54485942, type: Number })
   async get_get_table_explorer_data_volume_discount_profile_item_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.volumeDiscountProfileItem)
-        .where(eq(schema.volumeDiscountProfileItem.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfileItem));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.volumeDiscountProfileItem)
+      .where(eq(schema.volumeDiscountProfileItem.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfileItem));
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile/:id")
@@ -426,59 +398,43 @@ export class DiscountMigratedDomainController {
   @ApiOperation({ summary: "Inspect VolumeDiscountProfile entity by ID" })
   @ApiParam({ name: "id", example: 2605, type: Number })
   async get_get_table_explorer_data_volume_discount_profile_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.volumeDiscountProfile)
-        .where(eq(schema.volumeDiscountProfile.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.volumeDiscountProfile)
+      .where(eq(schema.volumeDiscountProfile.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
   }
 
   @Get("/get/table-explorer/data/discount")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for discount coupons" })
   async get_get_table_explorer_data_discount() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.discount)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatDiscount));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.discount)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatDiscount));
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile-item")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for volume discount profile items" })
   async get_get_table_explorer_data_volume_discount_profile_item() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.volumeDiscountProfileItem)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfileItem));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.volumeDiscountProfileItem)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfileItem));
   }
 
   @Get("/get/table-explorer/data/volume-discount-profile")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for volume discount profiles" })
   async get_get_table_explorer_data_volume_discount_profile() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.volumeDiscountProfile)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.volumeDiscountProfile)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatVolumeDiscountProfile));
   }
 }

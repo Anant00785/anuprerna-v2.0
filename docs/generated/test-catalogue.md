@@ -4,10 +4,10 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1429 tests across 250 files.**
+**1477 tests across 254 files.**
 
-- `apps/api` — 199 files, 858 tests
-- `apps/cms` — 17 files, 210 tests
+- `apps/api` — 203 files, 904 tests
+- `apps/cms` — 17 files, 212 tests
 - `apps/storefront` — 33 files, 359 tests
 - `packages/types` — 1 files, 2 tests
 
@@ -74,13 +74,16 @@
 - returns 0 for a tenant with an empty cart
 - aborts the whole transaction if any row lost its version race
 
-### `apps/api/src/commerce/cart/service/cart.enrichment-batching.spec.ts` — 7
+### `apps/api/src/commerce/cart/service/cart.enrichment-batching.spec.ts` — 10
 - does not issue more queries as the cart grows
 - falls back to the bare product row when no product_fabric row exists
 - falls through to the port only when neither table has the id
 - resolves a missing size option to null instead of throwing
 - keeps finish CSV token order and last-one-wins finishDisplayName
 - skips non-numeric finish tokens rather than throwing on BigInt()
+- asks the fabric-preview port once for all distinct selectedFabricIds
+- leaves selectedFabric null when the batch has no row for that id
+- does not touch the fabric-preview port when no line selects a fabric
 - returns an empty list for an empty cart without querying
 
 ### `apps/api/src/commerce/cart/validators/cart-item.sanitizer.spec.ts` — 11
@@ -198,7 +201,7 @@
 - returns the list under 
 - returns an empty list rather than an error when there are none
 - returns the row under 
-- returns customProduct: null for an id that does not exist
+- 404s for an id that does not exist, rather than a 200 carrying null
 - rejects a non-numeric id instead of querying with NaN
 - creates and reports success
 - derives unit UNIT for the finished group, as Loom
@@ -398,6 +401,11 @@
 - rejects a list longer than Loom
 
 ### `apps/api/src/commerce/domain/workflow-migrated.controller.gates.spec.ts` — 0
+
+### `apps/api/src/commerce/dto-id-params.strict.spec.ts` — 3
+- accepts a well-formed id unchanged
+- rejects an id above 2^53 rather than querying a rounded one
+- preserves ids exactly past 2^53
 
 ### `apps/api/src/commerce/faq/controller/faq.controller.gates.spec.ts` — 0
 
@@ -674,6 +682,17 @@
 - maps a row to a verification token DTO
 - returns null for a null/undefined row
 
+### `apps/api/src/commerce/nverse/otp-rate-limit.guard.spec.ts` — 9
+- allows the first OTP_SENDS_PER_NUMBER sends for a number, then 429s
+- limits per IP even when every request uses a different number
+- keeps a different number on a different IP unaffected
+- normalises formatting so +91-98765 43210 cannot buy a fresh quota
+- answers 429 TOO_MANY_REQUESTS, not a generic 500
+- does not reveal WHICH limit tripped — same message for IP and number
+- lets the caller through again once the window has elapsed
+- still limits by IP when no contactNumber is supplied at all
+- falls back to socket.remoteAddress when req.ip is absent
+
 ### `apps/api/src/commerce/nverse/service/msg91-otp.service.spec.ts` — 8
 - verifyOtp makes no network call and never succeeds when the switch is off
 - treats an unset switch as off (fail closed)
@@ -896,6 +915,12 @@
 
 ### `apps/api/src/commerce/product/controller/finished-product.controller.gates.spec.ts` — 0
 
+### `apps/api/src/commerce/product/controller/missing-entity-404.spec.ts` — 4
+- ${route} throws NotFoundException
+- /get/product/slug (no slug) is a 404, not a 400 from the :id route
+- /get/fabric-product/slug (no slug) is a 404, not a 400 from the :productId route
+- /get/product/${bad} is a 400
+
 ### `apps/api/src/commerce/product/controller/product-size-profile.controller.gates.spec.ts` — 0
 
 ### `apps/api/src/commerce/product/controller/product-zoho-relation.controller.gates.spec.ts` — 0
@@ -1044,11 +1069,11 @@
 ### `apps/api/src/commerce/search/controller/search.controller.spec.ts` — 7
 - returns a validation error without calling the service for an empty keyword
 - returns productPreviewList from the service on success
-- swallows a service error into an empty productPreviewList rather than propagating it
+- propagates a service error instead of answering 200 with an empty productPreviewList
 - returns a validation error without calling the service for a keyword >= 300 chars
 - returns the entity envelope from the service on success
 - BUG (inconsistent with v1): has no try/catch, so a service error propagates as a rejected promise instead of a JSON error envelope
-- validates, delegates to searchService.searchProductV2, and swallows errors into the legacy empty searchResult shape
+- validates, delegates to searchService.searchProductV2, and propagates service errors
 
 ### `apps/api/src/commerce/search/validators/search.validator.spec.ts` — 5
 - accepts a normal search term
@@ -1117,6 +1142,35 @@
 - returns an error when name is missing
 - returns no errors for a valid id
 - returns an error when id is missing
+
+### `apps/api/src/commerce/swallowed-failure.spec.ts` — 27
+- happy path is unchanged: { success, message, products }
+- a genuinely empty catalogue is still a 200 with products: []
+- a query failure propagates instead of masquerading as an empty catalogue
+- /get/fabric-preview-list: happy path unchanged, failure propagates
+- happy path is unchanged: the service payload is returned verbatim
+- a failure propagates rather than serving an empty menu {}
+- findById: happy path unchanged (formatted row), missing row is still null
+- findById: a query failure propagates instead of returning null (= 
+- findAll / findRecent: empty table is still [], query failure propagates
+- findAllWithCount: a query failure propagates instead of { rows: [], total: 0 }
+- findByArtisan: the no-rows fallback still runs, but a query failure propagates
+- CatalogApiController.getCatalogList: happy path unchanged, failure propagates
+- CatalogApiController.getCatalog: an unknown id is still data: null, a failure is not
+- CustomerDomainController.get_get_customers: failure propagates, empty stays empty
+- SuperUserDomainController order search: no longer hardcodes success:true on failure
+- SuperUserDomainController custom-order search: same contract
+- TableExplorer data dump: happy path unchanged, empty table stays empty, failure propagates
+- Workflow table-explorer read: empty stays empty, failure propagates
+- Artisan incentive config: the NO-ROWS default fallback still runs; a query failure does not
+- Artisan step assignment no longer reports 
+- Profiles finish-profile list: empty stays empty, failure propagates
+- Artisan payment ledger: failure propagates instead of an empty ledger
+- AI embedding stats no longer reports status ACTIVE when the DB is down
+- Forex admin read by id: failure propagates (no storefront caller for /get/forex/:forexId)
+- /get/discount-list still degrades to an empty list — apps/storefront/src/app/api/checkout/discount/route.ts
+- /get/forex-list still degrades to an empty list — apps/storefront/src/stores/currency.store.ts
+- /get/ip-wise/currency still falls back to INR — public route, external geo-IP dependency
 
 ### `apps/api/src/commerce/table_explorer/controller/table_explorer.controller.gates.spec.ts` — 0
 
@@ -1449,7 +1503,7 @@
 - rejects on a 500
 - keeps 
 
-### `apps/cms/src/lib/custom-products-api.test.ts` — 12
+### `apps/cms/src/lib/custom-products-api.test.ts` — 14
 - normalizes a row, coercing absent numerics to 0 rather than NaN
 - keeps a non-numeric price at 0 instead of letting NaN reach the screen
 - preserves the difference between an absent timestamp and a zero one
@@ -1457,6 +1511,8 @@
 - returns ok:false on a 401 — a token mismatch must not read as an empty catalogue
 - returns ok:true with [] when the list key is missing entirely
 - returns the normalized product
+- returns null for a real 404 — the backend now says 
+- still THROWS on 401 — a 4xx that is not 404 is a fault, not an empty record
 - returns null for a 200 that carries no product — genuinely not found
 - THROWS on a backend failure, unlike the list — the detail page must banner, not 404
 - pins the two canonical groups and units so the sandbox never invents a third

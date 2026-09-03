@@ -45,7 +45,7 @@ import { ProductZohoRelationModule } from "../product-zoho-relation/product-zoho
 import { ProductZohoRelationService } from "../product-zoho-relation/service/product-zoho-relation.service.js";
 import { SegmentModule } from "../segment/segment.module.js";
 import { SubCategoryModule } from "../sub-category/subcategory.module.js";
-import { SubCategoryService } from "../sub-category/service/subCategory.service.js";
+import { mapRowToEntity } from "../sub-category/repository/subCategory.repository.js";
 import { FabricProductService } from "./service/fabric-product.service.js";
 import { FabricProductRepository } from "./repository/fabric-product.repository.js";
 import {
@@ -181,33 +181,29 @@ const zohoNotImplemented = (operation: string) => async (): Promise<never> => {
     },
     {
       provide: SUB_CATEGORY_HIERARCHY_PORT,
-      useFactory: (subCategories: SubCategoryService, db: Database): SubCategoryHierarchyPort => ({
+      useFactory: (db: Database): SubCategoryHierarchyPort => ({
         /**
          * Was three strictly sequential round-trips (sub_category -> segment
-         * -> category), ~300ms each against Neon. The segment and category
-         * legs are now one LEFT JOIN.
-         *
-         * The sub_category leg still goes through SubCategoryService because
-         * its row->entity mapping (`mapRowToEntity` in
-         * sub-category/repository/subCategory.repository.ts) is module-private
-         * — inlining a copy here to fold it into the same join would duplicate
-         * that mapping. Export it and this collapses to a single query.
+         * -> category), ~300ms each against Neon; now one three-way join.
+         * The sub_category row is mapped with the repository's own exported
+         * `mapRowToEntity`, so the entity shape is identical to what
+         * SubCategoryService.retrieveSubCategory returned — no duplicated
+         * mapping. The LEFT JOINs preserve the old null-per-level fallbacks.
          */
         retrieveHierarchy: async (subCategoryId) => {
-          const subCategory = await subCategories.retrieveSubCategory(BigInt(subCategoryId));
-          if (!subCategory) return null;
           const rows = await db
-            .select({ segment: schema.segment, category: schema.category })
-            .from(schema.segment)
+            .select({ subCategory: schema.subCategory, segment: schema.segment, category: schema.category })
+            .from(schema.subCategory)
+            .leftJoin(schema.segment, eq(schema.subCategory.segmentId, schema.segment.id))
             .leftJoin(schema.category, eq(schema.segment.categoryId, schema.category.id))
-            .where(eq(schema.segment.id, BigInt(subCategory.segmentId)))
+            .where(eq(schema.subCategory.id, BigInt(subCategoryId)))
             .limit(1);
           const row = rows[0];
-          if (!row) return { subCategory, segment: null, category: null };
-          return { subCategory, segment: row.segment, category: row.category };
+          if (!row) return null;
+          return { subCategory: mapRowToEntity(row.subCategory), segment: row.segment, category: row.category };
         },
       }),
-      inject: [SubCategoryService, DATABASE_CONNECTION],
+      inject: [DATABASE_CONNECTION],
     },
     {
       provide: FABRIC_PRODUCT_ZOHO_RELATION_PORT,

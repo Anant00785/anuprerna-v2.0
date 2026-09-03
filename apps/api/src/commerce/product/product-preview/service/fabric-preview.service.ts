@@ -40,8 +40,19 @@ export class FabricPreviewService {
 
   /** findFabricPreviewByProduct(ProductPreview product) */
   async findByProductId(productId: number): Promise<FabricPreviewView | null> {
-    const row = await this.repo.findByProductId(productId);
-    return row ? this.enrich(toView(row)) : null;
+    return (await this.findByProductIds([productId])).get(productId) ?? null;
+  }
+
+  /**
+   * Same lookup for many products in one `WHERE product_id = ANY($1)`.
+   * Product ids with no product_fabric row are simply absent from the map —
+   * callers keep their own `?? null`. Enrichment still runs per found row
+   * (concurrently), so a found row costs exactly what it did before.
+   */
+  async findByProductIds(productIds: number[]): Promise<Map<number, FabricPreviewView>> {
+    const rows = await this.repo.findByProductIds(productIds);
+    const views = await Promise.all(rows.map((row) => this.enrich(toView(row))));
+    return new Map(views.map((view) => [view.productId, view]));
   }
 
   /** streamAll(Boolean includeDisabled) — see repository note on the streaming -> plain-query adaptation. */

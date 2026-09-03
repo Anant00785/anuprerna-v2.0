@@ -94,9 +94,9 @@ function makeService(
         portCalls.push("fabricPreview.retrieveEntity");
         return ports.fabricPreviewEntity ?? null;
       },
-      retrieveFabricProductByProductId: async () => {
-        portCalls.push("selectedFabric");
-        return ports.selectedFabric ?? null;
+      retrieveFabricProductsByProductIds: async (ids: number[]) => {
+        portCalls.push(`selectedFabric(${ids.join(",")})`);
+        return new Map(ports.selectedFabric === undefined ? [] : ids.map((id) => [id, ports.selectedFabric]));
       },
     } as never,
     {
@@ -195,6 +195,37 @@ describe("prepareCartItems batching", () => {
     });
     const [view] = await service.prepareCartItems([line({ selectedFinishId: "abc,1," })] as never);
     expect((view.selectedFinishList as Row[]).map((f) => Number(f.id))).toEqual([1]);
+  });
+
+  it("asks the fabric-preview port once for all distinct selectedFabricIds", async () => {
+    const { service, portCalls } = makeService(
+      { fabric: [], finished: [], product: [], sizeOption: [], finish: [] },
+      { selectedFabric: { id: 7, via: "port" } },
+    );
+    const views = await service.prepareCartItems([
+      line({ id: 1n, selectedFabricId: 5 }),
+      line({ id: 2n, selectedFabricId: 6 }),
+      line({ id: 3n, selectedFabricId: 5 }),
+    ] as never);
+    expect(portCalls).toEqual(["selectedFabric(5,6)"]);
+    expect(views.map((v) => v.selectedFabric)).toEqual([
+      { id: 7, via: "port" },
+      { id: 7, via: "port" },
+      { id: 7, via: "port" },
+    ]);
+  });
+
+  it("leaves selectedFabric null when the batch has no row for that id", async () => {
+    const { service, portCalls } = makeService({ fabric: [], finished: [], product: [], sizeOption: [], finish: [] });
+    const [view] = await service.prepareCartItems([line({ selectedFabricId: 5 })] as never);
+    expect(view.selectedFabric).toBeNull();
+    expect(portCalls).toEqual(["selectedFabric(5)"]);
+  });
+
+  it("does not touch the fabric-preview port when no line selects a fabric", async () => {
+    const { service, portCalls } = makeService({ fabric: [], finished: [], product: [], sizeOption: [], finish: [] });
+    await service.prepareCartItems([line({})] as never);
+    expect(portCalls).toEqual([]);
   });
 
   it("returns an empty list for an empty cart without querying", async () => {

@@ -16,13 +16,10 @@ export class FinishedProductMigratedDomainController {
 
   @ApiOperation({ summary: "Preview list of finished goods" })
   async get_get_finished_preview_list(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
+
   }
 
   @Delete("/delete/finished-product/:productId")

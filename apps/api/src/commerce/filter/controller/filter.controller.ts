@@ -42,13 +42,8 @@ export class FilterController {
         @Query("category") category?: string,
         @Query("segmentCategory") segmentCategory?: string
     ) {
-        try {
-            const products = await this.filterService.getFabricFilterPreviewList(category, segmentCategory);
-            return keyedResponse("products", products);
-        } catch (error) {
-            console.warn("Filter preview query failed; returning an empty result.", error);
-            return keyedResponse("products", []);
-        }
+        const products = await this.filterService.getFabricFilterPreviewList(category, segmentCategory);
+        return keyedResponse("products", products);
     }
 
     @Get("/get/fabric-preview-list")
@@ -64,15 +59,10 @@ export class FilterController {
         @Query("pageSize") pageSize?: string
     ) {
         const { limit, offset } = previewListWindow(page, pageSize);
-        try {
-            const products = await this.filterRepository.findFabricFilterPreviewPage(
-                category || null, segmentCategory || null, limit, offset,
-            );
-            return keyedResponse("products", products);
-        } catch (error) {
-            console.warn("Fabric preview list query failed; returning an empty result.", error);
-            return keyedResponse("products", []);
-        }
+        const products = await this.filterRepository.findFabricFilterPreviewPage(
+            category || null, segmentCategory || null, limit, offset,
+        );
+        return keyedResponse("products", products);
     }
 
     @Get("/get/v2/filter/fabric")
@@ -146,10 +136,20 @@ export class FilterController {
     @Get("/get/segment-list")
     @ApiOperation({ summary: "Get segment list (LOOM legacy route)." })
     @ApiQuery({ name: "category", description: "Filter segments by category name", required: false })
-    // UNGATED deliberately. This is a pure alias of /get/filter/segment/list,
-    // which is public and returns the byte-identical payload, so the gate
-    // protected nothing — it only forced the storefront to mint a
-    // service-account JWT to read data already served anonymously.
+    // UNGATED deliberately, and this DIVERGES from legacy Loom, where
+    // /get/segment-list answers 401. Owner-approved on 2026-09-03.
+    //
+    // The justification is the DATA, not the existence of a public twin:
+    // /get/filter/segment/list is our own route (404 on loom-v2), so it is no
+    // evidence of anything. `segment` is 23 rows of catalogue taxonomy —
+    // id, category_id, name ("NATURAL AND ORGANIC", "RESIST DYED"), an S3 icon
+    // URL and SEO meta_title/meta_description. No customer data, no PII; the
+    // names are already in public storefront URLs and the meta tags exist to be
+    // crawled. Gating it only forced the storefront to ship a service-account
+    // JWT to read a public filter list, which is the worse trade.
+    //
+    // Do NOT generalise this to /get/category-list or /get/sub-category-list:
+    // those stay CODE_SU, matching legacy, and the CMS already sends a token.
     async getSegmentList(@Query("category") category?: string) {
         return this.getFilterSegmentList(category);
     }

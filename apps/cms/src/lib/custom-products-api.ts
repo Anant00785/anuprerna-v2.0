@@ -19,7 +19,7 @@
  *   GET /get/custom-product/{productId}  -> { customProduct: {...} }
  */
 
-import {loomGetJson} from "@/lib/backend-fetch-error";
+import {loomGetJson, BackendFetchError} from "@/lib/backend-fetch-error";
 import { getSandboxToken } from "@/lib/sandbox-token";
 import type { Result } from "@/lib/result";
 
@@ -121,15 +121,31 @@ export async function getCustomProductList(): Promise<Result<CustomProduct[]>> {
   }
 }
 
-/** Single custom product by id (read-only). Returns null when not found. */
+/** Single custom product by id (read-only). Returns null when not found.
+ *
+ *  "Not found" arrives two ways and BOTH must be null, or the detail page
+ *  banners a missing record as if the backend were broken:
+ *    - a 200 whose envelope carries no `customProduct` (the older shape), and
+ *    - a real 404 from `GET /get/custom-product/:id`.
+ *  Only the 404 is caught here, deliberately: every OTHER non-2xx (auth, 5xx,
+ *  network, isolated) still throws so the page can banner a genuine fault.
+ *  This is scoped to this one route rather than reclassified in
+ *  `backend-fetch-error.ts`, because for the rest of the CMS a 404 still means
+ *  "route not registered on the backend", which must stay a visible error. */
 export async function getCustomProductById(
   id: number,
 ): Promise<CustomProduct | null> {
   const token = getSandboxToken();
-  const payload = await loomGet<{ success?: boolean; customProduct?: unknown }>(
-    `/get/custom-product/${id}`,
-    token,
-  );
+  let payload: { success?: boolean; customProduct?: unknown } | null;
+  try {
+    payload = await loomGet<{ success?: boolean; customProduct?: unknown }>(
+      `/get/custom-product/${id}`,
+      token,
+    );
+  } catch (err) {
+    if (err instanceof BackendFetchError && err.status === 404) return null;
+    throw err;
+  }
   if (!payload || payload.success === false || !payload.customProduct) return null;
   return normalize(payload.customProduct as Record<string, unknown>);
 }

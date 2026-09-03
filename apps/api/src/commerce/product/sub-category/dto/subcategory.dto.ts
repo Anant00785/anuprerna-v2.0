@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, IsArray } from "class-validator";
 import { Type } from "class-transformer";
 import { CreateSubCategoryInput, UpdateSubCategoryInput, UploadedFile } from "../types/sub-category.types.js";
+import { parseIdParamStrict, toSafeNumberId } from "../../../../common/params/id-param.js";
 
 export class CreateSubCategoryDto {
   @ApiProperty({ example: 66059, description: "Segment ID (e.g. 66059, 167890, 31862)" })
@@ -154,6 +155,18 @@ function requireInt(value: unknown, field: string): number {
   return n;
 }
 
+/**
+ * Path ids go through the shared strict parser (common/params/id-param.ts):
+ * digits-only on the RAW string, converted with BigInt(string) so nothing is
+ * rounded on the way through Number(). The local `requireInt` above stays for
+ * JSON body / query fields, where an integer legitimately arrives as a number.
+ */
+function strictNumberIdParam(value: unknown, field: string): number {
+  const n = toSafeNumberId(parseIdParamStrict(value, field));
+  if (n === null) throw new BadRequestException(`${field} must be an integer.`);
+  return n;
+}
+
 function requireNonEmptyString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new BadRequestException(`${field} must be a non-empty string.`);
@@ -216,11 +229,11 @@ export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQu
 }
 
 export function parseIdParam(id: unknown): number {
-  return requireInt(id, "id");
+  return strictNumberIdParam(id, "id");
 }
 
 export function parseSubCategoryIdParam(subCategoryId: unknown): number {
-  return requireInt(subCategoryId, "subCategoryId");
+  return strictNumberIdParam(subCategoryId, "subCategoryId");
 }
 
 export function parseCategoryNameParam(categoryName: unknown): string {

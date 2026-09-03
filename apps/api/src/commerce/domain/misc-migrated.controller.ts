@@ -100,19 +100,15 @@ export class MiscMigratedDomainController {
   @ApiBody({ type: CreateColorDto })
   @ApiResponse({ status: 201, description: "Color created" })
   async post_add_color(@Body() body: CreateColorDto) {
-    try {
-      const [inserted] = await this.db
-        .insert(schema.color)
-        .values({
-          name: body.name,
-          hex: body.hex,
-          timeOfCreation: Date.now(),
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatColor(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.color)
+      .values({
+        name: body.name,
+        hex: body.hex,
+        timeOfCreation: Date.now(),
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatColor(inserted)] : []);
   }
 
   @Patch("/update/color")
@@ -121,21 +117,17 @@ export class MiscMigratedDomainController {
   @ApiBody({ type: UpdateColorDto })
   @ApiResponse({ status: 200, description: "Color updated" })
   async patch_update_color(@Body() body: UpdateColorDto) {
-    try {
-      const updateSet: any = {};
-      if (body.name) updateSet.name = body.name;
-      if (body.hex) updateSet.hex = body.hex;
+    const updateSet: any = {};
+    if (body.name) updateSet.name = body.name;
+    if (body.hex) updateSet.hex = body.hex;
 
-      const [updated] = await this.db
-        .update(schema.color)
-        .set(updateSet)
-        .where(eq(schema.color.id, BigInt(body.id)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.color)
+      .set(updateSet)
+      .where(eq(schema.color.id, BigInt(body.id)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatColor(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatColor(updated)] : []);
   }
 
   @Delete("/delete/color/:colorId")
@@ -159,19 +151,15 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 200, description: "Ad conversion summary" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_ads_conversion_summary() {
-    try {
-      const orders = await this.db
-        .select()
-        .from(schema.orders)
-        .limit(100);
-      const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(String(o.total || "0")), 0);
-      return keyedResponse("data", [{
-        totalOrders: orders.length,
-        totalRevenue: Math.round(totalRevenue),
-      }]);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const orders = await this.db
+      .select()
+      .from(schema.orders)
+      .limit(100);
+    const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(String(o.total || "0")), 0);
+    return keyedResponse("data", [{
+      totalOrders: orders.length,
+      totalRevenue: Math.round(totalRevenue),
+    }]);
   }
 
   @Get("/get/ads-conversion/abandoned-carts")
@@ -179,19 +167,15 @@ export class MiscMigratedDomainController {
   @ApiResponse({ status: 200, description: "Abandoned carts stats" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_ads_conversion_abandoned_carts() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.cartItem)
-        .limit(20);
-      return keyedResponse("data", (rows || []).map(r => ({
-        id: r.id ? String(r.id) : null,
-        productId: String(r.finishedProductId ?? r.fabricProductId ?? ""),
-        quantity: r.quantity ? Number(r.quantity) : 1,
-      })));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.cartItem)
+      .limit(20);
+    return keyedResponse("data", (rows || []).map(r => ({
+      id: r.id ? String(r.id) : null,
+      productId: String(r.finishedProductId ?? r.fabricProductId ?? ""),
+      quantity: r.quantity ? Number(r.quantity) : 1,
+    })));
   }
 
   @Delete("/delete/material/:materialId")
@@ -231,18 +215,14 @@ export class MiscMigratedDomainController {
   @ApiOperation({ summary: "Fetch all users" })
   @ApiResponse({ status: 200, description: "Users list" })
   async get_users_users() {
-    try {
-      const superUsers = await this.db
-        .select()
-        .from(schema.superUser)
-        .limit(50);
-      return keyedResponse("data", (superUsers || []).map(u => ({
-        id: u.id ? String(u.id) : null,
-        tenantId: u.tenantId ? String(u.tenantId) : null,
-      })));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const superUsers = await this.db
+      .select()
+      .from(schema.superUser)
+      .limit(50);
+    return keyedResponse("data", (superUsers || []).map(u => ({
+      id: u.id ? String(u.id) : null,
+      tenantId: u.tenantId ? String(u.tenantId) : null,
+    })));
   }
 
   @Post("/users")

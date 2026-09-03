@@ -47,45 +47,42 @@ export class FabricProductMigratedDomainController {
   @ApiResponse({ status: 200, description: "List of all fabric profiles with items" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_fabric_profile_list(@Query() query: any) {
-    try {
-      const profiles = await this.db
-        .select()
-        .from(schema.fabricProfile)
-        .orderBy(desc(schema.fabricProfile.id));
+    const profiles = await this.db
+      .select()
+      .from(schema.fabricProfile)
+      .orderBy(desc(schema.fabricProfile.id));
 
-      const items = await this.db
-        .select()
-        .from(schema.fabricProfileItem);
+    const items = await this.db
+      .select()
+      .from(schema.fabricProfileItem);
 
-      const itemsByProfile = new Map<number, any[]>();
-      for (const item of items) {
-        const pId = Number(item.profileId);
-        if (!itemsByProfile.has(pId)) {
-          itemsByProfile.set(pId, []);
-        }
-        itemsByProfile.get(pId)!.push({
-          id: Number(item.id),
-          version: Number(item.version),
-          profileId: Number(item.profileId),
-          productId: Number(item.productId),
-          fabricId: Number(item.productId),
-          mockupImage: item.mockupImage,
-          mockupText: item.mockupText
-        });
+    const itemsByProfile = new Map<number, any[]>();
+    for (const item of items) {
+      const pId = Number(item.profileId);
+      if (!itemsByProfile.has(pId)) {
+        itemsByProfile.set(pId, []);
       }
-
-      const enriched = profiles.map(p => ({
-        id: Number(p.id),
-        version: Number(p.version),
-        profileName: p.profileName,
-        timeOfCreation: Number(p.timeOfCreation),
-        fabricProfileItemList: itemsByProfile.get(Number(p.id)) || []
-      }));
-
-      return keyedResponse("fabricProfileList", enriched);
-    } catch (err) {
-      return keyedResponse("fabricProfileList", []);
+      itemsByProfile.get(pId)!.push({
+        id: Number(item.id),
+        version: Number(item.version),
+        profileId: Number(item.profileId),
+        productId: Number(item.productId),
+        fabricId: Number(item.productId),
+        mockupImage: item.mockupImage,
+        mockupText: item.mockupText
+      });
     }
+
+    const enriched = profiles.map(p => ({
+      id: Number(p.id),
+      version: Number(p.version),
+      profileName: p.profileName,
+      timeOfCreation: Number(p.timeOfCreation),
+      fabricProfileItemList: itemsByProfile.get(Number(p.id)) || []
+    }));
+
+    return keyedResponse("fabricProfileList", enriched);
+
   }
 
   @Get("/get/fabric-profile/:profileId")

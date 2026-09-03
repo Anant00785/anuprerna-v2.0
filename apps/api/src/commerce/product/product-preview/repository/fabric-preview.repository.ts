@@ -44,10 +44,15 @@ export class FabricPreviewRepository {
       .then((rows) => rows.map((r) => r.fabric));
   }
 
-  /** findFabricPreviewByProduct(ProductPreview product) — returns null (not Optional), matching source. */
-  async findByProductId(productId: number) {
-    const rows = await this.db.select().from(productFabric).where(eq(productFabric.productId, productId));
-    return rows[0] ?? null;
+  /**
+   * findFabricPreviewByProduct(ProductPreview product), widened to many
+   * products — `product_fabric.product_id` is unique (3702 rows / 3702
+   * distinct ids in production), so this is the same lookup batched, not a
+   * different one. Callers key the result by `productId` themselves.
+   */
+  async findByProductIds(productIds: number[]) {
+    if (productIds.length === 0) return [];
+    return this.db.select().from(productFabric).where(inArray(productFabric.productId, productIds));
   }
 
   /**

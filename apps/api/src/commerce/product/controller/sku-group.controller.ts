@@ -30,7 +30,7 @@
  * unimplemented Java stub (`// TODO: implement delete; return true;`) —
  * ported as-is, always reports success without touching the database.
  */
-import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SkuGroupService } from "../sku-group/service/sku-group.service.js";
 import { OptimisticLockError } from "../sku-group/repository/sku-group.repository.js";
@@ -123,10 +123,12 @@ export class SkuGroupController {
   @Get("/get/table-explorer/data/sku-group/:id")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single SKU group." })
-  @ApiResponse({ status: 200, description: "SKU group data or null." })
+  @ApiResponse({ status: 200, description: "SKU group data." })
+  @ApiResponse({ status: 404, description: "No such SKU group." })
   async getSkuGroupDataById(@Param("id") id: string) {
     const parsedId = parseIdParam(id);
     const data = await this.skuGroupService.retrieveSkuGroupDataById(BigInt(parsedId));
+    if (!data) throw new NotFoundException(`SKU group ${id} not found.`);
     return keyedResponse("skuGroupData", data);
   }
 }

@@ -40,7 +40,7 @@
  * FabricProduct's OWN id (see fabric-product.service.ts class doc quirk
  * #2) — the naming mismatch is preserved as-is, not "corrected" here.
  */
-import { Body, ConflictException, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FabricProductService } from "../fabric-product/service/fabric-product.service.js";
 import { OptimisticLockError } from "../fabric-product/repository/fabric-product.repository.js";
@@ -73,30 +73,49 @@ import { ActionCode } from "../../../common/errors/action-code.js";
 export class FabricProductController {
   constructor(private readonly fabricProductService: FabricProductService) {}
 
+  /**
+   * `/get/fabric-product/slug/` (empty slug) otherwise falls through to
+   * `/get/fabric-product/:productId` with productId="slug" and answers
+   * 400 "productId must be an integer". Declared before the `:productId`
+   * route because Express matches in registration order.
+   */
+  @Get("/get/fabric-product/slug")
+  @ApiOperation({ summary: "Reserved — an empty slug is a 404, not a product id." })
+  @ApiResponse({ status: 404, description: "No slug supplied." })
+  emptySlug(): never {
+    throw new NotFoundException("A product slug is required.");
+  }
+
   /** FabricProductDAOController#retrieveFabricProduct(Long id) */
   @Get("/get/fabric-product/:productId")
   @ApiOperation({ summary: "Retrieve a fully-enriched fabric product by id." })
-  @ApiResponse({ status: 200, description: "Fabric product or null." })
+  @ApiResponse({ status: 200, description: "Fabric product." })
+  @ApiResponse({ status: 400, description: "Malformed product id." })
+  @ApiResponse({ status: 404, description: "No such fabric product." })
   async getFabricProduct(@Param("productId") productId: string) {
     const id = BigInt(parseProductIdParam(productId));
     const fabricProduct = await this.fabricProductService.retrieveFabricProduct(id);
+    if (!fabricProduct) throw new NotFoundException(`Fabric product ${productId} not found.`);
     return keyedResponse("fabricProduct", fabricProduct);
   }
 
   /** FabricProductDAOController#retrieveFabricProductBySlug(String slug) — @Deprecated in source, ported for parity. */
   @Get("/get/fabric-product/slug/:productSlug")
   @ApiOperation({ summary: "Retrieve a fabric product by slug." })
-  @ApiResponse({ status: 200, description: "Fabric product or null." })
+  @ApiResponse({ status: 200, description: "Fabric product." })
+  @ApiResponse({ status: 404, description: "No product with that slug." })
   async getFabricProductBySlug(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
     const fabricProduct = await this.fabricProductService.retrieveFabricProductBySlug(slug);
+    if (!fabricProduct) throw new NotFoundException(`Fabric product "${slug}" not found.`);
     return keyedResponse("fabricProduct", fabricProduct);
   }
 
   /** FabricProductDAOController#retrieveFabricProductBySlugV2(String slug) — functionally identical to V1 in source. */
   @Get(["/get/fabric-product/slug-v2/:productSlug", "/get/v2/fabric-product/slug/:productSlug"])
   @ApiOperation({ summary: "Retrieve a fabric product by slug (v2, functionally identical to v1)." })
-  @ApiResponse({ status: 200, description: "Fabric product or null." })
+  @ApiResponse({ status: 200, description: "Fabric product." })
+  @ApiResponse({ status: 404, description: "No product with that slug." })
   // No gate, matching the v1 route above. v2 returns the same product for the same
   // slug, so a CODE_SU gate here protected nothing — the identical payload was
   // already public via /get/fabric-product/slug/:productSlug — while 401ing the
@@ -104,6 +123,7 @@ export class FabricProductController {
   async getFabricProductBySlugV2(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
     const fabricProduct = await this.fabricProductService.retrieveFabricProductBySlugV2(slug);
+    if (!fabricProduct) throw new NotFoundException(`Fabric product "${slug}" not found.`);
     return keyedResponse("fabricProduct", fabricProduct);
   }
 

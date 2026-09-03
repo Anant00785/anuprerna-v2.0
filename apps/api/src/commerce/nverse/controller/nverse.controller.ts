@@ -11,6 +11,7 @@ import {
 import { sanitizeEmail, sanitizeContactNumber } from '../validators/nverse.sanitizer.js';
 import { simpleResponse } from '../../../common/response/rain-response.js';
 import { RolesGuard, RequireGate } from '../../../common/auth/roles.guard.js';
+import { OtpRateLimitGuard } from '../otp-rate-limit.guard.js';
 import { GateCode } from '../../../auth/types/auth.types.js';
 
 /**
@@ -26,15 +27,12 @@ import { GateCode } from '../../../auth/types/auth.types.js';
  * returns the OTP in the response body and mints real login JWTs from it.
  * Nothing resembling it belongs here.
  *
- * TODO(rate-limiting): these are anonymous, and otp/send + otp/resend cost
- * money per call once OUTBOUND_SMS_ENABLED is flipped on. @nestjs/throttler is
- * NOT a dependency of apps/api and adding one was out of scope for this change,
- * so there is no per-IP or per-number limit in front of them today. Before
- * OUTBOUND_SMS_ENABLED is ever set true in an environment that can reach
- * MSG91, add `@nestjs/throttler` and put a strict limit (e.g. 3/hour per
- * contact number, 10/hour per IP) on sendOtp/resendOtp/verifyOtp. MSG91 does
- * rate-limit verification attempts server-side, which caps OTP brute force but
- * does nothing about send-spend.
+ * RATE LIMITING: otp/send and otp/resend cost money per call once
+ * OUTBOUND_SMS_ENABLED is true, so both sit behind OtpRateLimitGuard —
+ * 3/hour per contact number and 10/hour per IP. Read the ceiling documented in
+ * otp-rate-limit.guard.ts before relying on it: the counters are per process,
+ * so a multi-instance deployment multiplies the quota. otp/verify is not
+ * limited here because MSG91 rate-limits verification server-side.
  */
 @ApiBearerAuth()
 @ApiTags("Authentication")
@@ -57,6 +55,7 @@ export class NVerseController {
   }
 
   @Post('otp/send')
+  @UseGuards(OtpRateLimitGuard)
   @HttpCode(200) // Loom's OTPController answers 200, not Nest's default 201.
   async sendOtp(@Body() body: any) {
     const data = parseOtpSendRequest(body);
@@ -68,6 +67,7 @@ export class NVerseController {
 
   /** OTPController.java:265 resendOTP — same request shape as sendOTP. */
   @Post('otp/resend')
+  @UseGuards(OtpRateLimitGuard)
   @HttpCode(200) // Loom's OTPController answers 200, not Nest's default 201.
   async resendOtp(@Body() body: any) {
     const data = parseOtpSendRequest(body);

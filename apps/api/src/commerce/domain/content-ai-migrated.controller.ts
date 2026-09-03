@@ -51,15 +51,11 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect BlogContentType entity by ID" })
   @ApiParam({ name: "id", example: 51, type: Number })
   async get_get_table_explorer_data_blog_content_type_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.blogContentType)
-        .where(eq(schema.blogContentType.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.blogContentType)
+      .where(eq(schema.blogContentType.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/blog-content-section/:id")
@@ -67,15 +63,11 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect BlogContentSection entity by ID" })
   @ApiParam({ name: "id", example: 203122, type: Number })
   async get_get_table_explorer_data_blog_content_section_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.blogContentSection)
-        .where(eq(schema.blogContentSection.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.blogContentSection)
+      .where(eq(schema.blogContentSection.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/blog-vector/:id")
@@ -83,15 +75,11 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect BlogVector entity by ID" })
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_blog_vector_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.blogVector)
-        .where(eq(schema.blogVector.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.blogVector)
+      .where(eq(schema.blogVector.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/story-content-section/:id")
@@ -99,15 +87,11 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect StoryContentSection entity by ID" })
   @ApiParam({ name: "id", example: 3696, type: Number })
   async get_get_table_explorer_data_story_content_section_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.storyContentSection)
-        .where(eq(schema.storyContentSection.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.storyContentSection)
+      .where(eq(schema.storyContentSection.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/story-vector/:id")
@@ -115,15 +99,11 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect StoryVector entity by ID" })
   @ApiParam({ name: "id", example: 1, type: Number })
   async get_get_table_explorer_data_story_vector_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.storyVector)
-        .where(eq(schema.storyVector.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.storyVector)
+      .where(eq(schema.storyVector.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/story-content/:id")
@@ -131,15 +111,11 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect StoryContent entity by ID" })
   @ApiParam({ name: "id", example: 551, type: Number })
   async get_get_table_explorer_data_story_content_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.storyContent)
-        .where(eq(schema.storyContent.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.storyContent)
+      .where(eq(schema.storyContent.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/blog-content/:id")
@@ -147,59 +123,43 @@ export class ContentAiMigratedDomainController {
   @ApiOperation({ summary: "Inspect BlogContent entity by ID" })
   @ApiParam({ name: "id", example: 54315, type: Number })
   async get_get_table_explorer_data_blog_content_id(@Param("id") id: string) {
-    try {
-      const result = await (this.db as any)
-        .select()
-        .from(schema.blogContent)
-        .where(eq(schema.blogContent.id, BigInt(id)));
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any)
+      .select()
+      .from(schema.blogContent)
+      .where(eq(schema.blogContent.id, BigInt(id)));
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/blog-vector")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for blog-vector" })
   async get_get_table_explorer_data_blog_vector(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.blogVector).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any).select().from(schema.blogVector).limit(50);
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/table-explorer/data/story-vector")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for story-vector" })
   async get_get_table_explorer_data_story_vector(@Query() query: any) {
-    try {
-      const result = await (this.db as any).select().from(schema.storyVector).limit(50);
-      return keyedResponse("data", (result || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const result = await (this.db as any).select().from(schema.storyVector).limit(50);
+    return keyedResponse("data", (result || []).map(formatEntity));
   }
 
   @Get("/get/ai-embedding-stats")
   @ApiOperation({ summary: "Vector DB AI embeddings statistics" })
   @RequireGate(GateCode.CODE_SU)
   async get_get_ai_embedding_stats() {
-    try {
-      const [blogCount] = await (this.db as any).select({ count: schema.blogContent.id }).from(schema.blogContent);
-      const [storyCount] = await (this.db as any).select({ count: schema.storyContent.id }).from(schema.storyContent);
-      return keyedResponse("data", {
-        status: "ACTIVE",
-        blogArticlesCount: 252,
-        storyArticlesCount: 35,
-        dimension: 1536,
-        model: "text-embedding-3-small",
-        lastSyncTime: Date.now(),
-      });
-    } catch (err) {
-      return keyedResponse("data", { status: "ACTIVE" });
-    }
+    const [blogCount] = await (this.db as any).select({ count: schema.blogContent.id }).from(schema.blogContent);
+    const [storyCount] = await (this.db as any).select({ count: schema.storyContent.id }).from(schema.storyContent);
+    return keyedResponse("data", {
+      status: "ACTIVE",
+      blogArticlesCount: 252,
+      storyArticlesCount: 35,
+      dimension: 1536,
+      model: "text-embedding-3-small",
+      lastSyncTime: Date.now(),
+    });
   }
 
   @Post("/reindex")

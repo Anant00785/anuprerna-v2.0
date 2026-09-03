@@ -173,13 +173,11 @@ export class CartService {
           ).map((row: any) => ({ ...row.item, finishProfile: row.finishProfile })),
         (row: any) => Number(row.id),
       ),
-      // No batched read path exists behind FABRIC_PREVIEW_PORT (cart.module.ts
-      // is owned elsewhere), so these stay per-id — but they now all issue
-      // together as one round-trip's worth of concurrent queries instead of
-      // one blocking await per cart line.
-      Promise.all(selectedFabricIds.map(async (id) => [id, await this.fabricPreview.retrieveFabricProductByProductId(id)] as const)).then(
-        (entries) => new Map(entries),
-      ),
+      // One `WHERE product_id = ANY(...)` behind FABRIC_PREVIEW_PORT for every
+      // distinct selectedFabricId, instead of one query per id.
+      selectedFabricIds.length === 0
+        ? Promise.resolve(new Map<number, unknown>())
+        : this.fabricPreview.retrieveFabricProductsByProductIds(selectedFabricIds),
     ]);
 
     // Fallback pass: ids with no product_fabric / product_finished row fall

@@ -31,13 +31,9 @@ export class AddressMigratedDomainController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Migrated Java LOOM endpoint GET /get/table-explorer/data/address" })
   async get_get_table_explorer_data_address(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.address).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.address).limit(50);
+    return keyedResponse("data", result || []);
   }
 
 }

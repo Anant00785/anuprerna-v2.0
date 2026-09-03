@@ -4,7 +4,7 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. What `apps/api` exposes, and what the frontends actually call.
 
-**apps/api exposes 827 routes** across 98 controllers (DELETE 59, GET 494, PATCH 109, POST 164, PUT 1).
+**apps/api exposes 829 routes** across 98 controllers (DELETE 59, GET 496, PATCH 109, POST 164, PUT 1).
 
 **The frontends call 30 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
 gap is the migration. See `docs/KNOWN-GAPS.md`.
@@ -307,6 +307,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/get/fabric-product/filter-preview/by-ids` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
 | GET | `/get/fabric-product/filter-preview/filtered` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
 | GET | `/get/fabric-product/filter-preview/page` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
+| GET | `/get/fabric-product/slug` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
 | GET | `/get/fabric-product/slug/:productSlug` | `apps/api/src/commerce/product/controller/fabric-product.controller.ts` |
 | GET | `/get/fabric-profile-list` | `apps/api/src/commerce/domain/fabric-product-migrated.controller.ts` |
 | GET | `/get/fabric-profile/:profileId` | `apps/api/src/commerce/domain/fabric-product-migrated.controller.ts` |
@@ -398,6 +399,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/get/product/related` | `apps/api/src/commerce/product/controller/product.controller.ts` |
 | GET | `/get/product/related/story/:storyContentId` | `apps/api/src/commerce/content/story/controller/story.controller.ts` |
 | GET | `/get/product/review/:productId` | `apps/api/src/commerce/review/controller/review.controller.ts` |
+| GET | `/get/product/slug` | `apps/api/src/commerce/product/controller/product.controller.ts` |
 | GET | `/get/product/slug/:slug` | `apps/api/src/commerce/product/controller/product.controller.ts` |
 | GET | `/get/product/sub-category/:subCategoryId` | `apps/api/src/commerce/product/controller/product.controller.ts` |
 | GET | `/get/recent-catalog-list/:limit` | `apps/api/src/commerce/catalog/controller/catalog.controller.ts` |

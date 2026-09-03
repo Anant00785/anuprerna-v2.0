@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { BadRequestException } from "@nestjs/common";
 import { parseCreateProductRequest, parseUpdateProductRequest } from "../../product/dto/product.dto.js";
 import { FabricFilterPreviewFilters, FabricProductInput, ProductDisableRequestInput, ProductZohoTriggerDataInput } from "../types/fabric-product.types.js";
+import { parseIdParamStrict, toSafeNumberId, parseSlugParamStrict } from "../../../../common/params/id-param.js";
 
 export class CreateFabricProductDto {
   @ApiProperty({ example: "Handwoven Khadi Fabric 100", description: "Product Name" })
@@ -49,6 +50,18 @@ function requireInt(value: unknown, field: string): number {
   return n;
 }
 
+/**
+ * Path ids go through the shared strict parser (common/params/id-param.ts):
+ * digits-only on the RAW string, converted with BigInt(string) so nothing is
+ * rounded on the way through Number(). The local `requireInt` above stays for
+ * JSON body / query fields, where an integer legitimately arrives as a number.
+ */
+function strictNumberIdParam(value: unknown, field: string): number {
+  const n = toSafeNumberId(parseIdParamStrict(value, field));
+  if (n === null) throw new BadRequestException(`${field} must be an integer.`);
+  return n;
+}
+
 function requireNonEmptyString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new BadRequestException(`${field} must be a non-empty string.`);
@@ -57,11 +70,11 @@ function requireNonEmptyString(value: unknown, field: string): string {
 }
 
 export function parseProductIdParam(param: unknown): number {
-  return requireInt(param, "productId");
+  return strictNumberIdParam(param, "productId");
 }
 
 export function parseProductSlugParam(param: unknown): string {
-  return requireNonEmptyString(param, "productSlug");
+  return parseSlugParamStrict(param, "productSlug");
 }
 
 export function parseCreateFabricProductRequest(raw: unknown): FabricProductInput {

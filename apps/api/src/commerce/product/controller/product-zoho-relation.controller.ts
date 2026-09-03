@@ -1,4 +1,4 @@
-import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProductZohoRelationService } from "../product-zoho-relation/service/product-zoho-relation.service.js";
 import { OptimisticLockError } from "../product-zoho-relation/repository/product-zoho-relation.repository.js";
@@ -55,11 +55,13 @@ export class ProductZohoRelationController {
   @Get("/get/product-zoho-relation/by-zoho-item/:zohoItemId")
   @ApiOperation({ summary: "Retrieve a product Zoho relation by Zoho item id." })
   @ApiParam({ name: "zohoItemId", example: "460517000010726810", description: "Zoho Item ID" })
-  @ApiResponse({ status: 200, description: "Product Zoho relation or null." })
+  @ApiResponse({ status: 200, description: "Product Zoho relation." })
+  @ApiResponse({ status: 404, description: "No such product Zoho relation." })
   @RequireGate(GateCode.CODE_SU)
   async getByZohoItemId(@Param("zohoItemId") zohoItemId: string) {
     const id = parseZohoItemIdParam(zohoItemId);
     const relation = await this.productZohoRelationService.findByZohoItemId(id);
+    if (!relation) throw new NotFoundException(`Product Zoho relation for Zoho item ${zohoItemId} not found.`);
     return keyedResponse("productZohoRelation", relation);
   }
 
@@ -112,11 +114,13 @@ export class ProductZohoRelationController {
   @Get("/get/table-explorer/data/product-zoho-relation/:id")
   @ApiOperation({ summary: "Table-explorer projection of a single product Zoho relation." })
   @ApiParam({ name: "id", example: 200417, type: Number })
-  @ApiResponse({ status: 200, description: "Product Zoho relation data or null." })
+  @ApiResponse({ status: 200, description: "Product Zoho relation data." })
+  @ApiResponse({ status: 404, description: "No such product Zoho relation." })
   @RequireGate(GateCode.CODE_SU)
   async getProductZohoRelationDataById(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const data = await this.productZohoRelationService.retrieveProductZohoRelationDataById(parsedId);
+    if (!data) throw new NotFoundException(`Product Zoho relation ${id} not found.`);
     return keyedResponse("productZohoRelationData", data);
   }
 
@@ -124,11 +128,14 @@ export class ProductZohoRelationController {
   @Get("/get/product-zoho-relation/:id")
   @ApiOperation({ summary: "Retrieve a single product Zoho relation by id." })
   @ApiParam({ name: "id", example: 200417, type: Number })
-  @ApiResponse({ status: 200, description: "Product Zoho relation or null." })
+  @ApiResponse({ status: 200, description: "Product Zoho relation." })
+  @ApiResponse({ status: 400, description: "Malformed product Zoho relation id." })
+  @ApiResponse({ status: 404, description: "No such product Zoho relation." })
   @RequireGate(GateCode.CODE_SU)
   async getProductZohoRelation(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const relation = await this.productZohoRelationService.retrieveProductZohoRelationById(parsedId);
+    if (!relation) throw new NotFoundException(`Product Zoho relation ${id} not found.`);
     return keyedResponse("productZohoRelation", relation);
   }
 

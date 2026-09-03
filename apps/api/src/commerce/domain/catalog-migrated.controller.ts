@@ -52,14 +52,10 @@ export class CatalogMigratedDomainController {
   @ApiParam({ name: "catalogItemId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Catalog item deleted" })
   async delete_delete_artisan_catalog_item_catalogItemId(@Param("catalogItemId") catalogItemId: string) {
-    try {
-      await (this.db as any)
-        .delete(schema.catalogItem)
-        .where(eq(schema.catalogItem.id, BigInt(catalogItemId)));
-      return simpleResponse(true, `Catalog item ${catalogItemId} deleted successfully.`);
-    } catch (err) {
-      return simpleResponse(true, `Catalog item ${catalogItemId} deleted successfully.`);
-    }
+    await (this.db as any)
+      .delete(schema.catalogItem)
+      .where(eq(schema.catalogItem.id, BigInt(catalogItemId)));
+    return simpleResponse(true, `Catalog item ${catalogItemId} deleted successfully.`);
   }
 
   @Get("/get/table-explorer/data/catalog-item-media/:id")
@@ -68,15 +64,12 @@ export class CatalogMigratedDomainController {
   @ApiParam({ name: "id", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Catalog item media by ID" })
   async get_get_table_explorer_data_catalog_item_media_id(@Param("id") id: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalogItemMedia)
-        .where(eq(schema.catalogItemMedia.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalogItemMedia)
+      .where(eq(schema.catalogItemMedia.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatEntity));
+
   }
 
   @Get("/get/table-explorer/data/catalog-item-media")
@@ -84,15 +77,12 @@ export class CatalogMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for catalog-item-media" })
   @ApiResponse({ status: 200, description: "Catalog item media list" })
   async get_get_table_explorer_data_catalog_item_media() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalogItemMedia)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalogItemMedia)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatEntity));
+
   }
 
   @Get("/get/table-explorer/data/catalog-item")
@@ -100,15 +90,12 @@ export class CatalogMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for catalog-item" })
   @ApiResponse({ status: 200, description: "Catalog item list" })
   async get_get_table_explorer_data_catalog_item() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalogItem)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalogItem)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatEntity));
+
   }
 
   @Get("/get/table-explorer/data/catalog-pdf")
@@ -116,15 +103,12 @@ export class CatalogMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for catalog-pdf" })
   @ApiResponse({ status: 200, description: "Catalog PDF list" })
   async get_get_table_explorer_data_catalog_pdf() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalogPdf)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalogPdf)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatEntity));
+
   }
 
   @Get("/get/table-explorer/data/catalog")
@@ -132,14 +116,11 @@ export class CatalogMigratedDomainController {
   @ApiOperation({ summary: "Table explorer data for catalog" })
   @ApiResponse({ status: 200, description: "Catalog list" })
   async get_get_table_explorer_data_catalog() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatEntity));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatEntity));
+
   }
 }

@@ -16,12 +16,8 @@ export class FilterMigratedDomainController {
 
   @ApiOperation({ summary: "Legacy V1 fabric filter metadata (V2 is implemented)" })
   async get_get_filter_fabric(@Query() query: any) {
-    try {
-      // Query real PostgreSQL database table via Drizzle ORM
-      const result = await (this.db as any).select().from(schema.product).limit(50);
-      return keyedResponse("data", result || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    // Query real PostgreSQL database table via Drizzle ORM
+    const result = await (this.db as any).select().from(schema.product).limit(50);
+    return keyedResponse("data", result || []);
   }
 }

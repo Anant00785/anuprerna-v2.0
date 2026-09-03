@@ -15,12 +15,25 @@
  */
 import { BadRequestException } from "@nestjs/common";
 import { CustomProductInput, UNITS, Unit, UpdateCustomProductInput } from "../types/custom-product.types.js";
+import { parseIdParamStrict, toSafeNumberId } from "../../../../common/params/id-param.js";
 
 function requireInt(value: unknown, field: string): number {
   const n = typeof value === "string" ? Number(value) : value;
   if (typeof n !== "number" || !Number.isInteger(n)) {
     throw new BadRequestException(`${field} must be an integer.`);
   }
+  return n;
+}
+
+/**
+ * Path ids go through the shared strict parser (common/params/id-param.ts):
+ * digits-only on the RAW string, converted with BigInt(string) so nothing is
+ * rounded on the way through Number(). The local `requireInt` above stays for
+ * JSON body / query fields, where an integer legitimately arrives as a number.
+ */
+function strictNumberIdParam(value: unknown, field: string): number {
+  const n = toSafeNumberId(parseIdParamStrict(value, field));
+  if (n === null) throw new BadRequestException(`${field} must be an integer.`);
   return n;
 }
 
@@ -69,7 +82,7 @@ export function parseTableExplorerPageQuery(query: unknown): TableExplorerPageQu
 
 /** @PathVariable Long productId — used by getCustomProduct */
 export function parseProductIdParam(productId: unknown): number {
-  return requireInt(productId, "productId");
+  return strictNumberIdParam(productId, "productId");
 }
 
 /** Shared body parsing for add/update — the request shape is identical (CustomProduct). */

@@ -12,12 +12,7 @@ export class NavigationController {
 
   @Get("/get/navigation")
   async fetchNavigation() {
-    try {
-      return await this.navigationService.prepareNavigationMenu();
-    } catch (error) {
-      console.warn("Navigation query failed; returning an empty menu.", error);
-      return {};
-    }
+    return await this.navigationService.prepareNavigationMenu();
   }
 
   @Get("/get/navigation/fabric/craft")

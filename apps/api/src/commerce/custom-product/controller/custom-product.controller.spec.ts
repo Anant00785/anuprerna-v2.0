@@ -4,7 +4,7 @@
  * and are read verbatim by apps/cms/src/lib/custom-products-api.ts.
  */
 import { describe, it, expect, vi } from "vitest";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { CustomProductController } from "./custom-product.controller.js";
 import type { CustomProductService } from "../service/custom-product.service.js";
 
@@ -62,13 +62,12 @@ describe("GET /get/custom-product/:productId", () => {
     expect(service.getCustomProduct).toHaveBeenCalledWith(1);
   });
 
-  it("returns customProduct: null for an id that does not exist", async () => {
+  it("404s for an id that does not exist, rather than a 200 carrying null", async () => {
+    // Paired with apps/cms/src/lib/custom-products-api.ts#getCustomProductById,
+    // which maps exactly this 404 back to `null` so the detail page renders
+    // <NotFound> instead of <ErrorBanner>. Flipping either side alone regresses it.
     const { controller } = make();
-    await expect(controller.getCustomProduct("999")).resolves.toEqual({
-      success: true,
-      message: "",
-      customProduct: null,
-    });
+    await expect(controller.getCustomProduct("999")).rejects.toThrow(NotFoundException);
   });
 
   it("rejects a non-numeric id instead of querying with NaN", async () => {

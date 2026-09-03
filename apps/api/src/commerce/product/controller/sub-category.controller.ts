@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -117,30 +118,39 @@ export class SubCategoryController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single sub-category." })
   @ApiParam({ name: "id", description: "SubCategory ID", example: 322591, type: Number })
+  @ApiResponse({ status: 200, description: "Sub-category data." })
+  @ApiResponse({ status: 404, description: "No such sub-category." })
   async getSubCategoryDataById(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const data = await this.subCategoryService.retrieveSubCategoryDataById(parsedId);
+    if (!data) throw new NotFoundException(`Sub-category ${id} not found.`);
     return keyedResponse("subCategoryData", data);
   }
 
   @Get("/get/sub-category/related/:subCategoryId")
   @ApiOperation({ summary: "Retrieve a single sub-category by id, with related entities resolved." })
   @ApiParam({ name: "subCategoryId", description: "SubCategory ID (e.g. 322591)", example: 322591, type: Number })
-  @ApiResponse({ status: 200, description: "Sub-category or null." })
+  @ApiResponse({ status: 200, description: "Sub-category." })
+  @ApiResponse({ status: 400, description: "Malformed sub-category id." })
+  @ApiResponse({ status: 404, description: "No such sub-category." })
   async getSubCategoryWithRelatedEntities(@Param("subCategoryId") subCategoryId: string) {
     const id = BigInt(parseSubCategoryIdParam(subCategoryId));
     const subCategory = await this.subCategoryService.retrieveSubCategoryWithRelatedEntities(id);
+    if (!subCategory) throw new NotFoundException(`Sub-category ${subCategoryId} not found.`);
     return keyedResponse("subCategory", subCategory);
   }
 
   @Get("/get/sub-category/:subCategoryId")
   @ApiOperation({ summary: "Retrieve a single sub-category by id." })
   @ApiParam({ name: "subCategoryId", description: "SubCategory ID (e.g. 322591)", example: 322591, type: Number })
-  @ApiResponse({ status: 200, description: "Sub-category or null." })
+  @ApiResponse({ status: 200, description: "Sub-category." })
+  @ApiResponse({ status: 400, description: "Malformed sub-category id." })
+  @ApiResponse({ status: 404, description: "No such sub-category." })
   @RequireGate(GateCode.CODE_SU)
   async getSubCategory(@Param("subCategoryId") subCategoryId: string) {
     const id = BigInt(parseSubCategoryIdParam(subCategoryId));
     const subCategory = await this.subCategoryService.retrieveSubCategory(id);
+    if (!subCategory) throw new NotFoundException(`Sub-category ${subCategoryId} not found.`);
     return keyedResponse("subCategory", subCategory);
   }
 
@@ -199,5 +209,4 @@ export class SubCategoryController {
     const { success, message } = await this.subCategoryService.deleteSubCategory(id);
     return simpleResponse(success, success ? SubCategoryMessages.SUB_CATEGORY_DELETED : message);
   }
-
 }

@@ -146,7 +146,8 @@ export interface CartItemSummaryRow {
  */
 export interface FabricPreviewPort {
   retrieveEntity(id: number): Promise<unknown | null>;
-  retrieveFabricProductByProductId(productId: number): Promise<unknown | null>;
+  /** Batched: one query for every distinct `selectedFabricId` on the cart. Missing ids are absent from the map. */
+  retrieveFabricProductsByProductIds(productIds: number[]): Promise<Map<number, unknown>>;
 }
 
 export interface FinishedPreviewPort {

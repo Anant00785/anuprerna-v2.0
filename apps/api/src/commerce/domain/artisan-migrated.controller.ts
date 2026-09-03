@@ -376,16 +376,12 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Fetch worker list" })
   @ApiResponse({ status: 200, description: "Worker list" })
   async get_get_workers() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .where(eq(schema.artisan.artisanRole, "WORKER"))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .where(eq(schema.artisan.artisanRole, "WORKER"))
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Get("/get/artisan/:masterId/workers")
@@ -394,15 +390,11 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "masterId", example: 47906435, type: Number })
   @ApiResponse({ status: 200, description: "Workers under the specified master artisan" })
   async get_get_artisan_masterId_workers(@Param("masterId") masterId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .where(eq(schema.artisan.masterArtisanId, Number(masterId)));
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .where(eq(schema.artisan.masterArtisanId, Number(masterId)));
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Get("/get/artisan/:artisanId")
@@ -414,15 +406,11 @@ export class ArtisanMigratedDomainController {
     if (!/^\d+$/.test(artisanId)) {
       return keyedResponse("data", []);
     }
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .where(eq(schema.artisan.id, BigInt(artisanId)));
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .where(eq(schema.artisan.id, BigInt(artisanId)));
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Post("/add/artisan")
@@ -431,44 +419,40 @@ export class ArtisanMigratedDomainController {
   @ApiBody({ type: CreateArtisanDto })
   @ApiResponse({ status: 201, description: "Artisan registered" })
   async post_add_artisan(@Body() body: CreateArtisanDto) {
-    try {
-      const now = Date.now();
-      const [tenant] = await this.db
-        .insert(schema.loomTenant)
-        .values({
-          loomId: `ART_${now}`,
-          userName: body.expertise ? `Artisan (${body.expertise})` : "Artisan Member",
-          email: `artisan_${now}@anuprerna.com`,
-          userPassword: "$2a$10$defaultencryptedpasswordforartisan",
-          gender: "UNDEFINED",
-          provider: "UNKNOWN",
-          creationTime: now,
-          active: true,
-          userType: "ARTISAN",
-        })
-        .returning();
+    const now = Date.now();
+    const [tenant] = await this.db
+      .insert(schema.loomTenant)
+      .values({
+        loomId: `ART_${now}`,
+        userName: body.expertise ? `Artisan (${body.expertise})` : "Artisan Member",
+        email: `artisan_${now}@anuprerna.com`,
+        userPassword: "$2a$10$defaultencryptedpasswordforartisan",
+        gender: "UNDEFINED",
+        provider: "UNKNOWN",
+        creationTime: now,
+        active: true,
+        userType: "ARTISAN",
+      })
+      .returning();
 
-      const [inserted] = await this.db
-        .insert(schema.artisan)
-        .values({
-          artisanRole: body.artisanRole || "MASTER",
-          masterArtisanId: body.masterArtisanId ? Number(body.masterArtisanId) : null,
-          state: body.state || "West Bengal",
-          district: body.district || "Mursidabad",
-          villageTown: body.villageTown || "Bonwaribad",
-          postalCode: body.postalCode || "742101",
-          expertise: body.expertise || "Weaving",
-          experience: body.experience || 5,
-          hasWhatsapp: body.hasWhatsapp !== undefined ? body.hasWhatsapp : true,
-          hasBankAccount: false,
-          lastUpdateTime: now,
-          tenantId: tenant ? Number(tenant.id) : 33,
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatArtisan(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [inserted] = await this.db
+      .insert(schema.artisan)
+      .values({
+        artisanRole: body.artisanRole || "MASTER",
+        masterArtisanId: body.masterArtisanId ? Number(body.masterArtisanId) : null,
+        state: body.state || "West Bengal",
+        district: body.district || "Mursidabad",
+        villageTown: body.villageTown || "Bonwaribad",
+        postalCode: body.postalCode || "742101",
+        expertise: body.expertise || "Weaving",
+        experience: body.experience || 5,
+        hasWhatsapp: body.hasWhatsapp !== undefined ? body.hasWhatsapp : true,
+        hasBankAccount: false,
+        lastUpdateTime: now,
+        tenantId: tenant ? Number(tenant.id) : 33,
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatArtisan(inserted)] : []);
   }
 
   @Patch("/update/artisan")
@@ -477,30 +461,26 @@ export class ArtisanMigratedDomainController {
   @ApiBody({ type: UpdateArtisanDto })
   @ApiResponse({ status: 200, description: "Artisan updated" })
   async patch_update_artisan(@Body() body: UpdateArtisanDto) {
-    try {
-      const updateSet: any = {
-        lastUpdateTime: Date.now(),
-      };
-      if (body.artisanRole) updateSet.artisanRole = body.artisanRole;
-      if (body.masterArtisanId !== undefined) updateSet.masterArtisanId = body.masterArtisanId ? Number(body.masterArtisanId) : null;
-      if (body.state) updateSet.state = body.state;
-      if (body.district) updateSet.district = body.district;
-      if (body.villageTown) updateSet.villageTown = body.villageTown;
-      if (body.postalCode) updateSet.postalCode = body.postalCode;
-      if (body.expertise) updateSet.expertise = body.expertise;
-      if (body.experience !== undefined) updateSet.experience = body.experience;
-      if (body.hasWhatsapp !== undefined) updateSet.hasWhatsapp = body.hasWhatsapp;
+    const updateSet: any = {
+      lastUpdateTime: Date.now(),
+    };
+    if (body.artisanRole) updateSet.artisanRole = body.artisanRole;
+    if (body.masterArtisanId !== undefined) updateSet.masterArtisanId = body.masterArtisanId ? Number(body.masterArtisanId) : null;
+    if (body.state) updateSet.state = body.state;
+    if (body.district) updateSet.district = body.district;
+    if (body.villageTown) updateSet.villageTown = body.villageTown;
+    if (body.postalCode) updateSet.postalCode = body.postalCode;
+    if (body.expertise) updateSet.expertise = body.expertise;
+    if (body.experience !== undefined) updateSet.experience = body.experience;
+    if (body.hasWhatsapp !== undefined) updateSet.hasWhatsapp = body.hasWhatsapp;
 
-      const [updated] = await this.db
-        .update(schema.artisan)
-        .set(updateSet)
-        .where(eq(schema.artisan.id, BigInt(body.id)))
-        .returning();
+    const [updated] = await this.db
+      .update(schema.artisan)
+      .set(updateSet)
+      .where(eq(schema.artisan.id, BigInt(body.id)))
+      .returning();
 
-      return keyedResponse("data", updated ? [formatArtisan(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    return keyedResponse("data", updated ? [formatArtisan(updated)] : []);
   }
 
   @Delete("/delete/artisan/:artisanId")
@@ -524,29 +504,25 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Fetch artisan performance incentive rules" })
   @ApiResponse({ status: 200, description: "Artisan incentive rules" })
   async get_get_artisan_incentive_config() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisanIncentiveConfig)
-        .limit(50);
-      if (rows && rows.length > 0) {
-        return keyedResponse(
-          "data",
-          rows.map((r: any) => ({
-            id: String(r.id),
-            version: Number(r.version || 1),
-            key: r.key,
-            value: r.value,
-            description: r.description,
-            updatedBy: r.updatedBy,
-            updatedAt: Number(r.updatedAt || 0),
-          }))
-        );
-      }
-      return keyedResponse("data", DEFAULT_INCENTIVES);
-    } catch (err) {
-      return keyedResponse("data", DEFAULT_INCENTIVES);
+    const rows = await this.db
+      .select()
+      .from(schema.artisanIncentiveConfig)
+      .limit(50);
+    if (rows && rows.length > 0) {
+      return keyedResponse(
+        "data",
+        rows.map((r: any) => ({
+          id: String(r.id),
+          version: Number(r.version || 1),
+          key: r.key,
+          value: r.value,
+          description: r.description,
+          updatedBy: r.updatedBy,
+          updatedAt: Number(r.updatedAt || 0),
+        }))
+      );
     }
+    return keyedResponse("data", DEFAULT_INCENTIVES);
   }
 
   @Patch("/update/artisan-incentive-config")
@@ -555,31 +531,27 @@ export class ArtisanMigratedDomainController {
   @ApiBody({ type: UpdateArtisanIncentiveConfigDto })
   @ApiResponse({ status: 200, description: "Incentive config updated" })
   async patch_update_artisan_incentive_config(@Body() body: UpdateArtisanIncentiveConfigDto) {
-    try {
-      await this.db
-        .insert(schema.artisanIncentiveConfig)
-        .values({
-          key: body.key,
+    await this.db
+      .insert(schema.artisanIncentiveConfig)
+      .values({
+        key: body.key,
+        value: body.value,
+        description: body.description || "",
+        updatedBy: "ADMIN",
+        updatedAt: Date.now(),
+      })
+      .onConflictDoUpdate({
+        target: schema.artisanIncentiveConfig.key,
+        set: {
           value: body.value,
           description: body.description || "",
           updatedBy: "ADMIN",
           updatedAt: Date.now(),
-        })
-        .onConflictDoUpdate({
-          target: schema.artisanIncentiveConfig.key,
-          set: {
-            value: body.value,
-            description: body.description || "",
-            updatedBy: "ADMIN",
-            updatedAt: Date.now(),
-          },
-        })
-        .returning();
+        },
+      })
+      .returning();
 
-      return simpleResponse(true, `Artisan incentive config '${body.key}' updated successfully.`);
-    } catch (err) {
-      return simpleResponse(true, "Artisan incentive config updated successfully.");
-    }
+    return simpleResponse(true, `Artisan incentive config '${body.key}' updated successfully.`);
   }
 
   @Get("/get/artisan/workflow/dashboard")
@@ -587,15 +559,11 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Fetch artisan production dashboard" })
   @ApiResponse({ status: 200, description: "Production dashboard data" })
   async get_get_artisan_workflow_dashboard() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .limit(10);
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .limit(10);
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Get("/get/artisan/workflow/:workflowId/assigned-element-de")
@@ -604,42 +572,26 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "workflowId", example: 54195461, type: Number })
   @ApiResponse({ status: 200, description: "Workflow element details" })
   async get_get_artisan_workflow_workflowId_assigned_element_de(@Param("workflowId") workflowId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.workflowArtisanMapping)
-        .where(eq(schema.workflowArtisanMapping.workflowId, Number(workflowId)));
-      if (rows && rows.length > 0) {
-        return keyedResponse("data", rows.map(formatWorkflowArtisanMapping));
-      }
-      return keyedResponse("data", [
-        {
-          id: String(workflowId),
-          workflowId: String(workflowId),
-          artisanId: "47916439",
-          stepName: "Silk Loom Weaving & Spinning",
-          status: "IN_PROGRESS",
-          quantityOfFabricInMeters: "50.00",
-          quantityOfProducts: "10.00",
-          basePay: "4500.00",
-          assignedDate: 1786800000000,
-        },
-      ]);
-    } catch (err) {
-      return keyedResponse("data", [
-        {
-          id: String(workflowId),
-          workflowId: String(workflowId),
-          artisanId: "47916439",
-          stepName: "Silk Loom Weaving & Spinning",
-          status: "IN_PROGRESS",
-          quantityOfFabricInMeters: "50.00",
-          quantityOfProducts: "10.00",
-          basePay: "4500.00",
-          assignedDate: 1786800000000,
-        },
-      ]);
+    const rows = await this.db
+      .select()
+      .from(schema.workflowArtisanMapping)
+      .where(eq(schema.workflowArtisanMapping.workflowId, Number(workflowId)));
+    if (rows && rows.length > 0) {
+      return keyedResponse("data", rows.map(formatWorkflowArtisanMapping));
     }
+    return keyedResponse("data", [
+      {
+        id: String(workflowId),
+        workflowId: String(workflowId),
+        artisanId: "47916439",
+        stepName: "Silk Loom Weaving & Spinning",
+        status: "IN_PROGRESS",
+        quantityOfFabricInMeters: "50.00",
+        quantityOfProducts: "10.00",
+        basePay: "4500.00",
+        assignedDate: 1786800000000,
+      },
+    ]);
   }
 
   @Get("/get/artisan/workflow/:workflowId/assigned-element-details")
@@ -719,16 +671,12 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "stepId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Step assignments" })
   async get_get_step_element_stepId_artisan_assignments(@Param("stepId") stepId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.stepElementArtisanMapping)
-        .where(eq(schema.stepElementArtisanMapping.stepElementId, Number(stepId)))
-        .limit(20);
-      return keyedResponse("data", rows || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.stepElementArtisanMapping)
+      .where(eq(schema.stepElementArtisanMapping.stepElementId, Number(stepId)))
+      .limit(20);
+    return keyedResponse("data", rows || []);
   }
 
   @Patch("/update/step-element/artisan-assignments")
@@ -737,30 +685,26 @@ export class ArtisanMigratedDomainController {
   @ApiBody({ type: UpdateStepElementArtisanAssignmentsDto })
   @ApiResponse({ status: 200, description: "Artisan assigned to step" })
   async patch_update_step_element_artisan_assignments(@Body() body: UpdateStepElementArtisanAssignmentsDto) {
-    try {
-      await this.db
-        .insert(schema.stepElementArtisanMapping)
-        .values({
-          stepElementId: Number(body.stepElementId),
-          artisanId: Number(body.artisanId),
+    await this.db
+      .insert(schema.stepElementArtisanMapping)
+      .values({
+        stepElementId: Number(body.stepElementId),
+        artisanId: Number(body.artisanId),
+        quantityOfFabricInMeters: body.quantityOfFabricInMeters || null,
+        quantityOfProducts: body.quantityOfProducts || null,
+        basePay: body.basePay || "0",
+      })
+      .onConflictDoUpdate({
+        target: [schema.stepElementArtisanMapping.stepElementId, schema.stepElementArtisanMapping.artisanId],
+        set: {
           quantityOfFabricInMeters: body.quantityOfFabricInMeters || null,
           quantityOfProducts: body.quantityOfProducts || null,
           basePay: body.basePay || "0",
-        })
-        .onConflictDoUpdate({
-          target: [schema.stepElementArtisanMapping.stepElementId, schema.stepElementArtisanMapping.artisanId],
-          set: {
-            quantityOfFabricInMeters: body.quantityOfFabricInMeters || null,
-            quantityOfProducts: body.quantityOfProducts || null,
-            basePay: body.basePay || "0",
-          },
-        })
-        .returning();
+        },
+      })
+      .returning();
 
-      return simpleResponse(true, "Artisan assigned to workflow step successfully.");
-    } catch (err) {
-      return simpleResponse(true, "Artisan assigned to workflow step successfully.");
-    }
+    return simpleResponse(true, "Artisan assigned to workflow step successfully.");
   }
 
   @Get("/get/subprocess-element/:subProcessId/artisan-assign")
@@ -769,16 +713,12 @@ export class ArtisanMigratedDomainController {
   @ApiParam({ name: "subProcessId", example: 1, type: Number })
   @ApiResponse({ status: 200, description: "Subprocess artisan assignments" })
   async get_get_subprocess_element_subProcessId_artisan_assign(@Param("subProcessId") subProcessId: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.subprocessElementArtisanMapping)
-        .where(eq(schema.subprocessElementArtisanMapping.subprocessElementId, Number(subProcessId)))
-        .limit(20);
-      return keyedResponse("data", rows || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.subprocessElementArtisanMapping)
+      .where(eq(schema.subprocessElementArtisanMapping.subprocessElementId, Number(subProcessId)))
+      .limit(20);
+    return keyedResponse("data", rows || []);
   }
 
   @Get("/get/subprocess-element/:subProcessId/artisan-assignments")
@@ -796,30 +736,26 @@ export class ArtisanMigratedDomainController {
   @ApiBody({ type: UpdateSubprocessElementArtisanAssignmentsDto })
   @ApiResponse({ status: 200, description: "Artisan assigned to subprocess" })
   async patch_update_subprocess_element_artisan_assignments(@Body() body: UpdateSubprocessElementArtisanAssignmentsDto) {
-    try {
-      await this.db
-        .insert(schema.subprocessElementArtisanMapping)
-        .values({
-          subprocessElementId: Number(body.subprocessElementId),
-          artisanId: Number(body.artisanId),
+    await this.db
+      .insert(schema.subprocessElementArtisanMapping)
+      .values({
+        subprocessElementId: Number(body.subprocessElementId),
+        artisanId: Number(body.artisanId),
+        quantityOfFabricInMeters: body.quantityOfFabricInMeters || null,
+        quantityOfProducts: body.quantityOfProducts || null,
+        basePay: body.basePay || "0",
+      })
+      .onConflictDoUpdate({
+        target: [schema.subprocessElementArtisanMapping.subprocessElementId, schema.subprocessElementArtisanMapping.artisanId],
+        set: {
           quantityOfFabricInMeters: body.quantityOfFabricInMeters || null,
           quantityOfProducts: body.quantityOfProducts || null,
           basePay: body.basePay || "0",
-        })
-        .onConflictDoUpdate({
-          target: [schema.subprocessElementArtisanMapping.subprocessElementId, schema.subprocessElementArtisanMapping.artisanId],
-          set: {
-            quantityOfFabricInMeters: body.quantityOfFabricInMeters || null,
-            quantityOfProducts: body.quantityOfProducts || null,
-            basePay: body.basePay || "0",
-          },
-        })
-        .returning();
+        },
+      })
+      .returning();
 
-      return simpleResponse(true, "Artisan assigned to subprocess element successfully.");
-    } catch (err) {
-      return simpleResponse(true, "Artisan assigned to subprocess element successfully.");
-    }
+    return simpleResponse(true, "Artisan assigned to subprocess element successfully.");
   }
 
   @Get("/get/table-explorer/data/artisan/:id")
@@ -827,75 +763,55 @@ export class ArtisanMigratedDomainController {
   @ApiOperation({ summary: "Inspect Artisan entity by ID" })
   @ApiParam({ name: "id", example: 47916439, type: Number })
   async get_get_table_explorer_data_artisan_id(@Param("id") id: string) {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .where(eq(schema.artisan.id, BigInt(id)));
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .where(eq(schema.artisan.id, BigInt(id)));
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Get("/get/table-explorer/data/artisan")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for artisans" })
   async get_get_table_explorer_data_artisan() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.artisan)
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatArtisan));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.artisan)
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatArtisan));
   }
 
   @Get("/get/table-explorer/data/step-element-artisan-mapping")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for step element artisan mapping" })
   async get_get_table_explorer_data_step_element_artisan_mapping() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.stepElementArtisanMapping)
-        .limit(50);
-      return keyedResponse("data", rows || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.stepElementArtisanMapping)
+      .limit(50);
+    return keyedResponse("data", rows || []);
   }
 
   @Get("/get/table-explorer/data/subprocess-element-artisan-mapping")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for subprocess element artisan mapping" })
   async get_get_table_explorer_data_subprocess_element_artisan_mapping() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.subprocessElementArtisanMapping)
-        .limit(50);
-      return keyedResponse("data", rows || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.subprocessElementArtisanMapping)
+      .limit(50);
+    return keyedResponse("data", rows || []);
   }
 
   @Get("/get/table-explorer/data/workflow-artisan-mapping")
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table explorer data for workflow artisan mapping" })
   async get_get_table_explorer_data_workflow_artisan_mapping() {
-    try {
-      const rows = await this.db
-        .select()
-        .from(schema.workflowArtisanMapping)
-        .limit(50);
-      return keyedResponse("data", rows || []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await this.db
+      .select()
+      .from(schema.workflowArtisanMapping)
+      .limit(50);
+    return keyedResponse("data", rows || []);
   }
 
   @Get("/get/skills")

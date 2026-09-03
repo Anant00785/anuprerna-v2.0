@@ -56,16 +56,12 @@ export class CatalogApiController {
   @ApiResponse({ status: 200, description: "Catalog by ID" })
   @RequireGate(GateCode.CODE_SU)
   async getCatalog(@Param("catalogId") catalogId: string) {
-    try {
-      const [row] = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .where(eq(schema.catalog.id, BigInt(catalogId)))
-        .limit(1);
-      return keyedResponse("data", row ? formatCatalog(row) : null);
-    } catch (err) {
-      return keyedResponse("data", null);
-    }
+    const [row] = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .where(eq(schema.catalog.id, BigInt(catalogId)))
+      .limit(1);
+    return keyedResponse("data", row ? formatCatalog(row) : null);
   }
 
   @Get("/get/catalog-list")
@@ -73,16 +69,12 @@ export class CatalogApiController {
   @ApiResponse({ status: 200, description: "List of all catalogs" })
   @RequireGate(GateCode.CODE_SUCU)
   async getCatalogList() {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.id))
-        .limit(50);
-      return keyedResponse("data", (rows || []).map(formatCatalog));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.id))
+      .limit(50);
+    return keyedResponse("data", (rows || []).map(formatCatalog));
   }
 
   @Get("/get/catalog-list/artisan/:artisanId")
@@ -91,24 +83,20 @@ export class CatalogApiController {
   @ApiResponse({ status: 200, description: "Catalogs by artisan ID" })
   @RequireGate(GateCode.CODE_SUCU)
   async getCatalogListByArtisan(@Param("artisanId") artisanId: string) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .where(eq(schema.catalog.artisanId, Number(artisanId)))
-        .orderBy(desc(schema.catalog.id));
-      if (rows && rows.length > 0) {
-        return keyedResponse("data", rows.map(formatCatalog));
-      }
-      const fallback = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.id))
-        .limit(10);
-      return keyedResponse("data", (fallback || []).map(formatCatalog));
-    } catch (err) {
-      return keyedResponse("data", []);
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .where(eq(schema.catalog.artisanId, Number(artisanId)))
+      .orderBy(desc(schema.catalog.id));
+    if (rows && rows.length > 0) {
+      return keyedResponse("data", rows.map(formatCatalog));
     }
+    const fallback = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.id))
+      .limit(10);
+    return keyedResponse("data", (fallback || []).map(formatCatalog));
   }
 
   @Get("/get/artisan/catalog/:catalogId")
@@ -125,17 +113,12 @@ export class CatalogApiController {
   @ApiResponse({ status: 200, description: "Authenticated artisan catalogs" })
   @RequireGate(GateCode.CODE_AR)
   async getArtisanCatalogList(@Req() req: any) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.id))
-        .limit(20);
-      return keyedResponse("data", (rows || []).map(formatCatalog));
-    } catch (err) {
-      console.error("GET /get/artisan/catalog-list error:", err);
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.id))
+      .limit(20);
+    return keyedResponse("data", (rows || []).map(formatCatalog));
   }
 
   @Get("/get/recent-catalog-list/:limit")
@@ -144,16 +127,12 @@ export class CatalogApiController {
   @ApiResponse({ status: 200, description: "Recent catalogs list" })
   @RequireGate(GateCode.CODE_SUCU)
   async getRecentCatalogList(@Param("limit") limit: number) {
-    try {
-      const rows = await (this.db as any)
-        .select()
-        .from(schema.catalog)
-        .orderBy(desc(schema.catalog.createdAt))
-        .limit(Number(limit) || 10);
-      return keyedResponse("data", (rows || []).map(formatCatalog));
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const rows = await (this.db as any)
+      .select()
+      .from(schema.catalog)
+      .orderBy(desc(schema.catalog.createdAt))
+      .limit(Number(limit) || 10);
+    return keyedResponse("data", (rows || []).map(formatCatalog));
   }
 
   @Post("/add/catalog")
@@ -162,23 +141,19 @@ export class CatalogApiController {
   @ApiBody({ type: CreateCatalogDto })
   @ApiResponse({ status: 201, description: "Catalog created" })
   async addCatalog(@Body() body: CreateCatalogDto) {
-    try {
-      const now = Date.now();
-      const [inserted] = await (this.db as any)
-        .insert(schema.catalog)
-        .values({
-          name: body.name,
-          description: body.description || "",
-          artisanId: body.artisanId ? Number(body.artisanId) : null,
-          defaultCatalog: false,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatCatalog(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const now = Date.now();
+    const [inserted] = await (this.db as any)
+      .insert(schema.catalog)
+      .values({
+        name: body.name,
+        description: body.description || "",
+        artisanId: body.artisanId ? Number(body.artisanId) : null,
+        defaultCatalog: false,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatCatalog(inserted)] : []);
   }
 
   @Post("/add/artisan/catalog")
@@ -187,24 +162,20 @@ export class CatalogApiController {
   @ApiBody({ type: CreateCatalogDto })
   @ApiResponse({ status: 201, description: "Artisan catalog created" })
   async addArtisanCatalog(@Req() req: any, @Body() body: CreateCatalogDto) {
-    try {
-      const tenant = req?.tenant || req?.user;
-      const now = Date.now();
-      const [inserted] = await (this.db as any)
-        .insert(schema.catalog)
-        .values({
-          name: body.name,
-          description: body.description || "",
-          artisanId: tenant?.id ? Number(tenant.id) : (body.artisanId ? Number(body.artisanId) : null),
-          defaultCatalog: false,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      return keyedResponse("data", inserted ? [formatCatalog(inserted)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const tenant = req?.tenant || req?.user;
+    const now = Date.now();
+    const [inserted] = await (this.db as any)
+      .insert(schema.catalog)
+      .values({
+        name: body.name,
+        description: body.description || "",
+        artisanId: tenant?.id ? Number(tenant.id) : (body.artisanId ? Number(body.artisanId) : null),
+        defaultCatalog: false,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    return keyedResponse("data", inserted ? [formatCatalog(inserted)] : []);
   }
 
   @Patch("/update/catalog")
@@ -213,22 +184,18 @@ export class CatalogApiController {
   @ApiBody({ type: UpdateCatalogDto })
   @ApiResponse({ status: 200, description: "Catalog updated" })
   async updateCatalog(@Body() body: UpdateCatalogDto) {
-    try {
-      const now = Date.now();
-      const updateSet: any = { updatedAt: now };
-      if (body.name) updateSet.name = body.name;
-      if (body.description !== undefined) updateSet.description = body.description;
-      if (body.artisanId) updateSet.artisanId = Number(body.artisanId);
+    const now = Date.now();
+    const updateSet: any = { updatedAt: now };
+    if (body.name) updateSet.name = body.name;
+    if (body.description !== undefined) updateSet.description = body.description;
+    if (body.artisanId) updateSet.artisanId = Number(body.artisanId);
 
-      const [updated] = await (this.db as any)
-        .update(schema.catalog)
-        .set(updateSet)
-        .where(eq(schema.catalog.id, BigInt(body.id)))
-        .returning();
-      return keyedResponse("data", updated ? [formatCatalog(updated)] : []);
-    } catch (err) {
-      return keyedResponse("data", []);
-    }
+    const [updated] = await (this.db as any)
+      .update(schema.catalog)
+      .set(updateSet)
+      .where(eq(schema.catalog.id, BigInt(body.id)))
+      .returning();
+    return keyedResponse("data", updated ? [formatCatalog(updated)] : []);
   }
 
   @Patch("/update/artisan/catalog")

@@ -1,4 +1,4 @@
-import { Body, ConflictException, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProductSizeProfileService } from "../product-size-profile/service/product-size-profile.service.js";
 import { OptimisticLockError } from "../product-size-profile/repository/product-size-profile.repository.js";
@@ -80,10 +80,12 @@ export class ProductSizeProfileController {
   @RequireGate(GateCode.CODE_SU)
   @ApiOperation({ summary: "Table-explorer projection of a single product size profile." })
   @ApiParam({ name: "id", example: 161702936, type: Number })
-  @ApiResponse({ status: 200, description: "Product size profile data or null." })
+  @ApiResponse({ status: 200, description: "Product size profile data." })
+  @ApiResponse({ status: 404, description: "No such product size profile." })
   async getProductSizeProfileDataById(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const data = await this.productSizeProfileService.retrieveProductSizeProfileDataById(parsedId);
+    if (!data) throw new NotFoundException(`Product size profile ${id} not found.`);
     return keyedResponse("productSizeProfileData", data);
   }
 
@@ -91,11 +93,14 @@ export class ProductSizeProfileController {
   @Get("/get/product-size-profile/:id")
   @ApiOperation({ summary: "Retrieve a single product size profile by id, enriched with its size profile option." })
   @ApiParam({ name: "id", example: 161702936, type: Number })
-  @ApiResponse({ status: 200, description: "Product size profile or null." })
+  @ApiResponse({ status: 200, description: "Product size profile." })
+  @ApiResponse({ status: 400, description: "Malformed product size profile id." })
+  @ApiResponse({ status: 404, description: "No such product size profile." })
   @RequireGate(GateCode.CODE_SU)
   async getProductSizeProfile(@Param("id") id: string) {
     const parsedId = BigInt(parseIdParam(id));
     const profile = await this.productSizeProfileService.retrieveProductSizeProfileById(parsedId);
+    if (!profile) throw new NotFoundException(`Product size profile ${id} not found.`);
     return keyedResponse("productSizeProfile", profile);
   }
 
@@ -149,5 +154,4 @@ export class ProductSizeProfileController {
     const deleted = await this.productSizeProfileService.deleteProductSizeProfile(parsedId);
     return simpleResponse(deleted, deleted ? "Product size profile deleted successfully." : "Failed to delete product size profile.");
   }
-
 }
