@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req, Unauthorized
 import { GateCode } from "../types/auth.types.js";
 import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { PasswordResetService } from "../service/password-reset.service.js";
 import { GatekeeperService } from "../service/gatekeeper.service.js";
 import { TenantLookupRepository } from "../repository/tenant-lookup.repository.js";
 import { AUTH0_VALIDATION_PORT, Auth0ValidationPort, AuthenticatedTenant } from "../types/auth.types.js";
@@ -32,6 +33,7 @@ export class LoomLegacyAuthController {
     private readonly tenantLookup: TenantLookupRepository,
     @Inject(AUTH0_VALIDATION_PORT) private readonly auth0: Auth0ValidationPort,
     @Inject(DATABASE_CONNECTION) private readonly db: Database,
+    private readonly passwordReset: PasswordResetService,
   ) {}
 
   @Post("authenticate/email")
@@ -340,7 +342,11 @@ export class LoomLegacyAuthController {
   @ApiOperation({ summary: "Send password reset request email" })
   @ApiBody({ type: SendPasswordResetEmailDto })
   async sendPasswordResetEmail(@Body() body: SendPasswordResetEmailDto) {
-    return simpleResponse(true, "Password reset link sent");
+    // Was `return simpleResponse(true, "Password reset link sent")` — a stub that
+    // sent nothing while reporting success. The response is intentionally
+    // identical for a known and an unknown address; see PasswordResetService.
+    const result = await this.passwordReset.sendResetEmail(body?.email ?? "");
+    return simpleResponse(result.ok, result.message);
   }
 
   @Post("reset/password")
@@ -348,7 +354,11 @@ export class LoomLegacyAuthController {
   @ApiOperation({ summary: "Reset password with token" })
   @ApiBody({ type: ResetPasswordDto })
   async resetPassword(@Body() body: ResetPasswordDto) {
-    return simpleResponse(true, "Password updated successfully");
+    // Was a stub returning success without touching the password. The new value
+    // is hashed with GatekeeperService (bcrypt(pepper+password), cost 11) — the
+    // same function login verifies against.
+    const result = await this.passwordReset.resetPassword(body?.token ?? "", body?.password ?? "");
+    return simpleResponse(result.ok, result.message);
   }
 
   @Get("check-email/tenant")

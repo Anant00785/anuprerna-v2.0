@@ -4,11 +4,11 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. Every test in the repository and the behaviour it protects.
 
-**1697 tests across 300 files.**
+**1721 tests across 302 files.**
 
-- `apps/api` — 246 files, 1105 tests
+- `apps/api` — 247 files, 1119 tests
 - `apps/cms` — 17 files, 212 tests
-- `apps/storefront` — 36 files, 378 tests
+- `apps/storefront` — 37 files, 388 tests
 - `packages/types` — 1 files, 2 tests
 
 ## apps/api
@@ -45,6 +45,22 @@
 - DENIES a plain ROLE_CUSTOMER token at a super-user gate
 - fails closed on an unknown gate code
 - fails closed when the roles claim is missing or not an array
+
+### `apps/api/src/auth/service/password-reset.service.spec.ts` — 14
+- answers identically for an unknown email — no membership oracle
+- writes the token HASHED, never in plaintext
+- stamps an expiry ~30 minutes out
+- issues no token at all for an unknown email
+- rejects an empty email
+- hashes the new password with the gatekeeper (bcrypt(pepper+password))
+- consumes the token — a replayed link cannot reset twice
+- refuses when the token was already consumed by a concurrent request
+- refuses an expired token and changes nothing
+- refuses an unknown token
+- gives one message for unknown, used and expired — no oracle
+- enforces a minimum password length before touching anything
+- requires both a token and a password
+- looks the token up by its HASH, not the raw value
 
 ### `apps/api/src/commerce/address/address.controller.gates.spec.ts` — 0
 
@@ -2087,6 +2103,18 @@
 - POSTs the address body to add/address and returns the response
 - issues a DELETE to delete/address/:id
 - unwraps the legacy {success,message,orderList} envelope into an Order[]
+
+### `apps/storefront/src/lib/auth/otp-store.test.ts` — 10
+- a code issued by one instance verifies from another — the reported bug
+- creates its table on first use
+- never stores the code in plaintext
+- rejects a wrong code
+- rejects an expired code
+- consumes the code — it cannot be replayed
+- burns the code after 5 wrong guesses
+- rejects an email with no outstanding code
+- re-issuing replaces the previous code and clears attempts
+- throws rather than silently falling back when DATABASE_URL is unset
 
 ### `apps/storefront/src/lib/auth/token-helper.test.ts` — 16
 - round-trips a payload it signed itself

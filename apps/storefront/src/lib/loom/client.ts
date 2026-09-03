@@ -102,7 +102,13 @@ const ALLOWED_POST_EXACT = new Set<string>(['/add/cart-item', '/check-email/tena
   // '/customer/signup-details' is the SAME record written from the (now wholly
   // optional) signup screen -- one round trip for the optional name, the optional
   // business opt-in and its optional sourcing hint. Identical blast radius.
-  '/customer/buyer-type', '/customer/buyer-type/prompt', '/customer/signup-details']);
+  '/customer/buyer-type', '/customer/buyer-type/prompt', '/customer/signup-details',
+  // Password reset. Both are ANONYMOUS by necessity — the holder of a reset link
+  // has no session yet — and both are safe to expose: /send/password-reset/email
+  // answers identically for a registered and an unregistered address (no
+  // membership oracle), and /reset/password is useless without a token that is
+  // stored hashed, single-use and 30-minute-expiring on the API side.
+  '/send/password-reset/email', '/reset/password']);
 const ALLOWED_POST_PREFIXES = ['/authenticate'];
 
 // Non-POST customer self-service writes (PATCH/PUT/DELETE), SAME sandbox-safe
