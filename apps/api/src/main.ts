@@ -30,7 +30,10 @@ import type { EnvironmentVariables } from "./common/config/env.schema.js";
 };
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true keeps the untouched request body on `req.rawBody` alongside the
+  // parsed one. The Stripe webhook signature is an HMAC over the exact bytes Stripe
+  // sent, so it cannot be verified from the JSON-parsed body.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const appConfig = app.get(ConfigService<EnvironmentVariables, true>);
 
   // CORS from origin/docs/core-commerce-planning: the CMS and storefront call

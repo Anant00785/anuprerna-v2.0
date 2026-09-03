@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createHmac } from "node:crypto";
 import { RazorpayPaymentService } from "./razorpay-payment.service.js";
 import type { RazorpayTransactionRepository } from "../repository/payment.repository.js";
 import type { OrderServicePort, EmailServicePort, WhatsappServicePort } from "../ports/payment.ports.js";
@@ -7,6 +8,14 @@ import { TransactionStatus, TransactionFailureCode } from "../types/payment.type
 
 // Fakes implement only the port methods this path touches, per the ports.ts contract
 // (docs/backend/commerce/02-api-documentation.md §E.1).
+const KEY_ID = "rzp_test_key_id";
+const KEY_SECRET = "rzp_test_key_secret";
+
+/** The signature Razorpay's checkout would return for this (order, payment) pair. */
+function sign(razorpayOrderId: string, transactionId: string, secret = KEY_SECRET) {
+  return createHmac("sha256", secret).update(`${razorpayOrderId}|${transactionId}`).digest("hex");
+}
+
 function makeFakes() {
   const repository = {
     findById: vi.fn(),
@@ -41,6 +50,22 @@ function makeFakes() {
 
   return { service, repository, orderService, emailService, whatsappService };
 }
+
+// The gateway credentials and the HTTP call are stubbed for every test in this
+// file: no spec may reach api.razorpay.com, and signature verification needs a
+// deterministic secret rather than whatever the developer's .env happens to hold.
+beforeEach(() => {
+  process.env.RAZORPAY_KEY_ID = KEY_ID;
+  process.env.RAZORPAY_KEY_SECRET = KEY_SECRET;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: "order_gateway_1" }) }),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("RazorpayPaymentService.createSession", () => {
   let fakes: ReturnType<typeof makeFakes>;
@@ -81,9 +106,9 @@ describe("RazorpayPaymentService.createSession", () => {
   });
 });
 
-// E2: RazorpayPaymentOrderValidator is a stub that always returns true (checklist row E1/E2 — 🟡
-// pending team sign-off). No server-side signature check exists in this service either — the code
-// only has a `// Verify signature here` comment. Pinning current (unverified) behavior, not adding one.
+// E2 (audit C3/C4): every client-reported success is signature-verified against the
+// Razorpay key secret before any status mutation, and a success for which no
+// transaction row exists is NO_ACTION — the service never fabricates a PAID row.
 describe("RazorpayPaymentService.updateTransactionSuccess (client-reported, checklist row E2)", () => {
   let fakes: ReturnType<typeof makeFakes>;
   beforeEach(() => {
@@ -97,20 +122,47 @@ describe("RazorpayPaymentService.updateTransactionSuccess (client-reported, chec
       paymentType: "advance",
       razorpayOrderId: "r1",
       transactionId: "t1",
-      transactionSignature: "sig",
+      transactionSignature: sign("r1", "t1"),
     });
     expect(result).toBe(ActionCode.NO_ACTION);
     expect(fakes.orderService.updateOrderStatusToProcessing).not.toHaveBeenCalled();
   });
 
-  it("accepts the client-reported success at face value: no signature check runs before marking PAID", async () => {
+  it("creates no transaction row for an unknown order/payment pair", async () => {
+    (fakes.repository.findByOrderAndRazorpayOrderId as any).mockResolvedValue(null);
+    await fakes.service.updateTransactionSuccess({}, {
+      loomOrderId: 999n,
+      paymentType: "advance",
+      razorpayOrderId: "r-unknown",
+      transactionId: "t-unknown",
+      transactionSignature: sign("r-unknown", "t-unknown"),
+    });
+    expect(fakes.repository.create).not.toHaveBeenCalled();
+    expect(fakes.repository.update).not.toHaveBeenCalled();
+  });
+
+  it("marks PAID when the signature verifies", async () => {
     (fakes.repository.findByOrderAndRazorpayOrderId as any).mockResolvedValue({ id: 5n, paymentType: "advance" });
     (fakes.repository.update as any).mockResolvedValue({ id: 5n });
     (fakes.orderService.updateOrderStatusToProcessing as any).mockResolvedValue(true);
     (fakes.orderService.getOrderById as any).mockResolvedValue({ id: 1n });
 
-    // Deliberately garbage signature — the doc flags that no verification was located for this
-    // route (E2); this test pins that the service does not reject it.
+    const result = await fakes.service.updateTransactionSuccess({}, {
+      loomOrderId: 1n,
+      paymentType: "advance",
+      razorpayOrderId: "r1",
+      transactionId: "t1",
+      transactionSignature: sign("r1", "t1"),
+    });
+
+    expect(result).toBe(ActionCode.UPDATE_SUCCESS);
+    expect(fakes.repository.update).toHaveBeenCalledWith(5n, expect.objectContaining({ status: TransactionStatus.PAID }));
+  });
+
+  it("rejects a forged signature: never PAID, order failed, no row created", async () => {
+    (fakes.repository.findByOrderAndRazorpayOrderId as any).mockResolvedValue({ id: 5n, paymentType: "advance" });
+    (fakes.repository.update as any).mockResolvedValue({ id: 5n });
+
     const result = await fakes.service.updateTransactionSuccess({}, {
       loomOrderId: 1n,
       paymentType: "advance",
@@ -119,8 +171,66 @@ describe("RazorpayPaymentService.updateTransactionSuccess (client-reported, chec
       transactionSignature: "not-a-real-signature",
     });
 
-    expect(result).toBe(ActionCode.UPDATE_SUCCESS);
-    expect(fakes.repository.update).toHaveBeenCalledWith(5n, expect.objectContaining({ status: TransactionStatus.PAID, transactionSignature: "not-a-real-signature" }));
+    expect(result).toBe(ActionCode.UPDATE_FAILURE);
+    expect(fakes.repository.create).not.toHaveBeenCalled();
+    expect(fakes.repository.update).toHaveBeenCalledWith(
+      5n,
+      expect.objectContaining({ failedErrorCode: TransactionFailureCode.INVALID_TRANSACTION_SIGNATURE }),
+    );
+    expect(fakes.repository.update).not.toHaveBeenCalledWith(5n, expect.objectContaining({ status: TransactionStatus.PAID }));
+    expect(fakes.orderService.updateOrderStatusToProcessing).not.toHaveBeenCalled();
+  });
+
+  it("rejects a signature computed with the wrong secret", async () => {
+    (fakes.repository.findByOrderAndRazorpayOrderId as any).mockResolvedValue({ id: 5n, paymentType: "advance" });
+    (fakes.repository.update as any).mockResolvedValue({ id: 5n });
+
+    const result = await fakes.service.updateTransactionSuccess({}, {
+      loomOrderId: 1n,
+      paymentType: "advance",
+      razorpayOrderId: "r1",
+      transactionId: "t1",
+      transactionSignature: sign("r1", "t1", "someone-elses-secret"),
+    });
+
+    expect(result).toBe(ActionCode.UPDATE_FAILURE);
+    expect(fakes.orderService.updateOrderStatusToProcessing).not.toHaveBeenCalled();
+  });
+
+  it("rejects a signature bound to a different payment id (replay across payments)", async () => {
+    (fakes.repository.findByOrderAndRazorpayOrderId as any).mockResolvedValue({ id: 5n, paymentType: "advance" });
+    (fakes.repository.update as any).mockResolvedValue({ id: 5n });
+
+    const result = await fakes.service.updateTransactionSuccess({}, {
+      loomOrderId: 1n,
+      paymentType: "advance",
+      razorpayOrderId: "r1",
+      transactionId: "t1",
+      transactionSignature: sign("r1", "t-other"),
+    });
+
+    expect(result).toBe(ActionCode.UPDATE_FAILURE);
+  });
+
+  it("fails closed when no key secret is configured", async () => {
+    delete process.env.RAZORPAY_KEY_SECRET;
+    (fakes.repository.findByOrderAndRazorpayOrderId as any).mockResolvedValue({ id: 5n, paymentType: "advance" });
+    (fakes.repository.update as any).mockResolvedValue({ id: 5n });
+
+    const result = await fakes.service.updateTransactionSuccess({}, {
+      loomOrderId: 1n,
+      paymentType: "advance",
+      razorpayOrderId: "r1",
+      transactionId: "t1",
+      transactionSignature: sign("r1", "t1"),
+    });
+
+    expect(result).toBe(ActionCode.UPDATE_FAILURE);
+    expect(fakes.repository.update).toHaveBeenCalledWith(
+      5n,
+      expect.objectContaining({ failedErrorCode: TransactionFailureCode.TRANSACTION_SIGNATURE_VALIDATION_ERROR }),
+    );
+    expect(fakes.orderService.updateOrderStatusToProcessing).not.toHaveBeenCalled();
   });
 
   it("advance payment: moves order to processing and sends confirmation email + WhatsApp", async () => {
@@ -135,7 +245,7 @@ describe("RazorpayPaymentService.updateTransactionSuccess (client-reported, chec
       paymentType: "advance",
       razorpayOrderId: "r1",
       transactionId: "t1",
-      transactionSignature: "sig",
+      transactionSignature: sign("r1", "t1"),
     });
 
     expect(fakes.emailService.sendOrderConfirmationEmail).toHaveBeenCalledWith(tenant, { id: 1n });
@@ -154,7 +264,7 @@ describe("RazorpayPaymentService.updateTransactionSuccess (client-reported, chec
       paymentType: "remaining",
       razorpayOrderId: "r1",
       transactionId: "t1",
-      transactionSignature: "sig",
+      transactionSignature: sign("r1", "t1"),
     });
 
     expect(result).toBe(ActionCode.UPDATE_SUCCESS);
@@ -170,7 +280,7 @@ describe("RazorpayPaymentService.updateTransactionSuccess (client-reported, chec
       paymentType: "advance",
       razorpayOrderId: "r1",
       transactionId: "t1",
-      transactionSignature: "sig",
+      transactionSignature: sign("r1", "t1"),
     });
 
     expect(result).toBe(ActionCode.UPDATE_FAILURE);

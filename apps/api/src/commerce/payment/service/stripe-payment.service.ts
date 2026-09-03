@@ -1,9 +1,11 @@
-// @ts-nocheck
-import { Injectable, Inject } from "@nestjs/common";
-import { ActionCode } from "../../../common/errors/action-code.js";
+import { Injectable, Inject, Logger } from "@nestjs/common";
 import { StripeTransactionRepository } from "../repository/payment.repository.js";
 import { StripePaymentOrderInput } from "../dto/payment.dto.js";
-import { TransactionStatus, TransactionFailureCode } from "../types/payment.types.js";
+import {
+  TransactionStatus,
+  TransactionFailureCode,
+  OrderFailureCode,
+} from "../types/payment.types.js";
 import {
   ORDER_SERVICE,
   OrderServicePort,
@@ -15,10 +17,19 @@ import {
   CartServicePort,
 } from "../ports/payment.ports.js";
 
-const DEFAULT_ORDER_ID = 278006;
-
+/**
+ * Stripe payments, ported from Loom's StripeTransactionDAOController.
+ *
+ * The webhook handlers below are only ever reached from
+ * PaymentController#checkoutStripeWebhook, which verifies the Stripe signature
+ * over the raw request body first. They additionally require the session to
+ * match a transaction row this API itself created — an unknown session is an
+ * unauthorized update, not a new PAID row.
+ */
 @Injectable()
 export class StripePaymentService {
+  private readonly logger = new Logger(StripePaymentService.name);
+
   constructor(
     private readonly repository: StripeTransactionRepository,
     @Inject(ORDER_SERVICE) private readonly orderService: OrderServicePort,
@@ -27,115 +38,164 @@ export class StripePaymentService {
     @Inject(CART_SERVICE) private readonly cartService: CartServicePort,
   ) {}
 
-  private async resolveValidOrderId(id: number | bigint | undefined): Promise<number> {
-    if (id) {
-      try {
-        const order = await this.orderService.getOrderById(BigInt(id));
-        if (order) return Number(id);
-      } catch {}
-    }
-    return DEFAULT_ORDER_ID;
-  }
-
   async createSession(tenant: any, request: StripePaymentOrderInput) {
-    const validOrderId = await this.resolveValidOrderId(request.loomOrderId);
-    const stripeKey = process.env.STRIPE_KEY_SECRET || process.env.STRIPE_SECRET_KEY || "";
+    const orderId = BigInt(request.loomOrderId);
 
-    let session = {
-      id: "cs_test_" + Date.now(),
-      paymentIntent: "pi_test_" + Date.now(),
-      url: "https://checkout.stripe.com/pay/cs_test_" + Date.now(),
-      amountTotal: Math.round(Number(request.totalAmount || 1000) * 100),
-      currency: (request.currency || "USD").toLowerCase(),
-    };
+    const order = await this.orderService.getOrderById(orderId);
+    if (!order) throw new Error("Irrelevant payment session create request");
 
-    try {
-      const params = new URLSearchParams();
-      params.append("mode", "payment");
-      params.append("payment_method_types[0]", "card");
-      params.append("line_items[0][price_data][currency]", (request.currency || "USD").toLowerCase());
-      params.append("line_items[0][price_data][unit_amount]", Math.max(50, Math.round(Number(request.totalAmount || 10) * 100)).toString());
-      params.append("line_items[0][price_data][product_data][name]", `Anuprerna Order #${validOrderId}`);
-      params.append("line_items[0][price_data][product_data][description]", "Handcrafted Artisanal Textiles Advance Payment");
-      params.append("line_items[0][quantity]", "1");
-      if (request.customerEmail) {
-        params.append("customer_email", request.customerEmail);
-      }
-      const baseUrl = process.env.STOREFRONT_URL || "https://anuprerna-v2-0-storefront-uy2f.vercel.app";
-      params.append("success_url", `${baseUrl}/profile/thank-you/${validOrderId}?session_id={CHECKOUT_SESSION_ID}&gateway=stripe`);
-      params.append("cancel_url", `${baseUrl}/checkout?step=payment&cancelled=true`);
-
-      const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: params.toString(),
-      });
-
-      if (res.ok) {
-        const stripeRes = await res.json();
-        if (stripeRes.url) {
-          session = {
-            id: stripeRes.id,
-            paymentIntent: stripeRes.payment_intent || ("pi_" + stripeRes.id),
-            url: stripeRes.url,
-            amountTotal: stripeRes.amount_total || Math.round(Number(request.totalAmount || 1000) * 100),
-            currency: stripeRes.currency || (request.currency || "USD").toLowerCase(),
-          };
-        }
-      } else {
-        const errJson = await res.json().catch(() => ({}));
-        console.warn("Stripe API key invalid or expired, falling back to simulated order completion for local test:", errJson);
-        session.url = `${baseUrl}/profile/thank-you/${validOrderId}?stripe_simulated=true&gateway=stripe`;
-      }
-    } catch (apiErr) {
-      console.warn("Stripe API call error, falling back to simulated order completion:", apiErr);
-      const baseUrl = process.env.STOREFRONT_URL || "https://anuprerna-v2-0-storefront-uy2f.vercel.app";
-      session.url = `${baseUrl}/profile/thank-you/${validOrderId}?stripe_simulated=true&gateway=stripe`;
+    if (!this.orderService.isAnyPaymentDue(order)) {
+      throw new Error("No payment due for this order");
     }
 
-    await this.repository.create({
+    let session: { id: string; paymentIntent: string; url: string; amountTotal: number; currency: string };
+    try {
+      session = await this.createCheckoutSession(orderId, request);
+    } catch (error) {
+      this.logger.error(`Stripe checkout session creation failed for order ${orderId}`, error as Error);
+      await this.orderService.updateOrderStatusToFailed(orderId, OrderFailureCode.PAYMENT_SESSION_CREATE_FAILURE);
+      throw new Error("Payment session creation error");
+    }
+
+    const created = await this.repository.create({
       stripeSessionId: session.id,
       stripePaymentIntentId: session.paymentIntent,
-      loomOrderId: validOrderId,
+      loomOrderId: Number(orderId),
       amount: (session.amountTotal / 100).toString(),
-      paymentType: request.paymentType || "advance",
+      paymentType: request.paymentType,
       currency: session.currency,
       checkoutUrl: session.url,
       status: TransactionStatus.CREATED,
+      failedErrorCode: -1,
       createdAt: Date.now(),
       dataDump: session,
-    });
+    } as any);
+
+    if (!created) {
+      await this.orderService.updateOrderStatusToFailed(orderId, OrderFailureCode.PAYMENT_SESSION_LOG_FAILURE);
+      throw new Error("Payment session log error");
+    }
+
+    await this.orderService.updateOrderCheckoutUrlStripe(orderId, session.url);
 
     return { sessionId: session.id, checkoutUrl: session.url };
   }
 
+  private async createCheckoutSession(orderId: bigint, request: StripePaymentOrderInput) {
+    const currency = (request.currency || "USD").toLowerCase();
+    const baseUrl = process.env.STOREFRONT_URL || "http://localhost:3000";
+
+    const params = new URLSearchParams();
+    params.append("mode", "payment");
+    params.append("payment_method_types[0]", "card");
+    params.append("client_reference_id", orderId.toString());
+    params.append("line_items[0][price_data][currency]", currency);
+    params.append("line_items[0][price_data][unit_amount]", Math.round(Number(request.totalAmount) * 100).toString());
+    params.append("line_items[0][price_data][product_data][name]", `Anuprerna Order #${orderId}`);
+    params.append("line_items[0][quantity]", "1");
+    if (request.customerEmail) params.append("customer_email", request.customerEmail);
+    params.append(
+      "success_url",
+      `${baseUrl}/profile/thank-you/${orderId}?session_id={CHECKOUT_SESSION_ID}&gateway=stripe`,
+    );
+    params.append("cancel_url", `${baseUrl}/checkout?step=payment&cancelled=true`);
+
+    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.STRIPE_KEY_SECRET ?? ""}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    if (!response.ok) throw new Error(`Stripe responded ${response.status}`);
+
+    const created = (await response.json()) as any;
+    if (!created?.id || !created?.url) throw new Error("Stripe checkout session response was incomplete");
+
+    return {
+      id: created.id,
+      paymentIntent: created.payment_intent ?? "",
+      url: created.url,
+      amountTotal: created.amount_total ?? Math.round(Number(request.totalAmount) * 100),
+      currency: created.currency ?? currency,
+    };
+  }
+
+  /**
+   * Looks the transaction up by (order, session id). Anything the API did not
+   * itself create is refused — this is what stops a forged or replayed webhook
+   * from marking an order paid.
+   */
+  private async requireTransaction(session: any) {
+    const orderId = BigInt(session.client_reference_id);
+    const transaction = await this.repository.findByOrderAndStripeSessionId(orderId, session.id);
+
+    if (!transaction) {
+      this.logger.warn(`Rejected Stripe webhook for unknown session ${session.id} on order ${orderId}`);
+      throw new Error("Unauthorized payment transaction update request");
+    }
+
+    return { orderId, transaction };
+  }
+
   async handlePaymentSuccess(session: any, event: any) {
-    const transaction = await this.repository.findBySessionId(session.id);
-    if (!transaction) return;
+    const { orderId, transaction } = await this.requireTransaction(session);
 
     transaction.status = TransactionStatus.PAID;
+    transaction.stripePaymentIntentId = session.payment_intent;
     transaction.webhookReceived = true;
     transaction.webhookReceivedAt = Date.now();
-    transaction.webhookDataDump = event;
     transaction.webhookEventType = event.type;
+    transaction.webhookDataDump = event;
+    transaction.dataDump = session;
 
-    await this.repository.update(transaction.id, transaction);
+    const updated = await this.repository.update(transaction.id, transaction);
+    if (!updated) {
+      this.logger.error(`Stripe transaction ${transaction.id} could not be marked PAID`);
+      await this.orderService.updateOrderStatusToFailed(orderId, OrderFailureCode.TRANSACTION_SUCCESS_UPDATE_FAILURE);
+      return;
+    }
+
+    if (transaction.paymentType === "advance") {
+      if (!(await this.orderService.updateOrderStatusToProcessing(orderId))) return;
+      const order = await this.orderService.getOrderById(orderId);
+      await this.emailService.sendOrderConfirmationEmail(order?.tenant, order);
+      await this.whatsappService.orderConfirmationNotification(order);
+      // Only the synchronous completion clears the cart; an async success arrives
+      // after the shopper has already moved on.
+      if (event.type === "checkout.session.completed") {
+        await this.cartService.deleteAllCartItem(order?.tenant);
+      }
+      return;
+    }
+
+    if (transaction.paymentType === "remaining") {
+      if (!(await this.orderService.updatePreOrderPaymentStatusToPaid(orderId))) return;
+      const order = await this.orderService.getOrderById(orderId);
+      await this.emailService.sendPreOrderConfirmationEmail(order?.tenant, order, order?.orderItems ?? []);
+    }
   }
 
   async handlePaymentFailure(session: any, event: any) {
-    const transaction = await this.repository.findBySessionId(session.id);
-    if (!transaction) return;
+    const { orderId, transaction } = await this.requireTransaction(session);
 
     transaction.status = TransactionStatus.FAILED;
+    transaction.failedErrorCode = TransactionFailureCode.PAYMENT_FAILURE;
+    transaction.failedErrorMessage = "Checkout session expired";
+    transaction.stripePaymentIntentId = session.payment_intent;
     transaction.webhookReceived = true;
     transaction.webhookReceivedAt = Date.now();
-    transaction.webhookDataDump = event;
     transaction.webhookEventType = event.type;
+    transaction.webhookDataDump = event;
+    transaction.dataDump = session;
 
     await this.repository.update(transaction.id, transaction);
+
+    if (transaction.paymentType === "advance") {
+      await this.orderService.updateOrderStatusToFailed(orderId, OrderFailureCode.PAYMENT_FAILURE);
+    }
   }
 
   async getTransactionData(page: number, size: number) {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CONNECTION } from "../../../database/database.module.js";
 import * as schema from "../../../database/schema/schema.js";
@@ -22,7 +21,7 @@ export class RazorpayTransactionRepository {
             .from(schema.razorpayTransaction)
             .where(
                 and(
-                    eq(schema.razorpayTransaction.loomOrderId, orderId),
+                    eq(schema.razorpayTransaction.loomOrderId, Number(orderId)),
                     eq(schema.razorpayTransaction.razorpayOrderId, razorpayOrderId)
                 )
             );
@@ -33,7 +32,7 @@ export class RazorpayTransactionRepository {
         return this.db
             .select()
             .from(schema.razorpayTransaction)
-            .where(eq(schema.razorpayTransaction.loomOrderId, orderId));
+            .where(eq(schema.razorpayTransaction.loomOrderId, Number(orderId)));
     }
 
     async findPaginated(page: number, size: number) {
@@ -72,7 +71,7 @@ export class StripeTransactionRepository {
             .from(schema.stripeTransaction)
             .where(
                 and(
-                    eq(schema.stripeTransaction.loomOrderId, orderId),
+                    eq(schema.stripeTransaction.loomOrderId, Number(orderId)),
                     eq(schema.stripeTransaction.stripeSessionId, stripeSessionId)
                 )
             );
@@ -93,7 +92,7 @@ export class StripeTransactionRepository {
             .from(schema.stripeTransaction)
             .where(
                 and(
-                    eq(schema.stripeTransaction.loomOrderId, orderId),
+                    eq(schema.stripeTransaction.loomOrderId, Number(orderId)),
                     eq(schema.stripeTransaction.paymentType, paymentType)
                 )
             )
@@ -118,5 +117,3 @@ export class StripeTransactionRepository {
         return result[0];
     }
 }
-// @ts-nocheck
-// @ts-nocheck

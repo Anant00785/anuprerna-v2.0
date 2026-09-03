@@ -1,7 +1,7 @@
 // loomOrderId is now persisted as a number: the column is bigint({ mode: "number" }).
 // TransactionStatus is now the string the Postgres enum actually accepts, not an
 // integer. Both were corrected on 2026-08-12 - see docs/KNOWN-GAPS.md.
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { StripePaymentService } from "./stripe-payment.service.js";
 import type { StripeTransactionRepository } from "../repository/payment.repository.js";
 import type { OrderServicePort, EmailServicePort, WhatsappServicePort, CartServicePort } from "../ports/payment.ports.js";
@@ -48,6 +48,28 @@ function makeFakes() {
 
   return { service, repository, orderService, emailService, whatsappService, cartService };
 }
+
+// No spec may reach api.stripe.com: the checkout call is stubbed for every test.
+beforeEach(() => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: "cs_test_1",
+        payment_intent: "pi_test_1",
+        url: "https://checkout.stripe.com/c/pay/cs_test_1",
+        amount_total: 50000,
+        currency: "usd",
+      }),
+    }),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("StripePaymentService.createSession", () => {
   let fakes: ReturnType<typeof makeFakes>;

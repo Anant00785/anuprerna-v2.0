@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Must match the Postgres enum `transaction_status_enum`, which accepts exactly
  * 'CREATED' | 'PAID' | 'FAILED' (verified against the live schema).
@@ -30,5 +29,32 @@ export const TransactionFailureCode = {
     TRANSACTION_SIGNATURE_VALIDATION_ERROR: 102,
     PAYMENT_FAILURE: 103,
 };
-// @ts-nocheck
-// @ts-nocheck
+
+export function transactionFailureMessage(code: number): string {
+    switch (code) {
+        case TransactionFailureCode.INVALID_TRANSACTION_SIGNATURE:
+            return "Invalid payment transaction signature";
+        case TransactionFailureCode.TRANSACTION_SIGNATURE_VALIDATION_ERROR:
+            return "Error while validating payment transaction signature";
+        case TransactionFailureCode.PAYMENT_FAILURE:
+            return "Payment Failure";
+        default:
+            return "";
+    }
+}
+
+/**
+ * Reason codes handed to OrderService.updateOrderStatusToFailed.
+ *
+ * Mirrors Loom's OrderFailureCode, renumbered to the values this repo's payment
+ * specs pin (session-log = 1, transaction-success-update = 2, payment-failure = 3).
+ * Keep the three pinned values stable; the rest only need to be distinct.
+ */
+export const OrderFailureCode = {
+    PAYMENT_SESSION_LOG_FAILURE: 1,
+    TRANSACTION_SUCCESS_UPDATE_FAILURE: 2,
+    PAYMENT_FAILURE: 3,
+    INVALID_TRANSACTION_SIGNATURE: 4,
+    TRANSACTION_SIGNATURE_VALIDATION_ERROR: 5,
+    PAYMENT_SESSION_CREATE_FAILURE: 6,
+} as const;

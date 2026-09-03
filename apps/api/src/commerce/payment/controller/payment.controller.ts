@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import {
   Controller,
@@ -12,7 +11,12 @@ import {
   Req,
   Headers,
   BadRequestException,
+  type RawBodyRequest,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import type { Request } from "express";
+import type { EnvironmentVariables } from "../../../common/config/env.schema.js";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
@@ -47,6 +51,9 @@ import {
   sanitizeStripePaymentOrderInput,
 } from "../validators/payment.sanitizer.js";
 
+/** Stripe's own default replay window. */
+const STRIPE_SIGNATURE_TOLERANCE_SECONDS = 300;
+
 @ApiBearerAuth()
 @ApiTags("Payment")
 @Controller()
@@ -55,6 +62,7 @@ export class PaymentController {
   constructor(
     private readonly razorpayService: RazorpayPaymentService,
     private readonly stripeService: StripePaymentService,
+    private readonly config: ConfigService<EnvironmentVariables, true>,
   ) {}
 
   @Post("/create/payment-session")
@@ -255,18 +263,62 @@ export class PaymentController {
     return keyedResponse("entity", data);
   }
 
+  /**
+   * Verifies a Stripe webhook signature the way Stripe's own SDK does
+   * (`Webhook.constructEvent` in Loom's StripeWebhookController): HMAC-SHA256 of
+   * `<timestamp>.<raw body>` keyed with the endpoint secret, compared in constant
+   * time against the `v1` scheme in the header, within a 5-minute tolerance.
+   *
+   * Implemented with node:crypto because the `stripe` package is not a dependency
+   * of this API and this is the whole of what it would be used for.
+   */
+  private constructStripeEvent(rawBody: Buffer | undefined, signatureHeader: string): any {
+    const secret = this.config.get("STRIPE_WEBHOOK_SECRET", { infer: true });
+    // Fail closed: an unconfigured endpoint secret means no webhook can be trusted.
+    if (!secret) throw new BadRequestException("Stripe webhook secret is not configured");
+    if (!signatureHeader) throw new BadRequestException("Missing Stripe signature");
+    if (!rawBody) throw new BadRequestException("Missing raw request body for signature verification");
+
+    const parts = new Map(
+      signatureHeader
+        .split(",")
+        .map((part) => part.split("=", 2))
+        .filter((pair): pair is [string, string] => pair.length === 2)
+        .map(([key, value]) => [key.trim(), value.trim()] as [string, string]),
+    );
+
+    const timestamp = parts.get("t");
+    const provided = parts.get("v1");
+    if (!timestamp || !provided) throw new BadRequestException("Malformed Stripe signature header");
+
+    if (Math.abs(Date.now() / 1000 - Number(timestamp)) > STRIPE_SIGNATURE_TOLERANCE_SECONDS) {
+      throw new BadRequestException("Stripe signature timestamp outside tolerance");
+    }
+
+    const expected = Buffer.from(
+      createHmac("sha256", secret).update(`${timestamp}.${rawBody.toString("utf8")}`).digest("hex"),
+      "utf8",
+    );
+    const received = Buffer.from(provided, "utf8");
+
+    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+      throw new BadRequestException("Stripe signature verification failed");
+    }
+
+    return JSON.parse(rawBody.toString("utf8"));
+  }
+
   @Post("/checkout/stripe/webhook")
   @ApiOperation({ summary: "Stripe webhook handler" })
   async checkoutStripeWebhook(
-    @Headers("Stripe-Signature") signature: string,
-    @Body() payload: any,
+    @Headers("stripe-signature") signature: string,
+    @Req() request: RawBodyRequest<Request>,
   ) {
-    if (!signature) {
-      throw new BadRequestException("Missing signature");
-    }
+    // Verification happens before anything else and outside the try/catch below,
+    // so a failure can never be reported as a processed event.
+    const event = this.constructStripeEvent(request?.rawBody, signature);
 
     try {
-      const event = payload;
       const session = event?.data?.object;
 
       if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {

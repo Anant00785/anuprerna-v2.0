@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString, IsNumber } from "class-validator";
 import { Type } from "class-transformer";
@@ -77,17 +76,17 @@ export class UpdatePaymentSuccessDto {
   @IsString()
   paymentType!: string;
 
-  @ApiProperty({ example: "order_mock_123456", description: "Razorpay Order ID" })
+  @ApiProperty({ example: "order_NqxYz1AbCdEfGh", description: "Razorpay Order ID" })
   @IsNotEmpty()
   @IsString()
   razorpayOrderId!: string;
 
-  @ApiProperty({ example: "pay_mock_987654", description: "Payment Transaction ID" })
+  @ApiProperty({ example: "pay_NqxYz2IjKlMnOp", description: "Payment Transaction ID" })
   @IsNotEmpty()
   @IsString()
   transactionId!: string;
 
-  @ApiPropertyOptional({ example: "mock_signature_abc123", description: "Transaction Signature" })
+  @ApiPropertyOptional({ example: "a1b2c3...64-hex-hmac", description: "Transaction Signature" })
   @IsOptional()
   @IsString()
   transactionSignature?: string;
@@ -100,7 +99,7 @@ export class UpdatePaymentFailureDto {
   @Type(() => Number)
   loomOrderId!: number;
 
-  @ApiProperty({ example: "order_mock_123456", description: "Razorpay Order ID" })
+  @ApiProperty({ example: "order_NqxYz1AbCdEfGh", description: "Razorpay Order ID" })
   @IsNotEmpty()
   @IsString()
   razorpayOrderId!: string;
@@ -125,10 +124,28 @@ export class UpdatePaymentTransactionDto {
   @IsString()
   paymentType!: string;
 
-  @ApiProperty({ example: "pay_mock_987654", description: "Payment Transaction ID" })
+  @ApiProperty({ example: "pay_NqxYz2IjKlMnOp", description: "Payment Transaction ID" })
   @IsNotEmpty()
   @IsString()
   transactionId!: string;
+}
+
+/**
+ * Coerce an untrusted value to bigint. Returns 0n for anything not coercible
+ * (objects, arrays, malformed strings) instead of throwing a TypeError, so a
+ * malformed request body fails validation rather than crashing the handler.
+ */
+function toBigInt(value: unknown): bigint {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? BigInt(Math.trunc(value)) : 0n;
+  if (typeof value === "string" || typeof value === "boolean") {
+    try {
+      return BigInt(value);
+    } catch {
+      return 0n;
+    }
+  }
+  return 0n;
 }
 
 export interface RazorpayPaymentInput {
@@ -139,7 +156,7 @@ export interface RazorpayPaymentInput {
 export function parseRazorpayPaymentInput(raw: unknown): RazorpayPaymentInput {
   const obj = (raw ?? {}) as Record<string, unknown>;
   return {
-    orderId: obj.orderId ? BigInt(obj.orderId) : 0n,
+    orderId: toBigInt(obj.orderId),
     paymentType: typeof obj.paymentType === "string" ? obj.paymentType : "",
   };
 }
@@ -155,7 +172,7 @@ export interface RazorpayPaymentSuccessInput {
 export function parseRazorpayPaymentSuccessInput(raw: unknown): RazorpayPaymentSuccessInput {
   const obj = (raw ?? {}) as Record<string, unknown>;
   return {
-    loomOrderId: obj.loomOrderId ? BigInt(obj.loomOrderId) : 0n,
+    loomOrderId: toBigInt(obj.loomOrderId),
     paymentType: typeof obj.paymentType === "string" ? obj.paymentType : "advance",
     razorpayOrderId: typeof obj.razorpayOrderId === "string" ? obj.razorpayOrderId : "",
     transactionId: typeof obj.transactionId === "string" ? obj.transactionId : "",
@@ -172,7 +189,7 @@ export interface RazorpayPaymentFailureInput {
 export function parseRazorpayPaymentFailureInput(raw: unknown): RazorpayPaymentFailureInput {
   const obj = (raw ?? {}) as Record<string, unknown>;
   return {
-    loomOrderId: obj.loomOrderId ? BigInt(obj.loomOrderId) : 0n,
+    loomOrderId: toBigInt(obj.loomOrderId),
     razorpayOrderId: typeof obj.razorpayOrderId === "string" ? obj.razorpayOrderId : "",
     error: obj.error ?? {},
   };
@@ -187,7 +204,7 @@ export interface RazorpayPaymentUpdateInput {
 export function parseRazorpayPaymentUpdateInput(raw: unknown): RazorpayPaymentUpdateInput {
   const obj = (raw ?? {}) as Record<string, unknown>;
   return {
-    loomOrderId: obj.loomOrderId ? BigInt(obj.loomOrderId) : 0n,
+    loomOrderId: toBigInt(obj.loomOrderId),
     paymentType: typeof obj.paymentType === "string" ? obj.paymentType : "advance",
     transactionId: typeof obj.transactionId === "string" ? obj.transactionId : "",
   };
@@ -208,10 +225,10 @@ export interface StripePaymentOrderInput {
 export function parseStripePaymentOrderInput(raw: unknown): StripePaymentOrderInput {
   const obj = (raw ?? {}) as Record<string, unknown>;
   return {
-    loomOrderId: obj.loomOrderId ? BigInt(obj.loomOrderId) : 0n,
+    loomOrderId: toBigInt(obj.loomOrderId),
     paymentType: typeof obj.paymentType === "string" ? obj.paymentType : "advance",
     currency: typeof obj.currency === "string" ? obj.currency : "USD",
-    totalAmount: obj.totalAmount ? BigInt(obj.totalAmount) : 0n,
+    totalAmount: toBigInt(obj.totalAmount),
     customerEmail: typeof obj.customerEmail === "string" ? obj.customerEmail : "",
     customerName: typeof obj.customerName === "string" ? obj.customerName : "",
     customerPhone: typeof obj.customerPhone === "string" ? obj.customerPhone : "",
