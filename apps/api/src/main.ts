@@ -30,11 +30,21 @@ import type { EnvironmentVariables } from "./common/config/env.schema.js";
   return this.toString();
 };
 
+/**
+ * Fallback allowlist used when CORS_ORIGINS is unset. The deployed frontends
+ * are listed here on purpose: origins were hardcoded here before CORS_ORIGINS
+ * existed, and dropping them into env-only would have broken both Vercel apps
+ * the moment the variable was missing. Set CORS_ORIGINS to override entirely.
+ */
 const DEFAULT_CORS_ORIGINS = [
   "http://localhost:3001",
   "http://localhost:3000",
   "http://127.0.0.1:3001",
   "http://127.0.0.1:3000",
+  "https://anuprerna-v2-0-storefront-zeta.vercel.app",
+  "https://anuprerna-v2-0-cms-green.vercel.app",
+  "https://anuprerna.com",
+  "https://www.anuprerna.com",
 ];
 
 /**

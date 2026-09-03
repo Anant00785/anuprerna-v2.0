@@ -43,18 +43,8 @@ export async function GET(request: Request) {
       productsJson.entityList ||
       (Array.isArray(productsJson) ? productsJson : []);
 
-    if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
-      try {
-        const fallbackUrl =
-          group === "finished"
-            ? "https://loom-v2.anuprerna.com/get/filter/finished"
-            : "https://loom-v2.anuprerna.com/get/filter/fabric?category=fabrics";
-        const fbRes = await fetch(fallbackUrl, { headers: DEFAULT_HEADERS, cache: "no-store" });
-        if (fbRes.ok) {
-          const fbJson = await fbRes.json();
-          rawProducts = fbJson.products || fbJson.productFilter || fbJson.productList || [];
-        }
-      } catch (_) {}
+    if (!Array.isArray(rawProducts)) {
+      rawProducts = [];
     }
 
     const colors =
