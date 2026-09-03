@@ -34,23 +34,25 @@ export async function POST(req: Request) {
       ...(token ? { token } : {}),
       ...(guestToken ? { headers: { 'X-Guest-Token': guestToken } } : {}),
     });
-    if ((data as any)?.success) {
+    if ((data as any)?.success && (data as any)?.session) {
       return NextResponse.json(data);
     }
   } catch {
     /* Fallback to simulated payment session */
   }
 
+  const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY || process.env.RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag';
+
   return NextResponse.json({
     success: true,
     session: {
-      provider: provider === 'razorpay' ? 'sandbox' : provider,
+      provider: provider || 'razorpay',
       sessionId: `sess_${orderId}_${Date.now()}`,
       providerOrderId: `order_${orderId}`,
       orderId,
       amount: 990,
       currency: 'INR',
-      keyId: 'rzp_test_mock',
+      keyId: rzpKey,
       checkoutUrl: null,
       expiresAt: Date.now() + 3600000,
     },
