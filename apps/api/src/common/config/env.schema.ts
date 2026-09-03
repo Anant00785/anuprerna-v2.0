@@ -40,8 +40,10 @@ export class EnvironmentVariables {
   @MinLength(1)
   DATABASE_URL!: string;
 
+  // 32 chars minimum: this is the HS256 signing key for every session token, so
+  // a short one is brute-forceable into forged tokens carrying any role.
   @IsString()
-  @MinLength(1)
+  @MinLength(32)
   AUTH_JWT_SECRET!: string;
 
   // ---------------------------------------------------------------------

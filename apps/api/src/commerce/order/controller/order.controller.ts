@@ -1,5 +1,5 @@
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req, UnauthorizedException } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Req, UnauthorizedException, NotFoundException } from "@nestjs/common";
 import { RolesGuard, RequireGate } from "../../../common/auth/roles.guard.js";
 import { GateCode } from "../../../auth/types/auth.types.js";
 import { CurrentTenant } from "../../../common/auth/current-tenant.decorator.js";
@@ -38,8 +38,16 @@ export class OrderController {
 
   @Get("/get/customer/order/:orderId")
   @RequireGate(GateCode.CODE_CU)
-  async getCustomerOrder(@Param("orderId") orderId: string) {
+  async getCustomerOrder(@CurrentTenant() tenant: AuthenticatedTenant, @Param("orderId") orderId: string) {
     const result = await this.orderService.getOrderById(BigInt(orderId));
+    // Order ids are sequential bigints, so without this check any logged-in
+    // customer could walk them and read every buyer's address, email and totals.
+    // 404 rather than 403 — a 403 confirms the id exists.
+    const callerId = Number(tenant?.tenantId ?? tenant?.id);
+    const ownerId = Number((result as { tenantId?: number | bigint })?.tenantId);
+    if (!result || !callerId || ownerId !== callerId) {
+      throw new NotFoundException("Order not found.");
+    }
     return keyedResponse("order", result);
   }
 

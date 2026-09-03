@@ -135,7 +135,12 @@ export class FinishedProductController {
   }
 
   /** FinishedProductDAOController#retrieveFinishedProductData(int page, int size) */
-  @Get(["/get/table-explorer/data/finished-product", "/get/finished-preview-list"])
+  // `/get/finished-preview-list` used to be aliased onto this route. That was wrong
+  // twice over: it is CODE_SU-gated (the storefront calls it anonymously) and it
+  // answers with `finishedProductDataList`, a table-explorer projection the
+  // storefront cannot read — it looks for `productPreviewList`/`products`/`entity`.
+  // The public alias now lives in filter.controller.ts next to its fabric sibling.
+  @Get("/get/table-explorer/data/finished-product")
   @ApiOperation({ summary: "Paginated projection of finished products." })
   @ApiResponse({ status: 200, description: "Page of finished product data." })
   @RequireGate(GateCode.CODE_SU)

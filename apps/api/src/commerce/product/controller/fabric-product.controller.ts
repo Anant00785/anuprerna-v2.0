@@ -97,7 +97,10 @@ export class FabricProductController {
   @Get(["/get/fabric-product/slug-v2/:productSlug", "/get/v2/fabric-product/slug/:productSlug"])
   @ApiOperation({ summary: "Retrieve a fabric product by slug (v2, functionally identical to v1)." })
   @ApiResponse({ status: 200, description: "Fabric product or null." })
-  @RequireGate(GateCode.CODE_SU)
+  // No gate, matching the v1 route above. v2 returns the same product for the same
+  // slug, so a CODE_SU gate here protected nothing — the identical payload was
+  // already public via /get/fabric-product/slug/:productSlug — while 401ing the
+  // storefront PDP, which calls the v2 path.
   async getFabricProductBySlugV2(@Param("productSlug") productSlug: string) {
     const slug = parseProductSlugParam(productSlug);
     const fabricProduct = await this.fabricProductService.retrieveFabricProductBySlugV2(slug);
