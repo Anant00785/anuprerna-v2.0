@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomInt } from 'crypto';
 import nodemailer from 'nodemailer';
 import { otpStore } from '@/lib/auth/otp-store';
 
@@ -14,12 +15,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'Email is required.' }, { status: 400 });
   }
 
-  // 1. Generate secure random 6-digit OTP
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  otpStore.set(email, {
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
-  });
+  // 1. Generate a 6-digit OTP.
+  // randomInt, not Math.random(): this is a login credential, and Math.random()
+  // is a predictable PRNG — the comment here used to claim "secure random" while
+  // using it. randomInt draws from the CSPRNG and is unbiased across the range.
+  const code = String(randomInt(100000, 1000000));
+
+  // Awaited: the store is Postgres-backed now (see lib/auth/otp-store.ts). It
+  // used to be an in-memory Map, so on Vercel the code was written to one
+  // serverless instance's heap and verified on another — the user was told the
+  // code had expired seconds after receiving it.
+  try {
+    await otpStore.set(email, {
+      code,
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
+    });
+  } catch (err) {
+    console.error('[Storefront Email OTP] could not persist the code:', err);
+    return NextResponse.json(
+      { success: false, message: 'Could not send a code right now. Please try again.' },
+      { status: 503 },
+    );
+  }
 
   // 2. Send Real Email via Gmail SMTP
   // Credentials come from the environment only. A committed fallback is a

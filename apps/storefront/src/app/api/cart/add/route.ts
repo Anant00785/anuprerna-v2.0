@@ -10,9 +10,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Not authenticated.' }, { status: 401 });
   }
 
+  // A token this STOREFRONT signed (passwordless email-OTP login, see
+  // /api/auth/email-code/verify) carries `sub: <email>` and no tenant identity
+  // the API knows. The API verifies signatures with its own key, so such a
+  // token can never authorise a cart write — the session is real for browsing
+  // and useless for the cart. Say that, rather than "expired", which sends the
+  // customer round a sign-in loop that cannot fix it.
   if (!isCartCapableToken(token)) {
     return NextResponse.json(
-      { success: false, reauth: true, message: 'Your session has expired — please sign in again.' },
+      { success: false, reauth: true, message: 'Please sign in with your email and password to use the cart.' },
       { status: 401 },
     );
   }

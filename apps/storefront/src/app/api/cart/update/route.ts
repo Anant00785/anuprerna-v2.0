@@ -11,7 +11,7 @@ export async function PATCH(request: Request) {
   }
   if (!isCartCapableToken(token)) {
     return NextResponse.json(
-      { success: false, reauth: true, message: 'Your session has expired — please sign in again.' },
+      { success: false, reauth: true, message: 'Please sign in with your email and password to use the cart.' },
       { status: 401 },
     );
   }
