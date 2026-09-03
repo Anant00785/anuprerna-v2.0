@@ -41,4 +41,50 @@ export class NVerseRepository {
     const users = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.contactNumber, contactNumber));
     return users[0] || null;
   }
+
+  /**
+   * Single-use email verification. Replaces NVerseService#verifyEmail's
+   * previous unconditional `success` — the token must exist, belong to the
+   * tenant behind that email, be unexpired and unconsumed. Marks the token
+   * consumed and the tenant verified in one transaction, so a replayed token
+   * fails on the second call.
+   *
+   * `expires_at` / `verified_at` are varchar in the introspected schema (epoch
+   * millis as text, matching created_at) — parsed defensively; an unparseable
+   * expiry is treated as expired.
+   */
+  async consumeEmailVerificationToken(email: string, token: string): Promise<boolean> {
+    if (!email || !token) return false;
+
+    const rows = await this.db
+      .select({
+        id: schema.verificationToken.id,
+        expiresAt: schema.verificationToken.expiresAt,
+        verifiedAt: schema.verificationToken.verifiedAt,
+        tenantId: schema.verificationToken.tenantId,
+      })
+      .from(schema.verificationToken)
+      .innerJoin(schema.loomTenant, eq(schema.loomTenant.id, sql`${schema.verificationToken.tenantId}`))
+      .where(sql`${schema.verificationToken.token} = ${token} and lower(${schema.loomTenant.email}) = ${email.trim().toLowerCase()}`);
+
+    const row = rows[0];
+    if (!row || row.verifiedAt) return false;
+
+    const expiry = Number(row.expiresAt);
+    if (!Number.isFinite(expiry) || expiry < Date.now()) return false;
+
+    const now = String(Date.now());
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(schema.verificationToken)
+        .set({ verifiedAt: now })
+        .where(eq(schema.verificationToken.id, row.id));
+      await tx
+        .update(schema.loomTenant)
+        .set({ emailVerified: true })
+        .where(eq(schema.loomTenant.id, BigInt(row.tenantId)));
+    });
+
+    return true;
+  }
 }

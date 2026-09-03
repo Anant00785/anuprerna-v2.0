@@ -18,5 +18,10 @@ describeGates(
   [
     ["syncAllProducts", GateCode.CODE_SU],
   ],
+  // The webhook handlers carry no @RequireGate because Zoho Books presents no
+  // JWT — they are guarded by ZohoWebhookGuard instead (Loom's
+  // @NVerseDomainValidated header + IP allowlist). That guard's accept/reject
+  // behaviour is pinned in ../guard/zoho-webhook.guard.spec.ts, and
+  // commerce.module.spec.ts asserts every one of these methods still carries it.
   ["handleSalesOrderWebhook", "handleBillWebhook", "handleInventoryAdjustmentWebhook", "handlePackageWebhook"],
 );
