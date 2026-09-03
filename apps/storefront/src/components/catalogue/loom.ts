@@ -109,7 +109,11 @@ interface RawProduct {
 // WRAPPER (sibling of `product`), not inside product.
 interface PreviewRow { product: RawProduct; id?: number; version?: number; gsm?: number; timeOfCreation?: number }
 interface PreviewListResponse {
+  /** Legacy Loom's envelope key. */
   productPreviewList?: PreviewRow[];
+  /** Our own backend's envelope key for the same list. */
+  products?: PreviewRow[];
+  entity?: PreviewRow[];
 }
 
 function projectNamed(list?: RawNamed[]): NamedRef[] {
@@ -187,6 +191,28 @@ function computeFinishedCalculatedPrice(raw: RawProduct, group: string, price: n
   return priced.unitPrice;
 }
 
+/**
+ * Legacy Loom wraps each preview row as `{ id, gsm, product: {...} }`; our own
+ * backend returns the SAME fields flat on the row, with the product's own id
+ * under `productId`. Reading only the nested shape dropped every product on the
+ * floor (they all failed the `slug` filter), emptying the catalogue.
+ *
+ * A row that already carries a nested `product` is returned untouched.
+ */
+function normalizePreviewRow(row: PreviewRow): PreviewRow {
+  if (row && typeof row === 'object' && row.product) return row;
+  const flat = row as unknown as Record<string, unknown>;
+  return {
+    // The WRAPPER id (sibling of the product) — what cart adds send as
+    // fabricProductId. The product's own id goes inside `product`.
+    id: flat.id as number | undefined,
+    version: flat.version as number | undefined,
+    gsm: flat.gsm as number | undefined,
+    timeOfCreation: flat.timeOfCreation as number | undefined,
+    product: { ...flat, id: (flat.productId ?? flat.id) as number } as unknown as RawProduct,
+  };
+}
+
 function projectProduct(row: PreviewRow, fallbackGroup: string): CatalogueProduct {
   const raw = row.product;
   const price = num(raw.price);
@@ -246,11 +272,19 @@ function projectProduct(row: PreviewRow, fallbackGroup: string): CatalogueProduc
 async function fetchPreviewList(path: string, group: string): Promise<CatalogueProduct[]> {
   try {
     const res = await loomGet<PreviewListResponse>(path);
-    const rows = res?.productPreviewList ?? [];
+    // Legacy Loom names the list `productPreviewList`; our own backend names it
+    // `products`. Reading only the first yielded an EMPTY catalogue against our
+    // API, which buildFullCatalogue then (correctly) refused to cache — so the
+    // PLP and every catalogue-backed page threw instead of rendering.
+    const rows = res?.productPreviewList ?? res?.products ?? res?.entity ?? [];
     return rows
-      .map((r) => projectProduct(r, group))
+      .map((r) => projectProduct(normalizePreviewRow(r), group))
       .filter((p) => p && p.slug);
-  } catch {
+  } catch (err) {
+    // A swallowed failure here empties the WHOLE catalogue, which surfaces far
+    // away as buildFullCatalogue's "refusing to cache" on an unrelated page.
+    // Name the endpoint that actually broke.
+    console.error('[catalogue] fetchPreviewList failed for ' + path + ':', err);
     return [];
   }
 }
