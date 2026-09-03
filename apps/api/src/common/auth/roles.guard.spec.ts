@@ -3,6 +3,8 @@ import { describe, it, expect, vi } from "vitest";
 import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
 import { RolesGuard, GATE_CODE_KEY, RequireGate, GateCode } from "./roles.guard.js";
 import type { AuthenticatedTenant } from "../../auth/types/auth.types.js";
+import { GatekeeperService } from "../../auth/service/gatekeeper.service.js";
+import { createHmac } from "node:crypto";
 
 // Characterization tests for the guard every @RequireGate route depends on.
 // Fakes expose only the two methods the guard actually calls — no
@@ -167,6 +169,89 @@ describe("RolesGuard", () => {
 
     expect(guard.canActivate(context)).toBe(true);
     expect(request.tenant).toEqual(tenant);
+  });
+});
+
+// C1 regression: the guard must NEVER fall back to decoding an unverified
+// JWT payload. These run against the REAL GatekeeperService (only the
+// secret is faked) so a reintroduced fallback fails here, not just a mock.
+describe("RolesGuard token verification (real GatekeeperService)", () => {
+  const SECRET = "test-secret";
+  const gatekeeper = new GatekeeperService({
+    get: (key: string) => (key === "AUTH_JWT_SECRET" ? SECRET : undefined),
+  } as any);
+
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+
+  function token(claims: Record<string, unknown>, signWith: string | null) {
+    const head = b64({ alg: "HS256", typ: "JWT" });
+    const body = b64(claims);
+    const sig =
+      signWith === null
+        ? "NOTASIGNATURE"
+        : createHmac("sha256", signWith).update(`${head}.${body}`).digest("base64url");
+    return `${head}.${body}.${sig}`;
+  }
+
+  const claims = (exp: number) => ({
+    sub: 1,
+    uid: "1",
+    email: "attacker@evil.com",
+    roles: ["ROLE_SUPER_USER"],
+    exp,
+  });
+  const future = () => Math.floor(Date.now() / 1000) + 3600;
+
+  function run(authorization: string, ...gate: [GateCode | undefined] | []) {
+    const { context, reflector, request } = makeContext({
+      requiredGate: gate.length ? gate[0] : GateCode.CODE_SU,
+      headers: { authorization },
+    });
+    const guard = new RolesGuard(reflector, gatekeeper);
+    return { request, act: () => guard.canActivate(context) };
+  }
+
+  it("allows a properly signed token on a gated route", () => {
+    const { request, act } = run(`Bearer ${token(claims(future()), SECRET)}`);
+    expect(act()).toBe(true);
+    expect(request.tenant.email).toBe("attacker@evil.com");
+  });
+
+  it("REJECTS a forged token (valid 3-part shape, bogus signature) and sets no tenant", () => {
+    const { request, act } = run(`Bearer ${token(claims(future()), null)}`);
+    expect(act).toThrow(UnauthorizedException);
+    expect(request.tenant).toBeUndefined();
+  });
+
+  it("REJECTS a token signed with the wrong secret and sets no tenant", () => {
+    const { request, act } = run(`Bearer ${token(claims(future()), "wrong-secret")}`);
+    expect(act).toThrow(UnauthorizedException);
+    expect(request.tenant).toBeUndefined();
+  });
+
+  it("REJECTS a forged token carrying no roles claim (no implicit super-user grant)", () => {
+    const { request, act } = run(`Bearer ${token({ sub: 1, exp: future() }, null)}`);
+    expect(act).toThrow(UnauthorizedException);
+    expect(request.tenant).toBeUndefined();
+  });
+
+  it("REJECTS a correctly signed but expired token", () => {
+    const exp = Math.floor(Date.now() / 1000) - 60;
+    const { request, act } = run(`Bearer ${token(claims(exp), SECRET)}`);
+    expect(act).toThrow(UnauthorizedException);
+    expect(request.tenant).toBeUndefined();
+  });
+
+  it("REJECTS a malformed (non-JWT) token", () => {
+    const { request, act } = run("Bearer not-a-jwt");
+    expect(act).toThrow(UnauthorizedException);
+    expect(request.tenant).toBeUndefined();
+  });
+
+  it("does not even look at a forged token on an ungated route, and sets no tenant", () => {
+    const { request, act } = run(`Bearer ${token(claims(future()), null)}`, undefined);
+    expect(act()).toBe(true);
+    expect(request.tenant).toBeUndefined();
   });
 });
 

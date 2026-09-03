@@ -74,6 +74,11 @@ export class EnvironmentVariables {
   @Transform(({ value }) => (value === undefined ? undefined : parseInt(value, 10)))
   AUTH_JWT_TTL_SECONDS?: number;
 
+  /** `auth0.jwt.issuer` — required only by the Auth0 social-login endpoints. */
+  @IsOptional()
+  @IsString()
+  AUTH0_ISSUER?: string;
+
   // ---------------------------------------------------------------------
   // Kill-switches — the anti-spam / anti-live-money layer. All default
   // false. Schema-enforced, not convention: every outbound provider call
@@ -135,6 +140,10 @@ export class EnvironmentVariables {
   @IsOptional() @IsString() RAZORPAY_KEY_ID?: string;
   @IsOptional() @IsString() RAZORPAY_KEY_SECRET?: string;
   @IsOptional() @IsString() RAZORPAY_WEBHOOK_SECRET?: string;
+  /** Checkout success/cancel redirect base, used when building Stripe sessions. */
+  @IsOptional() @IsString() STOREFRONT_URL?: string;
+  /** CC'd on payment-failure notifications (Loom's EmailConstant.ADMIN_EMAIL_ADDRESS). */
+  @IsOptional() @IsString() ADMIN_EMAIL_ADDRESS?: string;
 
   // ---------------------------------------------------------------------
   // MSG91 (OTP SMS) — canonical mapping-table names plus the names the

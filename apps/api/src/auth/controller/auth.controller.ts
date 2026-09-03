@@ -197,11 +197,15 @@ export class AuthController {
     return keyedResponse("authority", authority);
   }
 
-  /** validateProvider(NVerseAuthProviderValidationRequest) — CODE_SUCU (authenticated route, not in NON_AUTHENTICATED_URLS). */
+  /**
+   * validateProvider(NVerseAuthProviderValidationRequest) — PUBLIC, no @RequireGate.
+   * Loom's NverseAuthenticationController.validateProvider() takes only @RequestBody
+   * (no NVerseHttpRequestWrapper, no getEntity/postEntity/CODE_*), and the sign-in
+   * screen calls it BEFORE a token exists. Same handler as the legacy-path twin in
+   * loom-legacy-auth.controller.ts, which is ungated for the same reason.
+   */
   @Post("validate/provider")
   @HttpCode(200)
-  @RequireGate(GateCode.CODE_SUCU)
-  @ApiBearerAuth()
   @ApiBody({ type: ValidateProviderRequestDto })
   @ApiOperation({ summary: "Check whether a tenant's stored auth provider matches the one supplied." })
   @ApiResponse({ status: 200, description: "Provider validity result." })

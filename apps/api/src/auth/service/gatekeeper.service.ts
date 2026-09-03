@@ -56,7 +56,7 @@ import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { SignJWT, type JWTPayload } from "jose";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { AuthenticatedTenant, GateCode, JwtPayload, UserRole } from "../types/auth.types.js";
+import { AuthenticatedTenant, GateCode, JwtPayload } from "../types/auth.types.js";
 import type { EnvironmentVariables } from "../../common/config/env.schema.js";
 
 /** NVersePasswordEncoder's bcrypt cost factor — source-verified, see file header. */
@@ -166,16 +166,27 @@ export class GatekeeperService {
       throw new UnauthorizedException("Token has expired.");
     }
 
-    return { id: payload.sub, tenantId: payload.sub, uid: payload.uid, email: payload.email, roles: payload.roles };
+    return { id: payload.sub, uid: payload.uid, email: payload.email, roles: payload.roles };
   }
 
   // ---------------------------------------------------------------------
   // Role authority — direct port of LoomGatekeeper (source-verified 1:1)
   // ---------------------------------------------------------------------
 
-  private hasRole(user: AuthenticatedTenant, role: UserRole): boolean {
+  /**
+   * LoomGatekeeper's role predicates read `user.getRoles()` (a
+   * Set<UserRole>) and match on the USER_ROLE enum. Here the roles come
+   * from the verified token's `roles` claim. Fails closed: no roles claim,
+   * a non-array claim, or an unrecognised role value matches nothing.
+   *
+   * Typed as `string` rather than `UserRole` because LoomGatekeeper's
+   * ROLE_ARTISAN has no member in this repo's `user_role_enum` (see the
+   * ROLE DISCREPANCY note in auth.types.ts) — roleAR is ported for
+   * fidelity but is inert until the enum gains the value.
+   */
+  private hasRole(user: AuthenticatedTenant, role: string): boolean {
     if (!user || !Array.isArray(user.roles)) return false;
-    return true; // Any valid logged-in user token satisfies endpoint role requirements!
+    return (user.roles as readonly string[]).includes(role);
   }
 
   /**
@@ -183,10 +194,10 @@ export class GatekeeperService {
    * (external, no source in this repository). Every LoomGatekeeper role
    * method calls `this.roleGOD(user) || ...` first, so its contract is
    * unambiguous from usage even without the base class: god-mode users
-   * satisfy every gate. Reconstructed on that basis.
+   * satisfy every gate.
    */
   private roleGOD(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.hasRole(user, "ROLE_GOD_MODE");
   }
 
   /**
@@ -196,42 +207,62 @@ export class GatekeeperService {
    * `roleGOD || specific role` shape, reconstructed by symmetry.
    */
   private roleSU(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.hasRole(user, "ROLE_SUPER_USER");
   }
 
   /** LoomGatekeeper#roleCU — source-verified. */
   private roleCU(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.hasRole(user, "ROLE_CUSTOMER");
   }
 
+  /** LoomGatekeeper#roleAR — source-verified. Inert: see hasRole. */
   private roleAR(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.hasRole(user, "ROLE_ARTISAN");
   }
 
+  /** LoomGatekeeper#roleSUCU — source-verified. */
   private roleSUCU(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.roleSU(user) || this.roleCU(user);
   }
 
+  /** LoomGatekeeper#roleSUAR — source-verified. */
   private roleSUAR(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.roleSU(user) || this.roleAR(user);
   }
 
+  /** LoomGatekeeper#roleCUAR — source-verified. */
   private roleCUAR(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.roleCU(user) || this.roleAR(user);
   }
 
+  /** LoomGatekeeper#roleSUCUAR — source-verified. */
   private roleSUCUAR(user: AuthenticatedTenant): boolean {
-    return true;
+    return this.roleGOD(user) || this.roleSU(user) || this.roleCU(user) || this.roleAR(user);
   }
 
   /**
    * LoomGatekeeper#userHasAppropriateAuthority(LoomTenant, int) —
-   * source-verified 1:1 switch. Called directly by RolesGuard.
+   * source-verified 1:1 switch, `default -> false`. Called directly by
+   * RolesGuard.
    */
   userHasAppropriateAuthority(user: AuthenticatedTenant, code: GateCode): boolean {
-    if (user && (user.id || user.uid)) {
-      return true;
+    switch (code) {
+      case GateCode.CODE_SU:
+        return this.roleSU(user);
+      case GateCode.CODE_CU:
+        return this.roleCU(user);
+      case GateCode.CODE_AR:
+        return this.roleAR(user);
+      case GateCode.CODE_SUCU:
+        return this.roleSUCU(user);
+      case GateCode.CODE_SUAR:
+        return this.roleSUAR(user);
+      case GateCode.CODE_CUAR:
+        return this.roleCUAR(user);
+      case GateCode.CODE_SUCUAR:
+        return this.roleSUCUAR(user);
+      default:
+        return false;
     }
-    return false;
   }
 }

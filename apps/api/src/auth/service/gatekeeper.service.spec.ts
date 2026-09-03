@@ -20,6 +20,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { GatekeeperService } from "./gatekeeper.service.js";
+import { GateCode } from "../types/auth.types.js";
 import type { AuthenticatedTenant } from "../types/auth.types.js";
 
 const FIXTURE_PEPPER = "test-pepper";
@@ -147,5 +148,66 @@ describe("GatekeeperService — JWT (jose-issued, HS256)", () => {
     const gatekeeper = new GatekeeperService(fakeConfig());
 
     expect(() => gatekeeper.verifyToken("not-a-jwt")).toThrow();
+  });
+});
+
+/**
+ * Role authority — the port of LoomGatekeeper's userHasAppropriateAuthority
+ * switch. These are the regression guard for the "every gate returns true"
+ * authorization bypass: before the fix, every case below passed.
+ */
+describe("GatekeeperService — role authority (LoomGatekeeper port)", () => {
+  const gatekeeper = new GatekeeperService(fakeConfig());
+
+  const withRoles = (...roles: string[]): AuthenticatedTenant =>
+    ({ id: 7, uid: "u7", email: "r@b.com", roles }) as AuthenticatedTenant;
+
+  const SU = "ROLE_SUPER_USER";
+  const CU = "ROLE_CUSTOMER";
+  const GOD = "ROLE_GOD_MODE";
+  // Not a member of user_role_enum — roleAR is ported but inert. See the
+  // ROLE DISCREPANCY note in auth.types.ts.
+  const AR = "ROLE_ARTISAN";
+
+  // [gate, roles that satisfy it, roles that do not]
+  const cases: Array<[GateCode, string[][], string[][]]> = [
+    [GateCode.CODE_SU, [[SU], [GOD], [SU, CU]], [[CU], [AR], ["ROLE_ADMIN"], []]],
+    [GateCode.CODE_CU, [[CU], [GOD]], [[SU], [AR], []]],
+    [GateCode.CODE_AR, [[AR], [GOD]], [[SU], [CU], []]],
+    [GateCode.CODE_SUCU, [[SU], [CU], [GOD]], [[AR], ["ROLE_ADMIN"], []]],
+    [GateCode.CODE_SUAR, [[SU], [AR], [GOD]], [[CU], []]],
+    [GateCode.CODE_CUAR, [[CU], [AR], [GOD]], [[SU], []]],
+    [GateCode.CODE_SUCUAR, [[SU], [CU], [AR], [GOD]], [["ROLE_ADMIN"], []]],
+  ];
+
+  for (const [code, allowed, denied] of cases) {
+    for (const roles of allowed) {
+      it(`allows [${roles.join(",")}] at gate ${GateCode[code]}`, () => {
+        expect(gatekeeper.userHasAppropriateAuthority(withRoles(...roles), code)).toBe(true);
+      });
+    }
+    for (const roles of denied) {
+      it(`denies [${roles.join(",") || "no roles"}] at gate ${GateCode[code]}`, () => {
+        expect(gatekeeper.userHasAppropriateAuthority(withRoles(...roles), code)).toBe(false);
+      });
+    }
+  }
+
+  /** The single regression guard for the whole "gates are decorative" finding. */
+  it("DENIES a plain ROLE_CUSTOMER token at a super-user gate", () => {
+    expect(gatekeeper.userHasAppropriateAuthority(withRoles(CU), GateCode.CODE_SU)).toBe(false);
+  });
+
+  it("fails closed on an unknown gate code", () => {
+    expect(gatekeeper.userHasAppropriateAuthority(withRoles(GOD), 99 as GateCode)).toBe(false);
+  });
+
+  it("fails closed when the roles claim is missing or not an array", () => {
+    const noRoles = { id: 1, uid: "u", email: "e" } as unknown as AuthenticatedTenant;
+    const badRoles = { id: 1, uid: "u", email: "e", roles: "ROLE_SUPER_USER" } as unknown as AuthenticatedTenant;
+    for (const code of [GateCode.CODE_SU, GateCode.CODE_CU, GateCode.CODE_SUCUAR]) {
+      expect(gatekeeper.userHasAppropriateAuthority(noRoles, code)).toBe(false);
+      expect(gatekeeper.userHasAppropriateAuthority(badRoles, code)).toBe(false);
+    }
   });
 });

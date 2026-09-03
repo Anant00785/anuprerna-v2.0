@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { GateCode } from "../types/auth.types.js";
+import { RolesGuard, RequireGate } from "../../common/auth/roles.guard.js";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { GatekeeperService } from "../service/gatekeeper.service.js";
 import { TenantLookupRepository } from "../repository/tenant-lookup.repository.js";
@@ -23,6 +25,7 @@ import {
 
 @ApiTags("Authentication")
 @Controller()
+@UseGuards(RolesGuard)
 export class LoomLegacyAuthController {
   constructor(
     private readonly gatekeeper: GatekeeperService,
@@ -112,6 +115,7 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Fetch tenant authority token and roles (GET)" })
+  @RequireGate(GateCode.CODE_SUCU)
   async getAuthorityTokenGet(@Req() req: any) {
     return this.handleAuthorityToken(req);
   }
@@ -120,6 +124,7 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Fetch tenant authority token and roles alias (GET)" })
+  @RequireGate(GateCode.CODE_SUCU)
   async authorityTokenGet(@Req() req: any) {
     return this.handleAuthorityToken(req);
   }
@@ -128,6 +133,7 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Fetch tenant authority token and roles (POST)" })
+  @RequireGate(GateCode.CODE_SUCU)
   async getAuthorityTokenPost(@Req() req: any) {
     return this.handleAuthorityToken(req);
   }
@@ -136,6 +142,7 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Fetch tenant authority token and roles alias (POST)" })
+  @RequireGate(GateCode.CODE_SUCU)
   async authorityTokenPost(@Req() req: any) {
     return this.handleAuthorityToken(req);
   }
@@ -177,6 +184,10 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiOperation({ summary: "Validate identity provider" })
   @ApiBody({ type: ValidateProviderRequestDto })
+  // PUBLIC — no @RequireGate. Loom's NverseAuthenticationController.validateProvider()
+  // takes only @RequestBody (no NVerseHttpRequestWrapper, no getEntity/postEntity),
+  // and it is a PRE-LOGIN probe by construction: the sign-in screen calls it before
+  // any token exists (storefront lib/api/repositories/auth.repository.ts).
   async validateProvider(@Body() body: ValidateProviderRequestDto) {
     return simpleResponse(true, "Provider valid");
   }
@@ -266,6 +277,10 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiOperation({ summary: "Verify OTP code" })
   @ApiBody({ type: VerifyOtpDto })
+  // PUBLIC — no @RequireGate. Loom's OTPController.verifyOTP() takes only
+  // @RequestBody and MINTS the JWT (jwtService.generateToken) on success: it is a
+  // sign-in entry point, so requiring a token to reach it is a bootstrap paradox.
+  // Its siblings otp/send and otp/resend are ungated here for the same reason.
   async verifyOtp(@Body() body: VerifyOtpDto) {
     return simpleResponse(true, "OTP verified successfully");
   }
@@ -297,6 +312,11 @@ export class LoomLegacyAuthController {
   @HttpCode(200)
   @ApiOperation({ summary: "Confirm customer email verification token" })
   @ApiBody({ type: ConfirmVerificationEmailDto })
+  // PUBLIC — no @RequireGate. Loom's NVerseEmailVerificationController
+  // .confirmEmailVerification() takes only @RequestBody and returns directly (its
+  // sibling resetPassword uses the *Unauthorized template — also public). The
+  // holder of the emailed token has no session yet; the storefront calls it
+  // anonymously from app/api/auth/reset-password/route.ts.
   async confirmVerificationEmail(@Body() body: ConfirmVerificationEmailDto) {
     return simpleResponse(true, "Email verification confirmed");
   }

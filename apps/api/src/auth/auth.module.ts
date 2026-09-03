@@ -2,16 +2,13 @@
  * apps/api/src/auth/auth.module.ts
  *
  * Wires the Auth feature together: real internal providers
- * (GatekeeperService, TenantLookupRepository, RolesGuard), and the
- * out-of-scope external dependency (Auth0's JWKS validation) bound to a
- * safe dummy `useValue` rather than left unbound — same pattern
- * commerce/cart/cart.module.ts uses for its own out-of-scope ports.
+ * (GatekeeperService, TenantLookupRepository, RolesGuard, Auth0ValidationService).
  *
- * AUTH0_VALIDATION_PORT dummy: `validateToken` returns false (source-safe
- * "not found"/"invalid" default — never fabricates a passing validation),
- * `getUserFromToken` returns "" (non-nullable string contract, empty-string
- * analogue of null). Social login will correctly reject every attempt
- * until a real com.auth0-equivalent JWKS client is wired in here.
+ * AUTH0_VALIDATION_PORT is bound to the real Auth0ValidationService (jose
+ * JWKS verification, see service/auth0-validation.service.ts) — NOT to a
+ * dummy. A token validator that always answers `false` is an
+ * authentication control silently stuck in one position; it throws on
+ * missing AUTH0_ISSUER config instead.
  *
  * RolesGuard is provided AND exported here because it's imported directly
  * by other feature modules (e.g. commerce/cart) via
@@ -29,12 +26,8 @@ import { LoomLegacyAuthController } from "./controller/loom-legacy-auth.controll
 import { GatekeeperService } from "./service/gatekeeper.service.js";
 import { TenantLookupRepository } from "./repository/tenant-lookup.repository.js";
 import { RolesGuard } from "../common/auth/roles.guard.js";
-import { AUTH0_VALIDATION_PORT, Auth0ValidationPort } from "./types/auth.types.js";
-
-const auth0ValidationDummy: Auth0ValidationPort = {
-  validateToken: async () => false,
-  getUserFromToken: async () => "",
-};
+import { Auth0ValidationService } from "./service/auth0-validation.service.js";
+import { AUTH0_VALIDATION_PORT } from "./types/auth.types.js";
 
 @Module({
   controllers: [AuthController, LoomLegacyAuthController],
@@ -42,7 +35,8 @@ const auth0ValidationDummy: Auth0ValidationPort = {
     GatekeeperService,
     TenantLookupRepository,
     RolesGuard,
-    { provide: AUTH0_VALIDATION_PORT, useValue: auth0ValidationDummy },
+    Auth0ValidationService,
+    { provide: AUTH0_VALIDATION_PORT, useExisting: Auth0ValidationService },
   ],
   exports: [GatekeeperService, TenantLookupRepository, RolesGuard],
 })

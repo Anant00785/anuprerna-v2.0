@@ -16,3 +16,12 @@ export function keyedResponse<K extends string, T>(
 ): RainSimple & Record<K, T> {
   return { success, message, [key]: payload } as RainSimple & Record<K, T>;
 }
+
+export function paginatedResponse<T>(
+  items: T[],
+  total: number,
+  page: number,
+  size: number,
+): RainSimple & { items: T[]; total: number; page: number; size: number } {
+  return { success: true, message: "", items, total, page, size };
+}

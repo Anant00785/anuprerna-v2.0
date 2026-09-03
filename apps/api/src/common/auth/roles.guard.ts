@@ -34,52 +34,34 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    const request = context.switchToHttp().getRequest();
-    const header: string | undefined = request.headers?.authorization;
-
-    if (header) {
-      let token = header.trim();
-      while (token.toLowerCase().startsWith("bearer ")) {
-        token = token.slice(7).trim();
-      }
-      if (token) {
-        try {
-          const tenant: AuthenticatedTenant = this.gatekeeper.verifyToken(token);
-          request.tenant = tenant;
-        } catch {
-          try {
-            const parts = token.split(".");
-            if (parts.length === 3) {
-              const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
-              const roles = Array.isArray(payload.roles)
-                ? payload.roles
-                : typeof payload.role === "string"
-                ? [payload.role]
-                : ["ROLE_SUPER_USER", "ROLE_ADMIN", "ROLE_CUSTOMER"];
-              const tenantIdNum = Number(payload.sub || payload.uid || payload.tenantId || 1);
-              request.tenant = {
-                id: tenantIdNum,
-                tenantId: tenantIdNum,
-                uid: String(payload.uid || payload.sub || "1"),
-                email: String(payload.email || "admin@bloomscorp.com"),
-                roles,
-              };
-            }
-          } catch {
-            // Unparseable token
-          }
-        }
-      }
-    }
-
     // No @RequireGate -> public route (mirrors NON_AUTHENTICATED_URLS).
     if (requiredGate === undefined) return true;
 
-    if (!request.tenant) {
-      throw new UnauthorizedException("Missing or invalid Authorization token.");
+    const request = context.switchToHttp().getRequest();
+    const header: string | undefined = request.headers?.authorization;
+
+    if (!header) {
+      throw new UnauthorizedException("Missing Authorization header.");
     }
 
-    if (!this.gatekeeper.userHasAppropriateAuthority(request.tenant, requiredGate)) {
+    let token = header.trim();
+    while (token.toLowerCase().startsWith("bearer ")) {
+      token = token.slice(7).trim();
+    }
+
+    if (!token) {
+      throw new UnauthorizedException("Missing or malformed Authorization token.");
+    }
+
+    // NEVER decode an unverified payload as a fallback: verifyToken throws
+    // (UnauthorizedException) on a bad signature, expiry or malformation and
+    // that must propagate. Dual-accept of legacy Loom tokens, when it lands
+    // (docs/features/0001-identity-dual-accept-auth.md), means verifying
+    // against a second secret here — never skipping verification.
+    const tenant: AuthenticatedTenant = this.gatekeeper.verifyToken(token);
+    request.tenant = tenant;
+
+    if (!this.gatekeeper.userHasAppropriateAuthority(tenant, requiredGate)) {
       throw new ForbiddenException("You do not have the required role for this action.");
     }
 
