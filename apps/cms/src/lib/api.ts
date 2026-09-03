@@ -678,22 +678,179 @@ export async function getOrderList(token?: string): Promise<OrderRow[]> {
       `Order dump missing both 'orderList' and 'data' keys (got: ${Object.keys(raw).join(", ") || "no keys"})`,
     );
   }
-  return rows.map(normalizeOrderRow);
+
+  // Legacy Loom nested `orderItems` (and `tenant`) inside each order row. The
+  // v2 API's /get/data-dump/order returns FLAT rows — no items, no tenant, and
+  // no status column of its own (order status/payment status live only on the
+  // item rows). Joining them here is therefore not an enrichment, it is what
+  // makes the row correct at all: with items missing, deriveOrderStatus([])
+  // returns "INITIATED" and derivePaymentStatus([]) returns "PENDING", so a
+  // fully PAID, PROCESSING order rendered as "Incomplete / Payment pending"
+  // with "0 items" — wrong data presented as fact, not an empty state.
+  //
+  // Only join when the dump actually lacks nested items, so a legacy backend
+  // keeps its existing single-request behaviour.
+  const needsJoin = rows.length > 0 && rows.every((r) => r.orderItems === undefined);
+  if (!needsJoin) return rows.map(normalizeOrderRow);
+
+  const [itemsByOrder, tenantsById] = await Promise.all([
+    fetchOrderItemsByOrderId(token),
+    fetchTenantsById(token),
+  ]);
+
+  return rows.map((r) =>
+    normalizeOrderRow({
+      ...r,
+      orderItems: itemsByOrder.get(String(r.id)) ?? [],
+      tenant: tenantsById.get(String(r.tenantId)) ?? r.tenant,
+    }),
+  );
 }
 
-/** Fetch a single order by id. Returns null on miss. */
-export async function getOrderById(id: number, token?: string): Promise<OrderDetail | null> {
-  try {
-    const raw = await request<{ success: boolean; order: Record<string, unknown> }>(
-      "/get/super-user/order/" + id,
-      {},
-      token,
+/**
+ * In-process cache for the two join dumps.
+ *
+ * These are expensive: /get/data-dump/order-item is ~42 MB / ~24 s and
+ * /get/data-dump/tenant ~3.9 MB / ~4 s. Fetching them per request made a
+ * ~1 s order-detail call take ~28 s (the inline panel sat on "Loading
+ * production..."), so they are cached for 5 minutes — the same TTL and the
+ * same rationale as the order list cache in src/app/api/orders/route.ts.
+ *
+ * The stored value is the in-flight PROMISE, not the resolved map, so N
+ * concurrent callers (the list page and several inline panels all mounting
+ * at once) share ONE fetch instead of each starting their own 42 MB download.
+ * A rejected promise is evicted so a failure is retried rather than cached.
+ */
+const JOIN_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const joinCache = new Map<string, { promise: Promise<unknown>; expiresAt: number }>();
+
+function cachedJoin<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const hit = joinCache.get(key);
+  if (hit && hit.expiresAt > Date.now()) return hit.promise as Promise<T>;
+
+  const promise = load().catch((err) => {
+    joinCache.delete(key);
+    throw err;
+  });
+  joinCache.set(key, { promise, expiresAt: Date.now() + JOIN_CACHE_TTL_MS });
+  return promise;
+}
+
+/** order-item dump grouped by `orderId`. Throws rather than degrading to "no items". */
+function fetchOrderItemsByOrderId(
+  token?: string,
+): Promise<Map<string, Record<string, unknown>[]>> {
+  return cachedJoin("order-item", () => loadOrderItemsByOrderId(token));
+}
+
+async function loadOrderItemsByOrderId(
+  token?: string,
+): Promise<Map<string, Record<string, unknown>[]>> {
+  const raw = await request<{
+    success: boolean;
+    orderItemList?: Record<string, unknown>[];
+    data?: Record<string, unknown>[];
+  }>("/get/data-dump/order-item", {}, token);
+
+  const items = raw.orderItemList ?? raw.data;
+  if (!Array.isArray(items)) {
+    throw new Error(
+      `Order-item dump missing both 'orderItemList' and 'data' keys (got: ${Object.keys(raw).join(", ") || "no keys"})`,
     );
-    if (!raw.success || !raw.order) return null;
-    return normalizeOrderDetail(raw.order);
-  } catch {
-    return null;
   }
+
+  const byOrder = new Map<string, Record<string, unknown>[]>();
+  for (const item of items) {
+    const key = String(item.orderId ?? "");
+    if (!key) continue;
+    const bucket = byOrder.get(key);
+    if (bucket) bucket.push(item);
+    else byOrder.set(key, [item]);
+  }
+  return byOrder;
+}
+
+/**
+ * tenant dump keyed by id, for the customer name column.
+ *
+ * Unlike the items join this is presentational only — a missing name renders
+ * as the existing "—" placeholder — so a failure here must not blank out an
+ * otherwise-correct order list. Degrading to an empty map is deliberate, and
+ * is NOT the "empty list on backend failure" that rule 2 forbids: no order
+ * row is lost and no status is misreported, only the name falls back.
+ */
+function fetchTenantsById(
+  token?: string,
+): Promise<Map<string, Record<string, unknown>>> {
+  return cachedJoin("tenant", () => loadTenantsById(token));
+}
+
+async function loadTenantsById(
+  token?: string,
+): Promise<Map<string, Record<string, unknown>>> {
+  try {
+    const raw = await request<{
+      success: boolean;
+      tenantList?: Record<string, unknown>[];
+      data?: Record<string, unknown>[];
+    }>("/get/data-dump/tenant", {}, token);
+
+    const tenants = raw.tenantList ?? raw.data;
+    if (!Array.isArray(tenants)) return new Map();
+
+    return new Map(
+      tenants.map((t) => [
+        String(t.id ?? ""),
+        // normalizeOrderRow reads tenant.name; the v2 tenant row spells it
+        // `userName` and may carry no name at all, in which case the email
+        // local-part is a truer label than "—".
+        { ...t, name: t.name ?? t.userName ?? (String(t.email ?? "").split("@")[0] || undefined) },
+      ]),
+    );
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * Fetch a single order by id. Returns null only when the backend genuinely has
+ * no such order — a transport/auth failure THROWS.
+ *
+ * This used to `catch { return null }`, which reported every failure as "no
+ * order matched this id". A 401 from the credential mix-up therefore rendered
+ * "Order not found" on an order that existed and was fully paid — the caller
+ * cannot tell "absent" from "broken", so the page shows a confident wrong
+ * answer. Callers already handle a thrown error (the detail page renders
+ * LoadError, the route handler returns 500).
+ */
+export async function getOrderById(id: number, token?: string): Promise<OrderDetail | null> {
+  const raw = await request<{ success: boolean; order: Record<string, unknown> }>(
+    "/get/super-user/order/" + id,
+    {},
+    token,
+  );
+  if (!raw.success || !raw.order) return null;
+
+  const order = raw.order;
+
+  // Same flat-row shape as the list dump: the v2 API's single-order response
+  // carries no nested `orderItems`/`tenant`, and item-level status lives only
+  // on the item rows. Without this the detail page and the inline "what's
+  // happening" panel both render "0 items" for an order that has them.
+  if (order.orderItems === undefined) {
+    const [itemsByOrder, tenantsById] = await Promise.all([
+      fetchOrderItemsByOrderId(token),
+      fetchTenantsById(token),
+    ]);
+    return normalizeOrderDetail({
+      ...order,
+      orderItems: itemsByOrder.get(String(order.id)) ?? [],
+      tenant: tenantsById.get(String(order.tenantId)) ?? order.tenant,
+    });
+  }
+
+  return normalizeOrderDetail(order);
 }
 
 // ════════════════════════════════════════════════════════════════════════

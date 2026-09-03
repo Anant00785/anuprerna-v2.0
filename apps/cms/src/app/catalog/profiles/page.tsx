@@ -10,6 +10,7 @@ import {
   getMadeToOrderProfiles,
 } from "@/lib/profiles-api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import type { ProfileType } from "@/types/profiles";
 import { ProfilesClient } from "./ProfilesClient";
 import { loadOrBanner } from "@/lib/load-or-banner";
@@ -39,7 +40,7 @@ export default async function ProfilesPage({
 
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE)?.value;
-  const token = cookieToken ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieToken);
 
   return loadOrBanner(
     () => Promise.all([

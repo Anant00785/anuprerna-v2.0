@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowTemplateList, BackendFetchError } from "@/lib/artisanflow-api";
 import { ArtisanFlowShell } from "@/components/artisanflow/ArtisanFlowShell";
 import { TemplateBuilder } from "@/components/artisanflow/TemplateBuilder";
@@ -19,7 +20,7 @@ const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
 export default async function TemplateNewPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
   // The template list only feeds the "clone an existing template" picker — a
   // SUPPLEMENTARY read. It was awaited bare, so a wrapper outage 500'd the whole
   // builder rather than degrading the picker. Show the banner and still let the

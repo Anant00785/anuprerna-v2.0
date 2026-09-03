@@ -7,6 +7,7 @@
 import React from "react";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowList, WORKFLOW_STATUSES, BackendFetchError } from "@/lib/artisanflow-api";
 import { WeaveShell } from "@/components/weave/WeaveShell";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -17,7 +18,7 @@ const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
 export default async function ProductionJobsPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   // Dedupe on (workflowType, id), never id alone. ORDER and CUSTOM_ORDER jobs
   // come from two backend tables with INDEPENDENT auto-increment sequences whose

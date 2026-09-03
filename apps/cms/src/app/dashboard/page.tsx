@@ -13,6 +13,7 @@ import { WeaveShell } from "@/components/weave/WeaveShell";
 import { Card, CardHeader, CardTitle, KpiStrip, KpiItem } from "@/components/ui";
 import { getDashboardCounts } from "@/lib/api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import {
   Package,
   ShoppingCart,
@@ -46,7 +47,7 @@ const QUICK_LINKS = [
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE_NAME)?.value;
-  const token = cookieToken ?? await getServiceToken();
+  const token = await getBackendCallToken(cookieToken);
 
   const counts = await getDashboardCounts(token);
 

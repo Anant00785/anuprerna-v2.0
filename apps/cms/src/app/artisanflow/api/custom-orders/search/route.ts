@@ -33,6 +33,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createHash } from "crypto";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getCustomOrderList, type CustomOrderPreview } from "@/lib/artisanflow-api";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +70,7 @@ async function getCachedCustomOrders(token?: string): Promise<CustomOrderPreview
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   const { searchParams } = req.nextUrl;
   const q = (searchParams.get("q") ?? "").toLowerCase().trim();

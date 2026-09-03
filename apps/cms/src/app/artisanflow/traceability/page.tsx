@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowList, getWorkflowListMulti, ACTIVE_WORKFLOW_STATUSES, BackendFetchError } from "@/lib/artisanflow-api";
 import { ArtisanFlowShell } from "@/components/artisanflow/ArtisanFlowShell";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -19,7 +20,7 @@ const CAP = 60;
 
 export default async function TraceabilityIndexPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
   // Live/in-progress = the non-completed Loom workflow statuses (CREATED +
   // INITIATED + HALTED). The prior "IN_PROGRESS" is a workflow-STEP status, not
   // a workflow status, so the endpoint matched nothing and every live workflow

@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getInventoryAdjustmentReasons } from "@/lib/api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 export async function GET() {
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE_NAME)?.value;
-  const token = cookieToken ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieToken);
 
   const reasons = await getInventoryAdjustmentReasons(token);
   return NextResponse.json(reasons);

@@ -14,6 +14,7 @@ import { getOrderById } from "@/lib/api";
 import { getOrderFulfillmentList, getOrderReadyList } from "@/lib/order-fulfillment-api";
 import { getOrderWorkflowSummariesSafe } from "@/lib/artisanflow-api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { WeaveShell } from "@/components/weave/WeaveShell";
 import { Button } from "@/components/ui";
 import { OrderDetailView } from "./OrderDetailView";
@@ -36,7 +37,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE_NAME)?.value;
-  const token = cookieToken ?? await getServiceToken();
+  const token = await getBackendCallToken(cookieToken);
 
   let order;
   try {

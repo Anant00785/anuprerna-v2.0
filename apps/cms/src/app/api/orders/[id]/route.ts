@@ -18,11 +18,10 @@ const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // Session cookie first, service token only as the fallback -- the same order
-  // every sibling route added by this change uses (/artisanflow/api/board,
-  // /artisanflow/api/custom-order/[id], /artisanflow/api/custom-orders/search).
-  // Reaching straight for the shared admin credential made this the one
-  // client-callable read in the set that could never act as the signed-in user.
+  // Credential order is decided in src/lib/backend-call-token.ts: service
+  // token first, session cookie as the fallback. This comment previously
+  // described the opposite order, which the v2 API rejects -- it cannot verify
+  // a Loom-signed `weave_token` ("Invalid token signature", 401).
   // Validate BEFORE any fetch. Number("abc") is NaN, and NaN was being
   // interpolated straight into the upstream URL (/get/order/NaN), so a typo'd or
   // probed path became a backend round-trip that could only ever fail. Every

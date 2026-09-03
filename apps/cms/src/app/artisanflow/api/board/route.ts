@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getOrderBoard, getWorkflowList, getWorkflowCommentCounts, BackendFetchError } from "@/lib/artisanflow-api";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ const COMPLETED_CAP = 80;
 
 export async function GET() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   let board: Awaited<ReturnType<typeof getOrderBoard>>;
   let completed: Awaited<ReturnType<typeof getWorkflowList>>;

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui";
 import { getFaqById } from "@/lib/content-api";
 import { BackendFetchError } from "@/lib/backend-fetch-error";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { FaqDetailActions } from "./FaqDetailActions";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export default async function FAQDetailPage({
 
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE)?.value;
-  const token = cookieToken ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieToken);
 
   // getFaqById now throws on a backend refusal/outage instead of returning
   // null, so the two cases stay distinct: null still means "no such FAQ"

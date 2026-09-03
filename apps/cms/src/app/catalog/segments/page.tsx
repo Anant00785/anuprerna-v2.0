@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getSegmentList } from "@/lib/catalog-api";
 import { getCategories } from "@/lib/api";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { SegmentsClient } from "./SegmentsClient";
 import { loadOrBanner } from "@/lib/load-or-banner";
 
@@ -12,7 +13,7 @@ const COOKIE = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 export default async function SegmentsPage() {
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(COOKIE)?.value;
-  const token = cookieToken ?? await getServiceToken();
+  const token = await getBackendCallToken(cookieToken);
   return loadOrBanner(
     () => Promise.all([
       getSegmentList(token),

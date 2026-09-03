@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import {
   getCustomOrderDetail,
   getCustomOrderReadyList,
@@ -39,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   // getCustomOrderDetail throws BackendFetchError on a wrapper outage and was
   // awaited bare, so Next answered with an opaque HTML 500 and the inline-expand

@@ -10,6 +10,7 @@
 
 import { cookies } from "next/headers";
 import { getServiceToken } from "@/lib/loom-service-token";
+import { getBackendCallToken } from "@/lib/backend-call-token";
 import { getWorkflowTemplateList, BackendFetchError } from "@/lib/artisanflow-api";
 import { ArtisanFlowShell } from "@/components/artisanflow/ArtisanFlowShell";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -21,7 +22,7 @@ const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "weave_token";
 
 export default async function WorkflowPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value ?? (await getServiceToken());
+  const token = await getBackendCallToken(cookieStore.get(COOKIE_NAME)?.value);
 
   // getWorkflowTemplateList throws BackendFetchError on a wrapper outage and was
   // awaited bare, so the whole Job Templates screen 500'd instead of banner-ing.
