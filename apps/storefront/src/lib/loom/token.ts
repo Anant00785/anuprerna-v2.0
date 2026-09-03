@@ -14,34 +14,58 @@
 // live session -- it is NOT an auth decision (the wrapper still verifies the
 // signature on every real cart call). Any malformed / non-wrapper token => false.
 // ---------------------------------------------------------------------------
-export function isWrapperToken(token: string | undefined | null): boolean {
-  if (!token || typeof token !== 'string') return false;
+function decodePayload(token: string | undefined | null): Record<string, unknown> | null {
+  if (!token || typeof token !== 'string') return null;
   const parts = token.split('.');
-  if (parts.length !== 3) return false;
+  if (parts.length !== 3) return null;
   try {
     const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const json = Buffer.from(b64, 'base64').toString('utf8');
-    const payload = JSON.parse(json) as Record<string, unknown>;
-    if (!payload || typeof payload !== 'object') return false;
-
-    // The body used to stop at the line above — `typeof payload === 'object'` —
-    // which is true for EVERY well-formed JWT, so this returned true for the
-    // legacy tokens it exists to reject and the guard was dead.
-    //
-    // What apps/api actually mints (GatekeeperService): a numeric `sub`, a `uid`,
-    // `email`, and a cleartext `roles` array. The header comment above describes
-    // an OLDER wrapper that emitted `customerId`; implementing that literally
-    // would reject our own current tokens, so both shapes are accepted and a
-    // legacy Loom token — opaque `sub`, no cleartext roles — is what fails.
-    const hasRoles = Array.isArray((payload as { roles?: unknown }).roles);
-    const sub = (payload as { sub?: unknown }).sub;
-    const hasSubject =
-      typeof sub === 'number' ||
-      (typeof sub === 'string' && /^\d+$/.test(sub)) ||
-      typeof (payload as { customerId?: unknown }).customerId === 'number';
-
-    return hasRoles && hasSubject;
+    const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as unknown;
+    return payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/**
+ * LENIENT: is this a structurally valid JWT at all?
+ *
+ * Deliberately does NOT inspect claims. /api/auth/me relies on that: a legacy or
+ * unrecognised token must fall THROUGH to the backend profile call so the
+ * backend decides, rather than being torn down locally — see the "does NOT trust
+ * a forged token's claims" and "falls back to the Loom profile for a legacy
+ * token" cases in route.test.ts. Tightening this function clears sessions that
+ * the backend would have accepted.
+ */
+export function isWrapperToken(token: string | undefined | null): boolean {
+  return decodePayload(token) !== null;
+}
+
+/**
+ * STRICT: can this token actually perform a cart WRITE?
+ *
+ * The native cart needs cleartext identity claims. A legacy Loom token has an
+ * opaque `sub` and no cleartext `roles`, and the cart answers
+ * 200 {success:false, "Authorization has been denied."} for it — so the session
+ * looks alive while every write silently fails. That is the case this catches,
+ * up front, with an honest "sign in again".
+ *
+ * Matched against what apps/api actually mints (GatekeeperService): numeric
+ * `sub`, `uid`, `email`, `roles[]`. The older wrapper's `customerId` shape is
+ * still accepted so a token issued before the cutover is not spuriously
+ * rejected. This is a SHAPE heuristic, never an auth decision — the API
+ * verifies the signature on every real call.
+ */
+export function isCartCapableToken(token: string | undefined | null): boolean {
+  const payload = decodePayload(token);
+  if (!payload) return false;
+
+  const hasRoles = Array.isArray(payload.roles);
+  const sub = payload.sub;
+  const hasSubject =
+    typeof sub === 'number' ||
+    (typeof sub === 'string' && /^\d+$/.test(sub)) ||
+    typeof payload.customerId === 'number';
+
+  return hasRoles && hasSubject;
 }
