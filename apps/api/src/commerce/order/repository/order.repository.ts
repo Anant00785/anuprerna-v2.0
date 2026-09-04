@@ -21,6 +21,7 @@ export class OrderRepository {
     const items = await this.db.select().from(schema.orderItem).where(eq(schema.orderItem.orderId, Number(id)));
     return {
       ...rows[0],
+      orderItems: items || [],
       orderItemList: items || [],
     };
   }
