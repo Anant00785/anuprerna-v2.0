@@ -1050,9 +1050,11 @@ async function _fetchDashboardCountsLive(token?: string): Promise<DashboardCount
     request<{ success: boolean; productPreviewList: Array<Record<string, unknown>> }>(
       "/get/finished-preview-list", {}, token,
     ).catch(() => ({ success: false, productPreviewList: [] })),
-    fetch("https://loom-v2.anuprerna.com/get/product-preview-list/all")
-      .then((r) => r.json())
-      .catch(() => ({ productPreviewList: [] })),
+    // Was a bare fetch straight at loom-v2, unauthenticated and outside the
+    // configured backend. Same route, same helper as its three siblings.
+    request<{ productPreviewList: Array<Record<string, unknown>> }>(
+      "/get/product-preview-list/all", {}, token,
+    ).catch(() => ({ productPreviewList: [] })),
     request<{ inventoryReStockRequestList: unknown[] }>(
       "/get/inventory-restock-request", {}, token,
     ).catch(() => ({ inventoryReStockRequestList: [] })),

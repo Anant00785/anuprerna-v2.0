@@ -25,10 +25,11 @@ async function authenticateWithLoom(
   email: string,
   password: string,
 ): Promise<string | undefined> {
-  const authEndpoints = [
-    "https://loom-v2.anuprerna.com/authenticate/email",
-    `${BACKEND}/authenticate/email`,
-  ];
+  // BACKEND_URL only. The legacy loom-v2 host used to be tried FIRST here, so
+  // every CMS admin login authenticated against the Java backend even after the
+  // cutover. Our API serves the same route (loom-legacy-auth.controller.ts) with
+  // the same bcrypt(pepper+password) check and 401s a bad credential.
+  const authEndpoints = [`${BACKEND}/authenticate/email`];
 
   for (const endpoint of authEndpoints) {
     try {

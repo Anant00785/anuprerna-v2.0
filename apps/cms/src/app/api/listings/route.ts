@@ -156,10 +156,9 @@ export async function GET(req: NextRequest) {
   // 2. Fallback to full preview list from Loom/Backend
   let allRaw: RawItem[] = [];
   if (!allProductsCache || allProductsCache.expiresAt <= Date.now()) {
-    const previewUrls = [
-      `https://loom-v2.anuprerna.com/get/product-preview-list/all`,
-      `${BACKEND}/get/product-preview-list/all`,
-    ];
+    // BACKEND only — loom-v2 used to be tried first here, so the listings page
+    // served legacy data even after the cutover.
+    const previewUrls = [`${BACKEND}/get/product-preview-list/all`];
     for (const pUrl of previewUrls) {
       try {
         const pRes = await fetch(pUrl, { headers, cache: "no-store" });
