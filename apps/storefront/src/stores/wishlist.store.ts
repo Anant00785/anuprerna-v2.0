@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { useToastStore } from "./toast.store";
-import { profileRepository } from "@/lib/api/repositories/profile.repository";
 
 interface WishlistState {
   skus: string[];
@@ -34,13 +33,21 @@ export const useWishlistStore = create<WishlistState>()(
           useToastStore.getState().showToast(title, sku, exists ? "info" : "success");
         }
 
-        // Sync with the backend profile. Authentication is the httpOnly
-        // `loom_jwt` cookie, attached server-side by the /api/backend proxy —
-        // this store cannot read it, so it makes the call unconditionally and
-        // lets the server reject it when there is no session. The wishlist
-        // stays usable signed out; it just is not persisted to a profile.
-        const csv = nextSkus.join(",");
-        profileRepository.updateCustomerProfile({ wishlist: csv }).catch((err) => {
+        // Persist through the native wishlist route (PUT /manage/wishlist/{csv},
+        // wrapped by /api/profile/wishlist/set). This used to POST
+        // `update/customer/profile` with only a `wishlist` field — the wrong
+        // endpoint, so nothing was ever saved and the wishlist page, which reads
+        // the profile CSV back, always looked empty.
+        //
+        // Authentication is the httpOnly `loom_jwt` cookie, which this store
+        // cannot read, so the call is made unconditionally and the server
+        // rejects it when there is no session. The wishlist stays usable signed
+        // out; it just is not persisted to a profile.
+        fetch("/api/profile/wishlist/set", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skus: nextSkus }),
+        }).catch((err) => {
           console.warn("Failed to sync wishlist to customer profile:", err);
         });
       },

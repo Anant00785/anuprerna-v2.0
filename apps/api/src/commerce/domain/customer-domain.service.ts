@@ -99,16 +99,25 @@ export class CustomerDomainService {
    * `tenantId` is @CurrentTenant's; there is no client-supplied customer id on
    * this path, so tenant A cannot touch tenant B's row.
    */
+  /**
+   * `customer` is a one-row-per-tenant PREFERENCES table (unique on tenant_id),
+   * not a row every tenant already has — it is only ever created on-demand
+   * (e.g. by setSelectedCurrency's upsert). This used to plain UPDATE it, so a
+   * tenant with no customer row yet (i.e. anyone who had never touched a
+   * currency/whatsapp preference) got 0 rows affected on every wishlist save —
+   * silently, since the PUT route still answers 200. The heart toggled red in
+   * the UI, but nothing was ever persisted, so the wishlist page always read
+   * back empty. Upsert instead, same pattern as setSelectedCurrency.
+   */
   async replaceWishlist(tenantId: number, commaSeparatedSkuList: string): Promise<boolean> {
     if (!Number.isFinite(tenantId) || tenantId <= 0) return false;
 
-    const updated = await this.db
-      .update(schema.customer)
-      .set({ wishlist: commaSeparatedSkuList })
-      .where(eq(schema.customer.tenantId, tenantId))
-      .returning({ id: schema.customer.id });
+    await this.db
+      .insert(schema.customer)
+      .values({ tenantId, wishlist: commaSeparatedSkuList })
+      .onConflictDoUpdate({ target: schema.customer.tenantId, set: { wishlist: commaSeparatedSkuList } });
 
-    return updated.length > 0;
+    return true;
   }
 
   /** Reads the caller's own wishlist CSV back. Used by the wishlist spec. */

@@ -8,17 +8,26 @@ import { describe, it, expect, vi } from "vitest";
 import { BadRequestException } from "@nestjs/common";
 import { TenantRepository } from "./tenant.repository.js";
 
-function makeDb(rows: unknown[] = []) {
+/**
+ * `rows` answers every select. `extraRows`, when given, answers the SECOND
+ * select — getCustomerProfile reads `loom_tenant` and then the `customer`
+ * preferences row that carries the wishlist CSV.
+ */
+function makeDb(rows: unknown[] = [], extraRows?: unknown[]) {
+  let selectCount = 0;
   const chain = {
     from: () => chain,
     where: () => chain,
-    limit: () => Promise.resolve(rows),
+    limit: () => Promise.resolve(selectCount === 2 && extraRows ? extraRows : rows),
   };
   const setFn = vi.fn(() => ({ where: () => Promise.resolve() }));
   const onConflictDoUpdate = vi.fn(() => Promise.resolve());
   const values = vi.fn(() => ({ onConflictDoUpdate }));
   return {
-    select: vi.fn(() => chain),
+    select: vi.fn(() => {
+      selectCount += 1;
+      return chain;
+    }),
     update: vi.fn(() => ({ set: setFn })),
     insert: vi.fn(() => ({ values })),
     _values: values,
@@ -67,8 +76,24 @@ describe("TenantRepository tenant-id guard", () => {
 
   it("still reads a real tenant id (numeric string accepted, as before)", async () => {
     const row = { id: 42n, name: "Real Tenant" };
-    const db = makeDb([row]);
+    // No `customer` preferences row — the profile is the tenant row unchanged.
+    const db = makeDb([row], []);
     await expect(new TenantRepository(db).getCustomerProfile("42")).resolves.toEqual(row);
-    expect(db.select).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: the wishlist CSV is written to `customer.wishlist` but this read
+  // only ever touched `loom_tenant`, so a saved wishlist never came back and the
+  // storefront's wishlist page always rendered "0 Items".
+  it("returns the wishlist CSV from the customer preferences row", async () => {
+    const tenant = { id: 42n, name: "Real Tenant" };
+    const customer = { tenantId: 42, wishlist: "SKU-1,SKU-2", defaultCurrency: "INR" };
+    const db = makeDb([tenant], [customer]);
+
+    await expect(new TenantRepository(db).getCustomerProfile(42)).resolves.toEqual({
+      id: 42n,
+      name: "Real Tenant",
+      wishlist: "SKU-1,SKU-2",
+      defaultCurrency: "INR",
+    });
   });
 });

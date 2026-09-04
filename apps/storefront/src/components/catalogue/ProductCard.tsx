@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { attachTo as attachAttribution } from '@/lib/ad-attribution';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Img from '@/components/ui/Img';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import type { CatalogueProduct } from './types';
 import { deriveStockStatus } from '@/components/product/stock';
 import { useBuyerMode } from '@/components/BuyerModeProvider';
+import { useWishlistStore } from '@/stores/wishlist.store';
 
 interface ProductCardProps {
   product: CatalogueProduct;
@@ -52,6 +53,14 @@ export default function ProductCard({
   const { formatCode } = useCurrency();
   const isLoggedIn = !!user;
   const { showBulkData, mode } = useBuyerMode();
+
+  // Subscribe to the sku list (not the isInWishlist fn) so the heart re-renders
+  // when the item is toggled anywhere. The persisted store rehydrates only on
+  // the client, so gate the filled state on hydration to avoid an SSR mismatch.
+  const wishlistSkus = useWishlistStore((s) => s.skus);
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
+  const [wishlistHydrated, setWishlistHydrated] = useState(false);
+  useEffect(() => setWishlistHydrated(true), []);
 
   // STOCK STATE — derive from the SAME shared classifier the PDP uses, so the
   // card's stock word matches the PDP (was: product.totalQuantity > 0, which
@@ -161,8 +170,15 @@ export default function ProductCard({
     else router.push('/auth');
   };
 
+  // Wishlist — the heart TOGGLES the item (it used to just navigate to
+  // /wishlist, so nothing was ever saved). Same store the PDP and the filter
+  // preview card use, keyed by sku so all three stay in sync.
+  const productSku = product.sku || String(product.recordId || '');
+  const inWishlist = wishlistHydrated && wishlistSkus.includes(productSku);
+
   const handleWishlistClick = () => {
-    router.push('/wishlist');
+    if (!productSku) return;
+    toggleWishlist(product.name, productSku);
   };
 
   return (
@@ -320,11 +336,21 @@ export default function ProductCard({
               only when product is in wishlist. Live uses non-favourite.svg (outline) by default. */}
           <button
             type='button'
-            aria-label='Add to wishlist'
+            aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            aria-pressed={inWishlist}
+            title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             onClick={handleWishlistClick}
-            className='flex-shrink-0 w-8 h-8 flex items-center justify-center border border-clay rounded hover:bg-clay hover:text-white transition-colors text-clay'
+            className={
+              'flex-shrink-0 w-8 h-8 flex items-center justify-center border rounded transition-colors ' +
+              (inWishlist
+                ? 'border-red-500 text-red-500 bg-red-50 hover:bg-red-100'
+                : 'border-clay text-clay hover:bg-clay hover:text-white')
+            }
           >
-            <span className='material-symbols-outlined text-[14px]' style={{ fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48" }}>
+            <span
+              className='material-symbols-outlined text-[16px] transition-transform active:scale-125'
+              style={{ fontVariationSettings: `'FILL' ${inWishlist ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 48` }}
+            >
               favorite
             </span>
           </button>

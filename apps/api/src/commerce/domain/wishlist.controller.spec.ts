@@ -41,8 +41,15 @@ function boundValues(node: unknown, seen = new Set<unknown>()): unknown[] {
  * A `customer` table keyed by tenantId. `update().set().where()` mutates only
  * the rows whose tenantId appears among the condition's bound parameters, so a
  * handler that forgot to scope would visibly clobber both tenants.
+ *
+ * `insert().values().onConflictDoUpdate()` upserts: a tenant with no row yet
+ * gets one created (this is the fix — replaceWishlist used to plain UPDATE,
+ * so a tenant who had never touched any customer preference had 0 rows
+ * affected on every wishlist save, silently, since the route still answered
+ * 200. The heart toggled red in the UI; nothing was ever persisted).
  */
 function fakeCustomerTable(rows: { id: number; tenantId: number; wishlist: string }[]) {
+  let nextId = Math.max(0, ...rows.map((r) => r.id)) + 1;
   const match = (cond: unknown) => {
     const bound = boundValues(cond).map(String);
     return rows.filter((r) => bound.includes(String(r.tenantId)));
@@ -57,6 +64,18 @@ function fakeCustomerTable(rows: { id: number; tenantId: number; wishlist: strin
             return hit.map((r) => ({ id: r.id }));
           },
         }),
+      }),
+    }),
+    insert: () => ({
+      values: (values: { tenantId: number; wishlist: string }) => ({
+        onConflictDoUpdate: async () => {
+          const existing = rows.find((r) => r.tenantId === values.tenantId);
+          if (existing) {
+            existing.wishlist = values.wishlist;
+          } else {
+            rows.push({ id: nextId++, tenantId: values.tenantId, wishlist: values.wishlist });
+          }
+        },
       }),
     }),
     select: () => ({
@@ -121,13 +140,22 @@ describe.each(["putManageWishlist", "postManageWishlist"] as const)("%s", (handl
     await expect(customers.getWishlist(8)).resolves.toBe("B-ONLY");
   });
 
-  it("reports FAILURE, not success, when the tenant has no customer row", async () => {
-    // Loom: ActionCode.NO_ACTION when findByTenant yields nothing.
-    const { controller } = make();
+  // Regression: this used to plain UPDATE customer.wishlist, so a tenant with
+  // no customer row yet (anyone who had never touched a currency/whatsapp
+  // preference — i.e. most freshly-signed-up accounts) got 0 rows affected on
+  // EVERY wishlist save. The route still answered 200 "success", so the UI
+  // showed a filled heart while nothing was ever persisted, and the wishlist
+  // page read back empty forever. It must create the row on first use.
+  it("creates the customer row on first use instead of silently doing nothing", async () => {
+    const { controller, customers, store } = make();
+
     await expect(controller[handler]("A", NO_CUSTOMER_ROW)).resolves.toEqual({
-      success: false,
-      message: "Failed to update wishlist.",
+      success: true,
+      message: "Wishlist updated successfully.",
     });
+
+    await expect(customers.getWishlist(99)).resolves.toBe("A");
+    expect(store.rows.find((r) => r.tenantId === 99)?.wishlist).toBe("A");
   });
 
   it("rejects an empty list — Loom's StringValidator refuses an empty string", async () => {

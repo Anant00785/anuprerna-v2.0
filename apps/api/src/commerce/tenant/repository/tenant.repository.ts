@@ -31,10 +31,31 @@ export class TenantRepository {
     return result[0] ?? null;
   }
 
+  /**
+   * The buyer's identity lives on `loom_tenant`, but their shopping
+   * preferences — the wishlist CSV among them — live on the one-row-per-tenant
+   * `customer` table. This used to read `loom_tenant` alone, so the wishlist a
+   * shopper had just saved (PUT /manage/wishlist writes `customer.wishlist`)
+   * was never returned and the wishlist page always rendered "0 Items".
+   *
+   * The customer row is optional: a tenant that has never set a preference has
+   * none, and the profile is still valid without it.
+   */
   async getCustomerProfile(tenantId: unknown) {
     const id = this.requireTenantId(tenantId);
     const result = await this.db.select().from(schema.loomTenant).where(eq(schema.loomTenant.id, id)).limit(1);
-    return result[0] ?? null;
+    const tenant = result[0] ?? null;
+    if (!tenant) return null;
+
+    const customerRows = await this.db
+      .select()
+      .from(schema.customer)
+      .where(eq(schema.customer.tenantId, Number(id)))
+      .limit(1);
+    const customer = customerRows[0];
+    if (!customer) return tenant;
+
+    return { ...tenant, wishlist: customer.wishlist ?? '', defaultCurrency: customer.defaultCurrency ?? '' };
   }
 
   async updateCustomerProfile(tenantId: unknown, data: any) {

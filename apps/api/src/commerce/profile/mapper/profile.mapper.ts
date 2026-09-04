@@ -84,5 +84,10 @@ export function mapTenantProfile(row: any): any {
     buyerChoice: row.buyerChoice || (row.buyerType === 'b2b' ? 'business' : 'myself'),
     companyName: row.companyName || "",
     gstNumber: row.gstNumber || row.gstin || "",
+    // The wishlist CSV comes off the `customer` preferences row (joined in
+    // TenantRepository.getCustomerProfile). It was missing here, so the
+    // storefront's wishlist page — which reads `customer.wishlist` back from
+    // this response — saw nothing and always rendered an empty wishlist.
+    wishlist: row.wishlist ?? "",
   };
 }

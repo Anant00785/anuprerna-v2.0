@@ -91,16 +91,16 @@ export default async function WishlistPage() {
                   return (
                     <div
                       key={product.id ?? idx}
-                      className="relative shadow-lg rounded md:rounded-xl bg-white overflow-hidden"
+                      className="group relative flex flex-col rounded-xl border border-gray-100 bg-cream shadow-sm overflow-hidden transition-shadow hover:shadow-md"
                     >
                       {/* Stock-status badge (live colors) */}
                       {badge && (
                         <div
-                          className="rounded px-2 py-1 text-xs absolute top-0 left-0 z-10"
+                          className="rounded px-2 py-1 text-[12px] font-medium absolute top-2 left-2 z-10"
                           style={
                             badge === 'In Stock'
-                              ? { backgroundColor: '#e6eac6', color: '#7f8142' }
-                              : { backgroundColor: '#FFF8D0', color: '#ac9317' }
+                              ? { backgroundColor: '#E6EAC6', color: '#7F8142' }
+                              : { backgroundColor: '#FBF3E4', color: '#7D5A20' }
                           }
                         >
                           {badge}
@@ -111,30 +111,47 @@ export default async function WishlistPage() {
                           native PUT /manage/wishlist route via /api/profile/wishlist/remove. */}
                       <RemoveFromWishlistButton sku={product.sku ?? ''} />
 
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="w-full block">
+                      <a href={href} className="relative block aspect-square overflow-hidden bg-sand">
                         {product.heroImage && (
                           <img
                             src={product.heroImage}
                             alt={product.name ?? ''}
-                            className="object-cover object-top aspect-square w-full rounded-t md:rounded-t-xl"
+                            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                           />
                         )}
                       </a>
 
-                      <div className="p-4">
-                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center">
-                          <p className="md:text-lg text-sm font-medium text-center line-clamp-2">{product.name}</p>
-                          {product.price != null && (
-                            <div className="flex justify-center items-center mb-2 mt-1 text-xl font-medium">
-                              <span className="text-sm mr-1">INR</span> {formatPrice(product.price)}{' '}
-                              {product.unit && <span className="text-sm">/ {product.unit}</span>}
-                            </div>
-                          )}
-                          {product.specialStatus?.name && (
-                            <div className="px-2 py-1 mb-1 bg-[#b7a98f] rounded w-max text-xs md:text-sm text-white">
-                              {product.specialStatus.name}
-                            </div>
-                          )}
+                      {/* Body — matches the catalogue card: left-aligned caption,
+                          title, price row, then a full-width View Product CTA. */}
+                      <div className="flex flex-1 flex-col p-3">
+                        {product.specialStatus?.name && (
+                          <span className="text-[11px] mb-1 truncate" style={{ color: '#75787F' }}>
+                            {product.specialStatus.name}
+                          </span>
+                        )}
+
+                        <a href={href} className="block">
+                          <h3 className="text-sm text-gray-800 leading-snug line-clamp-2 hover:text-clay transition-colors">
+                            {product.name}
+                          </h3>
+                        </a>
+
+                        {product.price != null && (
+                          <div className="mt-2 flex items-center flex-wrap text-clay font-medium text-sm">
+                            <span className="text-xs mr-1">INR</span>
+                            <span>{formatPrice(product.price)}</span>
+                            <span className="text-bark font-normal text-[10px] ml-0.5">
+                              {' / ' + (product.unit || 'METER').toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+
+                        <a
+                          href={href}
+                          className="mt-3 flex items-center justify-center gap-1.5 border border-clay text-clay text-xs py-2 rounded hover:bg-clay hover:text-white transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">visibility</span>
+                          <span>View Product</span>
                         </a>
                       </div>
                     </div>
