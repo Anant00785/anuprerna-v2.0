@@ -4,7 +4,7 @@
 > itself. Run `pnpm docs:gen` to refresh; CI runs `pnpm docs:check` and fails if this file is
 > stale. What `apps/api` exposes, and what the frontends actually call.
 
-**apps/api exposes 829 routes** across 98 controllers (DELETE 59, GET 496, PATCH 109, POST 164, PUT 1).
+**apps/api exposes 836 routes** across 99 controllers (DELETE 59, GET 498, PATCH 109, POST 169, PUT 1).
 
 **The frontends call 30 distinct legacy paths**, against the live Java backend — not against `apps/api`. Those two populations are still almost entirely disjoint; closing that
 gap is the migration. See `docs/KNOWN-GAPS.md`.
@@ -96,6 +96,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | POST | `/add/warehouse` | `apps/api/src/commerce/inventory/controller/inventory.controller.ts` |
 | POST | `/add/workflow` | `apps/api/src/commerce/workflow/controller/workflow.controller.ts` |
 | POST | `/add/workflow-template` | `apps/api/src/commerce/workflow/controller/workflow.controller.ts` |
+| POST | `/apply/coupon/:code` | `apps/api/src/commerce/discount/discount.controller.ts` |
 | PATCH | `/apply/voucher/discount` | `apps/api/src/commerce/discount/discount.controller.ts` |
 | POST | `/apply/voucher/discount` | `apps/api/src/commerce/discount/discount.controller.ts` |
 | POST | `/auth/authenticate` | `apps/api/src/auth/controller/auth.controller.ts` |
@@ -130,8 +131,13 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | POST | `/create/impact` | `apps/api/src/commerce/impact/impact.controller.ts` |
 | POST | `/create/payment-session` | `apps/api/src/commerce/payment/controller/payment.controller.ts` |
 | POST | `/create/stripe/payment-session` | `apps/api/src/commerce/payment/controller/payment.controller.ts` |
+| POST | `/customer/buyer-type` | `apps/api/src/commerce/tenant/controller/customer-account.controller.ts` |
+| GET | `/customer/buyer-type/prompt` | `apps/api/src/commerce/tenant/controller/customer-account.controller.ts` |
+| POST | `/customer/buyer-type/prompt` | `apps/api/src/commerce/tenant/controller/customer-account.controller.ts` |
 | POST | `/customer/registration/email` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
 | POST | `/customer/registration/social` | `apps/api/src/auth/controller/loom-legacy-auth.controller.ts` |
+| POST | `/customer/signup-details` | `apps/api/src/commerce/tenant/controller/customer-account.controller.ts` |
+| POST | `/customer/update/selected-forex` | `apps/api/src/commerce/tenant/controller/customer-account.controller.ts` |
 | PATCH | `/customer/whatsapp/dismiss` | `apps/api/src/commerce/domain/notifications.controller.ts` |
 | POST | `/customer/whatsapp/dismiss` | `apps/api/src/commerce/whatsapp/controller/whatsapp.controller.ts` |
 | PATCH | `/customer/whatsapp/opt-in` | `apps/api/src/commerce/domain/notifications.controller.ts` |
@@ -266,6 +272,7 @@ gap is the migration. See `docs/KNOWN-GAPS.md`.
 | GET | `/get/custom-size-profile-list` | `apps/api/src/commerce/custom-product/controller/custom-size-profile.controller.ts` |
 | GET | `/get/custom-size-profile/:profileId` | `apps/api/src/commerce/custom-product/controller/custom-size-profile.controller.ts` |
 | GET | `/get/custom-workflow-list/:status` | `apps/api/src/commerce/custom-workflow/controller/custom-workflow.controller.ts` |
+| GET | `/get/custom-workflow/:workflowId` | `apps/api/src/commerce/custom-workflow/controller/custom-workflow.controller.ts` |
 | GET | `/get/customer/custom-order-list` | `apps/api/src/commerce/order/controller/custom-order.controller.ts` |
 | GET | `/get/customer/custom-order/:orderId` | `apps/api/src/commerce/order/controller/custom-order.controller.ts` |
 | GET | `/get/customer/custom-order/:orderId/fulfill` | `apps/api/src/commerce/domain/custom-order-migrated.controller.ts` |

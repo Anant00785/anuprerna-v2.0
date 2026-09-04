@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { humaniseAuthError } from '@/lib/auth/error-message';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { authenticateEmail } from '@/lib/loom/endpoints';
@@ -86,7 +87,9 @@ export async function POST(req: Request) {
   if (!result.ok) {
     const status = result.code === 'unavailable' ? 503 : 401;
     return NextResponse.json(
-      { success: false, message: result.message, passwordless: result.passwordless === true },
+      // humanise: the API answers with Loom codes (AECx01..AECx05) AS the message,
+      // so a mistyped password used to render as "AECx02" on the sign-in form.
+      { success: false, message: humaniseAuthError(result.message), passwordless: result.passwordless === true },
       { status },
     );
   }

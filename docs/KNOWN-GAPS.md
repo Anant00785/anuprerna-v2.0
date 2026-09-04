@@ -443,9 +443,17 @@ Notes that matter for anyone reading the new code:
 
 **They do not exist; calling them 404s. Do not add a placeholder.**
 
+> `GET /get/custom-workflow/{workflowId}` was on this list and is now **ported**
+> (`CustomWorkflowController.getCustomWorkflow`, key `workflow`, CODE_SU).
+> `populateWorkflowArtisanAssignments` turned out to be exactly a projection of
+> `workflow_artisan_mapping`, so it is part of the query rather than a missing
+> service. `populateArtisanPaymentStatus` is NOT part of Loom's
+> `CustomWorkflowDAOController.retrieveWorkflow` at all, so each assignment ships
+> without `basePayStatus` — a key the CMS already types as optional — rather than
+> with a guessed one.
+
 | Method | Path | Java method | Why still absent |
 |---|---|---|---|
-| GET | `/get/custom-workflow/{workflowId}` | `retrieveWorkflow` | Loom enriches the response with `ArtisanAssignmentService.populateWorkflowArtisanAssignments` and `WorkflowDAOController.populateArtisanPaymentStatus`. Neither is ported. A workflow returned without them would read to the CMS as "nobody is assigned and nobody is owed" — a fabricated answer, not a missing one. |
 | GET | `/get/custom-workflow/element/feedback` | `ElementFeedbackController.retrieveCustomWorkflowElementFeedbackList` | Lives on `ElementFeedbackController` in `commerce/workflow/`, outside this pass's ownership, and needs `findCustomWorkflowElementFeedbackByStatus` plus the email decoder (still a dummy — see the email-encryption section). |
 | GET | `/get/data-dump/custom-order` | `CustomOrderController` | `commerce/domain/custom-order*` was owned by another agent during this pass. No frontend caller; the CMS uses `/get/super-user/custom-order-list`. |
 | GET | `/get/data-dump/custom-order-item` | `CustomOrderController` | As above. |
@@ -719,3 +727,56 @@ Items A and B above are **partially closed**. What changed, and what is still op
 - **Real bucket name is `feeback`, not `feedback`** — confirmed against the Neon project's own `/neon.ts` config at the repo root, which declares `buckets: { feeback: {...} }`. This is the project's actual (if unfortunate) configuration, not a typo to "fix". `NEON_FEEDBACK_BUCKET` must be set to `feeback` in every environment.
 - **`.env.example` documents the five required Neon vars** in `apps/storefront/.env.example`; `apps/cms` has no `.env.example` file to extend (pre-existing gap, not introduced here) — its required vars are the same five plus `AWS_ENDPOINT_URL_S3` is *not* used for the feedback bucket (Netlify reserves the `AWS_` prefix; use the `NEON_S3_*` names in both apps).
 - **Not verified end-to-end**: no local Postgres/S3 credentials were available in this environment to actually exercise `saveFeedbackToNeon` / `uploadFeedbackImageToNeon` against a live Neon instance. Typecheck, lint and the existing test suites are green; a manual smoke test of the feedback widget against real Neon credentials is still owed before this ships to production.
+
+## Frontend-invented endpoints — 2026-09-04 404-backfill pass
+
+Three routes the frontends already call. Two shipped; one cannot.
+
+### `GET /get/workflow/{workflowId}/comments` — NOT BUILT, and not stubbable
+
+`apps/cms/src/lib/artisanflow-api.ts` `getWorkflowComments` reads
+`workflowCommentList`, and `getWorkflowCommentCounts` calls a second invented
+route, `GET /get/workflow-comment-counts?ids=`. Neither exists in Loom; the CMS
+designed both.
+
+**There is no table to serve them from.** `src/database/schema/schema.ts`
+contains zero occurrences of the string `comment` — no workflow-comment table,
+no discussion table, nothing with a compatible shape. The schema is introspected
+from the running Postgres (`pnpm db:introspect`), so this is the live database,
+not a stale file.
+
+Building the route anyway would mean either creating a table (DDL, out of scope
+and not something to do from an endpoint pass) or returning a hardcoded `[]`.
+The second is worse than the 404: the CMS's `catch` already degrades a 404 to an
+empty list, so a fake empty success and a genuinely empty discussion would be
+indistinguishable, and the missing feature would look implemented forever.
+
+To finish: add the table (`workflow_comment`: id, workflow_id FK, text,
+author_tenant_id, created_at) via a real migration, re-run `db:introspect`, then
+serve both routes off it — `workflowCommentList` and `counts` respectively.
+Note `workflowId` is ONE id space across ORDER and CUSTOM_ORDER jobs (the CMS
+shares this component between both detail pages), so the table keys on
+`workflow.id` and needs no type discriminator.
+
+### `POST /apply/coupon/{code}` — shipped, with one caveat OUTSIDE apps/api
+
+Serves `checkout.repository.ts` `applyCoupon`. It runs the same
+`DiscountService` evaluation as `/apply/voucher/discount` — one pricing path,
+not two — and returns the real `discount` row's percentage under `payload`.
+
+The caller sends **no body**, so the cart value is unknown and a coupon with a
+non-zero `minimum_order_value` is refused with "cart total not supplied" rather
+than approved. `cartTotal` is accepted in an optional body for callers that can
+supply it. It is deliberately not derived server-side: `cart_item` stores no
+price, so a cart subtotal would mean a second pricing path beside
+`CheckoutService` (catalogue prices, volume tiers, making charges, units) — the
+usual source of divergent money.
+
+**Open defect, in `apps/storefront` (not owned by this pass):**
+`checkout.repository.ts` `applyCoupon` computes
+`Number(respPayload.discountPercentage) || 10`, and initialises
+`discountPercentage = 10`. Because `|| ` treats 0 as absent, a genuine
+`FREE_SHIPPING` coupon (percentage 0) is rendered to the buyer as **10% off**
+that no backend ever granted — the same fabrication class as the removed
+`WELCOME15`. The backend now returns the truthful 0; the storefront must stop
+substituting. Fix: `Number.isFinite(n) ? n : 0`, and drop the `= 10` seed.

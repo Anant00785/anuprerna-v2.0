@@ -60,6 +60,22 @@ export class DiscountService extends CommerceDataService {
    * 3 not applicable (inactive), 4 expired, 5 already used (SINGLE usage).
    */
   async applyVoucher(tenantId: number, couponCode: string, cartValue: number): Promise<number> {
+    return (await this.evaluateVoucher(tenantId, couponCode, cartValue)).code;
+  }
+
+  /**
+   * The same evaluation, keeping the row that justified the verdict.
+   *
+   * `/apply/coupon/{code}` has to tell the storefront HOW MUCH the coupon is
+   * worth, and the only defensible source for that is the row the checks
+   * passed against — never a default. `discount` is non-null if and only if a
+   * row with this coupon code exists; on code 1 there is nothing to return.
+   */
+  async evaluateVoucher(
+    tenantId: number,
+    couponCode: string,
+    cartValue: number,
+  ): Promise<{ code: number; discount: typeof schema.discount.$inferSelect | null }> {
     const rows = await this.database
       .select()
       .from(schema.discount)
@@ -67,10 +83,10 @@ export class DiscountService extends CommerceDataService {
       .limit(1);
     const discount = rows[0];
 
-    if (!discount) return 1;
-    if (discount.minimumOrderValue > cartValue) return 2;
-    if (!discount.active) return 3;
-    if (!isDateWithinRange(discount.startDate, discount.endDate, Date.now())) return 4;
+    if (!discount) return { code: 1, discount: null };
+    if (discount.minimumOrderValue > cartValue) return { code: 2, discount };
+    if (!discount.active) return { code: 3, discount };
+    if (!isDateWithinRange(discount.startDate, discount.endDate, Date.now())) return { code: 4, discount };
 
     if (discount.usageType === "SINGLE") {
       const used = await this.database
@@ -84,9 +100,9 @@ export class DiscountService extends CommerceDataService {
           ),
         )
         .limit(1);
-      if (used.length > 0) return 5;
+      if (used.length > 0) return { code: 5, discount };
     }
 
-    return 0;
+    return { code: 0, discount };
   }
 }

@@ -1,6 +1,7 @@
 /**
  * Loom: workflow/controller/CustomWorkflowController.java
  *
+ *   GET   /get/custom-workflow/{workflowId}                CODE_SU  key `workflow`
  *   GET   /get/custom-workflow-list/{status}              CODE_SU  key `workflowList`
  *   GET   /get/artisan/custom-workflow-list/{status}      CODE_AR  key `workflowList`
  *   GET   /get/custom-order/{orderId}/workflow-list       CODE_SU  key `workflowList`
@@ -13,13 +14,16 @@
  * merges them (apps/cms/src/lib/artisanflow-api.ts getWorkflowList), so the two
  * must stay distinct.
  *
- * STILL NOT PORTED, deliberately absent rather than stubbed:
- *   GET /get/custom-workflow/{workflowId} — Loom enriches the response with
- *   ArtisanAssignmentService.populateWorkflowArtisanAssignments and
- *   WorkflowDAOController.populateArtisanPaymentStatus, neither of which is
- *   ported. A workflow returned without its artisan assignments and payment
- *   status would read to the CMS as "nobody is assigned and nobody is owed".
- *   See docs/KNOWN-GAPS.md.
+ * GET /get/custom-workflow/{workflowId} was previously absent because
+ * ArtisanAssignmentService.populateWorkflowArtisanAssignments was not ported —
+ * a workflow without its assignments reads to the CMS as "nobody is assigned".
+ * That enrichment IS now part of the query (the `artisanAssignments` block in
+ * CustomWorkflowRepository.findCustomWorkflowDetail is exactly Loom's
+ * projection of workflow_artisan_mapping, base_pay included), so the route is
+ * ported. `populateArtisanPaymentStatus` has no counterpart in Loom's
+ * CustomWorkflowDAOController.retrieveWorkflow and is not part of this route;
+ * `basePayStatus` is therefore absent from each assignment rather than guessed,
+ * which the CMS types as optional.
  */
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
@@ -54,6 +58,26 @@ function positiveIdParam(raw: string, name: string): number {
 @UseGuards(RolesGuard)
 export class CustomWorkflowController {
   constructor(private readonly service: CustomWorkflowService) {}
+
+  /**
+   * Loom: retrieveWorkflow — CODE_SU, WorkflowResponse.buildEntity ->
+   * ResponseParameter.WORKFLOW = "workflow". Read by the CMS as
+   * `j.workflow` (artisanflow-api.ts getCustomWorkflowDetail).
+   *
+   * A standard-order workflow id, or one that does not exist, is a null payload
+   * under the key — Loom's own behaviour, and not a 404 existence oracle.
+   */
+  @Get("/get/custom-workflow/:workflowId")
+  @RequireGate(GateCode.CODE_SU)
+  @ApiOperation({ summary: "One custom-order workflow with its step tree and artisan assignments." })
+  @ApiParam({ name: "workflowId", type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: "The custom-order workflow, or null under `workflow`." })
+  async getCustomWorkflow(@Param("workflowId") workflowId: string) {
+    return keyedResponse(
+      "workflow",
+      await this.service.getCustomWorkflowDetail(positiveIdParam(workflowId, "workflowId")),
+    );
+  }
 
   @Get("/get/custom-workflow-list/:status")
   @RequireGate(GateCode.CODE_SU)

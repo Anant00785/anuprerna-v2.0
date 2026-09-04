@@ -253,6 +253,9 @@ importers:
       '@auth0/auth0-react':
         specifier: ^2.23.0
         version: 2.23.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@auth0/auth0-spa-js':
+        specifier: ^2.24.1
+        version: 2.24.1
       '@aws-sdk/client-s3':
         specifier: ^3.1107.0
         version: 3.1107.0

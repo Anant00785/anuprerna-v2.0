@@ -139,43 +139,10 @@ export class AuthService {
         throw new Error('Invalid email or password. Please verify your admin credentials and try again.');
       }
 
-      // If local proxy failed, try direct authentication with loom-v2
-      try {
-        const directRes = await axios.post(
-          'https://loom-v2.anuprerna.com/authenticate/email',
-          { username, password },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'origin': 'https://anuprerna.com',
-            },
-            timeout: 12000,
-          }
-        );
-
-        const directData = directRes.data;
-        const directToken = directData?.jwt || directData?.token || (typeof directData === 'string' ? directData : null);
-
-        if (directToken) {
-          this.storeJWT(directToken);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('user_email', username);
-          }
-
-          let authority: Authority | undefined;
-          try {
-            authority = await this.resolveAuthorityToken(directToken);
-          } catch (authErr) {
-            console.warn('Authority resolution warning:', authErr);
-          }
-
-          return { token: directToken, authority };
-        }
-      } catch (directErr: any) {
-        if (directErr.response && (directErr.response.status === 401 || directErr.response.status === 403)) {
-          throw new Error('Invalid email or password. Please verify your admin credentials and try again.');
-        }
-      }
+      // The direct-to-loom-v2 fallback that used to live here is gone. It meant
+      // a configured backend being down silently re-routed admin logins to the
+      // legacy Java host, so a "successful" login proved nothing about which
+      // system had actually verified the credential.
 
       if (err.response) {
         const serverMessage = err.response.data?.message || err.response.data?.error || (typeof err.response.data === 'string' ? err.response.data : null);
@@ -207,24 +174,16 @@ export class AuthService {
       });
       rawAuthority = response.data?.authority || response.data;
     } catch {
-      try {
-        const directRes = await axios.get('https://loom-v2.anuprerna.com/get/authority/token', {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            'Content-Type': 'application/json',
-            'origin': 'https://anuprerna.com',
-          },
-          timeout: 8000,
-        });
-        rawAuthority = directRes.data?.authority || directRes.data;
-      } catch {
-        // fallback
-      }
+      // No loom-v2 fallback: the configured backend is the only authority.
+      // rawAuthority stays null and every flag below resolves to false.
     }
 
+    // `|| true` used to terminate the first two chains, so every signed-in user
+    // read back as superuser AND admin no matter what the backend said — the
+    // fallback branch above included. Read the backend's answer, nothing else.
     const authorityData: Authority = {
-      superuser: !!(rawAuthority?.superUser || rawAuthority?.superuser || true),
-      admin: !!(rawAuthority?.superUser || rawAuthority?.admin || true),
+      superuser: !!(rawAuthority?.superUser || rawAuthority?.superuser),
+      admin: !!(rawAuthority?.superUser || rawAuthority?.admin),
       user: !!(rawAuthority?.customer || rawAuthority?.user),
       guest: false,
     };

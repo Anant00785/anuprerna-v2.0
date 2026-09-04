@@ -26,6 +26,10 @@ export class TenantService {
     return profile ? mapTenantProfile(profile) : null;
   }
 
+  async setSelectedCurrency(tenantId: string | number, currency: string) {
+    return this.tenantRepo.setSelectedCurrency(tenantId, currency);
+  }
+
   async getUserRoles(limit: number, offset: number) {
     const roles = await this.tenantRepo.getUserRoles(limit, offset);
     return roles.map(mapUserRole);

@@ -15,6 +15,7 @@
     "@anuprerna/types": "workspace:*",
     "@anuprerna/ui": "workspace:*",
     "@auth0/auth0-react": "^2.23.0",
+    "@auth0/auth0-spa-js": "^2.24.1",
     "@aws-sdk/client-s3": "^3.1107.0",
     "@aws-sdk/s3-request-presigner": "^3.1124.0",
     "@types/bcryptjs": "^3.0.0",

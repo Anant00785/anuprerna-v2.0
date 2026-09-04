@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { catalogRepository } from "./catalog.repository";
 import { useHandlers, PROXY_BASE, envelope } from "@/test/msw";
@@ -9,6 +9,13 @@ import { env } from "@/env";
 // the designed Path-A catalog flow per docs/DATA-FLOW.md §1.
 
 const originalMode = env.NEXT_PUBLIC_API_MODE;
+// NEXT_PUBLIC_API_MODE now defaults to "nest" (src/env.ts). The "(legacy)"
+// suites below used to inherit the old "legacy" default, so they silently
+// started exercising the nest branch and their MSW handlers stopped matching.
+// State the mode instead of inheriting it; the nest suite sets its own.
+beforeEach(() => {
+  env.NEXT_PUBLIC_API_MODE = "legacy";
+});
 afterEach(() => {
   env.NEXT_PUBLIC_API_MODE = originalMode;
 });

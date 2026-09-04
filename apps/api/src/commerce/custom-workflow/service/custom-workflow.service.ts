@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotImplementedException } from "@nestjs/common";
 import {
   CustomWorkflowRepository,
+  type CustomWorkflowArtisanAssignment,
+  type CustomWorkflowDetail,
   type OrderwiseWorkflow,
   type OrderwiseWorkflowStep,
   type OrderwiseWorkflowSubProcess,
@@ -21,6 +23,24 @@ function num(value: unknown): number | null {
 
 function str(value: unknown): string | null {
   return value === null || value === undefined ? null : String(value);
+}
+
+/**
+ * Loom's RainResponse serialises NON_NULL, so an assignment omits whichever
+ * quantity is absent — and `chk_workflow_artisan_mapping_single_quantity_mode`
+ * guarantees at most one is set. Emitting an explicit null instead would read
+ * to the CMS as "zero metres assigned"; the key is dropped, as on the wire.
+ */
+function toArtisanAssignment(raw: unknown): CustomWorkflowArtisanAssignment {
+  const r = raw as Record<string, unknown>;
+  const assignment: CustomWorkflowArtisanAssignment = { artisanId: Number(r.artisanId) };
+  const fabric = num(r.quantityOfFabricInMeters);
+  const products = num(r.quantityOfProducts);
+  const basePay = num(r.basePay);
+  if (fabric !== null) assignment.quantityOfFabricInMeters = fabric;
+  if (products !== null) assignment.quantityOfProducts = products;
+  if (basePay !== null) assignment.basePay = basePay;
+  return assignment;
 }
 
 @Injectable()
@@ -48,6 +68,50 @@ export class CustomWorkflowService {
     const artisanId = await this.writeRepo.findArtisanIdByTenant(tenantId);
     if (artisanId === null) return [];
     return this.repo.findAllCustomWorkflowsByArtisan(artisanId, (status ?? "").toUpperCase());
+  }
+
+  /**
+   * Loom: CustomWorkflowDAOController.retrieveWorkflow — GET /get/custom-workflow/{id}.
+   *
+   * A workflow id with no custom-order mapping is null (Loom's two null exits
+   * collapse to "the repository returned no row"), which the controller renders
+   * as Loom's empty entity. Null is "not a custom workflow"; a thrown query
+   * error stays thrown, so the two are never confused.
+   *
+   * Loom's `mapping.getWorkflow().getWorkflowTemplate().setSteps(null)` is why
+   * the template is flattened to {id, name} here rather than carrying its own
+   * step tree — the instance's steps are the ones that matter.
+   */
+  async getCustomWorkflowDetail(workflowId: number): Promise<CustomWorkflowDetail | null> {
+    const row = await this.repo.findCustomWorkflowDetail(workflowId);
+    if (row === null) return null;
+
+    const templateId = num(row.templateId);
+
+    return {
+      id: Number(row.id),
+      name: str(row.name),
+      description: str(row.description),
+      note: str(row.note),
+      status: str(row.status),
+      type: str(row.type),
+      custom: Boolean(row.custom),
+      estimatedStartDate: num(row.estimatedStartDate),
+      estimatedEndDate: num(row.estimatedEndDate),
+      createdAt: num(row.createdAt),
+      updatedAt: num(row.updatedAt),
+      avgArtisanWorkHoursPerMeter: num(row.avgArtisanWorkHoursPerMeter),
+      avgWorkHoursPerProduct: num(row.avgWorkHoursPerProduct),
+      fabricUsedPerProductInMeters: num(row.fabricUsedPerProductInMeters),
+      workflowTemplate: templateId === null ? null : { id: templateId, name: str(row.templateName) },
+      referenceOrderId: num(row.referenceOrderId),
+      referenceOrderItemId: num(row.referenceOrderItemId),
+      referenceProductId: num(row.referenceProductId),
+      steps: Array.isArray(row.steps) ? row.steps : [],
+      artisanAssignments: (Array.isArray(row.artisanAssignments) ? row.artisanAssignments : []).map(
+        toArtisanAssignment,
+      ),
+    };
   }
 
   /** Loom: CustomWorkflowDAOController.retrieveOrderWiseWorkflowList. */

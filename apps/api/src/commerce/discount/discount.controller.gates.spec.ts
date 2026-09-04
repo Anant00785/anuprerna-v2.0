@@ -18,6 +18,8 @@ describeGates(
   [
     ["applyVoucherDiscountPost", GateCode.CODE_CU],
     ["applyVoucherDiscountPatch", GateCode.CODE_CU],
+    // Native storefront route; a customer-scoped money path, so CODE_CU.
+    ["applyCoupon", GateCode.CODE_CU],
   ],
   [],
 );
