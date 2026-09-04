@@ -125,7 +125,34 @@ interface OrderDetail {
 function itemMeta(it: OrderItem) {
   const c = it.customization ?? {};
   const p = c.fabricProductPreview?.product ?? c.finishedProductPreview?.product ?? {};
-  return { name: p.name ?? 'Product', sku: p.sku, heroImage: p.heroImage };
+
+  // Try multiple fallback paths for product name
+  let name =
+    p.name ||
+    (c as any)?.fabricProductPreview?.name ||
+    (c as any)?.finishedProductPreview?.name ||
+    (c as any)?.productName ||
+    (c as any)?.name;
+
+  // If still no name, show placeholder with order type info
+  if (!name) {
+    const orderTypeLabel = it.orderType === 'MADE_TO_ORDER' ? 'Custom' : it.orderType === 'PRE_ORDER' ? 'Pre-Order' : 'In-Stock';
+    name = `${orderTypeLabel} Product (ID: ${it.id})`;
+  }
+
+  const sku =
+    p.sku ||
+    (c as any)?.sku ||
+    (c as any)?.productSku ||
+    undefined;
+
+  const heroImage =
+    p.heroImage ||
+    (c as any)?.image ||
+    (c as any)?.heroImage ||
+    undefined;
+
+  return { name, sku, heroImage };
 }
 
 function AddressBlock({ a }: { a: OrderAddress }) {
@@ -241,6 +268,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       .filter((x): x is FulfilledItemSummary => x !== null);
   }
 
+  // Determine overall order status for display
+  const overallStatus = isCancelled ? 'CANCELLED' : isFailed ? 'FAILED' : anyDispatched ? 'DISPATCHED' : 'PROCESSING';
+
+  // Order status timeline
+  const statusSteps = [
+    { label: 'Confirmed', status: 'INITIATED', completed: true },
+    { label: 'Processing', status: 'PROCESSING', completed: anyDispatched || isCancelled },
+    { label: 'Dispatched', status: 'DISPATCHED', completed: items.some(i => ['DISPATCHED', 'IN_TRANSIT', 'DELIVERED'].includes(i.orderStatus)) },
+    { label: 'Delivered', status: 'DELIVERED', completed: items.some(i => i.orderStatus === 'DELIVERED') },
+  ];
+
   return (
     <>
       <meta name="robots" content="noindex" />
@@ -254,6 +292,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <div>
           <h1 className="text-2xl font-medium text-clay">Order #{order.id}</h1>
           <p className="text-sm text-gray-500 mt-1">Placed {formatDate(order.createdAt)}</p>
+          <p className="text-sm font-medium mt-2 text-clay">Status: {ITEM_STATUS_LABEL[overallStatus] ?? overallStatus}</p>
         </div>
         <div className="flex items-center gap-3">
           {showRate && (
@@ -310,18 +349,37 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     const meta = itemMeta(item);
                     const wf = item.id != null ? workflowByItem.get(item.id) ?? null : null;
                     return (
-                      <div key={item.id} className="px-5 py-4">
-                        <div className="flex gap-4 items-start">
-                          {meta.heroImage && (
-                            <img src={meta.heroImage} alt={meta.name} className="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-gray-100" />
+                      <div key={item.id} className="px-5 py-5 hover:bg-gray-50 transition">
+                        <div className="flex gap-4 items-start mb-3">
+                          {meta.heroImage ? (
+                            <img src={meta.heroImage} alt={meta.name} className="w-24 h-24 object-cover rounded-lg flex-shrink-0 border border-gray-200 shadow-sm" />
+                          ) : (
+                            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center border border-gray-200">
+                              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-800 text-sm line-clamp-2">{meta.name}</p>
-                            {meta.sku && <p className="text-xs text-gray-400 mt-0.5">SKU: {meta.sku}</p>}
-                            <p className="text-xs text-gray-500 mt-1">{item.quantity} {item.unit}</p>
+                            <h3 className="font-semibold text-gray-900 text-base mb-1">{meta.name}</h3>
+                            {meta.sku && <p className="text-xs text-gray-500 mb-2">SKU: <span className="font-mono text-gray-700">{meta.sku}</span></p>}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                                {item.quantity} {item.unit}
+                              </span>
+                              <span className={'inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium ' + (item.orderStatus === 'DELIVERED' ? 'bg-green-600' : item.orderStatus === 'CANCELLED' ? 'bg-red-600' : item.orderStatus === 'PROCESSING' ? 'bg-blue-600' : 'bg-gray-600')}>
+                                {ITEM_STATUS_LABEL[item.orderStatus] ?? item.orderStatus}
+                              </span>
+                              {item.paymentStatus && (
+                                <span className={'inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium ' + (item.paymentStatus === 'PAID' ? 'bg-green-600' : 'bg-amber-500')}>
+                                  {item.paymentStatus === 'PAID' ? '✓ Paid' : '⏳ Pending Payment'}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right flex-shrink-0 text-sm font-medium text-gray-800">
-                            {money(item.currency ?? currency, item.price * item.quantity)}
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-lg font-bold text-clay mb-1">{money(item.currency ?? currency, Number(item.price) * Number(item.quantity))}</p>
+                            <p className="text-xs text-gray-500">@ {money(item.currency ?? currency, Number(item.price))}/unit</p>
                           </div>
                         </div>
                         {item.hasWorkflow && wf?.workflowId && (

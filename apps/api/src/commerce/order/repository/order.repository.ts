@@ -18,11 +18,36 @@ export class OrderRepository {
       .from(schema.orders)
       .where(and(eq(schema.orders.id, id), eq(schema.orders.deleted, false)));
     if (!rows[0]) return null;
+
     const items = await this.db.select().from(schema.orderItem).where(eq(schema.orderItem.orderId, Number(id)));
+
+    // Enrich items with workflow check for made-to-order items
+    const enrichedItems = await Promise.all(
+      (items || []).map(async (item) => {
+        let hasWorkflow = false;
+        if (item.orderType === 'MADE_TO_ORDER' && item.id) {
+          try {
+            const workflows = await this.db
+              .select()
+              .from(schema.workflow)
+              .where(eq(schema.workflow.orderItemId, Number(item.id)))
+              .limit(1);
+            hasWorkflow = workflows && workflows.length > 0;
+          } catch {
+            hasWorkflow = false;
+          }
+        }
+        return {
+          ...item,
+          hasWorkflow,
+        };
+      })
+    );
+
     return {
       ...rows[0],
-      orderItems: items || [],
-      orderItemList: items || [],
+      orderItems: enrichedItems || [],
+      orderItemList: enrichedItems || [],
     };
   }
 

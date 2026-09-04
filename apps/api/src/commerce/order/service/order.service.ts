@@ -61,6 +61,29 @@ export class OrderService {
     if (Array.isArray(body?.orderItems) && body.orderItems.length > 0) {
       for (const item of body.orderItems) {
         try {
+          // Ensure customization has product preview for order history display
+          const customization = item.customization ?? {};
+
+          // If customization is empty but we have product details, build it
+          if (Object.keys(customization).length === 0 && (item.productName || item.heroImage)) {
+            const productPreview = {
+              product: {
+                name: item.productName || "Product",
+                heroImage: item.heroImage || "",
+                sku: item.sku || "",
+                slug: item.slug || "",
+                id: item.productId,
+              }
+            };
+
+            // Add as fabric or finished product preview based on productGroup
+            if (item.productGroup === "finished") {
+              customization.finishedProductPreview = productPreview;
+            } else {
+              customization.fabricProductPreview = productPreview;
+            }
+          }
+
           await this.orderRepository.db.insert(schema.orderItem).values({
             orderId: Number(order.id),
             orderType: item.orderType || "IN_STOCK",
@@ -69,7 +92,7 @@ export class OrderService {
             unit: item.unit || "METER",
             price: String(item.price || "0.00"),
             currency: String(item.currency || data.currency),
-            customization: item.customization ?? {},
+            customization,
             orderStatus: "INITIATED",
             paymentStatus: "PENDING",
             createdAt: Date.now(),

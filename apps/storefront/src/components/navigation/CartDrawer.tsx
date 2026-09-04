@@ -221,7 +221,7 @@ export function CartDrawer() {
               <p className="text-gray-500 text-sm font-medium">Your cart is empty.</p>
             </div>
           ) : (
-            <div className="flex flex-col divide-y divide-gray-100">
+            <div className="flex flex-col gap-3">
               {items.map((item) => {
                 const isSwatch = item.productGroup === "swatch";
                 const isMTO = item.orderType === "MADE_TO_ORDER";
@@ -230,11 +230,11 @@ export function CartDrawer() {
                 const productHref = `/product/${item.productGroup === "finished" ? "finished-product" : "fabric-product"}/${item.product.slug || item.productId}`;
 
                 return (
-                  <div key={item.id} className="py-4 flex gap-4 items-start">
+                  <div key={item.id} className="p-4 bg-gray-50 rounded-lg border border-gray-150 hover:border-[#D4A373] hover:shadow-md transition-all flex gap-3 items-start">
                     {/* Item Thumbnail */}
-                    <Link href={productHref} onClick={close} className="shrink-0">
+                    <Link href={productHref} onClick={close} className="shrink-0 block">
                       {isSwatch ? (
-                        <div className="w-24 h-24 rounded-lg border-2 border-dashed border-[#D4A373] p-1 flex items-center justify-center bg-gray-50">
+                        <div className="w-28 h-28 rounded-lg border-2 border-dashed border-[#D4A373] p-1 flex items-center justify-center bg-white">
                           <img
                             src={item.product.thumbnail || "/images/placeholder.jpg"}
                             alt={item.product.name}
@@ -251,7 +251,7 @@ export function CartDrawer() {
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
                           }}
-                          className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                          className="w-28 h-28 object-cover rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
                         />
                       )}
                     </Link>

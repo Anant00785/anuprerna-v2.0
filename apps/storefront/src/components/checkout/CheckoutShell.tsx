@@ -614,6 +614,14 @@ export default function CheckoutShell() {
       const heroImage = (it as any).image || p?.heroImage || '';
       const sku = p?.sku || '';
       const slug = p?.slug || '';
+
+      // Build customization with product preview for order history display
+      const customization = {
+        ...(fp ? { fabricProductPreview: { product: { name: productName, heroImage, sku, slug, id: productId } } } : {}),
+        ...(fin ? { finishedProductPreview: { product: { name: productName, heroImage, sku, slug, id: productId } } } : {}),
+        ...((it as Record<string, unknown>).customization || {}),
+      };
+
       return {
         productId,
         cartItemId: it.id,
@@ -626,7 +634,7 @@ export default function CheckoutShell() {
         heroImage,
         sku,
         slug,
-        customization: {},
+        customization,
         volumeDiscount: {},
         madeToOrderProfile: {},
         saleDiscountPercentage: 0,
