@@ -255,14 +255,18 @@ export default function ProductInfoPanel({
   // matching live anuprerna.com — buyer mode never gates or changes it.
   const [cartRefresh, setCartRefresh] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [inWishlist, setInWishlist] = useState(false);
+  // Derived straight from the store's sku list on every render — no local
+  // state to fall behind. This used to mirror wishlistSkus into a separate
+  // inWishlist useState via useEffect, which lags a render behind: after
+  // toggleWishlist's synchronous set(), the click handler's own render still
+  // saw the OLD state value, and the icon only caught up on the next store
+  // change (or never visibly, since removing was the last thing done and
+  // nothing re-triggered the effect in time) — so removing a product looked
+  // like it did nothing.
   const wishlistSkus = useWishlistStore((s) => s.skus);
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const itemSku = product.sku || String(recordId);
-
-  useEffect(() => {
-    setInWishlist(wishlistSkus.includes(itemSku));
-  }, [wishlistSkus, itemSku]);
+  const inWishlist = wishlistSkus.includes(itemSku);
 
   const handleCopyLink = useCallback(async () => {
     try {
