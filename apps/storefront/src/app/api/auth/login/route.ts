@@ -35,8 +35,16 @@ export async function POST(req: Request) {
           const matches = bcrypt.compareSync(password, tenant.user_password || '');
           if (matches) {
             const userName = tenant.user_name || email.split('@')[0];
+            const subId = Number(tenant.id);
+            if (!Number.isFinite(subId) || subId <= 0) {
+              console.error('[Storefront Login] tenant row has no usable id', { email });
+              return NextResponse.json(
+                { success: false, message: 'Your account is not fully provisioned. Please contact support.' },
+                { status: 500 },
+              );
+            }
             const jwtToken = signToken({
-              sub: tenant.email || email,
+              sub: subId,
               email: tenant.email || email,
               name: userName,
               firstName: userName.split(' ')[0] || 'Member',
@@ -57,7 +65,7 @@ export async function POST(req: Request) {
               maxAge: 60 * 60 * 24 * 14,
             });
 
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, redirectTo: '/' });
           } else {
             return NextResponse.json(
               { success: false, message: 'Invalid password. Please check your credentials.' },

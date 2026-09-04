@@ -11,6 +11,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "anuprerna.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "loom-v2.anuprerna.com",
         pathname: "/**",
       },

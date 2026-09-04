@@ -98,11 +98,16 @@ export async function GET() {
     const email = (tenant?.email ?? profile?.email ?? '') as string;
     const buyerMode = profile?.buyerType === 'b2b' ? 'b2b' : 'b2c';
 
+    // Validate that we have at least email (name can come from email if needed)
+    if (!email || !email.trim()) {
+      return clearedSession();
+    }
+
     const normalizedProfile = {
       ...profile,
-      name,
-      firstName: name.split(' ')[0] || 'Member',
-      email,
+      name: name || email.split('@')[0],
+      firstName: (name || email.split('@')[0]).split(' ')[0] || 'Member',
+      email: email.trim().toLowerCase(),
       buyerType: buyerMode,
     };
 
@@ -115,8 +120,9 @@ export async function GET() {
       maxAge: BUYER_MODE_MAX_AGE,
     });
     return response;
-  } catch {
-    // Token rejected / expired.
-    return NextResponse.json({ authenticated: false });
+  } catch (err) {
+    // Token rejected / expired / API error — clear the session
+    console.error('[/api/auth/me] Profile fetch failed:', err);
+    return clearedSession();
   }
 }
