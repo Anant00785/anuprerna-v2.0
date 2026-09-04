@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import * as guestCart from '@/lib/guest-cart';
@@ -65,23 +65,43 @@ const TINT = {
 
 // ---- Floating tinted CARD wrapper with arrow pointer (matches live dropdownBackground) ----
 // Live: white bg, 8px radius, 3px solid #EFEEE9 border, a 15px arrow pointer rotated 45deg.
+// `arrowLeft` arrives as the hovered link's centre in VIEWPORT coordinates.
+// The card is centred by flexbox, so its left edge is only known after layout —
+// measure it here and convert to a card-relative offset, clamped to the card.
 function MegaCard({
   children, arrowLeft, onMouseEnter, onMouseLeave,
 }: {
   children: React.ReactNode; arrowLeft: number;
   onMouseEnter: () => void; onMouseLeave: () => void;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const measure = () => {
+      const cardRect = el.getBoundingClientRect();
+      const local = arrowLeft - cardRect.left - 7.5; // 7.5 = half the 15px arrow
+      // Keep the arrow inside the card's rounded corners.
+      setOffset(Math.max(16, Math.min(local, cardRect.width - 31)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [arrowLeft]);
+
   return (
     <div
       className='absolute top-full z-50 mx-auto left-0 right-0 flex justify-center pointer-events-none'
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className='relative pointer-events-auto mt-2' style={{ maxWidth: 'calc(100vw - 2rem)' }}>
-        {/* arrow pointer */}
+      <div ref={cardRef} className='relative pointer-events-auto mt-2' style={{ maxWidth: 'calc(100vw - 2rem)' }}>
+        {/* arrow pointer — hidden until measured so it never flashes in the wrong spot */}
         <span
           className='absolute -top-[7px] block w-[15px] h-[15px] rotate-45'
-          style={{ background: '#EFEEE9', left: arrowLeft }}
+          style={{ background: '#EFEEE9', left: offset ?? 0, visibility: offset === null ? 'hidden' : 'visible' }}
         />
         <div
           className='relative bg-white rounded-lg overflow-hidden'
@@ -433,12 +453,26 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
   const [acctOpen, setAcctOpen] = useState(false);
   const [hover, setHover] = useState<string | null>(null);
   const [acc, setAcc] = useState<string | null>(null); // mobile accordion
+  // Viewport-x of the hovered link's centre; MegaCard converts it to a card offset.
+  const [arrowPos, setArrowPos] = useState(0);
+  const fabricLinkRef = useRef<HTMLAnchorElement>(null);
+  // Anchors for most items, spans for the non-navigating triggers (Our Story, B2B).
+  const linkRefsMap = useRef<Record<string, HTMLElement | null>>({});
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const acctCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openMenu = (key: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setHover(key);
+
+    // Store the hovered link's centre in VIEWPORT coordinates. The card itself
+    // is centred by flexbox, so only the card can know its own left edge —
+    // MegaCard converts this to a card-relative offset once it has laid out.
+    const linkElement = key === 'fabric' ? fabricLinkRef.current : linkRefsMap.current[key];
+    if (linkElement) {
+      const rect = linkElement.getBoundingClientRect();
+      setArrowPos(rect.left + rect.width / 2);
+    }
   };
   const closeMenu = () => {
     closeTimer.current = setTimeout(() => setHover(null), 130);
@@ -634,26 +668,46 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
             {/* Desktop mega-menu nav */}
             <ul className='hidden xl:flex items-center gap-4 2xl:gap-6 text-base text-black/80'>
               <li className='py-5' onMouseEnter={() => openMenu('fabric')}>
-                <Link href='/products/fabric' className='hover:text-[#9c8a6c] transition-colors'>Fabric</Link>
+                <Link ref={fabricLinkRef} href='/products/fabric' className='hover:text-[#9c8a6c] transition-colors'>Fabric</Link>
               </li>
               {nav.finished.map((grp) => (
                 <li key={grp.category} className='py-5' onMouseEnter={() => openMenu(grp.category)}>
-                  <a href={'/products/finished?category=' + grp.category} className='hover:text-[#9c8a6c] transition-colors'>
+                  <a
+                    ref={(el) => { if (el) linkRefsMap.current[grp.category] = el; }}
+                    href={'/products/finished?category=' + grp.category}
+                    className='hover:text-[#9c8a6c] transition-colors'
+                  >
                     {grp.label}
                   </a>
                 </li>
               ))}
               {/* FIX 1: Collaborations — hover opens dropdown; label routes to /stories */}
               <li className='py-5' onMouseEnter={() => openMenu('collaborations')}>
-                <Link href='/stories' className='hover:text-[#9c8a6c] transition-colors'>Collaborations</Link>
+                <a
+                  ref={(el) => { if (el) linkRefsMap.current['collaborations'] = el; }}
+                  href='/stories'
+                  className='hover:text-[#9c8a6c] transition-colors'
+                >
+                  Collaborations
+                </a>
               </li>
               {/* FIX 2: Our Story — hover-trigger span (no navigation) */}
               <li className='py-5' onMouseEnter={() => openMenu('ourstory')}>
-                <span className='cursor-pointer hover:text-[#9c8a6c] transition-colors whitespace-nowrap'>Our Story</span>
+                <span
+                  ref={(el) => { if (el) linkRefsMap.current['ourstory'] = el; }}
+                  className='cursor-pointer hover:text-[#9c8a6c] transition-colors whitespace-nowrap block'
+                >
+                  Our Story
+                </span>
               </li>
               {/* FIX 3: B2B — hover-trigger span (no navigation) */}
               <li className='py-5' onMouseEnter={() => openMenu('b2b')}>
-                <span className='cursor-pointer hover:text-[#9c8a6c] transition-colors'>B2B</span>
+                <span
+                  ref={(el) => { if (el) linkRefsMap.current['b2b'] = el; }}
+                  className='cursor-pointer hover:text-[#9c8a6c] transition-colors block'
+                >
+                  B2B
+                </span>
               </li>
             </ul>
 
@@ -797,27 +851,27 @@ export default function SiteHeader({ nav }: { nav: HeaderNavData }) {
 
         {/* Mega-menu panels — floating tinted cards, one at a time */}
         {activeFabric && (
-          <MegaCard arrowLeft={120} onMouseEnter={() => openMenu('fabric')} onMouseLeave={closeMenu}>
+          <MegaCard arrowLeft={arrowPos} onMouseEnter={() => openMenu('fabric')} onMouseLeave={closeMenu}>
             <FabricPanel fabric={nav.fabric} />
           </MegaCard>
         )}
         {activeFinished && activeFinished.columns.length > 0 && (
-          <MegaCard arrowLeft={300} onMouseEnter={() => openMenu(activeFinished.category)} onMouseLeave={closeMenu}>
+          <MegaCard arrowLeft={arrowPos} onMouseEnter={() => openMenu(activeFinished.category)} onMouseLeave={closeMenu}>
             <FinishedPanel group={activeFinished} tint={FINISHED_TINTS[activeFinishedIdx] || TINT.complementary2} />
           </MegaCard>
         )}
         {hover === 'collaborations' && (
-          <MegaCard arrowLeft={520} onMouseEnter={() => openMenu('collaborations')} onMouseLeave={closeMenu}>
+          <MegaCard arrowLeft={arrowPos} onMouseEnter={() => openMenu('collaborations')} onMouseLeave={closeMenu}>
             <CollaborationsPanel />
           </MegaCard>
         )}
         {hover === 'ourstory' && (
-          <MegaCard arrowLeft={620} onMouseEnter={() => openMenu('ourstory')} onMouseLeave={closeMenu}>
+          <MegaCard arrowLeft={arrowPos} onMouseEnter={() => openMenu('ourstory')} onMouseLeave={closeMenu}>
             <OurStoryPanel />
           </MegaCard>
         )}
         {hover === 'b2b' && (
-          <MegaCard arrowLeft={700} onMouseEnter={() => openMenu('b2b')} onMouseLeave={closeMenu}>
+          <MegaCard arrowLeft={arrowPos} onMouseEnter={() => openMenu('b2b')} onMouseLeave={closeMenu}>
             <B2BPanel />
           </MegaCard>
         )}
